@@ -1,5 +1,7 @@
 # BlazorDX
 
+### 🌐 Live demo & docs → **[blazordx.com](https://blazordx.com)**
+
 > An enterprise-grade, secure-by-default, headless component system for .NET 10 Blazor.
 > MIT-licensed. Zero runtime reflection. C# + Rust + TypeScript, each used where it is strongest.
 
