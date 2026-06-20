@@ -26,6 +26,7 @@ server.
 | **Headless, two-tier** | Tier 1 primitives own behavior + accessibility; Tier 2 styled components own looks via CSS variables. Theme without fighting `!important`. |
 | **Right language for the job** | C# for the render tree, **Rust → WASM** for heavy compute (sorting/filtering), **TypeScript → minified ESM** for the thin DOM bridge. |
 | **Static-SSR + HTMX forms** | A hypermedia tier for forms and progressive enhancement with zero WASM payload and no SignalR circuit. |
+| **AI-callable, securely** | One `[DxFormModel]` is both a form a person fills and a tool an assistant calls — served over the **Model Context Protocol**, gated by authorization, audited, and with sensitive fields kept out of the AI's reach. See [docs/ai-integration.md](docs/ai-integration.md). |
 | **Readable forever** | Every source file is capped at **1000 lines**, enforced at build time. |
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the full blueprint,

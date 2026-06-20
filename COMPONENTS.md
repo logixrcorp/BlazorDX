@@ -97,7 +97,10 @@ sample app (`samples/BlazorDX.Demo`).
   `aggregate` (count/sum/min/max/mean), `histogram` (binning), `downsample_lttb` —
   each with a managed C# fallback, so every component works in SSR and on the server.
 - **Source generators**: `[GridRow]`/`[GridColumn]` emit a reflection-free
-  `IGridRowAccessor<TRow>` (read **and** write-back) — no `PropertyInfo`.
+  `IGridRowAccessor<TRow>` (read **and** write-back) — no `PropertyInfo`. `[DxFormModel]`
+  emits an `IFormModel<T>` that `DxForm` renders **and** projects into an AI tool (JSON-Schema
+  over MCP) — secured, audited, with sensitive fields kept from the AI. See
+  [docs/ai-integration.md](docs/ai-integration.md).
 - **`[JSImport]` bridges** (TypeScript → minified ESM): grid-dom, overlay,
   positioning, grid-interop, richtext. No `IJSRuntime`.
 - **Governance**: hard 1000-line file cap (DX1000 analyzer + build target),

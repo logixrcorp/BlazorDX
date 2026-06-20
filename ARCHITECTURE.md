@@ -176,3 +176,22 @@ hierarchy. Building the engine well is what made the catalog cheap and consisten
 See [ADR 0008](docs/adr/0008-shared-primitive-engine.md) and
 [ADR 0009](docs/adr/0009-source-generated-binding.md); the full list of components
 and their demos is in [COMPONENTS.md](COMPONENTS.md).
+
+## 12. AI / MCP tool surface
+
+The same source generator that binds a form (§4) also makes it AI-callable. One
+`[DxFormModel]` becomes both a `DxForm` a person fills and a tool an assistant calls:
+`FormTool` projects the generated `IFormModel<T>` into a JSON-Schema tool definition (the shape
+shared by the Model Context Protocol and function-calling), and `FormTool.ApplyArguments` applies
+a tool call's arguments through the **generated typed setters and the model's own validation** —
+never reflection, never `eval`, with the schema acting as an allowlist of settable properties.
+
+`McpToolServer` serves a set of these tools over JSON-RPC (`initialize` / `tools/list` /
+`tools/call`); `McpStdioHost` runs it over a stdio transport, the way local assistants connect.
+
+The surface is **secured with the same primitives as the rest of the system**: an optional
+`IAiToolAuthorizer` gates every list and call (an unauthorized tool is neither advertised nor
+distinguishable from an unknown one); every call is audited through the `IDxDiagnostics` sink
+(§ observability); invocations carry a `CancellationToken`; and `[DxField(Sensitive)]` / `[AiHidden]`
+keep PII and secrets out of the generated schema and unsettable by AI, while a human still edits
+them. See [docs/ai-integration.md](docs/ai-integration.md).

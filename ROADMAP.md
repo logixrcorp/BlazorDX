@@ -42,8 +42,11 @@ Raw component count is explicitly **not** the target — see *Out of scope*.
   published reference vectors. Multiple `[JSImport]` TS bridges; five Rust kernels with
   managed parity.
 - **Forms as AI tools**: one source-generated model renders a `DxForm` *and* projects a
-  JSON-Schema tool definition served over the **Model Context Protocol** — including
-  interop with standard `System.ComponentModel.DataAnnotations` models.
+  JSON-Schema tool definition served over the **Model Context Protocol** (incl. interop with
+  standard `System.ComponentModel.DataAnnotations` models), with a runnable stdio server
+  ([`samples/BlazorDX.McpServer`](samples/BlazorDX.McpServer)). The tool surface is **secured**:
+  per-tool authorization, audit via the diagnostics sink, cancellation, and `[AiHidden]` /
+  `[DxField(Sensitive)]` redaction of PII. See [docs/ai-integration.md](docs/ai-integration.md).
 - **Packaging & delivery**: eight NuGet packages (incl. analyzer/source-gen) packed clean
   and published to a feed; containerized demo deployment behind a Cloudflare tunnel.
 - **Proof**: ~460 tests green (bUnit + compute + analyzer + Playwright E2E) + Rust
@@ -76,6 +79,9 @@ mostly **trust** — the binding constraint on adoption — plus a few targeted 
 
 ### Depth & breadth enhancements
 
+- **AI access** — the secured tool core + stdio transport are done; next are the HTTP/SSE MCP
+  transport (remote agents), the DataGrid as a read tool over `IGridDataSource`, and the wider
+  MCP surface (resources / prompts). See [docs/ai-integration.md](docs/ai-integration.md).
 - **Chart interactivity** — tooltips, legend toggling, zoom/pan over the SVG charts.
 - **Forms depth** — array / nested / conditional fields.
 - **Breadth tail** — a handful of leaves still worth adding (FAB/SpeedDial, Mention,
