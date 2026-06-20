@@ -29,6 +29,19 @@
   <ItemGroup>
     <ProjectReference Include="..\BlazorDX.Interop\BlazorDX.Interop.csproj" />
     <ProjectReference Include="..\BlazorDX.Compute\BlazorDX.Compute.csproj" />
+
+    <!-- The source generator (emits IGridRowAccessor / IFormModel for [GridRow] / [DxFormModel])
+         runs at build time only; PrivateAssets=all keeps it out of the runtime dependency set. -->
+    <ProjectReference Include="..\BlazorDX.SourceGen\BlazorDX.SourceGen.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- Bundle the generator INSIDE this package's analyzers path so any consumer that
+       references BlazorDX.Primitives (directly or via BlazorDX.Components) gets the generator
+       automatically — a dev-dependency package reference would not flow transitively. -->
+  <ItemGroup>
+    <None Include="..\BlazorDX.SourceGen\bin\$(Configuration)\netstandard2.0\BlazorDX.SourceGen.dll"
+          Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
   </ItemGroup>
 
   <!-- Let the test project verify internal building blocks (e.g. the QR Reed-Solomon

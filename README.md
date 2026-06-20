@@ -30,6 +30,67 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full blueprint,
 what "complete" means; [REVIEW.md](REVIEW.md) is the guide for an independent
 reviewer proofing the project's claims.
 
+**Live showcase:** [blazordx.com](https://blazordx.com) — every component, the docs, and the
+DataGrid at 100k rows.
+
+## Install
+
+BlazorDX is published to the team NuGet feed (a private Gitea package registry). Drop a
+`nuget.config` next to your solution. The feed needs **credentials** (it's private) and the
+`allowInsecureConnections` flag (it's served over plain HTTP on the LAN):
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <packageSources>
+    <add key="blazordx" value="http://192.168.0.58:3300/api/packages/eschlueter/nuget/index.json"
+         allowInsecureConnections="true" />
+  </packageSources>
+  <packageSourceCredentials>
+    <blazordx>
+      <add key="Username" value="YOUR_GITEA_USERNAME" />
+      <!-- A Gitea access token with the `read:package` scope (Settings ▸ Applications). -->
+      <add key="ClearTextPassword" value="YOUR_GITEA_TOKEN" />
+    </blazordx>
+  </packageSourceCredentials>
+</configuration>
+```
+
+> Keep real credentials out of source control — use a per-developer `nuget.config` (e.g. in
+> `%APPDATA%\NuGet\NuGet.Config`) or Visual Studio's *Package Sources* dialog, not a checked-in
+> file. In CI, inject the token from a secret.
+
+Then add the one package you need — it transitively pulls the primitives, Rust/WASM compute,
+JS interop, and the source generator:
+
+```bash
+dotnet add package BlazorDX.Components
+```
+
+Wire up the services (in **both** the WASM client *and* the server host `Program.cs`, so
+prerendering works):
+
+```csharp
+builder.Services.AddBlazorDXCompute();               // grid compute (Rust in the browser) + DOM/JS interop
+builder.Services.AddScoped<BlazorDX.Components.ToastService>();   // only if you use DxToast
+```
+
+Link the styles you use from the package's static web assets (start with the theme; add per
+feature — the full set lives under `_content/BlazorDX.Components/`):
+
+```html
+<link rel="stylesheet" href="_content/BlazorDX.Components/dx-theme.css" />
+<link rel="stylesheet" href="_content/BlazorDX.Components/dx-datagrid.css" />
+<link rel="stylesheet" href="_content/BlazorDX.Components/dx-overlay.css" />
+```
+
+The Rust `dx_grid.wasm` and the JS bridges ship inside the package as static web assets and
+load automatically — no extra build tooling on the consumer side.
+
+> **Packages:** `BlazorDX.Components` (styled, start here) · `BlazorDX.Primitives` (headless +
+> the source generator) · `BlazorDX.Interop` · `BlazorDX.Compute` · `BlazorDX.Security` ·
+> `BlazorDX.Htmx` (static-SSR forms tier).
+
 ## Repository layout
 
 ```
@@ -80,11 +141,12 @@ every other component's demo — see [COMPONENTS.md](COMPONENTS.md).
 
 ## Status
 
-BlazorDX spans **~55 components** across overlays, inputs, navigation, the data-grid
-family (flat / tree / pivot), data visualization, scheduling (calendar / Gantt),
-editors (Markdown / WYSIWYG), files, and an AI chat surface — every one built on the
-shared headless engine and verified in a real browser. See
-[COMPONENTS.md](COMPONENTS.md) for the full catalog.
+BlazorDX spans **~95 components** across overlays, inputs, navigation, the data-grid
+family (flat / tree / pivot, with server-side data and grouping), data visualization,
+scheduling (calendar / Gantt), editors (Markdown / WYSIWYG), files, forms (rendered from one
+model that doubles as an AI/MCP tool), and an AI chat surface — every one built on the shared
+headless engine and verified in a real browser. See [COMPONENTS.md](COMPONENTS.md) for the
+full catalog.
 
 - **Tests:** bUnit + compute + analyzer suites green, plus the Rust crate's own unit
   tests, plus a **Playwright E2E suite** that drives a real browser against the running
