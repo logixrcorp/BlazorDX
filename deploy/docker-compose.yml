@@ -1,0 +1,46 @@
+name: blazordx
+
+# blazordx.com = the BlazorDX demo + docs showcase, served through a Cloudflare tunnel.
+#
+#   app         the Blazor Web App, listening on :8080 INSIDE the compose network only
+#               (no host port is published — the tunnel is the only way in).
+#   cloudflared the Cloudflare tunnel, dialing out to Cloudflare's edge and forwarding
+#               blazordx.com -> http://app:8080. Configure that public hostname in the
+#               Zero Trust dashboard (see deploy/README.md); the token lives in .env.
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: blazordx-demo:latest
+    container_name: blazordx-app
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      # Honor X-Forwarded-Proto/For from the tunnel so HTTPS is detected (no redirect loop).
+      UseForwardedHeaders: "true"
+    expose:
+      - "8080"          # visible to cloudflared on the shared network, not to the host
+    networks:
+      - edge
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: blazordx-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      # Create the tunnel in the Cloudflare Zero Trust dashboard, then put its token in .env.
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:?Set TUNNEL_TOKEN in deploy/.env (see deploy/README.md)}
+      # If your network blocks QUIC/UDP, uncomment to fall back to HTTP/2:
+      # TUNNEL_TRANSPORT_PROTOCOL: http2
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - edge
+
+networks:
+  edge:
+    driver: bridge

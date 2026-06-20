@@ -26,3 +26,6 @@ node_modules/
 # Visual Studio upgrade / backup artifacts (machine-specific)
 UpgradeLog.htm
 Backup/
+
+# Deployment secrets (the Cloudflare tunnel token) — never commit
+deploy/.env

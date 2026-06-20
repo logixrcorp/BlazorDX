@@ -1,8 +1,25 @@
 using System.Text.Encodings.Web;
 using BlazorDX.Compute;
 using BlazorDX.Demo.Components;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Behind a reverse proxy / Cloudflare tunnel (TLS terminates at the edge, the origin is
+// plain HTTP), honor X-Forwarded-Proto/For so the app sees the real https scheme and client
+// IP — otherwise UseHttpsRedirection would bounce every request into a redirect loop. Gated
+// by config so local `dotnet run` is unaffected; the container sets UseForwardedHeaders=true.
+bool behindProxy = builder.Configuration.GetValue<bool>("UseForwardedHeaders");
+if (behindProxy)
+{
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        // The tunnel sidecar isn't on a loopback network, so don't restrict the proxy list.
+        options.KnownIPNetworks.Clear();
+        options.KnownProxies.Clear();
+    });
+}
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -21,6 +38,12 @@ builder.Services.AddScoped<BlazorDX.Primitives.Diagnostics.IDxDiagnostics>(
     sp => sp.GetRequiredService<BlazorDX.Demo.Client.DemoDiagnosticsLog>());
 
 var app = builder.Build();
+
+// Must run before UseHttpsRedirection so the forwarded https scheme is applied first.
+if (behindProxy)
+{
+    app.UseForwardedHeaders();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

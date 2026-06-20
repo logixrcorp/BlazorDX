@@ -1,0 +1,18 @@
+# Normalize line endings in the repo to LF; let Git pick the working-tree style per OS.
+* text=auto
+
+# Files that MUST stay LF everywhere — CRLF breaks shell line-continuations and Docker builds
+# on the Linux server, regardless of the machine that committed them.
+Dockerfile      text eol=lf
+*.sh            text eol=lf
+*.mjs           text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+.dockerignore   text eol=lf
+.env.example    text eol=lf
+
+# Binary assets — never touch.
+*.wasm  binary
+*.png   binary
+*.jpg   binary
+*.ico   binary

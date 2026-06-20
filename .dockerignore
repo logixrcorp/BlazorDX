@@ -1,0 +1,29 @@
+# Keep the build context small and force a clean in-container build (host build outputs
+# from another OS must never leak into the Linux image).
+**/bin/
+**/obj/
+**/node_modules/
+**/target/
+**/*.tsbuildinfo
+
+# Generated interop assets — rebuilt inside the image by the Rust/TS targets.
+**/wwwroot/dx/*.wasm
+**/wwwroot/dx/*.js
+**/wwwroot/dx/*.js.map
+
+# VCS / IDE / local
+.git/
+.github/
+.vs/
+.idea/
+.claude/
+Backup/
+UpgradeLog.htm
+
+# Tests aren't needed to publish the demo.
+tests/
+
+# Deployment files don't belong in the image build context.
+deploy/
+Dockerfile
+.dockerignore
