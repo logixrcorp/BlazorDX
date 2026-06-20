@@ -1,5 +1,11 @@
 # **Architectural Frictions and Ecosystem Voids in C\# Blazor Development: A Comprehensive Analysis**
 
+> **Note:** This is background research that informed BlazorDX's design. It summarizes and
+> cites publicly available third-party sources (linked in the references); statements about
+> other libraries reflect those sources and the authors' opinions at the time of writing, are
+> not claims by BlazorDX about any company's current products, and may be out of date. All
+> product names and trademarks are the property of their respective owners.
+
 The introduction of ASP.NET Core Blazor revolutionized the .NET ecosystem by fulfilling a long-standing developer aspiration: executing strongly typed C\# code directly in the browser to build modern Single-Page Applications (SPAs). By leveraging WebAssembly (WASM) and SignalR, Blazor theoretically eliminates the cognitive overhead of context-switching between C\# on the backend and JavaScript on the frontend1. As the framework has matured through the .NET 8, 9, and 10 release cycles, Microsoft has introduced highly sophisticated architectural unifications, such as mixed render modes, Ahead-of-Time (AOT) compilation enhancements, and dramatically reduced payload sizes1.  
 Despite these engineering triumphs, the practical realities of enterprise-scale application development have exposed profound architectural frictions and developer experience (DX) bottlenecks. Furthermore, the Blazor ecosystem suffers from critical gaps in its third-party library infrastructure, leaving developers without standardized solutions for state management, declarative animation, and native browser API integrations. This analysis examines the core pain points experienced by C\# Blazor developers and conducts a strategic gap analysis to identify the missing libraries required to elevate Blazor to parity with dominant JavaScript ecosystems like React, Vue, and Angular.
 

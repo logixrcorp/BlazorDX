@@ -1,24 +1,26 @@
 # BlazorDX
 
-> An enterprise-grade, cyber-secure, headless component system for .NET 10 Blazor.
+> An enterprise-grade, secure-by-default, headless component system for .NET 10 Blazor.
 > MIT-licensed. Zero runtime reflection. C# + Rust + TypeScript, each used where it is strongest.
 
-BlazorDX is a ground-up answer to the question the established Blazor suites
-(Telerik, DevExpress, Syncfusion, MudBlazor, Blazorise) never set out to answer:
+BlazorDX starts from a question that has gotten less attention in the Blazor
+component space than productivity and feature count:
 
 > *What would a Blazor component library look like if it were designed to be
 > secure-by-default, AOT-safe, and styling-agnostic from the first line of code?*
 
 It is not a productivity skin over Bootstrap. It is a layered system that compiles
-down to the fastest primitives the browser offers and refuses, by policy, the
-patterns that make other libraries crash under trimming or leak data on the server.
+down to the fastest primitives the browser offers and is designed, by policy, to avoid
+the patterns behind two well-known failure modes in reflection-heavy component
+architectures: breaking under trimming/AOT, and sharing UI state across users on the
+server.
 
 ## What makes it different
 
 | Principle | How BlazorDX does it |
 | --- | --- |
 | **Secure by default** | Component-scoped state only (no cross-user Singleton leakage), `ISafeAction` cancellation to kill out-of-order responses, raw HTML banned unless sanitized — all enforced by analyzers, not docs. |
-| **Zero reflection** | JSON and grid binding come from C# source generators. Survives Native AOT and full IL trimming where reflection-based libraries fail at runtime. |
+| **Zero reflection** | JSON and grid binding come from C# source generators. Survives Native AOT and full IL trimming, where reflection-based binding can fail under trimming. |
 | **Headless, two-tier** | Tier 1 primitives own behavior + accessibility; Tier 2 styled components own looks via CSS variables. Theme without fighting `!important`. |
 | **Right language for the job** | C# for the render tree, **Rust → WASM** for heavy compute (sorting/filtering), **TypeScript → minified ESM** for the thin DOM bridge. |
 | **Static-SSR + HTMX forms** | A hypermedia tier for forms and progressive enhancement with zero WASM payload and no SignalR circuit. |
@@ -170,3 +172,12 @@ Sustaining the project and serving teams that need more than community help is f
 through **optional support**, not by locking the code — see **[SUPPORT.md](SUPPORT.md)**
 for community help, sponsorship, and commercial support / SLA / consulting options.
 Security reports: **[SECURITY.md](SECURITY.md)**.
+
+---
+
+## Trademarks
+
+BlazorDX is an independent project and is not affiliated with, endorsed by, or sponsored
+by Microsoft, Progress/Telerik, DevExpress, Syncfusion, MudBlazor, Blazorise, or any other
+company. All product names, logos, and trademarks are the property of their respective
+owners; any reference to them is for identification and comparison only.

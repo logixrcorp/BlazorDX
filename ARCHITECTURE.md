@@ -6,15 +6,17 @@ them together into one picture.
 
 ## 1. The problem we are solving
 
-Blazor in .NET 10 is a capable runtime, but its component ecosystem is dominated
-by monolithic suites that share three structural weaknesses:
+Blazor in .NET 10 is a capable runtime. BlazorDX is designed around three failure
+modes that are well known in reflection-heavy, monolithic component architectures —
+patterns we wanted to design out from the first line of code, rather than work around
+later:
 
-1. **They crash under AOT/trimming** because they lean on runtime reflection for
-   data binding and serialization.
-2. **They leak state on the server** because UI state is commonly parked in
-   Singleton services shared across every connected user.
-3. **They are hard to style** because their CSS is baked deep into the component
-   and resists bespoke design.
+1. **Breaking under AOT/trimming** — runtime reflection for data binding and
+   serialization is the pattern most likely to compile cleanly yet fail once the IL
+   linker or Native AOT removes the members it depends on.
+2. **Sharing UI state across users on the server** — parking UI state in Singleton
+   services means one instance is shared across every connected Blazor Server circuit.
+3. **Styling friction** — CSS baked deep into a component resists bespoke design.
 
 BlazorDX treats all three as architectural constraints to be designed out, not
 documentation footnotes to warn about.
