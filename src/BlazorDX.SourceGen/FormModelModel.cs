@@ -20,7 +20,8 @@ internal sealed record FormFieldDef(
     bool IsString,
     bool IsNullableValue,
     string UnderlyingFqn,     // non-nullable type FQN, for typed parse
-    ImmutableArray<string> Choices);
+    ImmutableArray<string> Choices,
+    bool Sensitive);          // hidden from the AI tool surface (schema + ApplyArguments)
 
 /// <summary>Everything the form emitter needs about a <c>[DxFormModel]</c> type.</summary>
 internal sealed record FormModelDef(
@@ -45,6 +46,7 @@ internal sealed record FormModelDef(
 internal static class FormModelAnalysis
 {
     private const string FieldAttribute = "BlazorDX.Primitives.Forms.DxFieldAttribute";
+    private const string AiHiddenAttribute = "BlazorDX.Primitives.Forms.AiHiddenAttribute";
 
     private const string DaNs = "System.ComponentModel.DataAnnotations.";
     private const string RequiredAttr = DaNs + "RequiredAttribute";
@@ -121,7 +123,8 @@ internal static class FormModelAnalysis
                 isString,
                 isNullableValue,
                 underlying.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                choices));
+                choices,
+                ReadNamedBool(field, "Sensitive") || Has(property, AiHiddenAttribute)));
         }
 
         builder.Sort(static (a, b) => a.Order.CompareTo(b.Order));

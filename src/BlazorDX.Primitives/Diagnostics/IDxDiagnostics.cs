@@ -49,6 +49,10 @@ public static class DxDiagnosticsExtensions
     /// <summary>Reports a warning to <paramref name="diagnostics"/> when it is non-null; a no-op otherwise.</summary>
     public static void TryReportWarning(this IDxDiagnostics? diagnostics, string source, string message) =>
         diagnostics?.Report(new DiagnosticEvent(DiagnosticSeverity.Warning, source, message));
+
+    /// <summary>Reports an informational event (e.g. an AI tool-call audit) when non-null; a no-op otherwise.</summary>
+    public static void TryReportInfo(this IDxDiagnostics? diagnostics, string source, string message) =>
+        diagnostics?.Report(new DiagnosticEvent(DiagnosticSeverity.Info, source, message));
 }
 
 /// <summary>A sink that does nothing — the default when no diagnostics are registered.</summary>

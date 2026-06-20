@@ -100,7 +100,7 @@
             .Add(new FormAiTool<MeetingRequest>(
                 descriptor,
                 () => meeting,
-                m => System.Threading.Tasks.Task.FromResult($"Meeting \"{m.Title}\" scheduled for {m.Attendees} attendee(s).")));
+                (m, ct) => System.Threading.Tasks.Task.FromResult($"Meeting \"{m.Title}\" scheduled for {m.Attendees} attendee(s).")));
 
         toolDefinition = FormTool.BuildToolDefinition(descriptor);
     }

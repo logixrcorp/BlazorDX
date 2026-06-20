@@ -78,7 +78,7 @@ public sealed class FormModelGenerator : IIncrementalGenerator
             s.AppendLine(
                 $"        new {Ns}.FormFieldInfo({Literal(f.PropertyName)}, {Literal(f.Label)}, {Literal(f.Description)}, " +
                 $"{Ns}.FormFieldKind.{f.Kind}, {Bool(f.Required)}, {NDouble(f.Min)}, {NDouble(f.Max)}, " +
-                $"{NInt(f.MaxLength)}, {Literal(f.Pattern)}, {Literal(f.Placeholder)}, {choices}),");
+                $"{NInt(f.MaxLength)}, {Literal(f.Pattern)}, {Literal(f.Placeholder)}, {choices}, {Bool(f.Sensitive)}),");
         }
 
         s.AppendLine("    };");

@@ -27,6 +27,11 @@ public static class FormTool
         bool first = true;
         foreach (FormFieldInfo field in model.Fields)
         {
+            if (field.Sensitive)
+            {
+                continue;   // never describe a sensitive field to the AI
+            }
+
             if (!first)
             {
                 sb.Append(',');
@@ -40,7 +45,7 @@ public static class FormTool
         bool firstReq = true;
         foreach (FormFieldInfo field in model.Fields)
         {
-            if (!field.Required)
+            if (!field.Required || field.Sensitive)
             {
                 continue;
             }
@@ -104,6 +109,11 @@ public static class FormTool
 
             foreach (FormFieldInfo field in model.Fields)
             {
+                if (field.Sensitive)
+                {
+                    continue;   // the hard gate: AI arguments can never set a sensitive field
+                }
+
                 if (!root.TryGetProperty(field.Name, out JsonElement value) || value.ValueKind == JsonValueKind.Null)
                 {
                     continue;

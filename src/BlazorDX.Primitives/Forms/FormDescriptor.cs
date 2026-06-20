@@ -41,7 +41,8 @@ public sealed record FormFieldInfo(
     int? MaxLength,
     string? Pattern,
     string? Placeholder,
-    IReadOnlyList<string>? Choices);
+    IReadOnlyList<string>? Choices,
+    bool Sensitive = false);   // hidden from the AI tool surface (schema + ApplyArguments), still human-editable
 
 /// <summary>A single validation failure: which field, and why.</summary>
 public sealed record FormValidationError(string Field, string Message);

@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using BlazorDX.Primitives.Diagnostics;
 
 namespace BlazorDX.Primitives.Forms;
 
@@ -18,6 +19,19 @@ public sealed class McpToolServer
     /// <summary>Server name advertised during <c>initialize</c>.</summary>
     public string ServerName { get; init; } = "BlazorDX";
 
+    /// <summary>
+    /// Optional authorization gate. When set, a tool the caller may not use is neither listed
+    /// nor callable (an unauthorized <c>tools/call</c> looks exactly like an unknown tool, so
+    /// the server never reveals that a privileged tool exists). When null, all tools are allowed.
+    /// </summary>
+    public IAiToolAuthorizer? Authorizer { get; init; }
+
+    /// <summary>
+    /// Optional audit/observability sink. Every <c>tools/call</c> — allowed, denied, ok, or
+    /// errored — is reported here, giving an audit trail of what the AI did. When null, no-op.
+    /// </summary>
+    public IDxDiagnostics? Diagnostics { get; init; }
+
     /// <summary>Registers a tool (replacing any with the same name). Fluent.</summary>
     public McpToolServer Add(IAiTool tool)
     {
@@ -31,7 +45,7 @@ public sealed class McpToolServer
     /// <summary>
     /// Handles one JSON-RPC 2.0 request and returns the JSON-RPC response string.
     /// </summary>
-    public async Task<string> HandleAsync(string requestJson)
+    public async Task<string> HandleAsync(string requestJson, CancellationToken cancellationToken = default)
     {
         string id = "null";
         try
@@ -49,8 +63,8 @@ public sealed class McpToolServer
             return method switch
             {
                 "initialize" => Response(id, InitializeResult()),
-                "tools/list" => Response(id, ToolsListResult()),
-                "tools/call" => Response(id, await ToolsCallResult(root)),
+                "tools/list" => Response(id, await ToolsListResult(cancellationToken)),
+                "tools/call" => Response(id, await ToolsCallResult(root, cancellationToken)),
                 _ => Error(id, -32601, $"Method not found: {method}"),
             };
         }
@@ -59,6 +73,10 @@ public sealed class McpToolServer
             return Error(id, -32700, $"Parse error: {ex.Message}");
         }
     }
+
+    // Whether the (optional) authorizer permits this tool for the current caller.
+    private async ValueTask<bool> IsAllowedAsync(IAiTool tool, CancellationToken cancellationToken) =>
+        Authorizer is null || await Authorizer.IsAllowedAsync(tool, cancellationToken);
 
     private string InitializeResult()
     {
@@ -69,13 +87,18 @@ public sealed class McpToolServer
         return sb.ToString();
     }
 
-    private string ToolsListResult()
+    private async Task<string> ToolsListResult(CancellationToken cancellationToken)
     {
         StringBuilder sb = new();
         sb.Append("{\"tools\":[");
         bool first = true;
         foreach (IAiTool tool in tools.Values)
         {
+            if (!await IsAllowedAsync(tool, cancellationToken))
+            {
+                continue;   // never advertise a tool the caller may not use
+            }
+
             if (!first)
             {
                 sb.Append(',');
@@ -86,14 +109,15 @@ public sealed class McpToolServer
             AppendString(sb, tool.Name);
             sb.Append(",\"description\":");
             AppendString(sb, tool.Description ?? string.Empty);
-            sb.Append(",\"inputSchema\":").Append(tool.InputSchemaJson).Append('}');
+            sb.Append(",\"inputSchema\":").Append(tool.InputSchemaJson);
+            sb.Append(",\"annotations\":{\"readOnlyHint\":").Append(tool.IsReadOnly ? "true" : "false").Append("}}");
         }
 
         sb.Append("]}");
         return sb.ToString();
     }
 
-    private async Task<string> ToolsCallResult(JsonElement root)
+    private async Task<string> ToolsCallResult(JsonElement root, CancellationToken cancellationToken)
     {
         string name = string.Empty;
         string arguments = "{}";
@@ -110,13 +134,32 @@ public sealed class McpToolServer
             }
         }
 
-        if (!tools.TryGetValue(name, out IAiTool? tool))
+        // An unknown tool and an unauthorized tool look identical to the caller, so the server
+        // never leaks that a privileged tool exists.
+        if (!tools.TryGetValue(name, out IAiTool? tool) || !await IsAllowedAsync(tool, cancellationToken))
         {
+            Diagnostics.TryReportWarning("BlazorDX.Mcp", $"tools/call denied or unknown: '{name}'");
             return ContentResult($"Unknown tool: {name}", isError: true);
         }
 
-        AiToolResult result = await tool.InvokeAsync(arguments);
-        return ContentResult(result.Text, result.IsError);
+        try
+        {
+            AiToolResult result = await tool.InvokeAsync(arguments, cancellationToken);
+            Diagnostics.TryReportInfo("BlazorDX.Mcp", $"tools/call '{name}' -> {(result.IsError ? "error" : "ok")}");
+            return ContentResult(result.Text, result.IsError);
+        }
+        catch (OperationCanceledException)
+        {
+            Diagnostics.TryReportWarning("BlazorDX.Mcp", $"tools/call '{name}' cancelled");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // A tool handler threw: report it and return an error result rather than crashing
+            // the transport. The AI sees a clean error it can react to.
+            Diagnostics.TryReportError("BlazorDX.Mcp", $"tools/call '{name}' threw: {ex.Message}", ex);
+            return ContentResult($"Tool '{name}' failed.", isError: true);
+        }
     }
 
     // MCP tool-call result: { content: [ { type: "text", text } ], isError }

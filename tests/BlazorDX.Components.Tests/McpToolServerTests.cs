@@ -17,7 +17,7 @@ public sealed class McpToolServerTests
         .Add(new FormAiTool<MeetingRequest>(
             new MeetingRequestFormModel(),
             () => new MeetingRequest(),
-            m =>
+            (m, ct) =>
             {
                 scheduledTitle = m.Title;
                 return Task.FromResult($"Scheduled '{m.Title}' with {m.Attendees} attendee(s).");

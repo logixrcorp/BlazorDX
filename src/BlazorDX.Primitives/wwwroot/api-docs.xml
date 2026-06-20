@@ -364,6 +364,9 @@
         <member name="M:BlazorDX.Primitives.Diagnostics.DxDiagnosticsExtensions.TryReportWarning(BlazorDX.Primitives.Diagnostics.IDxDiagnostics,System.String,System.String)">
             <summary>Reports a warning to <paramref name="diagnostics"/> when it is non-null; a no-op otherwise.</summary>
         </member>
+        <member name="M:BlazorDX.Primitives.Diagnostics.DxDiagnosticsExtensions.TryReportInfo(BlazorDX.Primitives.Diagnostics.IDxDiagnostics,System.String,System.String)">
+            <summary>Reports an informational event (e.g. an AI tool-call audit) when non-null; a no-op otherwise.</summary>
+        </member>
         <member name="T:BlazorDX.Primitives.Diagnostics.NullDxDiagnostics">
             <summary>A sink that does nothing — the default when no diagnostics are registered.</summary>
         </member>
@@ -438,8 +441,20 @@
         <member name="P:BlazorDX.Primitives.Forms.IAiTool.InputSchemaJson">
             <summary>The JSON-Schema <c>object</c> describing the tool's arguments.</summary>
         </member>
-        <member name="M:BlazorDX.Primitives.Forms.IAiTool.InvokeAsync(System.String)">
-            <summary>Runs the tool with a JSON object of arguments.</summary>
+        <member name="P:BlazorDX.Primitives.Forms.IAiTool.IsReadOnly">
+            <summary>Whether the tool only reads (safe to auto-run) vs. mutates state (treat with care).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Forms.IAiTool.InvokeAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Runs the tool with a JSON object of arguments. The token cancels in-flight work.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Forms.IAiToolAuthorizer">
+            <summary>
+            Decides whether the current caller may see and invoke a given <see cref="T:BlazorDX.Primitives.Forms.IAiTool"/>. A
+            host implements this over its own auth (e.g. an ASP.NET Core <c>ClaimsPrincipal</c> +
+            authorization policies). <see cref="T:BlazorDX.Primitives.Forms.McpToolServer"/> consults it for every
+            <c>tools/list</c> and <c>tools/call</c>, so a tool the caller may not use is never
+            advertised and never runs. When no authorizer is supplied, all tools are allowed.
+            </summary>
         </member>
         <member name="T:BlazorDX.Primitives.Forms.FormAiTool`1">
             <summary>
@@ -448,6 +463,9 @@
             if valid, <paramref name="handler"/> runs and its text is returned, otherwise the
             validation errors are returned as an error result so the model can correct itself.
             </summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Forms.FormAiTool`1.IsReadOnly">
+            <summary>A form tool writes by default; pass <c>isReadOnly: true</c> for query-only forms.</summary>
         </member>
         <member name="T:BlazorDX.Primitives.Forms.DxFormModelAttribute">
             <summary>
@@ -501,6 +519,22 @@
         <member name="P:BlazorDX.Primitives.Forms.DxFieldAttribute.Multiline">
             <summary>Render as a multi-line text area.</summary>
         </member>
+        <member name="P:BlazorDX.Primitives.Forms.DxFieldAttribute.Sensitive">
+            <summary>
+            Hide this field from the AI tool surface: it is omitted from the generated JSON-Schema
+            and <see cref="M:BlazorDX.Primitives.Forms.FormTool.ApplyArguments``1(BlazorDX.Primitives.Forms.IFormModel{``0},``0,System.String)"/> refuses to set it from AI arguments —
+            yet a human still sees and edits it in <c>DxForm</c>. Use for PII / secrets the model
+            should neither see nor write. Equivalent to applying <see cref="T:BlazorDX.Primitives.Forms.AiHiddenAttribute"/>.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Forms.AiHiddenAttribute">
+            <summary>
+            Marks a form-field property as off-limits to AI: excluded from the generated tool schema
+            and never settable via <see cref="M:BlazorDX.Primitives.Forms.FormTool.ApplyArguments``1(BlazorDX.Primitives.Forms.IFormModel{``0},``0,System.String)"/>, while remaining
+            fully editable by a human in <c>DxForm</c>. The same effect as <c>[DxField(Sensitive = true)]</c>,
+            but it composes with plain DataAnnotations-annotated models too.
+            </summary>
+        </member>
         <member name="T:BlazorDX.Primitives.Forms.FormFieldKind">
             <summary>How a field is edited and typed — drives both the rendered input and the JSON-Schema type.</summary>
         </member>
@@ -532,7 +566,7 @@
             Generated, never reflected.
             </summary>
         </member>
-        <member name="M:BlazorDX.Primitives.Forms.FormFieldInfo.#ctor(System.String,System.String,System.String,BlazorDX.Primitives.Forms.FormFieldKind,System.Boolean,System.Nullable{System.Double},System.Nullable{System.Double},System.Nullable{System.Int32},System.String,System.String,System.Collections.Generic.IReadOnlyList{System.String})">
+        <member name="M:BlazorDX.Primitives.Forms.FormFieldInfo.#ctor(System.String,System.String,System.String,BlazorDX.Primitives.Forms.FormFieldKind,System.Boolean,System.Nullable{System.Double},System.Nullable{System.Double},System.Nullable{System.Int32},System.String,System.String,System.Collections.Generic.IReadOnlyList{System.String},System.Boolean)">
             <summary>
             Static metadata for one field — everything <c>DxForm</c> needs to render and
             validate it, and everything <see cref="T:BlazorDX.Primitives.Forms.FormTool"/> needs to describe it to an AI.
@@ -606,7 +640,7 @@
             A minimal, transport-agnostic Model Context Protocol tool server. Register
             <see cref="T:BlazorDX.Primitives.Forms.IAiTool"/>s (e.g. <see cref="T:BlazorDX.Primitives.Forms.FormAiTool`1"/> built from a
             <c>[DxFormModel]</c>) and feed it JSON-RPC requests; it answers <c>initialize</c>,
-            <c>tools/list</c>, and <c>tools/call</c>. Wire <see cref="M:BlazorDX.Primitives.Forms.McpToolServer.HandleAsync(System.String)"/> to any
+            <c>tools/list</c>, and <c>tools/call</c>. Wire <see cref="M:BlazorDX.Primitives.Forms.McpToolServer.HandleAsync(System.String,System.Threading.CancellationToken)"/> to any
             transport (stdio, a SSE/HTTP endpoint) to expose a BlazorDX form to an AI assistant.
             Pure JSON (built by hand / parsed with <see cref="T:System.Text.Json.JsonDocument"/>) — no reflection.
             </summary>
@@ -614,13 +648,26 @@
         <member name="P:BlazorDX.Primitives.Forms.McpToolServer.ServerName">
             <summary>Server name advertised during <c>initialize</c>.</summary>
         </member>
+        <member name="P:BlazorDX.Primitives.Forms.McpToolServer.Authorizer">
+            <summary>
+            Optional authorization gate. When set, a tool the caller may not use is neither listed
+            nor callable (an unauthorized <c>tools/call</c> looks exactly like an unknown tool, so
+            the server never reveals that a privileged tool exists). When null, all tools are allowed.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Forms.McpToolServer.Diagnostics">
+            <summary>
+            Optional audit/observability sink. Every <c>tools/call</c> — allowed, denied, ok, or
+            errored — is reported here, giving an audit trail of what the AI did. When null, no-op.
+            </summary>
+        </member>
         <member name="M:BlazorDX.Primitives.Forms.McpToolServer.Add(BlazorDX.Primitives.Forms.IAiTool)">
             <summary>Registers a tool (replacing any with the same name). Fluent.</summary>
         </member>
         <member name="P:BlazorDX.Primitives.Forms.McpToolServer.Tools">
             <summary>The registered tools, by name.</summary>
         </member>
-        <member name="M:BlazorDX.Primitives.Forms.McpToolServer.HandleAsync(System.String)">
+        <member name="M:BlazorDX.Primitives.Forms.McpToolServer.HandleAsync(System.String,System.Threading.CancellationToken)">
             <summary>
             Handles one JSON-RPC 2.0 request and returns the JSON-RPC response string.
             </summary>

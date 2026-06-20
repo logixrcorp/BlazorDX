@@ -59,4 +59,23 @@ public sealed class DxFieldAttribute : Attribute
 
     /// <summary>Render as a multi-line text area.</summary>
     public bool Multiline { get; set; }
+
+    /// <summary>
+    /// Hide this field from the AI tool surface: it is omitted from the generated JSON-Schema
+    /// and <see cref="FormTool.ApplyArguments{TModel}"/> refuses to set it from AI arguments —
+    /// yet a human still sees and edits it in <c>DxForm</c>. Use for PII / secrets the model
+    /// should neither see nor write. Equivalent to applying <see cref="AiHiddenAttribute"/>.
+    /// </summary>
+    public bool Sensitive { get; set; }
+}
+
+/// <summary>
+/// Marks a form-field property as off-limits to AI: excluded from the generated tool schema
+/// and never settable via <see cref="FormTool.ApplyArguments{TModel}"/>, while remaining
+/// fully editable by a human in <c>DxForm</c>. The same effect as <c>[DxField(Sensitive = true)]</c>,
+/// but it composes with plain DataAnnotations-annotated models too.
+/// </summary>
+[AttributeUsage(AttributeTargets.Property)]
+public sealed class AiHiddenAttribute : Attribute
+{
 }
