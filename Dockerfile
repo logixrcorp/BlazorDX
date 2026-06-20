@@ -29,10 +29,22 @@ RUN dotnet workload install wasm-tools
 WORKDIR /src
 COPY . .
 
-# Publishing the server host also builds the referenced libraries (triggering the Rust and
-# TypeScript build targets) and the WASM client, collecting all static assets into wwwroot.
+# Build the TypeScript DOM bridges explicitly. The in-build MSBuild target degrades to a
+# *warning* if esbuild fails, which would silently ship an image missing the JS interop
+# modules (the _content/BlazorDX.Interop/dx/*.js the components import at runtime). Running
+# it here fails the image build loudly instead, and produces the bundles before publish.
+RUN cd src/BlazorDX.Interop.Ts && npm ci && node build.mjs
+
+# Publish the server host (also builds the libraries + WASM client). SkipTypeScriptBuild
+# reuses the bundles built above instead of re-running the graceful-degrade target.
 RUN dotnet publish samples/BlazorDX.Demo/BlazorDX.Demo/BlazorDX.Demo.csproj \
-      -c Release -o /app/publish -p:UseAppHost=false
+      -c Release -o /app/publish -p:UseAppHost=false -p:SkipTypeScriptBuild=true
+
+# Fail the build if the interop static assets didn't make it into the publish output, so a
+# broken image can never reach production (this is exactly the failure that 404'd in prod).
+RUN test -f /app/publish/wwwroot/_content/BlazorDX.Interop/dx/grid-interop.js \
+ && test -f /app/publish/wwwroot/_content/BlazorDX.Interop/dx/dx_grid.wasm \
+ || (echo 'ERROR: BlazorDX.Interop static assets (JS/wasm) missing from publish output' && exit 1)
 
 # ---- Runtime stage ----------------------------------------------------------
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
