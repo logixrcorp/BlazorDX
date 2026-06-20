@@ -37,15 +37,14 @@ RUN dotnet publish samples/BlazorDX.Demo/BlazorDX.Demo/BlazorDX.Demo.csproj \
 # ---- Runtime stage ----------------------------------------------------------
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 
-# curl is only for the container HEALTHCHECK.
+# curl is only for the container HEALTHCHECK. The .NET 10 base image already ships a
+# non-root `app` user, so we reuse it rather than creating one.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends curl \
- && rm -rf /var/lib/apt/lists/* \
- && useradd --create-home --uid 1001 app
+ && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY --from=build /app/publish ./
-RUN chown -R app:app /app
+COPY --from=build --chown=app:app /app/publish ./
 USER app
 
 ENV ASPNETCORE_URLS=http://+:8080 \
