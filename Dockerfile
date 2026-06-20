@@ -33,7 +33,10 @@ COPY . .
 # MSBuild targets degrade to a *warning* if cargo/esbuild don't run, which silently ships an
 # image missing the wasm/JS the components import at runtime (the prod 404s). Doing it here
 # fails the image build loudly instead, and guarantees the assets exist before publish.
-RUN cargo build --release --target wasm32-unknown-unknown \
+# The interop asset folder isn't in the build context (.dockerignore strips its only files,
+# the generated wasm/JS, leaving an empty dir Docker omits), so create it before writing.
+RUN mkdir -p src/BlazorDX.Interop/wwwroot/dx \
+ && cargo build --release --target wasm32-unknown-unknown \
       --manifest-path src/BlazorDX.Compute.Rust/Cargo.toml \
  && cp src/BlazorDX.Compute.Rust/target/wasm32-unknown-unknown/release/dx_grid.wasm \
        src/BlazorDX.Interop/wwwroot/dx/dx_grid.wasm
