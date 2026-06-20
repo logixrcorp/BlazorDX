@@ -29,22 +29,32 @@ RUN dotnet workload install wasm-tools
 WORKDIR /src
 COPY . .
 
-# Build the TypeScript DOM bridges explicitly. The in-build MSBuild target degrades to a
-# *warning* if esbuild fails, which would silently ship an image missing the JS interop
-# modules (the _content/BlazorDX.Interop/dx/*.js the components import at runtime). Running
-# it here fails the image build loudly instead, and produces the bundles before publish.
+# Build BOTH native tiers explicitly into the interop static-asset folder. The in-build
+# MSBuild targets degrade to a *warning* if cargo/esbuild don't run, which silently ships an
+# image missing the wasm/JS the components import at runtime (the prod 404s). Doing it here
+# fails the image build loudly instead, and guarantees the assets exist before publish.
+RUN cargo build --release --target wasm32-unknown-unknown \
+      --manifest-path src/BlazorDX.Compute.Rust/Cargo.toml \
+ && cp src/BlazorDX.Compute.Rust/target/wasm32-unknown-unknown/release/dx_grid.wasm \
+       src/BlazorDX.Interop/wwwroot/dx/dx_grid.wasm
 RUN cd src/BlazorDX.Interop.Ts && npm ci && node build.mjs
 
-# Publish the server host (also builds the libraries + WASM client). SkipTypeScriptBuild
-# reuses the bundles built above instead of re-running the graceful-degrade target.
+# Publish the server host + WASM client, reusing the bundles built above (skip the
+# graceful-degrade targets so a missing toolchain can't silently drop the assets).
 RUN dotnet publish samples/BlazorDX.Demo/BlazorDX.Demo/BlazorDX.Demo.csproj \
-      -c Release -o /app/publish -p:UseAppHost=false -p:SkipTypeScriptBuild=true
+      -c Release -o /app/publish -p:UseAppHost=false \
+      -p:SkipTypeScriptBuild=true -p:SkipRustBuild=true
 
-# Fail the build if the interop static assets didn't make it into the publish output, so a
-# broken image can never reach production (this is exactly the failure that 404'd in prod).
-RUN test -f /app/publish/wwwroot/_content/BlazorDX.Interop/dx/grid-interop.js \
- && test -f /app/publish/wwwroot/_content/BlazorDX.Interop/dx/dx_grid.wasm \
- || (echo 'ERROR: BlazorDX.Interop static assets (JS/wasm) missing from publish output' && exit 1)
+# Gate: the interop assets must be in the publish output. If not, print where they actually
+# landed (so the failure is diagnosable) and fail — a broken image must never ship.
+RUN if [ ! -f /app/publish/wwwroot/_content/BlazorDX.Interop/dx/grid-interop.js ] \
+    || [ ! -f /app/publish/wwwroot/_content/BlazorDX.Interop/dx/dx_grid.wasm ]; then \
+      echo '=== interop assets actually present in publish: ==='; \
+      find /app/publish/wwwroot -iname 'grid-interop.js' -o -iname 'dx_grid.wasm' -o -iname 'grid-dom.js'; \
+      echo '=== _content tree (depth 3): ==='; \
+      find /app/publish/wwwroot/_content -maxdepth 3 2>/dev/null | head -60; \
+      echo 'ERROR: BlazorDX.Interop static assets missing from expected publish path'; exit 1; \
+    fi
 
 # ---- Runtime stage ----------------------------------------------------------
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
