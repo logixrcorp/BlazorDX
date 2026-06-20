@@ -166,7 +166,7 @@ The thesis behind the breadth of the catalog is that **most components are
 compositions of a small set of headless primitives**, not bespoke widgets. A
 handful of engine pieces — anchored positioning (flip/shift), a dismiss layer,
 focus trapping, roving-tabindex, selection state, a virtualizer, drag-reorder,
-theme tokens, and `PresenceBoundary` motion — combine into the ~55 styled
+theme tokens, and `PresenceBoundary` motion — combine into the ~95 styled
 components. A Sheet *is* a Dialog anchored to an edge; a Command Palette *is* a
 Dialog plus a typeahead plus roving; a Pivot *is* the grid's Rust aggregation in a
 cross-tab; a tree grid *is* the grid's accessor and virtualizer over a flattened

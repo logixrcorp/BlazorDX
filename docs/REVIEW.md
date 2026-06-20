@@ -18,15 +18,15 @@ Review in two stages — deep on the load-bearing 20%, broad on the rest:
 
 1. **Foundations (do this first, deeply).** The ADRs, the engine primitives, the
    source generator, the analyzers, the interop boundary, and one full vertical
-   slice (the DataGrid). If these are sound, the ~60 leaf components built on them
+   slice (the DataGrid). If these are sound, the ~90 leaf components built on them
    inherit that soundness.
 2. **Breadth (later, broadly).** Spot-check the leaf components and audit the public
    API surface for consistency before 1.0.
 
 ### 30-minute orientation
 
-Read, in order: [`docs/adr/`](docs/adr) (0001–0009, one decision each),
-[`ARCHITECTURE.md`](ARCHITECTURE.md), [`COMPONENTS.md`](COMPONENTS.md), then this file.
+Read, in order: [`docs/adr/`](adr) (0001–0009, one decision each),
+[`ARCHITECTURE.md`](../ARCHITECTURE.md), [`COMPONENTS.md`](../COMPONENTS.md), then this file.
 
 ### Repo map
 
@@ -46,7 +46,7 @@ Build everything and run the suite first:
 
 ```bash
 dotnet build BlazorDX.slnx -c Release      # expect 0 warnings / 0 errors
-dotnet test  BlazorDX.slnx -c Debug        # expect all green (~310 tests)
+dotnet test  BlazorDX.slnx -c Debug        # expect all green (~460 tests)
 cd src/BlazorDX.Compute.Rust && cargo test # Rust kernel unit tests
 ```
 
@@ -168,7 +168,7 @@ Each claim lists: **where** it lives · **verify** (do this) · **falsified if**
 
 ### 8. Test quality (not just count)
 
-- **Where:** `tests/` (~310 tests).
+- **Where:** `tests/` (~460 tests).
 - **Verify:** sample a dozen tests across families. Are they asserting *behavior and
   edge cases* (empty data, boundary values, escaping, keyboard edges, data-identity
   changes), or just "it rendered"? Check the source generator and analyzer tests in
@@ -213,7 +213,7 @@ These are deliberately excluded — they're separate products (server-side docum
 engines, not UI components) and pursuing them would dilute the headless/auditable
 identity: **document processing (PDF/Word/Excel generation & parsing), report
 designer, full in-browser spreadsheet, PDF viewer, mapping/GIS, Outlook-depth
-recurring scheduler.** See [ROADMAP.md](ROADMAP.md) for the scoped definition of
+recurring scheduler.** See [ROADMAP.md](../ROADMAP.md) for the scoped definition of
 "complete."
 
 ---

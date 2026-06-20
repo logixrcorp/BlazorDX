@@ -1,31 +1,26 @@
 # Security Policy
 
-BlazorDX is built secure-by-default (sanitizer-gated raw HTML, no singleton UI state,
-zero runtime reflection), but no software is perfect — responsible reports are welcome.
-
-> Replace the placeholders (`<…>`) with your real contact before publishing.
+BlazorDX is built secure-by-default — sanitizer-gated raw HTML, no singleton UI state, and
+zero runtime reflection — but no software is perfect, and responsible reports are welcome.
 
 ## Reporting a vulnerability
 
-**Please do not open a public issue for security problems.** Instead, report privately:
+**Please do not open a public issue for security problems.** Report privately to
+**security@blazordx.com**.
 
-- Preferred: GitHub's **private vulnerability reporting** for this repository
-  (Security → *Report a vulnerability*), or
-- Email **`<security-contact-email>`**.
-
-Include: affected version/commit, a description, reproduction steps or a proof of
-concept, and the impact you expect. We aim to acknowledge within **`<N>` business days**
-and to keep you updated as we investigate and fix.
+Include the affected version or commit, a description, reproduction steps or a proof of
+concept, and the impact you expect. We aim to acknowledge within **3 business days** and to
+keep you updated as we investigate and ship a fix.
 
 ## Supported versions
 
-Until a `1.0` release, security fixes target the latest `main`. Once versioned releases
-exist, this section will list the supported version range.
+Security fixes target the latest released minor version and `main`. Once a `1.0` release
+exists, this section will list the supported version range.
 
 ## Disclosure
 
-We follow coordinated disclosure: we'll work with you on a fix and a disclosure timeline,
-and credit you in the release notes unless you prefer to remain anonymous.
+We follow coordinated disclosure: we will agree a fix and a disclosure timeline with you, and
+credit you in the release notes unless you prefer to remain anonymous.
 
 ## Scope notes
 

@@ -25,10 +25,9 @@ patterns that make other libraries crash under trimming or leak data on the serv
 | **Readable forever** | Every source file is capped at **1000 lines**, enforced at build time. |
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the full blueprint,
-[COMPONENTS.md](COMPONENTS.md) for the component catalog, and
-[docs/adr](docs/adr) for the decisions behind it. [ROADMAP.md](ROADMAP.md) defines
-what "complete" means; [REVIEW.md](REVIEW.md) is the guide for an independent
-reviewer proofing the project's claims.
+[COMPONENTS.md](COMPONENTS.md) for the component catalog,
+[docs/adr](docs/adr) for the decisions behind it, and [ROADMAP.md](ROADMAP.md) for what
+"complete" means and what is still ahead.
 
 **Live showcase:** [blazordx.com](https://blazordx.com) — every component, the docs, and the
 DataGrid at 100k rows.
@@ -131,8 +130,8 @@ pwsh tests/BlazorDX.E2E.Tests/bin/Debug/net10.0/playwright.ps1 install chromium
 BLAZORDX_BASEURL=http://localhost:5296 dotnet test tests/BlazorDX.E2E.Tests
 ```
 
-CI (`.github/workflows/ci.yml`) runs the unit suites, then the E2E suite across
-Chromium, Firefox, and WebKit.
+The CI workflow (`.github/workflows/ci.yml`) defines the unit suites and the E2E suite
+across Chromium, Firefox, and WebKit (GitHub Actions format; adapt for your CI host).
 
 Then open the printed URL. The **DataGrid** page shows 100,000 rows, virtualized to
 the viewport, sorted/filtered/aggregated by the Rust WASM module, with row
