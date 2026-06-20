@@ -91,4 +91,24 @@ public sealed class McpToolServerTests
 
         Assert.Equal(-32601, doc.RootElement.GetProperty("error").GetProperty("code").GetInt32());
     }
+
+    [Fact]
+    public async Task Stdio_host_answers_requests_and_stays_silent_on_notifications()
+    {
+        // What a local assistant (e.g. Claude Desktop) sends over stdin: an initialize
+        // request, the standard initialized *notification* (no id), then a tools/list request.
+        string input = string.Join("\n",
+            """{"jsonrpc":"2.0","id":1,"method":"initialize"}""",
+            """{"jsonrpc":"2.0","method":"notifications/initialized"}""",
+            """{"jsonrpc":"2.0","id":2,"method":"tools/list"}""");
+
+        System.IO.StringWriter output = new();
+        await McpStdioHost.RunAsync(NewServer(), new System.IO.StringReader(input), output);
+
+        string[] lines = output.ToString().Split('\n', System.StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal(2, lines.Length);                 // a reply per request, none for the notification
+        Assert.Contains("\"id\":1", lines[0]);          // initialize
+        Assert.Contains("\"id\":2", lines[1]);          // tools/list
+        Assert.Contains("schedule_meeting", lines[1]);  // the tool is advertised
+    }
 }

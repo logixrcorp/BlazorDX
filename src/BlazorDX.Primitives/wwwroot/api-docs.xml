@@ -635,6 +635,23 @@
             a single error rather than throwing.
             </summary>
         </member>
+        <member name="T:BlazorDX.Primitives.Forms.McpStdioHost">
+            <summary>
+            Runs an <see cref="T:BlazorDX.Primitives.Forms.McpToolServer"/> over a <b>stdio</b> transport: newline-delimited
+            JSON-RPC read from <paramref name="input"/> and written to <paramref name="output"/>.
+            This is how local assistants (e.g. Claude Desktop) connect — they spawn a process and
+            speak MCP over its stdin/stdout. Per JSON-RPC, notifications (requests with no
+            <c>id</c>) get no reply. Reflection-free and dependency-free, so the same host runs on
+            any .NET target.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Forms.McpStdioHost.RunAsync(BlazorDX.Primitives.Forms.McpToolServer,System.IO.TextReader,System.IO.TextWriter,System.Threading.CancellationToken)">
+            <summary>
+            Pumps requests from <paramref name="input"/> through <paramref name="server"/> until the
+            input ends or <paramref name="cancellationToken"/> is cancelled. Each non-empty line is
+            one JSON-RPC message; each request's response is written as one line.
+            </summary>
+        </member>
         <member name="T:BlazorDX.Primitives.Forms.McpToolServer">
             <summary>
             A minimal, transport-agnostic Model Context Protocol tool server. Register

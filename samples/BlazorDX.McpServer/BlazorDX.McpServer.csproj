@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    A runnable MCP server: it exposes a BlazorDX [DxFormModel] as an AI tool over stdio, so a
+    local assistant (e.g. Claude Desktop) can call it. Proves the "forms are AI tools" thesis
+    end to end. See README.md for how to wire it into an assistant.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>BlazorDX.McpServer</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\BlazorDX.Primitives\BlazorDX.Primitives.csproj" />
+    <ProjectReference Include="..\..\src\BlazorDX.SourceGen\BlazorDX.SourceGen.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>
