@@ -436,10 +436,14 @@ body {
 /* Forms + AI tools demo */
 .dx-forms-demo { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; }
 @media (max-width: 900px) { .dx-forms-demo { grid-template-columns: 1fr; } }
+/* Grid items must be allowed to shrink below their content width, or the long
+   single-line JSON in the schema <pre> blows the columns (and the page) out. */
+.dx-forms-col { min-width: 0; }
 .dx-forms-col h2 { margin-top: 0; }
 .dx-forms-schema {
   background: #0f172a; color: #e2e8f0; border-radius: 8px; padding: 12px 14px;
   font-size: 12px; line-height: 1.5; overflow: auto; max-height: 320px; white-space: pre;
+  max-width: 100%; min-width: 0;
 }
 
 /* Diagnostics feed (errors demo) */
