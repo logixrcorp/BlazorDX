@@ -1,0 +1,20 @@
+/* Barcode and QR rendering. The SVG itself carries the geometry; these rules just
+   give the symbols a sensible box and a clear error state. Colours are overridable
+   via the --dx-barcode-* / --dx-qr-* CSS variables read by the components. */
+
+.dx-barcode,
+.dx-qrcode {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.dx-barcode-error {
+  display: inline-block;
+  padding: 8px 12px;
+  border: 1px dashed var(--dx-border, #cbd5e1);
+  border-radius: var(--dx-radius, 6px);
+  color: var(--dx-danger, #dc2626);
+  font-family: monospace;
+  font-size: 13px;
+}

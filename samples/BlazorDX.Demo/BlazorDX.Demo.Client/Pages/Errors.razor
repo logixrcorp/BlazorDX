@@ -1,0 +1,69 @@
+@page "/errors"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@using BlazorDX.Primitives.Diagnostics
+@inject DemoDiagnosticsLog Log
+@implements IDisposable
+
+<PageTitle>Errors &amp; observability</PageTitle>
+
+<h1>BlazorDX Error Handling &amp; Observability</h1>
+
+<p class="dx-demo-meta">
+    <code>DxErrorBoundary</code> contains a thrown exception so one broken component
+    doesn't take down the page — it shows a fallback (with Retry) and <em>reports</em>
+    the failure to an injectable <code>IDxDiagnostics</code> sink. Previously-silent
+    failures become observable; wire the sink to ILogger / App Insights / OpenTelemetry.
+</p>
+
+<div class="dx-forms-demo">
+    <div class="dx-forms-col">
+        <h2>Contained failure</h2>
+        <DxErrorBoundary ShowDetail="true" OnError="OnError">
+            <ErrorProne Boom="@boom" />
+        </DxErrorBoundary>
+        <p style="margin-top:12px">
+            <button class="dx-btn-primary" @onclick="() => boom = true">Break the component</button>
+        </p>
+        <p class="dx-demo-meta">@status</p>
+    </div>
+
+    <div class="dx-forms-col">
+        <h2>What the app observed</h2>
+        <p class="dx-demo-meta">Failures BlazorDX would otherwise swallow now arrive here:</p>
+        @if (Log.Events.Count == 0)
+        {
+            <p class="dx-demo-meta">No diagnostics yet — press “Break the component”.</p>
+        }
+        else
+        {
+            <ul class="dx-diag-list">
+                @foreach (var e in Log.Events)
+                {
+                    <li>
+                        <span class="dx-diag-sev dx-diag-@e.Severity.ToString().ToLowerInvariant()">@e.Severity</span>
+                        <strong>@e.Source</strong> — @e.Message
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</div>
+
+@code {
+    private bool boom;
+    private string status = "Press the button to throw inside the boundary.";
+
+    protected override void OnInitialized() => Log.Changed += OnChanged;
+
+    private void OnChanged() => InvokeAsync(StateHasChanged);
+
+    // Reset the fault so the boundary's Retry button recovers successfully.
+    private void OnError(Exception ex)
+    {
+        status = $"Caught & reported: {ex.Message} — now press Retry to recover.";
+        boom = false;
+    }
+
+    public void Dispose() => Log.Changed -= OnChanged;
+}

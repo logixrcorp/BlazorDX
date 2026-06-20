@@ -1,0 +1,143 @@
+@page "/docs/guide/{Slug}"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Demo.Client
+
+<PageTitle>@title — BlazorDX docs</PageTitle>
+
+<div class="dx-docs">
+    <DocsSidebar Active="@($"guide-{Slug}")" />
+
+    <main class="dx-docs-main">
+        <nav class="dx-docs-crumbs"><a href="/docs">Docs</a> / <span>Guides</span></nav>
+
+        @switch (Slug)
+        {
+            case "theming":
+                <h1>Theming</h1>
+                <p class="dx-lede">
+                    BlazorDX is <strong>headless</strong>: behavior and ARIA live in the Tier-1
+                    primitives with no CSS opinions, and the Tier-2 <code>Dx*</code> components style
+                    them entirely through CSS variables. You restyle by overriding tokens — never by
+                    fighting specificity or <code>!important</code>.
+                </p>
+
+                <h2>The tokens</h2>
+                <p class="dx-demo-meta">Defined on <code>:root</code> in <code>dx-theme.css</code>; every component reads them with sensible fallbacks.</p>
+                <CodeBlock Language="css" Code="@Tokens" />
+
+                <h2>Override globally</h2>
+                <p class="dx-demo-meta">Set tokens on <code>:root</code> (or any ancestor) in your own stylesheet.</p>
+                <CodeBlock Language="css" Code="@Override" />
+
+                <h2>Per-subtree &amp; dark mode</h2>
+                <p class="dx-demo-meta"><code>DxThemeProvider</code> sets the theme, accent, and direction for everything inside it.</p>
+                <CodeBlock Language="razor" Code="@Provider" />
+                break;
+
+            case "architecture":
+                <h1>Architecture</h1>
+                <p class="dx-lede">
+                    Four ideas the whole system rests on. The decision records (<code>docs/adr</code>)
+                    have the full rationale.
+                </p>
+                <h2>Two-tier headless</h2>
+                <p>A <strong>primitive</strong> (e.g. <code>DataGridPrimitive</code>) owns state, keyboard
+                   navigation, focus, and WAI-ARIA and ships no CSS. A styled <code>Dx*</code> wrapper
+                   supplies markup via <code>RenderTreeBuilder</code> with hardcoded sequence numbers and
+                   CSS-variable theming. Restyle the wrapper, or drop to the primitive and render your own.</p>
+                <h2>Zero runtime reflection</h2>
+                <p>Grid/column binding is <strong>source-generated</strong> into a typed accessor; interop is
+                   <code>[JSImport]</code>/<code>[JSExport]</code> only. The whole catalog publishes
+                   <strong>trim-clean</strong> under warnings-as-errors.</p>
+                <CodeBlock Language="csharp" Code="@GridRow" />
+                <h2>C# · Rust · TypeScript</h2>
+                <p>Heavy compute (sort, filter, aggregate, histogram, LTTB downsample) runs in a Rust→wasm
+                   kernel with a managed C# fallback for SSR; TypeScript handles only what the wasm sandbox
+                   can't (viewport metrics, focus, positioning, clipboard).</p>
+                <h2>Governed by tooling</h2>
+                <p>A hard <strong>1000-line file cap</strong> (DX1000), a <code>MarkupString</code> ban
+                   (DX1001), and a singleton-UI-state ban (DX1002) are Roslyn analyzers that fail the
+                   build — not style guidelines.</p>
+                break;
+
+            case "accessibility":
+                <h1>Accessibility</h1>
+                <p class="dx-lede">
+                    Accessibility is built into the primitives, not bolted on: roving tabindex, focus
+                    trapping, <code>aria-activedescendant</code> composite-widget patterns, and full
+                    keyboard operation across overlays, the grid, selects, the tree, and the date picker.
+                </p>
+                <h2>What's covered</h2>
+                <ul>
+                    <li>Keyboard operation for every interactive component (no mouse-only paths).</li>
+                    <li>Correct roles and <code>aria-*</code> state (e.g. the grid's active cell via
+                        <code>aria-activedescendant</code> on the <code>role="grid"</code> container).</li>
+                    <li>Native inputs (checkbox, switch, slider, time, color, file) inherit the platform's
+                        accessibility for free.</li>
+                </ul>
+                <h2>Verification, honestly</h2>
+                <p>The component pages are <strong>axe-clean</strong> for structural/ARIA rules on the audited
+                   pages. Colour-contrast is verified by design (the tokens meet AA), but a definitive,
+                   automated contrast attestation needs a real-viewport browser/CI run — a headless
+                   zero-size viewport defeats automated contrast tooling. A formal third-party audit is on
+                   the roadmap; this page will be updated with its result rather than a claim.</p>
+                break;
+
+            default:
+                <h1>Guide not found</h1>
+                <p class="dx-demo-meta">No guide "<code>@Slug</code>". <a href="/docs">Back to overview</a>.</p>
+                break;
+        }
+    </main>
+</div>
+
+@code {
+    [Parameter] public string Slug { get; set; } = string.Empty;
+
+    private string title => Slug switch
+    {
+        "theming" => "Theming",
+        "architecture" => "Architecture",
+        "accessibility" => "Accessibility",
+        _ => "Guide",
+    };
+
+    private const string Tokens = """
+        :root {
+          --dx-accent: #2563eb;
+          --dx-accent-contrast: #ffffff;
+          --dx-surface: #ffffff;
+          --dx-surface-alt: #f8fafc;
+          --dx-border: #e2e8f0;
+          --dx-text: #0f172a;
+          --dx-muted: #64748b;
+          --dx-radius: 8px;
+          --dx-shadow: 0 1px 2px rgba(2, 6, 23, .06);
+        }
+        """;
+
+    private const string Override = """
+        /* your app.css — restyle everything by changing tokens */
+        :root {
+          --dx-accent: #7c3aed;   /* violet brand */
+          --dx-radius: 12px;      /* rounder corners */
+        }
+        """;
+
+    private const string Provider = """
+        <DxThemeProvider Theme="dark" Accent="#16a34a" Direction="ltr">
+            @* every BlazorDX component inside picks up the tokens *@
+            <DxButton Text="Save" />
+        </DxThemeProvider>
+        """;
+
+    private const string GridRow = """
+        [GridRow]
+        public sealed class Person
+        {
+            [GridColumn("Name")] public string Name { get; set; } = "";
+            [GridColumn("Age")]  public int Age { get; set; }
+        }
+        // → PersonGridAccessor is generated (typed read + write, no reflection)
+        """;
+}

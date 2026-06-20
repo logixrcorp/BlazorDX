@@ -1,0 +1,28 @@
+@page "/tree"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@using BlazorDX.Demo.Client
+
+<PageTitle>TreeGrid</PageTitle>
+
+<h1>BlazorDX TreeGrid</h1>
+
+<p class="dx-demo-meta">
+    A hierarchical table. The tree is flattened to the visible rows and virtualized
+    just like the flat grid, so it scales to deep trees. Click a ▸ twisty to expand,
+    or focus a row and press <kbd>→</kbd>/<kbd>←</kbd>. Columns come from the same
+    source-generated accessor as the DataGrid.
+</p>
+
+<DxTreeGrid TRow="FileNode"
+            Items="roots"
+            Accessor="accessor"
+            ChildrenSelector="@(n => n.Children)"
+            InitiallyExpanded="true"
+            RowHeight="32"
+            ViewportHeight="420" />
+
+@code {
+    private readonly FileNodeGridAccessor accessor = new();
+    private readonly IReadOnlyList<FileNode> roots = FileNode.SampleTree();
+}

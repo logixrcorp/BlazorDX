@@ -1,0 +1,186 @@
+/* BlazorDX week scheduler. Token-driven (see dx-theme.css). */
+
+.dx-sched {
+  border: 1px solid var(--dx-border, #e2e8f0);
+  border-radius: var(--dx-radius, 8px);
+  overflow: hidden;
+  background: var(--dx-surface, #ffffff);
+  color: var(--dx-text, #0f172a);
+}
+
+.dx-sched-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--dx-border, #e2e8f0);
+}
+.dx-sched-nav {
+  padding: 4px 10px;
+  font: inherit;
+  color: var(--dx-text, #0f172a);
+  background: var(--dx-surface, #ffffff);
+  border: 1px solid var(--dx-border, #cbd5e1);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.dx-sched-nav:hover { background: var(--dx-surface-alt, #f1f5f9); }
+.dx-sched-range { margin-left: 6px; font-weight: 600; }
+
+.dx-sched-head {
+  display: grid;
+  border-bottom: 1px solid var(--dx-border, #e2e8f0);
+}
+.dx-sched-corner { border-right: 1px solid var(--dx-border, #e2e8f0); }
+.dx-sched-dayhead {
+  padding: 8px 6px;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--dx-text-muted, #475569);
+  border-right: 1px solid var(--dx-border, #e2e8f0);
+}
+.dx-sched-today {
+  color: var(--dx-accent, #2563eb);
+  background: color-mix(in srgb, var(--dx-accent, #2563eb) 8%, transparent);
+}
+
+.dx-sched-body {
+  display: grid;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.dx-sched-axis {
+  border-right: 1px solid var(--dx-border, #e2e8f0);
+}
+.dx-sched-hour {
+  display: flex;
+  justify-content: flex-end;
+  padding: 2px 6px;
+  font-size: 0.72rem;
+  color: var(--dx-text-muted, #94a3b8);
+  box-sizing: border-box;
+}
+.dx-sched-col {
+  position: relative;
+  border-right: 1px solid var(--dx-border, #e2e8f0);
+  /* Hour gridlines; row size is set inline via background-size. */
+  background-image: repeating-linear-gradient(
+    to bottom, var(--dx-border, #e2e8f0) 0 1px, transparent 1px 100%);
+  background-repeat: repeat-y;
+}
+.dx-sched-event {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 6px;
+  overflow: hidden;
+  font: inherit;
+  text-align: left;
+  color: #ffffff;
+  background: var(--dx-accent, #2563eb);
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.dx-sched-event:hover { filter: brightness(1.05); }
+.dx-sched-event:focus-visible {
+  outline: 2px solid var(--dx-text, #0f172a);
+  outline-offset: 1px;
+}
+.dx-sched-event-time { font-size: 0.7rem; opacity: 0.9; }
+.dx-sched-event-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- Gantt ---- */
+.dx-gantt {
+  display: inline-block;
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--dx-border, #e2e8f0);
+  border-radius: var(--dx-radius, 8px);
+  background: var(--dx-surface, #ffffff);
+  color: var(--dx-text, #0f172a);
+}
+.dx-gantt-row { display: flex; align-items: stretch; }
+.dx-gantt-row:not(:last-child) { border-bottom: 1px solid var(--dx-border, #e2e8f0); }
+.dx-gantt-headrow {
+  position: sticky;
+  top: 0;
+  background: var(--dx-surface-alt, #f8fafc);
+  font-weight: 600;
+}
+.dx-gantt-name {
+  flex: 0 0 var(--dx-gantt-name, 160px);
+  width: var(--dx-gantt-name, 160px);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border-right: 1px solid var(--dx-border, #e2e8f0);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dx-gantt-corner { background: var(--dx-surface-alt, #f8fafc); }
+.dx-gantt-track {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  background-image: repeating-linear-gradient(
+    to right, var(--dx-border, #eef2f7) 0 1px, transparent 1px 100%);
+  background-repeat: repeat-x;
+}
+.dx-gantt-daycol {
+  flex: 0 0 auto;
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--dx-text-muted, #94a3b8);
+  border-right: 1px solid var(--dx-border, #eef2f7);
+  padding: 4px 0;
+  box-sizing: border-box;
+}
+.dx-gantt-weekend { background: var(--dx-surface-alt, #f8fafc); }
+.dx-gantt-bar {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 22px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  padding: 0 8px;
+  font: inherit;
+  text-align: left;
+  color: #ffffff;
+  background: var(--dx-accent, #2563eb);
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.dx-gantt-bar:hover { filter: brightness(1.05); }
+.dx-gantt-bar:focus-visible { outline: 2px solid var(--dx-text, #0f172a); outline-offset: 1px; }
+.dx-gantt-progress {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 6px 0 0 6px;
+}
+.dx-gantt-bar-label {
+  position: relative;
+  font-size: 0.75rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

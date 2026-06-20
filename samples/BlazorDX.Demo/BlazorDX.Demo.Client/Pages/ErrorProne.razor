@@ -1,0 +1,14 @@
+<p class="dx-demo-meta">✅ This component is rendering normally.</p>
+
+@code {
+    /// <summary>When true, throws during render to trip the surrounding error boundary.</summary>
+    [Parameter] public bool Boom { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (Boom)
+        {
+            throw new InvalidOperationException("Simulated component failure — the button asked me to throw.");
+        }
+    }
+}

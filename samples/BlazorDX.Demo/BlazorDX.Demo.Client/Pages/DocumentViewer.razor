@@ -1,0 +1,35 @@
+@page "/docviewer"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+
+<PageTitle>Document viewer</PageTitle>
+
+<h1>BlazorDX Document Viewer</h1>
+
+<p class="dx-demo-meta">
+    One viewer, many formats. <code>DxDocumentViewer</code> dispatches on each
+    document's kind: images render with zoom, Markdown through the safe
+    <code>DxMarkdown</code> renderer, text/code in a <code>&lt;pre&gt;</code>, and
+    PDFs in the browser's native viewer — no bundled PDF engine. Pick a document
+    from the sidebar.
+</p>
+
+<DxDocumentViewer Documents="docs" />
+
+@code {
+    private readonly IReadOnlyList<ViewerDocument> docs =
+    [
+        new("logo.svg", DocumentKind.Image, "data:image/svg+xml," + Uri.EscapeDataString(
+            """
+            <svg xmlns='http://www.w3.org/2000/svg' width='320' height='200'>
+              <rect width='320' height='200' fill='#0f172a'/>
+              <circle cx='160' cy='100' r='64' fill='#2563eb'/>
+              <text x='160' y='108' font-family='sans-serif' font-size='22' font-weight='700' fill='#fff' text-anchor='middle'>BlazorDX</text>
+            </svg>
+            """)),
+        new("README.md", DocumentKind.Markdown,
+            "# BlazorDX\n\nA **headless, AOT-safe** Blazor component system.\n\n- Zero reflection\n- Rust-powered compute\n- 1000-line file cap\n\n[Learn more](/docs)"),
+        new("Program.cs", DocumentKind.Text,
+            "var builder = WebApplication.CreateBuilder(args);\nbuilder.Services.AddBlazorDXCompute();\n\nvar app = builder.Build();\napp.MapRazorComponents<App>();\napp.Run();"),
+    ];
+}

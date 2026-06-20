@@ -1,0 +1,92 @@
+@page "/controls"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@using BlazorDX.Primitives.Overlays
+
+<PageTitle>Form Controls</PageTitle>
+
+<h1>BlazorDX Form Controls</h1>
+
+<p class="dx-demo-meta">
+    Checkbox, switch, and radio group — basic inputs built on native semantics
+    where it helps and the roving-tabindex primitive where it counts.
+    Notify: <strong>@notify</strong>, dark: <strong>@dark</strong>, plan: <strong>@plan</strong>.
+</p>
+
+<div style="display:flex; flex-direction:column; gap:18px; max-width:24rem">
+    <DxCheckbox @bind-Value="notify" Label="Email me about updates" />
+    <DxSwitch @bind-Value="dark" Label="Dark mode" />
+
+    <div>
+        <div class="dx-demo-meta" style="margin-bottom:6px">Plan</div>
+        <DxRadioGroup TValue="string" Items="plans" @bind-Value="plan" AriaLabel="Plan" />
+    </div>
+</div>
+
+<h2 style="margin-top:32px">Text &amp; numeric inputs</h2>
+<p class="dx-demo-meta">
+    Native-input ergonomics with token styling. Name: <strong>@name</strong>,
+    seats: <strong>@(seats?.ToString() ?? "—")</strong>, price:
+    <strong>@(price?.ToString("F2") ?? "—")</strong>.
+</p>
+
+<div style="display:flex; flex-direction:column; gap:18px; max-width:24rem">
+    <DxTextBox @bind-Value="name" Label="Full name" Placeholder="Ada Lovelace" Immediate="true" />
+    <DxPassword @bind-Value="secret" Label="Password" Placeholder="••••••••" />
+    <DxNumeric TValue="int" @bind-Value="seats" Label="Seats" Min="1" Max="50" />
+    <DxNumeric TValue="decimal" @bind-Value="price" Label="Price" Step="0.5m" Min="0m" Format="F2" />
+    <DxNumeric TValue="decimal" @bind-Value="priceDe" Label="Preis (de-DE)" Step="0.5m" Format="N2" Culture="german" />
+    <DxTextArea @bind-Value="notes" Label="Notes" Rows="3" Placeholder="Anything else?" />
+    <DxMaskedTextBox @bind-Value="phone" Mask="(000) 000-0000" Label="Phone" />
+</div>
+
+<h2 style="margin-top:32px">Pickers &amp; ranges</h2>
+<p class="dx-demo-meta">
+    Color: <strong>@color</strong>, budget: <strong>@($"${low:0} – ${high:0}")</strong>.
+</p>
+
+<div style="display:flex; flex-direction:column; gap:20px; max-width:24rem">
+    <div>
+        <div class="dx-demo-meta" style="margin-bottom:6px">Brand color</div>
+        <DxColorPicker @bind-Value="color" Presets="swatches" AriaLabel="Brand color" />
+    </div>
+    <div>
+        <div class="dx-demo-meta" style="margin-bottom:6px">Budget range</div>
+        <DxRangeSlider @bind-Low="low" @bind-High="high" Min="0" Max="1000" Step="50" ShowValue="true" AriaLabel="Budget" />
+    </div>
+</div>
+
+<h2 style="margin-top:32px">File upload</h2>
+<p class="dx-demo-meta">
+    Drag files onto the zone or click to browse. Selected: <strong>@uploadCount</strong>.
+</p>
+<div style="max-width:24rem">
+    <DxFileUpload Accept="image/*,.pdf,.csv" OnFilesSelected="files => uploadCount = files.Count" />
+</div>
+
+@code {
+    private int uploadCount;
+    private bool notify = true;
+    private bool dark;
+    private string plan = "pro";
+    private string? name = "Ada Lovelace";
+    private string? secret;
+    private int? seats = 4;
+    private decimal? price = 19.00m;
+    private decimal? priceDe = 1234.5m;
+    private readonly System.Globalization.CultureInfo german = new("de-DE");
+    private string? notes;
+    private string? phone;
+    private string color = "#2563eb";
+    private double low = 200;
+    private double high = 750;
+    private readonly IReadOnlyList<string> swatches = ["#2563eb", "#16a34a", "#dc2626", "#d97706", "#7c3aed"];
+
+    private readonly IReadOnlyList<ListOption<string>> plans =
+    [
+        new ListOption<string>("free", "Free"),
+        new ListOption<string>("pro", "Pro"),
+        new ListOption<string>("team", "Team"),
+        new ListOption<string>("ent", "Enterprise (contact us)", Disabled: true),
+    ];
+}

@@ -1,0 +1,53 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <ResourcePreloader />
+    <link rel="stylesheet" href="@Assets["app.css"]" />
+    <link rel="stylesheet" href="@Assets["BlazorDX.Demo.styles.css"]" />
+    <link rel="stylesheet" href="_content/BlazorDX.Components/dx-theme.css" />
+    <link rel="stylesheet" href="_content/BlazorDX.Components/dx-datagrid.css" />
+    <link rel="stylesheet" href="_content/BlazorDX.Components/dx-overlay.css" />
+    <link rel="stylesheet" href="_content/BlazorDX.Components/dx-layout.css" />
+    <link rel="stylesheet" href="_content/BlazorDX.Components/dx-input.css" />
+    <link rel="stylesheet" href="_content/BlazorDX.Components/dx-form.css" />
+    <link rel="stylesheet" href="_content/BlazorDX.Components/dx-structure.css" />
+    <link rel="stylesheet" href="_content/BlazorDX.Components/dx-chart.css" />
+    <link rel="stylesheet" href="_content/BlazorDX.Components/dx-markdown.css" />
+    <link rel="stylesheet" href="_content/BlazorDX.Components/dx-scheduler.css" />
+    <link rel="stylesheet" href="_content/BlazorDX.Components/dx-filemanager.css" />
+    <link rel="stylesheet" href="_content/BlazorDX.Components/dx-chat.css" />
+    <link rel="stylesheet" href="_content/BlazorDX.Components/dx-richtext.css" />
+    <link rel="stylesheet" href="_content/BlazorDX.Components/dx-querybuilder.css" />
+    <link rel="stylesheet" href="_content/BlazorDX.Components/dx-barcode.css" />
+    <link rel="stylesheet" href="_content/BlazorDX.Components/dx-display.css" />
+    <script src="https://unpkg.com/htmx.org@2.0.3" integrity="sha384-0895/pl2MU10Hqc6jd4RvrthNlDiE9U1tWmX7WRESftEDRosgxNsQG/Ze9YMRzHq" crossorigin="anonymous"></script>
+    <ImportMap />
+    <HeadOutlet />
+</head>
+
+<body>
+    <Routes />
+    <ReconnectModal />
+    <script src="@Assets["_framework/blazor.web.js"]"></script>
+    <script>
+        // Copy-to-clipboard for showcase code blocks. Delegated so it survives
+        // Blazor enhanced navigation without re-wiring.
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('.dx-copy');
+            if (!btn) return;
+            var code = btn.closest('.dx-code')?.querySelector('code')?.textContent ?? '';
+            navigator.clipboard?.writeText(code).then(function () {
+                var original = btn.textContent;
+                btn.textContent = 'Copied!';
+                btn.classList.add('dx-copied');
+                setTimeout(function () { btn.textContent = original; btn.classList.remove('dx-copied'); }, 1200);
+            });
+        });
+    </script>
+</body>
+
+</html>

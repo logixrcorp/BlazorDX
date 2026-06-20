@@ -1,0 +1,46 @@
+@page "/kanban"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+
+<PageTitle>Kanban</PageTitle>
+
+<h1>BlazorDX Kanban</h1>
+
+<p class="dx-demo-meta">
+    Drag a card between or within columns, or focus a card and use
+    <strong>Alt + ↑/↓</strong> to reorder it and <strong>Ctrl + ←/→</strong> to move it
+    to an adjacent column (focus follows). Native HTML5 drag — no JavaScript.
+    Last change: <strong>@lastChange</strong>.
+</p>
+
+<DxKanban Columns="columns" OnChange="OnBoardChange" />
+
+@code {
+    private string lastChange = "(none)";
+
+    private void OnBoardChange() => lastChange = DateTime.Now.ToString("HH:mm:ss");
+
+    private readonly IReadOnlyList<KanbanColumn> columns =
+    [
+        new("Backlog", new[]
+        {
+            new KanbanCard("Design the landing page", "Design"),
+            new KanbanCard("Spec the data source API", "Spec"),
+            new KanbanCard("Audit accessibility", "A11y"),
+        }),
+        new("In progress", new[]
+        {
+            new KanbanCard("Server-side grid binding", "Grid"),
+            new KanbanCard("Kanban board", "UI"),
+        }),
+        new("Review", new[]
+        {
+            new KanbanCard("QR encoder vectors", "Test"),
+        }),
+        new("Done", new[]
+        {
+            new KanbanCard("Headless engine", "Core"),
+            new KanbanCard("Trim-clean publish", "Build"),
+        }),
+    ];
+}

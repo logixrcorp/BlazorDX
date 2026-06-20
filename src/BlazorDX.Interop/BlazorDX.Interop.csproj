@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <!--
+    The Interop project owns the browser bridge: the [JSImport] bindings (C#),
+    the TypeScript DOM modules, and the Rust wasm kernel. It is a Razor Class
+    Library so its wwwroot ships as static web assets under
+    _content/BlazorDX.Interop/, where the [JSImport] module paths resolve.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- The [JSImport] source generator emits unsafe marshalling stubs. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <!-- Inputs for the Rust and TypeScript build targets (see build/*.targets). -->
+  <PropertyGroup>
+    <RustCrateDir>$(MSBuildThisFileDirectory)..\BlazorDX.Compute.Rust</RustCrateDir>
+    <RustCrateName>dx_grid</RustCrateName>
+    <RustWasmDest>$(MSBuildThisFileDirectory)wwwroot\dx\dx_grid.wasm</RustWasmDest>
+    <TsSourceDir>$(MSBuildThisFileDirectory)..\BlazorDX.Interop.Ts</TsSourceDir>
+    <TsOutputDir>$(MSBuildThisFileDirectory)wwwroot\dx</TsOutputDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)..\..\build\Rust.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)..\..\build\TypeScript.targets" />
+
+</Project>

@@ -1,0 +1,33 @@
+@page "/paging"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+
+<PageTitle>Pager</PageTitle>
+
+<h1>BlazorDX Pager</h1>
+
+<p class="dx-demo-meta">
+    A standalone pagination control with windowed page numbers and ellipses.
+    Page <strong>@currentPage</strong> of <strong>@PageCount</strong>.
+</p>
+
+<ul class="dx-paging-list">
+    @foreach (string item in PageSlice)
+    {
+        <li>@item</li>
+    }
+</ul>
+
+<DxPager TotalItems="items.Count" PageSize="pageSize" @bind-Page="currentPage" />
+
+@code {
+    private const int pageSize = 8;
+    private int currentPage = 1;
+
+    private readonly IReadOnlyList<string> items =
+        Enumerable.Range(1, 47).Select(n => $"Item #{n}").ToList();
+
+    private int PageCount => (int)Math.Ceiling((double)items.Count / pageSize);
+
+    private IEnumerable<string> PageSlice => items.Skip((currentPage - 1) * pageSize).Take(pageSize);
+}

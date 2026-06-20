@@ -1,0 +1,51 @@
+/* BlazorDX WYSIWYG editor. Token-driven (see dx-theme.css). */
+
+.dx-rte {
+  border: 1px solid var(--dx-border, #cbd5e1);
+  border-radius: var(--dx-radius, 8px);
+  overflow: hidden;
+  background: var(--dx-surface, #ffffff);
+  color: var(--dx-text, #0f172a);
+}
+
+.dx-rte-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--dx-border, #e2e8f0);
+  background: var(--dx-surface-alt, #f8fafc);
+}
+.dx-rte-tool {
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--dx-text, #0f172a);
+  background: var(--dx-surface, #ffffff);
+  border: 1px solid var(--dx-border, #cbd5e1);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.dx-rte-tool:hover { background: var(--dx-surface-alt, #f1f5f9); color: var(--dx-accent, #2563eb); }
+.dx-rte-tool:active { background: var(--dx-border, #e2e8f0); }
+
+.dx-rte-surface {
+  min-height: 9rem;
+  max-height: 24rem;
+  overflow-y: auto;
+  padding: 12px 14px;
+  line-height: 1.6;
+  outline: none;
+}
+.dx-rte-surface:focus-visible {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--dx-accent, #2563eb) 35%, transparent);
+}
+.dx-rte-surface:empty::before {
+  content: "Write something…";
+  color: var(--dx-text-muted, #94a3b8);
+}
+.dx-rte-surface h2 { font-size: 1.25rem; margin: 0.4em 0; }
+.dx-rte-surface ul, .dx-rte-surface ol { padding-left: 1.4em; margin: 0.4em 0; }
+.dx-rte-surface a { color: var(--dx-accent, #2563eb); }

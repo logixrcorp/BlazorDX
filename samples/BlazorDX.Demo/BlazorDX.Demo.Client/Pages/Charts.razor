@@ -1,0 +1,199 @@
+@page "/charts"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+
+<PageTitle>Chart</PageTitle>
+
+<h1>BlazorDX Line Chart</h1>
+
+<p class="dx-demo-meta">
+    A @points.Length.ToString("N0")-point series drawn as a single SVG polyline,
+    LTTB-downsampled by the Rust/wasm kernel to keep the shape with only a few
+    hundred points. The caption shows the active compute backend.
+</p>
+
+<DxLineChart X="x" Y="y" Threshold="400" Width="720" Height="240" />
+
+<h2 style="margin-top:32px">Area chart</h2>
+<p class="dx-demo-meta">A filled series, also Rust-downsampled.</p>
+<DxAreaChart Values="area" Threshold="300" Width="720" Height="200" />
+
+<h2 style="margin-top:32px">Bar chart</h2>
+<DxBarChart Bars="bars" Width="720" Height="240" />
+
+<h2 style="margin-top:32px">Histogram (Rust binning)</h2>
+<p class="dx-demo-meta">
+    @sample.Length.ToString("N0") normally-distributed samples binned into 16 buckets
+    by the compute backend — the caption names it.
+</p>
+<DxHistogram Values="sample" Bins="16" Width="720" Height="220" />
+
+<h2 style="margin-top:32px">Pie &amp; donut</h2>
+<div style="display:flex; gap:32px; flex-wrap:wrap">
+    <DxPieChart Slices="slices" />
+    <DxPieChart Slices="slices" Donut="true" />
+</div>
+
+<h2 style="margin-top:32px">Sparklines</h2>
+<table style="border-collapse:collapse">
+    <tr>
+        <td style="padding:6px 14px">Revenue</td>
+        <td style="padding:6px 14px"><DxSparkline Values="spark" /></td>
+        <td style="padding:6px 14px"><DxSparkline Values="spark" Variant="bar" /></td>
+    </tr>
+</table>
+
+<h2 style="margin-top:32px">Scatter</h2>
+<DxScatterChart Points="scatter" Width="720" Height="260" />
+
+<h2 style="margin-top:32px">Stacked &amp; grouped bar</h2>
+<div style="display:flex; gap:32px; flex-wrap:wrap">
+    <div>
+        <p class="dx-demo-meta">Stacked</p>
+        <DxStackedBarChart Categories="quarters" Series="seriesData" Width="340" Height="240" />
+    </div>
+    <div>
+        <p class="dx-demo-meta">Grouped</p>
+        <DxStackedBarChart Categories="quarters" Series="seriesData" Stacked="false" Width="340" Height="240" />
+    </div>
+</div>
+
+<h2 style="margin-top:32px">Gauges</h2>
+<div style="display:flex; gap:40px; flex-wrap:wrap; align-items:center">
+    <DxRadialGauge Value="72" Label="CPU %" />
+    <DxRadialGauge Value="46" Max="60" Label="FPS" Color="#16a34a" Format="0" />
+    <div style="display:flex; flex-direction:column; gap:14px">
+        <DxLinearGauge Value="72" AriaLabel="Disk" Zones="zones" />
+        <DxLinearGauge Value="28" AriaLabel="Memory" Zones="zones" />
+        <DxLinearGauge Value="95" AriaLabel="Heat" Zones="zones" />
+    </div>
+</div>
+
+<h2 style="margin-top:32px">Radar</h2>
+<DxRadarChart Axes="radarAxes" Series="radarSeries" Width="340" Height="340" />
+
+<h2 style="margin-top:32px">Funnel</h2>
+<DxFunnelChart Stages="funnelStages" Width="380" Height="240" />
+
+<h2 style="margin-top:32px">Candlestick</h2>
+<DxCandlestickChart Candles="candles" Width="640" Height="260" />
+
+@code {
+    private readonly double[] points = new double[6000];
+    private double[] x = [];
+    private double[] y = [];
+    private double[] area = [];
+    private double[] sample = [];
+
+    private readonly IReadOnlyList<ChartBar> bars =
+    [
+        new ChartBar("Mon", 18),
+        new ChartBar("Tue", 32),
+        new ChartBar("Wed", 27),
+        new ChartBar("Thu", 41),
+        new ChartBar("Fri", 36),
+        new ChartBar("Sat", 12),
+        new ChartBar("Sun", 9),
+    ];
+
+    private readonly double[] spark = [4, 7, 5, 9, 6, 11, 8, 13, 10, 15, 12, 17];
+
+    private readonly IReadOnlyList<ChartPoint> scatter = BuildScatter();
+
+    private static IReadOnlyList<ChartPoint> BuildScatter()
+    {
+        Random random = new(20260617);
+        List<ChartPoint> pts = new(120);
+        for (int i = 0; i < 120; i++)
+        {
+            double x = random.NextDouble() * 100;
+            double y = (x * 0.6) + ((random.NextDouble() - 0.5) * 40);   // correlated with noise
+            pts.Add(new ChartPoint(x, y));
+        }
+
+        return pts;
+    }
+
+    private readonly IReadOnlyList<string> quarters = ["Q1", "Q2", "Q3", "Q4"];
+
+    private readonly IReadOnlyList<ChartSeries> seriesData =
+    [
+        new ChartSeries("Direct", [18, 24, 30, 28]),
+        new ChartSeries("Search", [12, 16, 14, 22]),
+        new ChartSeries("Social", [8, 6, 11, 9]),
+    ];
+
+    private readonly IReadOnlyList<GaugeZone> zones =
+    [
+        new GaugeZone(50, "#16a34a"),
+        new GaugeZone(80, "#d97706"),
+        new GaugeZone(100, "#dc2626"),
+    ];
+
+    private readonly IReadOnlyList<string> radarAxes = ["Speed", "Power", "Range", "Agility", "Defense"];
+
+    private readonly IReadOnlyList<ChartSeries> radarSeries =
+    [
+        new ChartSeries("Model A", [80, 55, 70, 60, 90]),
+        new ChartSeries("Model B", [60, 85, 50, 75, 65]),
+    ];
+
+    private readonly IReadOnlyList<ChartBar> funnelStages =
+    [
+        new ChartBar("Visited", 12000),
+        new ChartBar("Signed up", 4800),
+        new ChartBar("Activated", 2100),
+        new ChartBar("Purchased", 720),
+    ];
+
+    private readonly IReadOnlyList<Candle> candles =
+    [
+        new Candle("Mon", 100, 112, 96, 108),
+        new Candle("Tue", 108, 114, 103, 105),
+        new Candle("Wed", 105, 118, 104, 116),
+        new Candle("Thu", 116, 120, 110, 112),
+        new Candle("Fri", 112, 122, 108, 121),
+    ];
+
+    private readonly IReadOnlyList<ChartBar> slices =
+    [
+        new ChartBar("Direct", 42),
+        new ChartBar("Search", 28),
+        new ChartBar("Social", 18),
+        new ChartBar("Email", 12),
+    ];
+
+    protected override void OnInitialized()
+    {
+        // A noisy multi-frequency wave: lots of detail LTTB must preserve.
+        Random random = new(20260617);
+        x = new double[points.Length];
+        y = new double[points.Length];
+        for (int i = 0; i < points.Length; i++)
+        {
+            x[i] = i;
+            double wave = (Math.Sin(i / 120.0) * 80) + (Math.Sin(i / 17.0) * 18);
+            y[i] = wave + ((random.NextDouble() - 0.5) * 24);
+        }
+
+        // Area: a smoother positive series.
+        area = new double[1500];
+        for (int i = 0; i < area.Length; i++)
+        {
+            area[i] = 50 + (Math.Sin(i / 90.0) * 30) + (Math.Sin(i / 23.0) * 10);
+        }
+
+        // Histogram: 20k normal-ish samples (sum of uniforms → bell curve).
+        sample = new double[20000];
+        for (int i = 0; i < sample.Length; i++)
+        {
+            double s = 0;
+            for (int k = 0; k < 6; k++)
+            {
+                s += random.NextDouble();
+            }
+
+            sample[i] = s / 6 * 100;   // centered near 50
+        }
+    }
+}

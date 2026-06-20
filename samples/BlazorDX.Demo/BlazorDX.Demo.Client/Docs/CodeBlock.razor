@@ -1,0 +1,23 @@
+@namespace BlazorDX.Demo.Client
+
+@*
+    Dependency-free code presenter: a language tag, a copy button (wired by the
+    delegated click handler in App.razor), and the code. Lives in the Client project
+    so both the home showcase (server) and the docs site (client) can use it.
+*@
+
+<div class="dx-code">
+    <div class="dx-code-bar">
+        <span class="dx-code-lang">@Language</span>
+        <button type="button" class="dx-copy" aria-label="Copy code to clipboard">Copy</button>
+    </div>
+    <pre class="dx-code-pre" tabindex="0" role="region" aria-label="@($"{Language} code example")"><code>@Code.Trim('\n')</code></pre>
+</div>
+
+@code {
+    /// <summary>Language label shown in the corner (e.g. "razor", "csharp", "bash").</summary>
+    [Parameter] public string Language { get; set; } = "razor";
+
+    /// <summary>The source to display verbatim.</summary>
+    [Parameter, EditorRequired] public string Code { get; set; } = string.Empty;
+}

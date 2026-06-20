@@ -1,0 +1,31 @@
+@page "/tiles"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@using BlazorDX.Primitives.Interaction
+
+<PageTitle>TileLayout</PageTitle>
+
+<h1>BlazorDX TileLayout</h1>
+
+<p class="dx-demo-meta">
+    A reorderable dashboard. Drag a tile's header onto another, or focus a header
+    and press <kbd>Alt</kbd>+<kbd>Arrow</kbd> to move it (<kbd>Arrow</kbd> alone
+    moves focus). Reuses the same reorder primitive as the sortable list and grid
+    columns. Order: <strong>@orderText</strong>.
+</p>
+
+<DxTileLayout Tiles="tiles" OrderChanged="OnOrderChanged" />
+
+@code {
+    private string orderText = "0,1,2,3";
+
+    private void OnOrderChanged(IReadOnlyList<int> order) => orderText = string.Join(",", order);
+
+    private readonly IReadOnlyList<TileItem> tiles =
+    [
+        new TileItem("Revenue", @<div><strong>$48.2k</strong><p class="dx-demo-meta">+12% this month</p></div>, 2),
+        new TileItem("Active users", @<div><strong>1,284</strong><p class="dx-demo-meta">live now</p></div>),
+        new TileItem("Errors", @<div><strong>3</strong><p class="dx-demo-meta">last 24h</p></div>),
+        new TileItem("Latency", @<div><strong>42 ms</strong><p class="dx-demo-meta">p95</p></div>),
+    ];
+}

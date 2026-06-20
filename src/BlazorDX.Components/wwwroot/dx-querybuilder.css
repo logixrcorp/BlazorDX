@@ -1,0 +1,86 @@
+/* BlazorDX query builder. Token-driven (see dx-theme.css). */
+
+.dx-qb { color: var(--dx-text, #0f172a); }
+
+.dx-qb-group {
+  padding: 10px;
+  border: 1px solid var(--dx-border, #cbd5e1);
+  border-radius: var(--dx-radius, 8px);
+  background: color-mix(in srgb, var(--dx-accent, #2563eb) 4%, var(--dx-surface, #fff));
+}
+.dx-qb-group .dx-qb-group { margin-top: 4px; }
+
+.dx-qb-combinator { display: inline-flex; gap: 0; margin-bottom: 8px; }
+.dx-qb-comb {
+  padding: 4px 12px;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: var(--dx-text-muted, #64748b);
+  background: var(--dx-surface, #ffffff);
+  border: 1px solid var(--dx-border, #cbd5e1);
+  cursor: pointer;
+}
+.dx-qb-comb:first-child { border-radius: 6px 0 0 6px; }
+.dx-qb-comb:last-child { border-radius: 0 6px 6px 0; border-left: 0; }
+.dx-qb-comb-active {
+  color: #ffffff;
+  background: var(--dx-accent, #2563eb);
+  border-color: var(--dx-accent, #2563eb);
+}
+
+.dx-qb-child {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 6px 0;
+}
+.dx-qb-child > :first-child { flex: 1 1 auto; }
+
+.dx-qb-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.dx-qb-field, .dx-qb-op, .dx-qb-value {
+  padding: 6px 8px;
+  font: inherit;
+  color: var(--dx-text, #0f172a);
+  background: var(--dx-surface, #ffffff);
+  border: 1px solid var(--dx-border, #cbd5e1);
+  border-radius: 6px;
+  outline: none;
+}
+.dx-qb-value { flex: 1 1 8rem; min-width: 6rem; }
+.dx-qb-field:focus-visible, .dx-qb-op:focus-visible, .dx-qb-value:focus-visible {
+  border-color: var(--dx-accent, #2563eb);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dx-accent, #2563eb) 25%, transparent);
+}
+
+.dx-qb-remove {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  font-size: 0.85rem;
+  color: var(--dx-text-muted, #94a3b8);
+  background: transparent;
+  border: 1px solid var(--dx-border, #e2e8f0);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.dx-qb-remove:hover { color: #dc2626; border-color: #fca5a5; }
+
+.dx-qb-actions { display: flex; gap: 8px; margin-top: 6px; }
+.dx-qb-add {
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--dx-accent, #2563eb);
+  background: transparent;
+  border: 1px dashed var(--dx-border, #cbd5e1);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.dx-qb-add:hover { background: var(--dx-surface-alt, #f1f5f9); }

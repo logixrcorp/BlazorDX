@@ -1,0 +1,105 @@
+/* BlazorDX chart family: bar, area, pie/donut, histogram. Token-driven.
+   Reuses .dx-chart / .dx-chart-svg / .dx-chart-line / .dx-chart-caption
+   from dx-layout.css. */
+
+/* ---- Bar & histogram ---- */
+.dx-bar-rect { transition: opacity 120ms ease; }
+.dx-bar-rect:hover { opacity: 0.82; }
+.dx-bar-label {
+  font-size: 11px;
+  fill: var(--dx-text-muted, #64748b);
+}
+.dx-bar-value {
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--dx-text, #334155);
+}
+
+/* ---- Area ---- */
+.dx-area-fill {
+  fill: color-mix(in srgb, var(--dx-accent, #2563eb) 18%, transparent);
+}
+
+/* ---- Scatter ---- */
+.dx-scatter-dot {
+  fill: var(--dx-accent, #2563eb);
+  fill-opacity: 0.7;
+  transition: fill-opacity 120ms ease;
+}
+.dx-scatter-dot:hover { fill-opacity: 1; }
+
+/* ---- Stacked / grouped bar ---- */
+.dx-stacked-chart .dx-bar-rect { transition: opacity 120ms ease; }
+.dx-stacked-chart .dx-bar-rect:hover { opacity: 0.82; }
+
+/* ---- Pie / donut ---- */
+.dx-pie-chart {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px;
+}
+.dx-pie-svg {
+  flex: 0 0 auto;
+  display: block;
+  width: auto;
+  height: auto;
+}
+.dx-pie-slice {
+  stroke: var(--dx-surface, #ffffff);
+  stroke-width: 1.5;
+  transition: opacity 120ms ease;
+}
+.dx-pie-slice:hover { opacity: 0.85; }
+.dx-pie-hole { fill: var(--dx-surface, #ffffff); }
+.dx-pie-legend {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: var(--dx-text, #334155);
+}
+.dx-pie-legend-item { display: flex; align-items: center; gap: 8px; }
+.dx-pie-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex: 0 0 auto;
+}
+
+/* ---- Sparkline ---- */
+.dx-sparkline {
+  display: inline-block;
+  vertical-align: middle;
+}
+.dx-sparkline-line {
+  stroke: var(--dx-accent, #2563eb);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.dx-sparkline-bar { fill: var(--dx-accent, #2563eb); }
+
+/* ---- Gauges ---- */
+.dx-gauge { display: block; }
+.dx-gauge-track {
+  stroke: var(--dx-border, #e2e8f0);
+  fill: var(--dx-border, #e2e8f0);
+}
+.dx-radial-gauge .dx-gauge-track { fill: none; }
+.dx-gauge-value { stroke: var(--dx-accent, #2563eb); }
+.dx-gauge-fill { fill: var(--dx-accent, #2563eb); }
+.dx-gauge-readout {
+  font-size: 1.6rem;
+  font-weight: 700;
+  fill: var(--dx-text, #0f172a);
+  dominant-baseline: middle;
+}
+.dx-gauge-caption {
+  font-size: 0.8rem;
+  fill: var(--dx-text-muted, #64748b);
+  dominant-baseline: middle;
+}

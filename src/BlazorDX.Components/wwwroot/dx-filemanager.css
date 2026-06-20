@@ -1,0 +1,118 @@
+/* BlazorDX file manager. Token-driven (see dx-theme.css). */
+
+.dx-fm {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--dx-border, #e2e8f0);
+  border-radius: var(--dx-radius, 8px);
+  overflow: hidden;
+  background: var(--dx-surface, #ffffff);
+  color: var(--dx-text, #0f172a);
+}
+
+.dx-fm-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--dx-border, #e2e8f0);
+  background: var(--dx-surface-alt, #f8fafc);
+  font-size: 0.9rem;
+}
+.dx-fm-crumb-home { font-weight: 600; color: var(--dx-text-muted, #64748b); }
+.dx-fm-sep { color: var(--dx-text-muted, #94a3b8); }
+.dx-fm-crumb {
+  padding: 2px 6px;
+  font: inherit;
+  color: var(--dx-accent, #2563eb);
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.dx-fm-crumb:hover { background: var(--dx-surface, #ffffff); text-decoration: underline; }
+
+.dx-fm-panes {
+  display: grid;
+  grid-template-columns: minmax(160px, 240px) 1fr;
+  min-height: 280px;
+}
+
+/* ---- Tree pane ---- */
+.dx-fm-tree {
+  overflow: auto;
+  border-right: 1px solid var(--dx-border, #e2e8f0);
+  padding: 6px 0;
+}
+.dx-fm-node {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 30px;
+}
+.dx-fm-node-selected { background: color-mix(in srgb, var(--dx-accent, #2563eb) 14%, transparent); }
+.dx-fm-twisty, .dx-fm-twisty-spacer {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+}
+.dx-fm-twisty {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font-size: 0.75rem;
+  color: var(--dx-text-muted, #64748b);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.dx-fm-node-label {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 4px 6px;
+  font: inherit;
+  text-align: left;
+  color: var(--dx-text, #0f172a);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dx-fm-node-label:hover { color: var(--dx-accent, #2563eb); }
+
+/* ---- Contents pane ---- */
+.dx-fm-contents { overflow: auto; }
+.dx-fm-content-head, .dx-fm-content-row {
+  display: grid;
+  grid-template-columns: 1fr 90px 120px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+}
+.dx-fm-content-head {
+  position: sticky;
+  top: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--dx-text-muted, #64748b);
+  background: var(--dx-surface-alt, #f8fafc);
+  border-bottom: 1px solid var(--dx-border, #e2e8f0);
+}
+.dx-fm-content-row {
+  border-bottom: 1px solid var(--dx-border, #eef2f7);
+  cursor: default;
+}
+.dx-fm-content-row:hover { background: var(--dx-surface-alt, #f8fafc); }
+.dx-fm-content-row:focus-visible {
+  outline: 2px solid var(--dx-accent, #2563eb);
+  outline-offset: -2px;
+}
+.dx-fm-name { display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dx-fm-size, .dx-fm-modified { color: var(--dx-text-muted, #64748b); font-size: 0.85rem; }
+.dx-fm-size { text-align: right; font-variant-numeric: tabular-nums; }
+.dx-fm-empty { padding: 24px 14px; color: var(--dx-text-muted, #94a3b8); }

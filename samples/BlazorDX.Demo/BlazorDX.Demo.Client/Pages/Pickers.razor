@@ -1,0 +1,65 @@
+@page "/pickers"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@using BlazorDX.Primitives.Overlays
+
+<PageTitle>Listbox &amp; ComboBox</PageTitle>
+
+<h1>BlazorDX Listbox &amp; ComboBox</h1>
+
+<p class="dx-demo-meta">
+    Both reuse the selection-state and roving-tabindex primitives. The multi-select
+    listbox is inline; the combo box adds typeahead filtering over an anchored dropdown.
+</p>
+
+<div style="display:flex; gap:40px; align-items:flex-start; margin-top:12px; flex-wrap:wrap">
+    <div style="min-width:220px">
+        <h2 style="font-size:16px">Multi-select Listbox</h2>
+        <DxListbox TValue="string" Items="cities" Multiple="true" @bind-Values="picked" />
+        <p class="dx-demo-meta">Selected: <strong>@(picked.Count == 0 ? "(none)" : string.Join(", ", picked))</strong></p>
+    </div>
+
+    <div style="min-width:220px">
+        <h2 style="font-size:16px">ComboBox (typeahead)</h2>
+        <DxComboBox TValue="string" Items="cities" @bind-Value="chosen" Placeholder="Type a city..." />
+        <p class="dx-demo-meta">Chosen: <strong>@(chosen ?? "(none)")</strong></p>
+    </div>
+</div>
+
+<h2 style="font-size:16px; margin-top:32px">Date &amp; time</h2>
+<div style="display:flex; gap:40px; align-items:flex-start; flex-wrap:wrap">
+    <div>
+        <div class="dx-demo-meta" style="margin-bottom:6px">Single date</div>
+        <DxDatePicker @bind-Value="date" />
+    </div>
+    <div>
+        <div class="dx-demo-meta" style="margin-bottom:6px">Time</div>
+        <DxTimePicker @bind-Value="time" />
+        <p class="dx-demo-meta">@(time?.ToString("HH:mm") ?? "(none)")</p>
+    </div>
+    <div>
+        <div class="dx-demo-meta" style="margin-bottom:6px">Date range</div>
+        <DxDateRangePicker @bind-Start="rangeStart" @bind-End="rangeEnd" />
+        <p class="dx-demo-meta">@(rangeStart?.ToString("yyyy-MM-dd") ?? "—") → @(rangeEnd?.ToString("yyyy-MM-dd") ?? "—")</p>
+    </div>
+</div>
+
+@code {
+    private IReadOnlyCollection<string> picked = [];
+    private string? chosen;
+    private DateOnly? date = DateOnly.FromDateTime(DateTime.Today);
+    private TimeOnly? time = new(9, 30);
+    private DateOnly? rangeStart = DateOnly.FromDateTime(DateTime.Today);
+    private DateOnly? rangeEnd = DateOnly.FromDateTime(DateTime.Today).AddDays(7);
+
+    private readonly IReadOnlyList<ListOption<string>> cities =
+    [
+        new ListOption<string>("ATX", "Austin"),
+        new ListOption<string>("BER", "Berlin"),
+        new ListOption<string>("CAI", "Cairo"),
+        new ListOption<string>("DEN", "Denver"),
+        new ListOption<string>("EDI", "Edinburgh"),
+        new ListOption<string>("FAR", "Faro"),
+        new ListOption<string>("GEN", "Geneva"),
+    ];
+}

@@ -1,0 +1,25 @@
+@page "/sortable"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+
+<PageTitle>Sortable</PageTitle>
+
+<h1>BlazorDX Sortable List</h1>
+
+<p class="dx-demo-meta">
+    Drag a row to reorder it, or focus a row and press <strong>Alt + Arrow Up/Down</strong>
+    to move it with the keyboard (Arrow alone moves focus). Reuses the
+    roving-tabindex primitive. Order: <strong>@string.Join(" → ", tasks)</strong>.
+</p>
+
+<DxSortableList @bind-Items="tasks" />
+
+@code {
+    private IReadOnlyList<string> tasks =
+    [
+        "Draft the proposal",
+        "Review with the team",
+        "Incorporate feedback",
+        "Ship it",
+    ];
+}

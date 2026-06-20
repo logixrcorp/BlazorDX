@@ -1,0 +1,54 @@
+@page "/layout"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@using BlazorDX.Primitives.Navigation
+
+<PageTitle>Tabs &amp; Accordion</PageTitle>
+
+<h1>BlazorDX Tabs &amp; Accordion</h1>
+
+<p class="dx-demo-meta">
+    Content-organization components. Tabs reuse the roving-tabindex primitive
+    (Arrow keys move and activate); the accordion reuses selection-state
+    (single-expand here). Selected tab: <strong>@selectedTab</strong>.
+</p>
+
+<h2 style="font-size:16px">Tabs</h2>
+<DxTabs Items="tabs" @bind-SelectedIndex="selectedTab" />
+
+<h2 style="font-size:16px; margin-top:28px">Accordion</h2>
+<DxAccordion Items="sections" InitiallyExpanded="0" />
+
+<h2 style="font-size:16px; margin-top:28px">DatePicker</h2>
+<DxDatePicker @bind-Value="date" />
+<p class="dx-demo-meta">Picked date: <strong>@(date?.ToString("yyyy-MM-dd") ?? "(none)")</strong>. Open it and use Arrow keys, Page Up/Down for months, Enter to pick.</p>
+
+@code {
+    private int selectedTab;
+    private DateOnly? date;
+
+    private IReadOnlyList<TabItem> tabs = default!;
+    private IReadOnlyList<AccordionItem> sections = default!;
+
+    protected override void OnInitialized()
+    {
+        tabs =
+        [
+            new TabItem("Overview", Overview),
+            new TabItem("Engine", Engine),
+            new TabItem("Disabled", Overview, Disabled: true),
+            new TabItem("Verify", Verify),
+        ];
+
+        sections =
+        [
+            new AccordionItem("What is BlazorDX?", Overview),
+            new AccordionItem("Primitive engine", Engine),
+            new AccordionItem("How it's verified", Verify),
+        ];
+    }
+
+    private RenderFragment Overview => @<div>A headless, secure-by-default Blazor component system. Tabs and accordions are thin compositions over shared primitives.</div>;
+    private RenderFragment Engine => @<div>Roving-tabindex drives the tab list; selection-state drives which accordion sections are open. Same primitives as Menu, Select, and the grid.</div>;
+    private RenderFragment Verify => @<div>Every component ships with bUnit tests and is verified live in the browser.</div>;
+}

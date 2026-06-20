@@ -1,0 +1,37 @@
+@page "/markdown"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+
+<PageTitle>Markdown</PageTitle>
+
+<h1>BlazorDX Markdown Editor</h1>
+
+<p class="dx-demo-meta">
+    Type Markdown on the left, see sanitized HTML on the right. The renderer
+    HTML-encodes all text <em>before</em> adding its fixed tag set, so raw HTML and
+    <code>javascript:</code> links can't slip through — try pasting a
+    <code>&lt;script&gt;</code> tag.
+</p>
+
+<DxMarkdownEditor @bind-Value="text" Rows="16" />
+
+@code {
+    private string? text = """
+# Hello, BlazorDX
+
+A **headless**, *secure* component system. Inline `code` and a
+[safe link](https://example.com) — but a [bad one](javascript:alert(1))
+is stripped to plain text.
+
+## Features
+- Zero reflection
+- Rust-powered compute
+- 1000-line file cap
+
+```
+var x = new MarkupString(safe); // only at the audited boundary
+```
+
+Even a raw <script>alert('xss')</script> is rendered inert.
+""";
+}

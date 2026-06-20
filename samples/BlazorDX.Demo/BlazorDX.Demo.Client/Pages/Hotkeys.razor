@@ -1,0 +1,46 @@
+@page "/hotkeys"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@using Microsoft.AspNetCore.Components
+
+<PageTitle>Hotkeys</PageTitle>
+
+<h1>BlazorDX Hotkeys</h1>
+
+<p class="dx-demo-meta">
+    Global keyboard shortcuts registered once via <code>DxHotkeys</code>. A single
+    document listener matches combos in JS (so the browser default is suppressed)
+    and runs the bound action. Press <DxKbd Combo="Ctrl+B" /> to count,
+    <DxKbd Combo="Ctrl+Shift+M" /> to mark, or <DxKbd Combo="?" /> for the cheat sheet.
+</p>
+
+<p>Count: <strong>@count</strong> · Last hotkey: <strong>@last</strong></p>
+
+<p>
+    <button class="dx-btn-primary" @onclick="() => showShortcuts = true">Show shortcuts</button>
+</p>
+
+<h2>DxKbd</h2>
+<p class="dx-demo-meta">Render any shortcut as styled key caps:</p>
+<p style="display:flex; gap:18px; align-items:center;">
+    <DxKbd Combo="Ctrl+K" />
+    <DxKbd Combo="Cmd+Shift+P" />
+    <DxKbd Combo="Alt+ArrowUp" />
+    <DxKbd Combo="Enter" />
+</p>
+
+<DxHotkeys Bindings="bindings" />
+<DxKeyboardShortcuts Bindings="bindings" @bind-Open="showShortcuts" />
+
+@code {
+    private int count;
+    private string last = "(none)";
+    private bool showShortcuts;
+
+    private IReadOnlyList<Hotkey> bindings => new[]
+    {
+        new Hotkey("Ctrl+B", EventCallback.Factory.Create(this, () => { count++; last = "Ctrl+B"; }), "Increment the counter"),
+        new Hotkey("Ctrl+Shift+M", EventCallback.Factory.Create(this, () => last = "Ctrl+Shift+M"), "Mark"),
+        new Hotkey("?", EventCallback.Factory.Create(this, () => showShortcuts = true), "Show this cheat sheet"),
+    };
+}

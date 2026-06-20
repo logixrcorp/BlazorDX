@@ -1,0 +1,45 @@
+@page "/feedback"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@inject ToastService Toasts
+
+<PageTitle>Feedback</PageTitle>
+
+<h1>BlazorDX Feedback</h1>
+
+<p class="dx-demo-meta">Toasts, alerts, and loading states.</p>
+
+<h2 style="font-size:16px">Toasts</h2>
+<div style="display:flex; gap:8px; flex-wrap:wrap">
+    <button class="dx-demo-button" @onclick='() => Toasts.Show("Saved your changes.", "success")'>Success toast</button>
+    <button class="dx-demo-button" style="background:#dc2626" @onclick='() => Toasts.Show("Something went wrong.", "error")'>Error toast</button>
+    <button class="dx-demo-button" style="background:#64748b" @onclick='() => Toasts.Show("Heads up — check your settings.", "warning")'>Warning toast</button>
+</div>
+
+<h2 style="font-size:16px; margin-top:24px">Alerts</h2>
+<DxAlert Severity="success" Title="Deployed">Your site is live.</DxAlert>
+<DxAlert Severity="warning">Your trial ends in 3 days.</DxAlert>
+<DxAlert Severity="error" Title="Build failed" Dismissible="true" OnDismiss="() => showError = false" />
+@if (showError)
+{
+    <DxAlert Severity="info">This dismissible error was acknowledged.</DxAlert>
+}
+
+<h2 style="font-size:16px; margin-top:24px">Loading states</h2>
+<div style="display:flex; align-items:center; gap:16px; margin-bottom:12px">
+    <DxSpinner />
+    <DxSpinner Size="36" />
+    <span class="dx-demo-meta">Spinners</span>
+</div>
+<div style="max-width:24rem; display:flex; flex-direction:column; gap:10px">
+    <DxProgress Value="65" />
+    <DxProgress />
+    <DxSkeleton Height="1rem" />
+    <DxSkeleton Width="70%" Height="1rem" />
+</div>
+
+<DxToastHost />
+
+@code {
+    private bool showError;
+}

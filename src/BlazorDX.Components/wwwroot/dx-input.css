@@ -1,0 +1,100 @@
+/* BlazorDX text & numeric inputs. Token-driven (see dx-theme.css). */
+
+.dx-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font: inherit;
+  color: var(--dx-text, #0f172a);
+}
+
+.dx-field-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--dx-text-muted, #475569);
+}
+
+.dx-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 12px;
+  font: inherit;
+  color: var(--dx-text, #0f172a);
+  background: var(--dx-surface, #ffffff);
+  border: 1px solid var(--dx-border, #cbd5e1);
+  border-radius: var(--dx-radius, 8px);
+  outline: none;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.dx-input::placeholder { color: var(--dx-text-muted, #94a3b8); }
+
+.dx-input:focus-visible {
+  border-color: var(--dx-accent, #2563eb);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dx-accent, #2563eb) 25%, transparent);
+}
+
+.dx-input:disabled {
+  background: var(--dx-surface-alt, #f1f5f9);
+  color: var(--dx-text-muted, #94a3b8);
+  cursor: not-allowed;
+}
+
+.dx-input[readonly] { background: var(--dx-surface-alt, #f8fafc); }
+
+.dx-textarea {
+  resize: vertical;
+  min-height: 4.5rem;
+  line-height: 1.5;
+}
+
+/* ---- Affixed input (password reveal) ---- */
+.dx-input-wrap { position: relative; display: block; }
+.dx-input-affixed { padding-right: 2.6rem; }
+.dx-input-affix {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.dx-input-affix:hover:not(:disabled) { background: var(--dx-surface-alt, #f1f5f9); }
+.dx-input-affix:disabled { cursor: not-allowed; opacity: 0.5; }
+
+/* ---- Numeric stepper ---- */
+.dx-num {
+  display: inline-flex;
+  align-items: stretch;
+  width: 100%;
+}
+.dx-num-input {
+  border-radius: 0;
+  text-align: right;
+  position: relative;
+  z-index: 1;
+}
+.dx-num-step {
+  flex: 0 0 auto;
+  width: 2.4rem;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--dx-text, #0f172a);
+  background: var(--dx-surface-alt, #f1f5f9);
+  border: 1px solid var(--dx-border, #cbd5e1);
+  cursor: pointer;
+  user-select: none;
+}
+.dx-num-step:first-child { border-radius: var(--dx-radius, 8px) 0 0 var(--dx-radius, 8px); }
+.dx-num-step:last-child { border-radius: 0 var(--dx-radius, 8px) var(--dx-radius, 8px) 0; }
+.dx-num-step:hover:not(:disabled) { background: var(--dx-border, #e2e8f0); }
+.dx-num-step:disabled { cursor: not-allowed; opacity: 0.45; }

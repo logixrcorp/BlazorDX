@@ -1,0 +1,53 @@
+<Project>
+
+  <!--
+    Central Package Management. Every package version lives here, once.
+    No project may specify a version on its own PackageReference; this keeps
+    the dependency graph auditable from a single file (a security property:
+    one place to review what we pull into the build).
+  -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+
+  <ItemGroup Label="Roslyn (analyzers + source generators)">
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" />
+  </ItemGroup>
+
+  <ItemGroup Label="Runtime">
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />
+    <!-- Component base types for RCLs consumed by both server and browser-wasm.
+         A package reference (not a framework reference) is what keeps these
+         libraries usable from a WebAssembly client. -->
+    <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="10.0.8" />
+    <!-- ILogger abstraction for the optional diagnostics→logging adapter. -->
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.8" />
+  </ItemGroup>
+
+  <ItemGroup Label="Blazor Web App (demo)">
+    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.8" />
+  </ItemGroup>
+
+  <ItemGroup Label="Testing">
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageVersion Include="xunit" Version="2.9.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageVersion Include="bunit" Version="1.31.3" />
+    <!-- Transitive pin: bunit 1.31.3 otherwise drags in a vulnerable preview of
+         this package (NU1903). Central transitive pinning forces the patched one. -->
+    <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="10.0.8" />
+  </ItemGroup>
+
+  <ItemGroup Label="End-to-end (real browser)">
+    <!-- Playwright drives a real Chromium/Firefox/WebKit against the running demo,
+         covering what bUnit cannot (native drag-and-drop, canvas, focus). -->
+    <PackageVersion Include="Microsoft.Playwright" Version="1.49.0" />
+    <!-- Lets the E2E tests skip cleanly (not fail) when no demo server is reachable,
+         so the normal `dotnet test` stays green without one. -->
+    <PackageVersion Include="Xunit.SkippableFact" Version="1.4.13" />
+  </ItemGroup>
+
+</Project>

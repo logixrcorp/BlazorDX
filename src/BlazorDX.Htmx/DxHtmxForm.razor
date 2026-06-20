@@ -1,0 +1,32 @@
+@namespace BlazorDX.Htmx
+
+@*
+  A hypermedia form: renders as static server HTML decorated with htmx
+  attributes. On submit, htmx POSTs to @Action and swaps the returned HTML
+  fragment into @Target — no circuit, no WASM. The host page must include the
+  htmx script and expose an endpoint at @Action that returns an HTML fragment.
+*@
+
+<form hx-post="@Action"
+      hx-target="@Target"
+      hx-swap="@Swap"
+      class="dx-htmx-form @Class">
+    @ChildContent
+</form>
+
+@code {
+    /// <summary>The endpoint htmx posts the form to.</summary>
+    [Parameter, EditorRequired] public string Action { get; set; } = string.Empty;
+
+    /// <summary>CSS selector for the element the response replaces. Defaults to the form itself.</summary>
+    [Parameter] public string Target { get; set; } = "this";
+
+    /// <summary>How the response is swapped in (htmx hx-swap value).</summary>
+    [Parameter] public string Swap { get; set; } = "outerHTML";
+
+    /// <summary>Optional extra CSS classes.</summary>
+    [Parameter] public string? Class { get; set; }
+
+    /// <summary>The form fields and submit control.</summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

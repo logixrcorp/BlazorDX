@@ -1,0 +1,118 @@
+@page "/forms"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@using BlazorDX.Primitives.Forms
+@using BlazorDX.Demo.Client
+
+<PageTitle>Forms &amp; AI tools</PageTitle>
+
+<h1>BlazorDX Forms — one model, two faces</h1>
+
+<p class="dx-demo-meta">
+    A <code>[DxFormModel]</code> is the single source of truth. The source generator
+    emits a reflection-free descriptor that <code>DxForm</code> renders <em>and</em>
+    that <code>FormTool</code> projects into an AI tool — so a form a person fills and a
+    tool an AI calls are the same thing, sharing one set of validation rules. When the
+    surface shifts from "download an app" to "an assistant calls a tool," this ships as
+    both at once.
+</p>
+
+<div class="dx-forms-demo">
+    <div class="dx-forms-col">
+        <h2>A person fills it</h2>
+        <DxForm @ref="form" TModel="MeetingRequest" Model="meeting" Descriptor="descriptor" ValidateOnChange="true"
+                OnValidSubmit="OnSubmit" SubmitText="Schedule">
+            <DxFormSection Title="Meeting" Description="The essentials.">
+                <DxFormGrid Columns="2">
+                    <DxFormField Name="Title" />
+                    <DxFormField Name="Attendees" />
+                    <DxFormField Name="Email" />
+                    <DxFormField Name="Priority" />
+                </DxFormGrid>
+            </DxFormSection>
+            <DxFormSection Title="Options" Collapsible="true">
+                <DxFormField Name="Remote" />
+                <DxFormField Name="Notes" />
+            </DxFormSection>
+        </DxForm>
+        <p class="dx-demo-meta">@status</p>
+    </div>
+
+    <div class="dx-forms-col">
+        <h2>…or an AI calls it</h2>
+        <p class="dx-demo-meta">This JSON-Schema tool definition is generated from the same model — paste it into an MCP / function-calling host:</p>
+        <pre class="dx-forms-schema">@toolDefinition</pre>
+
+        <p class="dx-demo-meta">The arguments an assistant would send when it decides to call the tool:</p>
+        <textarea class="dx-input dx-textarea" rows="5" @bind="toolCall" @bind:event="oninput"></textarea>
+        <p>
+            <button class="dx-btn-primary" @onclick="RunToolCall">▶ Send MCP tools/call</button>
+        </p>
+        <p class="dx-demo-meta">The form on the left fills, and the JSON-RPC response below is what flows back to the assistant:</p>
+        <pre class="dx-forms-schema">@toolResult</pre>
+    </div>
+</div>
+
+<h2 style="margin-top:40px">Bring your existing DataAnnotations models</h2>
+<p class="dx-demo-meta">
+    This form has <strong>no <code>[DxField]</code></strong> anywhere. The model is annotated
+    only with standard <code>[Required]</code>, <code>[Range]</code>, <code>[StringLength]</code>,
+    <code>[EmailAddress]</code>, and <code>[Display]</code>, plus an <code>IValidatableObject</code>
+    cross-field rule (end hour after start). One class-level <code>[DxFormModel]</code> made it a
+    BlazorDX form, validation, and AI tool — the generator read the annotations at compile time, so
+    it stays reflection-free. Submit with End&nbsp;≤&nbsp;Start to see the cross-field error.
+</p>
+
+<div style="max-width:520px">
+    <DxForm TModel="RoomReservation" Model="room" Descriptor="roomDescriptor"
+            OnValidSubmit="OnRoomValid" OnInvalidSubmit="OnRoomInvalid" SubmitText="Reserve" />
+    <p class="dx-demo-meta">@roomStatus</p>
+</div>
+
+@code {
+    private readonly MeetingRequest meeting = new();
+
+    private readonly RoomReservation room = new();
+    private readonly RoomReservationFormModel roomDescriptor = new();
+    private string roomStatus = "Not submitted yet.";
+
+    private void OnRoomValid(RoomReservation model) =>
+        roomStatus = $"Reserved {model.Room} for {model.Seats} ({model.StartHour}:00–{model.EndHour}:00).";
+
+    private void OnRoomInvalid(IReadOnlyList<FormValidationError> errors) =>
+        roomStatus = $"{errors.Count} problem(s): " + string.Join("; ", errors.Select(e => e.Message));
+
+    private readonly MeetingRequestFormModel descriptor = new();
+    private DxForm<MeetingRequest>? form;
+    private string status = "Not submitted yet.";
+
+    private McpToolServer server = default!;
+    private string toolDefinition = string.Empty;
+    private string toolCall =
+        "{\n  \"Title\": \"Q3 planning\",\n  \"Attendees\": 8,\n  \"Email\": \"lead@team.io\",\n  \"Remote\": true,\n  \"Priority\": \"High\"\n}";
+    private string toolResult = "No tool call applied yet.";
+
+    protected override void OnInitialized()
+    {
+        // The same model registered as a live MCP tool. The factory returns the
+        // displayed instance so a tool call fills the form on the left.
+        server = new McpToolServer { ServerName = "BlazorDX demo" }
+            .Add(new FormAiTool<MeetingRequest>(
+                descriptor,
+                () => meeting,
+                m => System.Threading.Tasks.Task.FromResult($"Meeting \"{m.Title}\" scheduled for {m.Attendees} attendee(s).")));
+
+        toolDefinition = FormTool.BuildToolDefinition(descriptor);
+    }
+
+    private void OnSubmit(MeetingRequest model) =>
+        status = $"Submitted: \"{model.Title}\" — {model.Attendees} attendee(s), priority {model.Priority}.";
+
+    private async System.Threading.Tasks.Task RunToolCall()
+    {
+        // A genuine MCP JSON-RPC tools/call, exactly what an assistant would send.
+        string request = $"{{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{{\"name\":\"schedule_meeting\",\"arguments\":{toolCall}}}}}";
+        toolResult = await server.HandleAsync(request);
+        form?.Refresh();   // the human-side form re-renders with the AI-filled values
+    }
+}

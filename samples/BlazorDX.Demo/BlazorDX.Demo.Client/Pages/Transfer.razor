@@ -1,0 +1,24 @@
+@page "/transfer"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+
+<PageTitle>TransferList</PageTitle>
+
+<h1>BlazorDX TransferList</h1>
+
+<p class="dx-demo-meta">
+    A dual list box composed from two multi-select listboxes plus move buttons —
+    no new behavior, just composition over the engine. Select items and use the
+    arrows. Selected: <strong>@(selected.Count == 0 ? "(none)" : string.Join(", ", selected))</strong>.
+</p>
+
+<DxTransferList Items="skills" @bind-Value="selected" AvailableLabel="Available skills" SelectedLabel="Chosen skills" />
+
+@code {
+    private readonly IReadOnlyList<string> skills =
+    [
+        "Blazor", "Rust", "TypeScript", "WebAssembly", "Accessibility", "Testing",
+    ];
+
+    private IReadOnlyCollection<string> selected = ["Rust"];
+}

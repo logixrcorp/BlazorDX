@@ -1,0 +1,44 @@
+@page "/menu"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@using BlazorDX.Primitives.Overlays
+
+<PageTitle>Menu &amp; Tooltip</PageTitle>
+
+<h1>BlazorDX Menu &amp; Tooltip</h1>
+
+<p class="dx-demo-meta">
+    Both reuse the anchored-positioning + dismissal primitives. The menu adds the
+    roving-tabindex primitive: open it, then use Arrow keys, Home/End, Enter to
+    select, Escape to close — focus stays on menu items. Last action: <strong>@lastAction</strong>.
+</p>
+
+<div style="display:flex; gap:24px; align-items:center; margin-top:12px">
+    <DxMenu @bind-Open="menuOpen" Items="items">
+        <Trigger>
+            <button class="dx-demo-button">Actions ▾</button>
+        </Trigger>
+    </DxMenu>
+
+    <DxTooltip Side="top">
+        <Trigger>
+            <button class="dx-demo-button" style="background:#64748b">Hover or focus me</button>
+        </Trigger>
+        <ChildContent>
+            This tooltip is anchored above and flips below near the top edge.
+        </ChildContent>
+    </DxTooltip>
+</div>
+
+@code {
+    private bool menuOpen;
+    private string lastAction = "(none)";
+
+    private IReadOnlyList<MenuItem> items => new[]
+    {
+        new MenuItem("Rename", () => lastAction = "Rename"),
+        new MenuItem("Duplicate", () => lastAction = "Duplicate"),
+        new MenuItem("Archive (disabled)", null, Disabled: true),
+        new MenuItem("Delete", () => lastAction = "Delete"),
+    };
+}

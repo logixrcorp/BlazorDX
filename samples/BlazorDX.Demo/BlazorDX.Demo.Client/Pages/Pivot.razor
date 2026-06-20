@@ -1,0 +1,46 @@
+@page "/pivot"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@using BlazorDX.Compute
+@using BlazorDX.Primitives.Overlays
+@using BlazorDX.Demo.Client
+
+<PageTitle>PivotGrid</PageTitle>
+
+<h1>BlazorDX PivotGrid</h1>
+
+<p class="dx-demo-meta">
+    A cross-tab over @People.Count.ToString("N0") rows: <strong>City</strong> down the
+    side, <strong>Tier</strong> across the top, each cell the chosen aggregate of
+    <strong>Visits</strong> — computed by the same Rust/managed kernels as the grid.
+    Row, column, and grand totals aggregate the raw values (so means stay correct).
+</p>
+
+<div style="display:flex; gap:8px; margin-bottom:12px; align-items:center">
+    <label class="dx-demo-meta" style="margin:0">Aggregate:</label>
+    <DxSelect TValue="GridAggregateKind" @bind-Value="agg" Items="aggOptions" />
+</div>
+
+<DxPivotGrid TRow="PivotPerson"
+             Items="People"
+             Accessor="accessor"
+             RowField="0"
+             ColumnField="1"
+             ValueField="2"
+             Aggregate="agg" />
+
+@code {
+    private readonly PivotPersonGridAccessor accessor = new();
+    private GridAggregateKind agg = GridAggregateKind.Sum;
+
+    private readonly IReadOnlyList<ListOption<GridAggregateKind>> aggOptions =
+    [
+        new(GridAggregateKind.Sum, "Sum"),
+        new(GridAggregateKind.Mean, "Mean"),
+        new(GridAggregateKind.Count, "Count"),
+        new(GridAggregateKind.Min, "Min"),
+        new(GridAggregateKind.Max, "Max"),
+    ];
+
+    private IReadOnlyList<PivotPerson> People { get; } = PivotPerson.Sample();
+}

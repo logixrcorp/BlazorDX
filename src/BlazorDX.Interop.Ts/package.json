@@ -1,0 +1,14 @@
+{
+  "name": "blazordx-interop-ts",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TypeScript DOM bridge for BlazorDX, bundled to minified ESM by esbuild.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.23.1",
+    "typescript": "5.5.4"
+  }
+}

@@ -1,0 +1,54 @@
+@page "/barcodes"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@using BlazorDX.Primitives.Barcodes.Qr
+
+<PageTitle>Barcodes & QR</PageTitle>
+
+<h1>BlazorDX Barcodes & QR</h1>
+
+<p class="dx-demo-meta">
+    Pure-C# encoders (no external library): EAN-13, Code 128, and QR (versions 1–4).
+    The encoders are verified against published reference vectors — the Reed-Solomon
+    and data codewords match the standard's "HELLO WORLD" worked example, and every
+    symbol round-trips through an independent decoder. Rendered as crisp SVG.
+</p>
+
+<div style="display:flex; gap:12px; align-items:center; margin-bottom:20px; flex-wrap:wrap">
+    <label class="dx-demo-meta" style="margin:0">Text to encode:
+        <input @bind="text" @bind:event="oninput" style="margin-left:8px; padding:4px 8px; min-width:280px" />
+    </label>
+    <label class="dx-demo-meta" style="margin:0">QR EC level:
+        <select @bind="level" style="margin-left:8px; padding:4px">
+            <option value="@QrErrorLevel.Low">Low (7%)</option>
+            <option value="@QrErrorLevel.Medium">Medium (15%)</option>
+            <option value="@QrErrorLevel.Quartile">Quartile (25%)</option>
+            <option value="@QrErrorLevel.High">High (30%)</option>
+        </select>
+    </label>
+</div>
+
+<div style="display:flex; gap:40px; flex-wrap:wrap; align-items:flex-start">
+    <div>
+        <h2 style="font-size:16px">QR code</h2>
+        <DxQrCode Value="@text" Level="level" ModuleSize="6" />
+    </div>
+
+    <div>
+        <h2 style="font-size:16px">Code 128</h2>
+        <DxBarcode Value="@text" />
+    </div>
+
+    <div>
+        <h2 style="font-size:16px">EAN-13 (retail)</h2>
+        <DxEan13 Value="5901234123457" />
+        <p class="dx-demo-meta" style="max-width:280px">
+            Fixed 13-digit example; the check digit (7) is computed from the first 12.
+        </p>
+    </div>
+</div>
+
+@code {
+    private string text = "https://anthropic.com";
+    private QrErrorLevel level = QrErrorLevel.Medium;
+}

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The compute façade. Exposes IGridCompute and chooses a backend at runtime:
+    the Rust wasm kernels in the browser, a managed C# mirror everywhere else
+    (static SSR, Interactive Server, unit tests). Consumers depend only on the
+    interface and never see which backend ran.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BlazorDX.Interop\BlazorDX.Interop.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+</Project>

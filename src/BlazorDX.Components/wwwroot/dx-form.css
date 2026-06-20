@@ -1,0 +1,62 @@
+/* DxForm — layout, fields, validation, and containers. Inputs reuse .dx-input
+   (dx-input.css); everything here is the form scaffold around them. */
+
+.dx-form { display: flex; flex-direction: column; gap: 14px; }
+
+.dx-field { display: flex; flex-direction: column; gap: 4px; }
+.dx-field-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dx-text, #0f172a);
+}
+.dx-field-req { color: var(--dx-danger, #dc2626); }
+.dx-textarea { resize: vertical; min-height: 64px; font-family: inherit; }
+.dx-select-native { appearance: auto; }
+.dx-checkbox { width: 18px; height: 18px; accent-color: var(--dx-accent, #2563eb); align-self: flex-start; }
+
+.dx-field-error { font-size: 12px; color: var(--dx-danger, #dc2626); }
+.dx-field-invalid .dx-input,
+.dx-field-invalid .dx-textarea,
+.dx-field-invalid .dx-select-native {
+  border-color: var(--dx-danger, #dc2626);
+}
+
+.dx-form-actions { display: flex; gap: 8px; margin-top: 4px; }
+
+/* Containers */
+.dx-form-section {
+  border: 1px solid var(--dx-border, #e2e8f0);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin: 0;
+  min-inline-size: 0;   /* let fieldset shrink in flex/grid */
+}
+.dx-form-section-legend {
+  font-weight: 600;
+  color: var(--dx-text, #0f172a);
+  padding: 0 6px;
+}
+.dx-form-section-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+.dx-form-section-caret { color: var(--dx-muted, #94a3b8); font-size: 11px; }
+.dx-form-section-desc { margin: 0 0 10px; color: var(--dx-muted, #64748b); font-size: 13px; }
+.dx-form-section-body { display: flex; flex-direction: column; gap: 14px; }
+
+.dx-form-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--dx-form-cols, 2), minmax(0, 1fr));
+  gap: 14px;
+}
+@media (max-width: 640px) {
+  .dx-form-grid { grid-template-columns: 1fr; }
+}

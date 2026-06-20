@@ -1,0 +1,37 @@
+@page "/gantt"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@using BlazorDX.Primitives.Scheduling
+
+<PageTitle>Gantt</PageTitle>
+
+<h1>BlazorDX Gantt</h1>
+
+<p class="dx-demo-meta">
+    Tasks laid out as bars across a day timeline, clamped to the visible window,
+    each with a progress fill. Weekends are shaded. Last selected:
+    <strong>@lastSelected</strong>.
+</p>
+
+<DxGantt Tasks="tasks"
+         RangeStart="start"
+         DayCount="28"
+         OnTaskSelected="OnSelected" />
+
+@code {
+    private readonly DateOnly start = DateOnly.FromDateTime(DateTime.Today);
+    private string lastSelected = "(none)";
+
+    private void OnSelected(GanttTask t) => lastSelected = t.Name;
+
+    private IReadOnlyList<GanttTask> tasks => Build(start);
+
+    private static IReadOnlyList<GanttTask> Build(DateOnly d) =>
+    [
+        new GanttTask("Research", d, d.AddDays(4), 1.0),
+        new GanttTask("Design", d.AddDays(3), d.AddDays(8), 0.8, "#16a34a"),
+        new GanttTask("Build", d.AddDays(7), d.AddDays(18), 0.45, "#d97706"),
+        new GanttTask("Test", d.AddDays(16), d.AddDays(23), 0.1, "#7c3aed"),
+        new GanttTask("Launch", d.AddDays(24), d.AddDays(26), 0, "#dc2626"),
+    ];
+}

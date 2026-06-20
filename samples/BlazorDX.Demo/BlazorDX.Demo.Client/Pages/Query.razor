@@ -1,0 +1,59 @@
+@page "/query"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@using BlazorDX.Primitives.Query
+
+<PageTitle>QueryBuilder</PageTitle>
+
+<h1>BlazorDX QueryBuilder</h1>
+
+<p class="dx-demo-meta">
+    Build a nestable AND/OR predicate over a field list. The same tree is evaluated
+    by <code>QueryEvaluator</code> (a field-resolver-based, reflection-free
+    evaluator) to filter the list below. Add a nested group to mix logic.
+</p>
+
+<DxQueryBuilder Fields="fields" Root="query" OnChange="StateHasChanged" />
+
+<h2 style="margin-top:20px">Matches: <strong>@matches.Count</strong> of @people.Count</h2>
+<ul class="dx-demo-meta">
+    @foreach (var p in matches)
+    {
+        <li>@p.Name — @p.City, @p.Tier, @p.Visits visits</li>
+    }
+</ul>
+
+@code {
+    private record Person(string Name, string City, string Tier, int Visits);
+
+    private readonly QueryGroup query = new();
+
+    private readonly IReadOnlyList<QueryField> fields =
+    [
+        new QueryField("Name"),
+        new QueryField("City"),
+        new QueryField("Tier"),
+        new QueryField("Visits", IsNumeric: true),
+    ];
+
+    private readonly IReadOnlyList<Person> people =
+    [
+        new("Ada", "Austin", "Pro", 42),
+        new("Bo", "Berlin", "Free", 7),
+        new("Cy", "Austin", "Enterprise", 120),
+        new("Di", "Cairo", "Pro", 65),
+        new("Ed", "Austin", "Free", 15),
+        new("Fi", "Berlin", "Enterprise", 200),
+    ];
+
+    private List<Person> matches => people.Where(p => QueryEvaluator.Evaluate(query, Cell(p))).ToList();
+
+    private static Func<string, string> Cell(Person p) => field => field switch
+    {
+        "Name" => p.Name,
+        "City" => p.City,
+        "Tier" => p.Tier,
+        "Visits" => p.Visits.ToString(System.Globalization.CultureInfo.InvariantCulture),
+        _ => string.Empty,
+    };
+}

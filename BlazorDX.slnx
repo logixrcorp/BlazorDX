@@ -1,0 +1,24 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/BlazorDX.Primitives/BlazorDX.Primitives.csproj" />
+    <Project Path="src/BlazorDX.Components/BlazorDX.Components.csproj" />
+    <Project Path="src/BlazorDX.Interop/BlazorDX.Interop.csproj" />
+    <Project Path="src/BlazorDX.Compute/BlazorDX.Compute.csproj" />
+    <Project Path="src/BlazorDX.Security/BlazorDX.Security.csproj" />
+    <Project Path="src/BlazorDX.SourceGen/BlazorDX.SourceGen.csproj" />
+    <Project Path="src/BlazorDX.Htmx/BlazorDX.Htmx.csproj" />
+  </Folder>
+  <Folder Name="/analyzers/">
+    <Project Path="analyzers/BlazorDX.Analyzers/BlazorDX.Analyzers.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/BlazorDX.Demo/BlazorDX.Demo/BlazorDX.Demo.csproj" />
+    <Project Path="samples/BlazorDX.Demo/BlazorDX.Demo.Client/BlazorDX.Demo.Client.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/BlazorDX.Compute.Tests/BlazorDX.Compute.Tests.csproj" />
+    <Project Path="tests/BlazorDX.Analyzers.Tests/BlazorDX.Analyzers.Tests.csproj" />
+    <Project Path="tests/BlazorDX.Components.Tests/BlazorDX.Components.Tests.csproj" />
+    <Project Path="tests/BlazorDX.E2E.Tests/BlazorDX.E2E.Tests.csproj" />
+  </Folder>
+</Solution>

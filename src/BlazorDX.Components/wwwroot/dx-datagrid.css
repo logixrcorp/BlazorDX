@@ -1,0 +1,495 @@
+/*
+  DxDataGrid theme. Everything is driven by CSS custom properties, so consumers
+  retheme by overriding these variables in their own scope — no !important, no
+  Shadow DOM. The defaults below are a neutral light theme.
+*/
+.dx-grid {
+  /* Grid-local names mapped to the global theme tokens (themeable, dark-aware). */
+  --dx-grid-border: var(--dx-border, #e2e8f0);
+  --dx-grid-header-bg: var(--dx-surface-alt, #f8fafc);
+  --dx-grid-header-fg: var(--dx-text, #0f172a);
+  --dx-grid-row-bg: var(--dx-surface, #ffffff);
+  --dx-grid-row-alt-bg: var(--dx-surface-alt, #f8fafc);
+  --dx-grid-cell-fg: var(--dx-text, #1e293b);
+  --dx-grid-accent: var(--dx-accent, #2563eb);
+  --dx-grid-font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid var(--dx-grid-border);
+  border-radius: 8px;
+  font: var(--dx-grid-font);
+  color: var(--dx-grid-cell-fg);
+  background: var(--dx-grid-row-bg);
+}
+
+.dx-grid-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--dx-grid-header-bg);
+  border-bottom: 1px solid var(--dx-grid-border);
+}
+
+.dx-grid-th {
+  position: relative;
+  display: flex;
+  align-items: center;
+  color: var(--dx-grid-header-fg);
+  border-right: 1px solid var(--dx-grid-border);
+}
+
+.dx-grid-th-label {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px 12px;
+  font-weight: 600;
+  text-align: left;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dx-grid-th-label:hover {
+  color: var(--dx-grid-accent);
+}
+
+.dx-grid-th-label:focus-visible {
+  outline: 2px solid var(--dx-grid-accent);
+  outline-offset: -2px;
+}
+
+.dx-grid-resize {
+  flex: 0 0 auto;
+  align-self: stretch;
+  width: 7px;
+  margin-right: -3px;
+  cursor: col-resize;
+  touch-action: none;
+}
+.dx-grid-resize:hover {
+  background: color-mix(in srgb, var(--dx-grid-accent, #2563eb) 50%, transparent);
+}
+
+.dx-grid-resize-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  cursor: col-resize;
+}
+
+/* ---- Tree grid ---- */
+.dx-grid-row[tabindex]:focus-visible {
+  outline: 2px solid var(--dx-grid-accent, #2563eb);
+  outline-offset: -2px;
+}
+.dx-tree-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.dx-tree-toggle {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font-size: 0.8rem;
+  line-height: 1;
+  color: var(--dx-text-muted, #64748b);
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.dx-tree-toggle:hover { background: var(--dx-surface-alt, #f1f5f9); }
+.dx-tree-spacer { flex: 0 0 auto; width: 18px; }
+.dx-tree-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---- Pivot grid ---- */
+.dx-pivot {
+  border-collapse: collapse;
+  font: inherit;
+  color: var(--dx-text, #0f172a);
+  background: var(--dx-surface, #ffffff);
+}
+.dx-pivot-caption {
+  caption-side: top;
+  text-align: left;
+  padding: 0 0 8px;
+  font-size: 0.85rem;
+  color: var(--dx-text-muted, #64748b);
+}
+.dx-pivot th, .dx-pivot td {
+  padding: 6px 12px;
+  border: 1px solid var(--dx-border, #e2e8f0);
+  text-align: right;
+}
+.dx-pivot-corner, .dx-pivot-colhead {
+  text-align: left;
+  background: var(--dx-surface-alt, #f8fafc);
+  font-weight: 600;
+}
+.dx-pivot-colhead { text-align: right; }
+.dx-pivot-rowhead {
+  text-align: left;
+  background: var(--dx-surface-alt, #f8fafc);
+  font-weight: 600;
+}
+.dx-pivot-cell { font-variant-numeric: tabular-nums; }
+.dx-pivot-total {
+  background: color-mix(in srgb, var(--dx-accent, #2563eb) 8%, var(--dx-surface, #fff));
+  font-weight: 600;
+}
+.dx-pivot-grand {
+  background: color-mix(in srgb, var(--dx-accent, #2563eb) 16%, var(--dx-surface, #fff));
+  font-weight: 700;
+}
+
+.dx-grid-row {
+  align-items: center;
+  background: var(--dx-grid-row-bg);
+  border-bottom: 1px solid var(--dx-grid-border);
+}
+
+.dx-grid-row:nth-child(even) {
+  background: var(--dx-grid-row-alt-bg);
+}
+
+.dx-grid-cell {
+  padding: 6px 12px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.dx-grid-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  background: #eef2ff;
+  border-bottom: 1px solid var(--dx-grid-border);
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+.dx-grid-group:hover {
+  background: #e0e7ff;
+}
+.dx-grid-group-toggle {
+  color: var(--dx-grid-accent);
+  width: 1em;
+}
+.dx-grid-group-count {
+  color: #64748b;
+  font-weight: 400;
+}
+.dx-grid-group-summary {
+  margin-left: auto;
+  display: flex;
+  gap: 16px;
+  color: #475569;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.dx-grid-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background: var(--dx-grid-header-bg);
+  border-top: 1px solid var(--dx-grid-border);
+  font-weight: 600;
+}
+
+.dx-grid-foot-cell {
+  padding: 8px 12px;
+  color: var(--dx-grid-header-fg);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* PresenceBoundary default transitions (used by motion demos). */
+.dx-present-enter {
+  animation: dx-fade-in 180ms ease-out;
+}
+
+.dx-present-leave {
+  animation: dx-fade-out 180ms ease-in forwards;
+}
+
+@keyframes dx-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes dx-fade-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(4px); }
+}
+
+/* ---- Selection ---- */
+.dx-grid-select-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dx-grid-select {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--dx-accent, #2563eb);
+}
+.dx-grid-row-selected {
+  background: color-mix(in srgb, var(--dx-accent, #2563eb) 12%, var(--dx-grid-row-bg, #ffffff));
+}
+
+/* ---- Per-column filter row ---- */
+.dx-grid-filters {
+  position: sticky;
+  top: 0;
+  border-bottom: 1px solid var(--dx-border, #e2e8f0);
+  background: var(--dx-grid-header-bg, #f8fafc);
+}
+.dx-grid-filter-cell {
+  padding: 4px 6px;
+  box-sizing: border-box;
+}
+.dx-grid-filter-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--dx-text, #0f172a);
+  background: var(--dx-surface, #ffffff);
+  border: 1px solid var(--dx-border, #cbd5e1);
+  border-radius: 6px;
+  outline: none;
+}
+.dx-grid-filter-input:focus-visible {
+  border-color: var(--dx-accent, #2563eb);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dx-accent, #2563eb) 25%, transparent);
+}
+
+/* ---- Master / detail ---- */
+.dx-grid-detail-toggle {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  font-size: 0.75rem;
+  line-height: 1;
+  color: var(--dx-text-muted, #64748b);
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.dx-grid-detail-toggle:hover { background: var(--dx-surface-alt, #f1f5f9); color: var(--dx-grid-accent, #2563eb); }
+.dx-grid-detail {
+  padding: 12px 16px;
+  background: var(--dx-surface-alt, #f8fafc);
+  border-bottom: 1px solid var(--dx-grid-border, #e2e8f0);
+  color: var(--dx-text, #0f172a);
+}
+
+/* ---- Toolbar / export ---- */
+.dx-grid-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.dx-grid-export {
+  padding: 6px 12px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--dx-text, #0f172a);
+  background: var(--dx-surface, #ffffff);
+  border: 1px solid var(--dx-border, #cbd5e1);
+  border-radius: var(--dx-radius, 8px);
+  cursor: pointer;
+}
+.dx-grid-export:hover { background: var(--dx-surface-alt, #f1f5f9); color: var(--dx-accent, #2563eb); }
+.dx-grid-toolbar { align-items: center; }
+.dx-grid-chooser { position: relative; margin-right: auto; }
+.dx-grid-chooser-toggle {
+  padding: 6px 12px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--dx-text, #0f172a);
+  background: var(--dx-surface, #ffffff);
+  border: 1px solid var(--dx-border, #cbd5e1);
+  border-radius: var(--dx-radius, 8px);
+  cursor: pointer;
+}
+.dx-grid-chooser-toggle:hover { background: var(--dx-surface-alt, #f1f5f9); }
+.dx-grid-chooser-panel {
+  position: absolute;
+  z-index: 1500;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 12rem;
+  max-height: 16rem;
+  overflow-y: auto;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--dx-surface, #ffffff);
+  border: 1px solid var(--dx-border, #cbd5e1);
+  border-radius: var(--dx-radius, 8px);
+  box-shadow: var(--dx-shadow, 0 12px 32px rgba(15, 23, 42, 0.22));
+}
+.dx-grid-chooser-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.dx-grid-chooser-item:hover { background: var(--dx-surface-alt, #f1f5f9); }
+
+/* ---- Excel-style value filter menu ---- */
+.dx-grid-funnel {
+  flex: 0 0 auto;
+  width: 20px;
+  align-self: stretch;
+  padding: 0;
+  font-size: 0.7rem;
+  color: var(--dx-text-muted, #94a3b8);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.dx-grid-funnel:hover { color: var(--dx-grid-accent, #2563eb); }
+.dx-grid-funnel-active { color: var(--dx-grid-accent, #2563eb); font-weight: 700; }
+.dx-grid-valuemenu {
+  position: absolute;
+  z-index: 1600;
+  top: 100%;
+  right: 0;
+  min-width: 11rem;
+  max-height: 16rem;
+  overflow-y: auto;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  font-weight: 400;
+  background: var(--dx-surface, #ffffff);
+  border: 1px solid var(--dx-border, #cbd5e1);
+  border-radius: var(--dx-radius, 8px);
+  box-shadow: var(--dx-shadow, 0 12px 32px rgba(15, 23, 42, 0.22));
+}
+.dx-grid-valuemenu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.dx-grid-valuemenu-item:hover { background: var(--dx-surface-alt, #f1f5f9); }
+.dx-grid-valuemenu-clear {
+  margin-top: 4px;
+  padding: 5px 8px;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--dx-grid-accent, #2563eb);
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--dx-grid-border, #e2e8f0);
+  cursor: pointer;
+  text-align: left;
+}
+.dx-grid-valuemenu-clear:disabled { color: var(--dx-text-muted, #94a3b8); cursor: default; }
+
+/* ---- Pinned / frozen columns ---- */
+.dx-grid-pinnable { overflow-x: auto; }
+.dx-grid-pinned {
+  position: sticky;
+  z-index: 2;
+  background: var(--dx-grid-row-bg, #ffffff);
+}
+/* Header/footer pinned cells sit above body cells and use their own surface. */
+.dx-grid-header .dx-grid-pinned,
+.dx-grid-filters .dx-grid-pinned,
+.dx-grid-footer .dx-grid-pinned { z-index: 3; background: var(--dx-grid-header-bg, #f8fafc); }
+.dx-grid-row-selected .dx-grid-pinned {
+  background: color-mix(in srgb, var(--dx-accent, #2563eb) 12%, var(--dx-grid-row-bg, #ffffff));
+}
+/* A divider shadow on the last frozen column. */
+.dx-grid-pin-edge { box-shadow: 2px 0 5px -2px rgba(15, 23, 42, 0.25); }
+
+/* ---- Inline edit ---- */
+.dx-grid-cell-editable { cursor: text; }
+.dx-grid-cell-editable:hover {
+  outline: 1px dashed color-mix(in srgb, var(--dx-accent, #2563eb) 45%, transparent);
+  outline-offset: -2px;
+}
+
+/* Keyboard cell navigation: the body is the focusable container; the active cell
+   gets an accent ring and tint. z-index keeps the ring above pinned-cell shadows. */
+.dx-grid-body:focus { outline: none; }
+.dx-grid-body:focus-visible { outline: 2px solid var(--dx-accent, #2563eb); outline-offset: -2px; }
+.dx-grid-cell-active {
+  outline: 2px solid var(--dx-accent, #2563eb);
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--dx-accent, #2563eb) 10%, transparent);
+  position: relative;
+  z-index: 1;
+}
+
+/* Remote (server-side) loading skeleton, shown while a window is fetched. */
+.dx-grid-row-loading { align-items: center; }
+.dx-grid-skeleton {
+  display: block;
+  height: 12px;
+  width: 70%;
+  margin: 0 10px;
+  border-radius: 4px;
+  background: linear-gradient(90deg,
+    var(--dx-border, #e2e8f0) 25%,
+    color-mix(in srgb, var(--dx-border, #e2e8f0) 45%, #ffffff) 50%,
+    var(--dx-border, #e2e8f0) 75%);
+  background-size: 200% 100%;
+  animation: dx-grid-shimmer 1.2s linear infinite;
+}
+@keyframes dx-grid-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .dx-grid-skeleton { animation: none; } }
+.dx-grid-edit-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 2px 6px;
+  margin: 0;
+  font: inherit;
+  color: var(--dx-text, #0f172a);
+  background: var(--dx-surface, #ffffff);
+  border: 1px solid var(--dx-accent, #2563eb);
+  border-radius: 4px;
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dx-accent, #2563eb) 25%, transparent);
+}

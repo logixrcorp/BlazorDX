@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <!--
+    Security primitives baked into the component lifecycle: safe-action dispatch
+    (race-condition mitigation), the sanctioned HTML sanitizer boundary, and the
+    scoped-state registration helper. Uses the Razor SDK so MarkupString and the
+    component assemblies are available to both server and browser-wasm consumers.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+  </ItemGroup>
+
+</Project>

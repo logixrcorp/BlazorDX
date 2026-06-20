@@ -1,0 +1,48 @@
+@page "/overlays"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@using BlazorDX.Primitives.Overlays
+
+<PageTitle>Sheet &amp; Context Menu</PageTitle>
+
+<h1>BlazorDX Sheet &amp; Context Menu</h1>
+
+<p class="dx-demo-meta">
+    The <strong>Sheet</strong> is literally a <code>DialogPrimitive</code> anchored to a
+    screen edge — same focus trap, scroll lock, and Escape/click-outside dismissal, with a
+    slide transition. The <strong>Context Menu</strong> reuses the roving-tabindex and
+    dismissal primitives but opens at the cursor on right-click. Last action:
+    <strong>@lastAction</strong>.
+</p>
+
+<div style="display:flex; gap:24px; align-items:center; margin-top:12px">
+    <button class="dx-demo-button" @onclick="() => sheetOpen = true">Open right sheet</button>
+</div>
+
+<DxSheet @bind-Open="sheetOpen" Side="right" AriaLabel="Settings panel">
+    <h2 style="margin-top:0">Settings</h2>
+    <p>This panel slid in from the right edge. Press <kbd>Esc</kbd>, click the backdrop,
+        or use the button below to dismiss it. Focus is trapped inside while open.</p>
+    <button class="dx-demo-button" @onclick="() => sheetOpen = false">Close</button>
+</DxSheet>
+
+<h2 style="margin-top:32px">Right-click the region below</h2>
+
+<DxContextMenu Items="items">
+    <div class="dx-demo-dropzone" style="display:grid; place-items:center; height:160px; user-select:none">
+        Right-click anywhere in this box
+    </div>
+</DxContextMenu>
+
+@code {
+    private bool sheetOpen;
+    private string lastAction = "(none)";
+
+    private IReadOnlyList<MenuItem> items => new[]
+    {
+        new MenuItem("Cut", () => lastAction = "Cut"),
+        new MenuItem("Copy", () => lastAction = "Copy"),
+        new MenuItem("Paste (disabled)", null, Disabled: true),
+        new MenuItem("Delete", () => lastAction = "Delete"),
+    };
+}

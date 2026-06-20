@@ -1,0 +1,74 @@
+<Project>
+
+  <!--
+    Shared build configuration for every project in the repository.
+    Project-specific settings (TargetFramework, SDK type) live in each .csproj;
+    everything common to the whole codebase lives here so the rules are
+    expressed once and cannot drift between projects.
+  -->
+
+  <PropertyGroup Label="Language">
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Quality gates">
+    <!-- Warnings are errors: a warning is a defect we have not triaged yet. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
+  <!-- Trimming/AOT flags are applied in Directory.Build.targets, where OutputType
+       is known, so they target libraries only (not the demo or test executables). -->
+
+  <PropertyGroup Label="Repository metadata">
+    <Authors>BlazorDX contributors</Authors>
+    <Product>BlazorDX</Product>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/blazordx/blazordx</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/blazordx/blazordx</PackageProjectUrl>
+    <RepositoryType>git</RepositoryType>
+    <Version>0.1.0</Version>
+    <Description>BlazorDX — a secure-by-default, AOT-safe, headless Blazor component system for .NET 10. Zero runtime reflection; C# + Rust + TypeScript.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>blazor;components;datagrid;headless;aot;trimming;wasm;rust;ui;dotnet</PackageTags>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <!-- Nothing packs by default; library projects opt in via Directory.Build.targets
+       (where OutputType is known), so the demo app and test projects never produce
+       a package. -->
+  <PropertyGroup Label="Packaging default">
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <!--
+    Every project is policed by the BlazorDX analyzers (DX1000 line cap +
+    security bans). The analyzer and source-generator projects are excluded so
+    they do not reference themselves, and any project can opt out by setting
+    IncludeBlazorDXAnalyzers=false. ReferenceOutputAssembly=false means we load
+    the analyzer without taking a runtime dependency on it.
+  -->
+  <ItemGroup Condition="'$(MSBuildProjectName)' != 'BlazorDX.Analyzers'
+                        and '$(MSBuildProjectName)' != 'BlazorDX.SourceGen'
+                        and '$(IncludeBlazorDXAnalyzers)' != 'false'">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)analyzers\BlazorDX.Analyzers\BlazorDX.Analyzers.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!--
+    Human-readability gate for non-C# source (.rs / .ts / .css). The Roslyn
+    analyzer DX1000 covers C# and .razor; this MSBuild target covers the rest.
+    Guarded by Exists() so the repository still builds before the target file
+    is materialized.
+  -->
+  <Import Project="$(MSBuildThisFileDirectory)build\FileLength.targets"
+          Condition="Exists('$(MSBuildThisFileDirectory)build\FileLength.targets')" />
+
+</Project>

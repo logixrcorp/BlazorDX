@@ -1,0 +1,41 @@
+@page "/imageeditor"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+
+<PageTitle>Image editor</PageTitle>
+
+<h1>BlazorDX Image Editor</h1>
+
+<p class="dx-demo-meta">
+    A canvas-backed, non-destructive image editor. Adjustments, effects, and
+    transforms are owned in C#; the pixel work runs in a small TypeScript bridge
+    (<code>image-editor.js</code>) over <code>[JSImport]</code> — no third-party
+    library. Open your own image, or edit the bundled sample below.
+</p>
+
+<DxImageEditor InitialSource="@sample" DownloadName="edited.png" OnChange="OnChanged" />
+
+<p class="dx-demo-meta">Last render produced a @lastLength-char PNG data URL.</p>
+
+@code {
+    private int lastLength;
+    private void OnChanged(string dataUrl) => lastLength = dataUrl.Length;
+
+    // A self-contained SVG (data URL) so the editor has something to show on load.
+    private readonly string sample = "data:image/svg+xml," + Uri.EscapeDataString(
+        """
+        <svg xmlns='http://www.w3.org/2000/svg' width='360' height='240'>
+          <defs>
+            <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
+              <stop offset='0' stop-color='#2563eb'/>
+              <stop offset='1' stop-color='#7c3aed'/>
+            </linearGradient>
+          </defs>
+          <rect width='360' height='240' fill='url(#g)'/>
+          <circle cx='110' cy='110' r='62' fill='#f59e0b'/>
+          <circle cx='240' cy='150' r='48' fill='#10b981'/>
+          <rect x='60' y='30' width='240' height='26' rx='13' fill='rgba(255,255,255,0.85)'/>
+          <text x='180' y='49' font-family='sans-serif' font-size='18' font-weight='700' fill='#1e293b' text-anchor='middle'>BlazorDX sample</text>
+        </svg>
+        """);
+}

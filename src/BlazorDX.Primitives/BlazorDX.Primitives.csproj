@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <!--
+    Tier 1: headless primitives. These components own behavior, state, keyboard
+    navigation, focus, and ARIA, and ship no CSS. Tier 2 (BlazorDX.Components)
+    styles them. This project also defines the grid binding abstractions that
+    BlazorDX.SourceGen targets.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- Emit XML docs so the docs site can show descriptions for inherited parameters. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS1573;CS1572;CS1574;CS1710;CS1711;CS1712;CS1734</NoWarn>
+  </PropertyGroup>
+
+  <!-- Stage the generated XML doc as a static web asset (/_content/BlazorDX.Primitives/api-docs.xml). -->
+  <Target Name="StageApiDocXml" AfterTargets="CoreCompile" Condition="Exists('$(DocumentationFile)')">
+    <Copy SourceFiles="$(DocumentationFile)"
+          DestinationFiles="$(MSBuildProjectDirectory)\wwwroot\api-docs.xml"
+          SkipUnchangedFiles="true" />
+  </Target>
+
+  <!-- ComponentBase, RenderTreeBuilder, etc. via package (browser-wasm safe). -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BlazorDX.Interop\BlazorDX.Interop.csproj" />
+    <ProjectReference Include="..\BlazorDX.Compute\BlazorDX.Compute.csproj" />
+  </ItemGroup>
+
+  <!-- Let the test project verify internal building blocks (e.g. the QR Reed-Solomon
+       core) directly against published reference vectors. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="BlazorDX.Components.Tests" />
+  </ItemGroup>
+
+</Project>

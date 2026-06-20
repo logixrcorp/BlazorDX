@@ -1,0 +1,107 @@
+@page "/elements"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@using BlazorDX.Primitives.Overlays
+
+<PageTitle>Elements</PageTitle>
+
+<h1>BlazorDX Elements</h1>
+
+<p class="dx-demo-meta">
+    Small building blocks — buttons, badges, chips, avatars, cards, and a slider —
+    that compose into richer UIs. All token-themed.
+</p>
+
+<h2 style="font-size:16px">Buttons</h2>
+<div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+    <DxButton Variant="primary" Text="Primary" OnClick="() => clicks++" />
+    <DxButton Variant="secondary" Text="Secondary" OnClick="() => clicks++" />
+    <DxButton Variant="danger" Text="Danger" OnClick="() => clicks++" />
+    <DxButton Variant="ghost" Text="Ghost" OnClick="() => clicks++" />
+    <DxButton Variant="primary" Text="Disabled" Disabled="true" />
+    <span class="dx-demo-meta" style="margin:0">Clicks: <strong>@clicks</strong></span>
+</div>
+
+<h2 style="font-size:16px; margin-top:24px">Button group &amp; toolbar</h2>
+<DxToolbar AriaLabel="Formatting">
+    <DxButtonGroup AriaLabel="Text style">
+        <DxButton Variant="secondary" Text="Bold" />
+        <DxButton Variant="secondary" Text="Italic" />
+        <DxButton Variant="secondary" Text="Underline" />
+    </DxButtonGroup>
+    <DxSplitButton Variant="primary" Text="Save" OnClick='() => lastAction = "Save"' Items="saveActions" />
+    <span class="dx-demo-meta" style="margin:0">Last: <strong>@lastAction</strong></span>
+</DxToolbar>
+
+<h2 style="font-size:16px; margin-top:24px">Badges</h2>
+<div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+    <DxBadge Text="Default" />
+    <DxBadge Variant="primary" Text="Primary" />
+    <DxBadge Variant="success" Text="Success" />
+    <DxBadge Variant="warning" Text="Warning" />
+    <DxBadge Variant="danger" Text="Danger" />
+    <DxBadge Variant="info" Text="Info" />
+    <span>Status <DxBadge Variant="success" Dot="true" /></span>
+    <span>Inbox <DxBadge Variant="danger" Text="9" /></span>
+</div>
+
+<h2 style="font-size:16px; margin-top:24px">Chips</h2>
+<div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+    @foreach (string tag in tags)
+    {
+        <DxChip Variant="primary" Text="@tag" Dismissible="true" OnDismiss="() => tags.Remove(tag)" />
+    }
+    @if (tags.Count == 0)
+    {
+        <span class="dx-demo-meta">All removed — </span>
+    }
+    <button class="dx-demo-button" @onclick="ResetTags">Reset</button>
+</div>
+
+<h2 style="font-size:16px; margin-top:24px">Avatars</h2>
+<div style="display:flex; gap:10px; align-items:center">
+    <DxAvatar Initials="AL" AltText="Ada Lovelace" />
+    <DxAvatar Initials="GH" AltText="Grace Hopper" Size="56" />
+    <DxAvatar ImageUrl="https://avatars.githubusercontent.com/u/9919?s=80" AltText="GitHub" Size="48" />
+</div>
+
+<h2 style="font-size:16px; margin-top:24px">Card</h2>
+<div style="max-width:360px">
+    <DxCard>
+        <Header>Project status</Header>
+        <ChildContent>
+            <p style="margin:0">A surface container with optional header and footer.
+               Move the slider to update the badge.</p>
+            <div style="margin-top:12px">
+                <DxSlider @bind-Value="progress" Min="0" Max="100" Step="5" ShowValue="true" AriaLabel="Progress" />
+            </div>
+        </ChildContent>
+        <Footer>
+            <DxBadge Variant="@(progress >= 100 ? "success" : "info")"
+                     Text="@($"{progress:0}% complete")" />
+        </Footer>
+    </DxCard>
+</div>
+
+<h2 style="font-size:16px; margin-top:24px">Slider</h2>
+<DxSlider @bind-Value="volume" Min="0" Max="11" Step="1" ShowValue="true" AriaLabel="Volume" />
+<p class="dx-demo-meta">Volume: <strong>@volume</strong> (native range, keyboard + drag, ARIA slider).</p>
+
+@code {
+    private double progress = 60;
+    private double volume = 7;
+    private int clicks;
+    private string lastAction = "(none)";
+    private readonly List<string> tags = NewTags();
+    private static List<string> NewTags() => ["Blazor", "Rust", "WebAssembly", "Headless"];
+    private void ResetTags() { tags.Clear(); tags.AddRange(NewTags()); }
+
+    // The split button owns its menu's open state, so a secondary action that mutates
+    // this page's state calls StateHasChanged to refresh the display.
+    private IReadOnlyList<MenuItem> saveActions => new[]
+    {
+        new MenuItem("Save and close", () => { lastAction = "Save and close"; StateHasChanged(); }),
+        new MenuItem("Save as draft", () => { lastAction = "Save as draft"; StateHasChanged(); }),
+        new MenuItem("Save a copy", () => { lastAction = "Save a copy"; StateHasChanged(); }),
+    };
+}

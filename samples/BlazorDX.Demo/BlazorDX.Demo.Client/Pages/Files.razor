@@ -1,0 +1,65 @@
+@page "/files"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@using BlazorDX.Primitives.Files
+
+<PageTitle>File Manager</PageTitle>
+
+<h1>BlazorDX File Manager</h1>
+
+<p class="dx-demo-meta">
+    A two-pane file manager: a folder tree on the left, the selected folder's
+    contents on the right. Click a folder to select it (ancestors auto-expand);
+    double-click a folder to drill in, or a file to open it. Opened:
+    <strong>@opened</strong>.
+</p>
+
+<DxFileManager Roots="roots" OnFileOpen="OnOpen" />
+
+@code {
+    private string opened = "(none)";
+
+    private void OnOpen(FileSystemEntry file) => opened = file.Name;
+
+    private static readonly DateOnly Day = new(2026, 6, 1);
+
+    private readonly IReadOnlyList<FileSystemEntry> roots =
+    [
+        new FileSystemEntry
+        {
+            Name = "src", IsDirectory = true, Modified = Day,
+            Children =
+            [
+                new FileSystemEntry
+                {
+                    Name = "BlazorDX.Primitives", IsDirectory = true, Modified = Day,
+                    Children =
+                    [
+                        new() { Name = "DataGridPrimitive.cs", Size = 28_400, Modified = Day },
+                        new() { Name = "TreeGridPrimitive.cs", Size = 6_100, Modified = Day },
+                        new() { Name = "FileManagerPrimitive.cs", Size = 5_200, Modified = Day },
+                    ],
+                },
+                new FileSystemEntry
+                {
+                    Name = "BlazorDX.Components", IsDirectory = true, Modified = Day,
+                    Children =
+                    [
+                        new() { Name = "DxFileManager.cs", Size = 7_800, Modified = Day },
+                        new() { Name = "DxScheduler.cs", Size = 6_400, Modified = Day },
+                    ],
+                },
+            ],
+        },
+        new FileSystemEntry
+        {
+            Name = "docs", IsDirectory = true, Modified = Day,
+            Children =
+            [
+                new() { Name = "ARCHITECTURE.md", Size = 9_200, Modified = Day },
+                new() { Name = "ROADMAP.md", Size = 5_000, Modified = Day },
+            ],
+        },
+        new() { Name = "README.md", Size = 7_100, Modified = Day },
+    ];
+}

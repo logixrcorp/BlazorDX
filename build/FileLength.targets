@@ -1,0 +1,70 @@
+<Project>
+
+  <!--
+    Enforces the 1000-line cap on non-C# source (.rs, .ts, .css). The DX1000
+    Roslyn analyzer already covers .cs and .razor; the compiler never sees these
+    other files, so an MSBuild target counts their lines and fails the build.
+    Imported into every project by Directory.Build.props.
+  -->
+
+  <UsingTask TaskName="DxCheckFileLength"
+             TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Files ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+      <MaxLines ParameterType="System.Int32" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Code Type="Class" Language="cs"><![CDATA[
+        using System;
+        using System.IO;
+        using Microsoft.Build.Framework;
+        using Microsoft.Build.Utilities;
+
+        public sealed class DxCheckFileLength : Task
+        {
+            public ITaskItem[] Files { get; set; }
+            public int MaxLines { get; set; }
+
+            public override bool Execute()
+            {
+                bool withinCap = true;
+                foreach (ITaskItem file in Files)
+                {
+                    string path = file.ItemSpec;
+                    if (!File.Exists(path))
+                    {
+                        continue;
+                    }
+
+                    int lineCount = File.ReadAllLines(path).Length;
+                    if (lineCount > MaxLines)
+                    {
+                        Log.LogError(
+                            "DX1000: '{0}' has {1} lines; the BlazorDX cap is {2}. Split it by responsibility.",
+                            path, lineCount, MaxLines);
+                        withinCap = false;
+                    }
+                }
+
+                return withinCap;
+            }
+        }
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="DxEnforceFileLength" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <_DxCappedFile Include="$(MSBuildProjectDirectory)\**\*.rs;
+                              $(MSBuildProjectDirectory)\**\*.ts;
+                              $(MSBuildProjectDirectory)\**\*.css"
+                     Exclude="$(MSBuildProjectDirectory)\bin\**;
+                              $(MSBuildProjectDirectory)\obj\**;
+                              $(MSBuildProjectDirectory)\**\node_modules\**;
+                              $(MSBuildProjectDirectory)\**\target\**" />
+    </ItemGroup>
+    <DxCheckFileLength Files="@(_DxCappedFile)" MaxLines="1000" />
+  </Target>
+
+</Project>

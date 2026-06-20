@@ -1,0 +1,54 @@
+@page "/chat"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@using BlazorDX.Primitives.Chat
+
+<PageTitle>Chat</PageTitle>
+
+<h1>BlazorDX Chat</h1>
+
+<p class="dx-demo-meta">
+    An AI chat surface. Assistant turns render through <code>DxMarkdown</code> (so
+    model Markdown is shown safely); user turns are plain text. Send with the button
+    or <kbd>Ctrl</kbd>+<kbd>Enter</kbd>. This demo echoes a canned Markdown reply.
+</p>
+
+<DxChat Messages="messages" Busy="busy" OnSend="OnSend" />
+
+@code {
+    private readonly List<ChatMessage> messages =
+    [
+        new ChatMessage(ChatRole.Assistant, "Hi! Ask me about **BlazorDX** — try `headless` or `rust`."),
+    ];
+    private bool busy;
+
+    private async Task OnSend(string text)
+    {
+        messages.Add(new ChatMessage(ChatRole.User, text));
+        busy = true;
+        StateHasChanged();
+
+        await Task.Delay(600);   // simulate a model round-trip
+
+        messages.Add(new ChatMessage(ChatRole.Assistant, Reply(text)));
+        busy = false;
+    }
+
+    private static string Reply(string prompt)
+    {
+        string p = prompt.ToLowerInvariant();
+        if (p.Contains("rust"))
+        {
+            return "BlazorDX offloads heavy work to **Rust** compiled to `wasm32` — sort, "
+                + "filter, aggregate, downsample, and histogram binning, all with a managed C# fallback.";
+        }
+
+        if (p.Contains("headless"))
+        {
+            return "Every component is **two-tier**:\n\n- Tier 1 *primitives* own behavior + ARIA\n"
+                + "- Tier 2 *styled* components add CSS-variable theming\n\nSo you can restyle freely.";
+        }
+
+        return $"You said: *{prompt}*. Ask about `rust` or `headless` for a real answer.";
+    }
+}

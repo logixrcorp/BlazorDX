@@ -1,0 +1,21 @@
+@page "/rating"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+
+<PageTitle>Rating</PageTitle>
+
+<h1>BlazorDX Rating</h1>
+
+<p class="dx-demo-meta">
+    An accessible star rating (ARIA slider). Click a star, hover to preview, or
+    focus it and use Arrow keys / Home / End. Value: <strong>@value</strong> of 5.
+</p>
+
+<DxRating @bind-Value="value" Max="5" />
+
+<h2 style="font-size:16px; margin-top:24px">Read-only</h2>
+<DxRating Value="4" Max="5" ReadOnly="true" />
+
+@code {
+    private int value = 3;
+}

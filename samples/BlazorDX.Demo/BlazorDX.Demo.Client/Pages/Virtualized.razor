@@ -1,0 +1,24 @@
+@page "/virtualize"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+
+<PageTitle>Virtualize</PageTitle>
+
+<h1>BlazorDX Virtualize</h1>
+
+<p class="dx-demo-meta">
+    The grid's virtualization windowing, generalized for any list. This one holds
+    <strong>@items.Count.ToString("N0")</strong> items but keeps only the visible
+    window in the DOM. Scroll it.
+</p>
+
+<DxVirtualize Items="items" ItemHeight="34" ViewportHeight="408" Class="dx-virt-demo">
+    <ChildContent Context="item">
+        <span>@item</span>
+    </ChildContent>
+</DxVirtualize>
+
+@code {
+    private readonly IReadOnlyList<string> items =
+        Enumerable.Range(1, 10_000).Select(n => $"Row {n:N0} — generalized virtualization").ToList();
+}

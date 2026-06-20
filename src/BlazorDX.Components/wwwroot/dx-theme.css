@@ -1,0 +1,47 @@
+/*
+  BlazorDX design tokens — the themeable contract every component reads.
+
+  Override any token in a parent scope (or via DxThemeProvider) and the whole
+  library follows, with no !important and no Shadow DOM. The defaults below are a
+  neutral light theme; the [data-dx-theme="dark"] block flips the surfaces.
+*/
+:root {
+  --dx-accent: #2563eb;          /* primary / highlight color */
+  --dx-accent-contrast: #ffffff; /* text on the accent */
+  --dx-surface: #ffffff;         /* panels, cards, inputs */
+  --dx-surface-alt: #f8fafc;     /* striping, headers */
+  --dx-border: #e2e8f0;          /* hairlines */
+  --dx-text: #0f172a;            /* primary text */
+  --dx-text-muted: #64748b;      /* secondary text */
+  --dx-radius: 8px;
+  --dx-shadow: 0 12px 32px rgba(15, 23, 42, 0.22);
+}
+
+[data-dx-theme="dark"] {
+  --dx-accent: #60a5fa;
+  --dx-accent-contrast: #0b1220;
+  --dx-surface: #1e293b;
+  --dx-surface-alt: #0f172a;
+  --dx-border: #334155;
+  --dx-text: #e2e8f0;
+  --dx-text-muted: #94a3b8;
+  --dx-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* A DxThemeProvider applies the scope and inherits the page's text color. */
+.dx-theme-root {
+  color: var(--dx-text);
+}
+
+/* A token-driven surface, useful for demonstrating a theme switch. */
+.dx-theme-card {
+  background: var(--dx-surface);
+  color: var(--dx-text);
+  border: 1px solid var(--dx-border);
+  border-radius: var(--dx-radius);
+  box-shadow: var(--dx-shadow);
+  padding: 16px 18px;
+}
+.dx-theme-card-muted {
+  color: var(--dx-text-muted);
+}

@@ -1,0 +1,33 @@
+@page "/wizard"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+
+<PageTitle>Stepper</PageTitle>
+
+<h1>BlazorDX Stepper</h1>
+
+<p class="dx-demo-meta">
+    A wizard with completed / current / upcoming steps. Use Back / Next, or click a
+    step. Current step: <strong>@(current + 1)</strong> of @steps.Count.
+</p>
+
+<DxStepper Steps="steps" @bind-Current="current" />
+
+@code {
+    private int current;
+    private IReadOnlyList<StepItem> steps = default!;
+
+    protected override void OnInitialized()
+    {
+        steps =
+        [
+            new StepItem("Account", Account),
+            new StepItem("Profile", Profile),
+            new StepItem("Confirm", Confirm),
+        ];
+    }
+
+    private RenderFragment Account => @<div>Step 1 — create your account. Pick a username and password.</div>;
+    private RenderFragment Profile => @<div>Step 2 — tell us about yourself. Name, avatar, and preferences.</div>;
+    private RenderFragment Confirm => @<div>Step 3 — review and confirm. Everything looks good?</div>;
+}

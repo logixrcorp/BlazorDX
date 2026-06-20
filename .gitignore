@@ -1,0 +1,28 @@
+# .NET
+bin/
+obj/
+*.user
+artifacts/
+
+# Rust
+target/
+**/*.rs.bk
+
+# Node / TypeScript build output
+node_modules/
+*.tsbuildinfo
+
+# Generated interop assets (rebuilt from source by the build targets)
+**/wwwroot/dx/*.wasm
+**/wwwroot/dx/*.js
+**/wwwroot/dx/*.js.map
+
+# IDE
+.vs/
+.idea/
+*.swp
+.claude/
+
+# Visual Studio upgrade / backup artifacts (machine-specific)
+UpgradeLog.htm
+Backup/

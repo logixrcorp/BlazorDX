@@ -1,0 +1,86 @@
+@page "/docs"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Demo.Client
+@using BlazorDX.Demo.Client.Docs
+
+<PageTitle>BlazorDX — Documentation</PageTitle>
+
+<div class="dx-docs">
+    <DocsSidebar Active="" />
+
+    <main class="dx-docs-main">
+        <h1>BlazorDX documentation</h1>
+        <p class="dx-lede">
+            A secure-by-default, headless, AOT-safe Blazor component system for .NET 10.
+            Pick a component from the sidebar for its API reference and a live demo, or
+            start here.
+        </p>
+
+        <h2>Install</h2>
+        <CodeBlock Language="bash" Code="@Install" />
+
+        <h2>Register services &amp; styles</h2>
+        <p class="dx-demo-meta">Register shared services in both the server and client projects — WASM pages prerender on the server too.</p>
+        <CodeBlock Language="csharp" Code="@Register" />
+
+        <h2>Your first component</h2>
+        <p class="dx-demo-meta">Mark a row type with <code>[GridRow]</code> and the generator emits a reflection-free accessor.</p>
+        <CodeBlock Language="razor" Code="@Usage" />
+
+        <h2>How these docs work</h2>
+        <p class="dx-demo-meta">
+            Every component page shows a short description, an <strong>auto-generated
+            parameter reference</strong> (reflected from the component, so it never drifts
+            from the code), and a link to its interactive demo. Architecture and the
+            decision records live in <a href="https://github.com/blazordx/blazordx">the repo</a>
+            (ARCHITECTURE.md, docs/adr).
+        </p>
+
+        <div class="dx-docs-catgrid">
+            @foreach (string category in ComponentCatalog.Categories)
+            {
+                <div class="dx-docs-catcard">
+                    <h3>@category</h3>
+                    <ul>
+                        @foreach (DocEntry entry in ComponentCatalog.InCategory(category))
+                        {
+                            <li><a href="@($"/docs/{entry.Slug}")">@entry.Name</a></li>
+                        }
+                    </ul>
+                </div>
+            }
+        </div>
+    </main>
+</div>
+
+@code {
+    private const string Install = """
+        dotnet add package BlazorDX.Components
+        dotnet add package BlazorDX.SourceGen
+        dotnet add package BlazorDX.Analyzers
+        """;
+
+    private const string Register = """
+        // Program.cs (server AND client)
+        using BlazorDX.Interop;
+
+        builder.Services.AddBlazorDXInterop();   // browser → real bridges, else null
+        builder.Services.AddScoped<ToastService>();
+
+        // App.razor <head>
+        // <link rel="stylesheet" href="_content/BlazorDX.Components/dx-theme.css" />
+        // <link rel="stylesheet" href="_content/BlazorDX.Components/dx-datagrid.css" />
+        """;
+
+    private const string Usage = """
+        @using BlazorDX.Components
+
+        <DxDataGrid TRow="Person" Items="people" Accessor="accessor"
+                    Selectable="true" Filterable="true" ShowExport="true" />
+
+        @code {
+            private readonly PersonGridAccessor accessor = new();   // source-generated
+            private IReadOnlyList<Person> people = Person.Load();
+        }
+        """;
+}

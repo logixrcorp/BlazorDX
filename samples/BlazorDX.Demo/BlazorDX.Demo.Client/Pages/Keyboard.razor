@@ -1,0 +1,27 @@
+@page "/keyboard"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+
+<PageTitle>On-screen keyboard</PageTitle>
+
+<h1>BlazorDX On-screen Keyboard</h1>
+
+<p class="dx-demo-meta">
+    A clickable QWERTY for touch, kiosk, and accessibility text entry.
+    <code>DxVirtualKeyboard</code> two-way binds to a string; <DxKbd Combo="Shift" />
+    toggles case and the number-row symbols, and Enter raises a callback.
+</p>
+
+<p>
+    <input class="dx-input" style="width:min(28rem, 92vw)" placeholder="Tap the keys below…"
+           value="@text" readonly aria-label="Typed text" />
+</p>
+
+<p class="dx-demo-meta">Submitted: <strong>@submitted</strong></p>
+
+<DxVirtualKeyboard @bind-Value="text" OnEnter="() => submitted = text" />
+
+@code {
+    private string text = string.Empty;
+    private string submitted = "(nothing yet)";
+}

@@ -1,0 +1,29 @@
+@page "/dialog"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+
+<PageTitle>Dialog</PageTitle>
+
+<h1>BlazorDX Dialog</h1>
+
+<p class="dx-demo-meta">
+    Intercepted-unmount exit animation (PresenceBoundary), focus trap, scroll lock,
+    and Escape / click-outside dismissal — a Tier 1 overlay primitive under a styled
+    Tier 2 panel. Try Tab (focus stays inside), Escape, or clicking the backdrop.
+</p>
+
+<button class="dx-demo-button" @onclick="() => isOpen = true">Open dialog</button>
+
+<DxDialog @bind-Open="isOpen" AriaLabel="Delete project confirmation">
+    <h2 style="margin-top:0">Delete project?</h2>
+    <p>This panel is rendered by the headless DialogPrimitive. It animates in and out,
+       traps focus, and locks page scroll while open.</p>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px">
+        <button class="dx-demo-button" style="background:#64748b" @onclick="() => isOpen = false">Cancel</button>
+        <button class="dx-demo-button" style="background:#dc2626" @onclick="() => isOpen = false">Delete</button>
+    </div>
+</DxDialog>
+
+@code {
+    private bool isOpen;
+}

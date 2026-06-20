@@ -1,0 +1,47 @@
+@page "/theme"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@using BlazorDX.Primitives.Navigation
+
+<PageTitle>Theming</PageTitle>
+
+<h1>BlazorDX Theming</h1>
+
+<p class="dx-demo-meta">
+    Every component reads a shared set of CSS-variable design tokens. Flip the
+    theme or accent below and the whole subtree follows — no per-component wiring,
+    no <code>!important</code>. Theme: <strong>@theme</strong>, accent: <strong>@(accent ?? "default")</strong>.
+</p>
+
+<div style="display:flex; gap:8px; margin-bottom:8px">
+    <button class="dx-demo-button" @onclick='() => theme = "light"'>Light</button>
+    <button class="dx-demo-button" style="background:#0f172a" @onclick='() => theme = "dark"'>Dark</button>
+</div>
+<div style="display:flex; gap:8px; margin-bottom:16px">
+    <button class="dx-demo-button" @onclick='() => accent = null'>Default accent</button>
+    <button class="dx-demo-button" style="background:#16a34a" @onclick='() => accent = "#16a34a"'>Green</button>
+    <button class="dx-demo-button" style="background:#7c3aed" @onclick='() => accent = "#7c3aed"'>Violet</button>
+</div>
+
+<DxThemeProvider Theme="@theme" Accent="@accent">
+    <div class="dx-theme-card" style="margin-bottom:16px">
+        <h2 style="margin-top:0; font-size:16px">Token-driven card</h2>
+        <p class="dx-theme-card-muted">Surface, border, and text all come from theme tokens.</p>
+        <DxRating @bind-Value="stars" />
+    </div>
+
+    <DxTabs Items="tabs" @bind-SelectedIndex="tab" />
+</DxThemeProvider>
+
+@code {
+    private string theme = "light";
+    private string? accent;
+    private int stars = 3;
+    private int tab;
+
+    private IReadOnlyList<TabItem> tabs =
+    [
+        new TabItem("First", b => b.AddContent(0, "The selected tab's underline uses the accent token.")),
+        new TabItem("Second", b => b.AddContent(0, "Switch the accent and watch it follow.")),
+    ];
+}

@@ -1,0 +1,58 @@
+@page "/docs/{Slug}"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Demo.Client
+@using BlazorDX.Demo.Client.Docs
+
+<PageTitle>@(entry?.Name ?? "Not found") — BlazorDX docs</PageTitle>
+
+<div class="dx-docs">
+    <DocsSidebar Active="@Slug" />
+
+    <main class="dx-docs-main">
+        @if (entry is null)
+        {
+            <h1>Not found</h1>
+            <p class="dx-demo-meta">No component with slug "<code>@Slug</code>". <a href="/docs">Back to overview</a>.</p>
+        }
+        else
+        {
+            <nav class="dx-docs-crumbs"><a href="/docs">Docs</a> / <span>@entry.Category</span></nav>
+            <h1>@entry.Name</h1>
+            <p class="dx-lede">@entry.Summary</p>
+
+            <a class="dx-btn-primary" href="@entry.DemoRoute">Open live demo →</a>
+
+            @if (example.Length > 0)
+            {
+                <h2>Usage</h2>
+                <CodeBlock Language="razor" Code="@example" />
+            }
+
+            <h2>Parameters</h2>
+            @if (type is not null)
+            {
+                <DxApiTable ComponentType="type" />
+            }
+            else
+            {
+                <p class="dx-demo-meta">Reference unavailable for this type.</p>
+            }
+        }
+    </main>
+</div>
+
+@code {
+    /// <summary>The component slug from the route.</summary>
+    [Parameter] public string Slug { get; set; } = string.Empty;
+
+    private DocEntry? entry;
+    private Type? type;
+    private string example = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        entry = ComponentCatalog.Find(Slug);
+        type = entry is null ? null : ComponentCatalog.ResolveType(entry);
+        example = entry is null ? string.Empty : ComponentCatalog.ExampleFor(entry.Slug);
+    }
+}

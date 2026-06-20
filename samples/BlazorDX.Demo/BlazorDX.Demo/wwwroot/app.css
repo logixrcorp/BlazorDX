@@ -1,0 +1,451 @@
+h1:focus {
+    outline: none;
+}
+
+/* --- BlazorDX demo chrome --- */
+body {
+    margin: 0;
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: #0f172a;
+    background: #f1f5f9;
+}
+
+.dx-nav {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    padding: 10px 24px;
+    background: #0f172a;
+    color: #e2e8f0;
+}
+
+.dx-nav-brand {
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: 0.02em;
+    color: #fff;
+    text-decoration: none;
+    margin-right: 6px;
+}
+
+.dx-nav-brand-accent { color: #60a5fa; }
+
+/* Grouped link clusters: a tiny uppercase label, then its links, with a subtle
+   divider between groups. Wraps to multiple rows on narrow viewports. */
+.dx-nav-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding-left: 14px;
+    border-left: 1px solid #334155;
+}
+
+.dx-nav-group-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #64748b;
+    font-weight: 700;
+}
+
+.dx-nav a {
+    color: #cbd5e1;
+    text-decoration: none;
+    font-size: 13.5px;
+}
+
+.dx-nav a:hover {
+    color: #fff;
+}
+
+.dx-nav a.active {
+    color: #60a5fa;
+}
+
+.dx-main {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+.dx-lede {
+    font-size: 18px;
+    color: #334155;
+}
+
+.dx-demo-meta {
+    color: #475569;
+    font-size: 14px;
+}
+
+/* =========================================================================
+   Showcase home page
+   ========================================================================= */
+
+.dx-hero {
+    margin: -24px -24px 32px;
+    padding: 56px 24px 48px;
+    background: radial-gradient(120% 120% at 80% -10%, #1e3a8a 0%, #0f172a 55%);
+    color: #e2e8f0;
+}
+
+.dx-hero-inner { max-width: 1000px; margin: 0 auto; }
+
+.dx-hero h1 {
+    font-size: 48px;
+    line-height: 1.05;
+    margin: 0 0 12px;
+    color: #fff;
+    letter-spacing: -0.02em;
+}
+
+.dx-hero h1 .dx-accent { color: #60a5fa; }
+
+.dx-hero-tagline {
+    font-size: 19px;
+    color: #cbd5e1;
+    max-width: 640px;
+    margin: 0 0 24px;
+}
+
+.dx-stats { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 28px; }
+
+.dx-stat {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 7px 13px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 999px;
+    font-size: 13px;
+    color: #e2e8f0;
+}
+
+.dx-stat strong { color: #fff; font-size: 14px; }
+
+.dx-hero-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+
+.dx-btn-primary,
+.dx-btn-ghost {
+    display: inline-block;
+    padding: 11px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.dx-btn-primary { background: #2563eb; color: #fff; border: 1px solid #2563eb; }
+.dx-btn-primary:hover { background: #1d4ed8; }
+/* Scoped to the hero so it beats the component library's .dx-btn-ghost (dark text,
+   meant for light surfaces) which loads after this sheet — otherwise these read as
+   invisible dark-on-dark over the hero gradient. */
+.dx-hero .dx-btn-ghost { background: transparent; color: #e2e8f0; border: 1px solid rgba(255, 255, 255, 0.3); }
+.dx-hero .dx-btn-ghost:hover { background: rgba(255, 255, 255, 0.08); }
+
+/* Live preview strip in the hero */
+.dx-hero-preview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 14px;
+    margin-top: 36px;
+}
+
+.dx-preview-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 130px;
+    box-shadow: 0 8px 24px rgba(2, 6, 23, 0.35);
+}
+
+.dx-preview-card .dx-preview-label {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* Section scaffolding */
+.dx-section { margin: 0 0 44px; }
+.dx-section > h2 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #2563eb;
+    margin: 0 0 4px;
+}
+.dx-section > .dx-section-sub { color: #475569; margin: 0 0 18px; font-size: 14px; }
+
+/* Pillars */
+.dx-pillars {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+}
+.dx-pillar {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 18px;
+}
+.dx-pillar .dx-pillar-icon { font-size: 22px; }
+.dx-pillar h3 { margin: 10px 0 6px; font-size: 15px; }
+.dx-pillar p { margin: 0; color: #475569; font-size: 13.5px; line-height: 1.5; }
+
+/* Getting started steps */
+.dx-steps { display: flex; flex-direction: column; gap: 18px; }
+.dx-step { display: flex; gap: 14px; align-items: flex-start; }
+.dx-step-num {
+    flex: 0 0 auto;
+    width: 26px; height: 26px;
+    border-radius: 999px;
+    background: #2563eb; color: #fff;
+    display: grid; place-items: center;
+    font-size: 13px; font-weight: 700;
+    margin-top: 2px;
+}
+.dx-step-body { flex: 1 1 auto; min-width: 0; }
+.dx-step-body h3 { margin: 0 0 8px; font-size: 15px; }
+.dx-step-body p { margin: 0 0 8px; color: #475569; font-size: 13.5px; }
+
+/* Code block */
+.dx-code {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #1e293b;
+    background: #0f172a;
+}
+.dx-code-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px 6px 14px;
+    background: #1e293b;
+    border-bottom: 1px solid #334155;
+}
+.dx-code-lang {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+    font-weight: 600;
+}
+.dx-copy {
+    border: 1px solid #334155;
+    background: #0f172a;
+    color: #cbd5e1;
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: 12px;
+    cursor: pointer;
+}
+.dx-copy:hover { background: #334155; color: #fff; }
+.dx-copy.dx-copied { color: #4ade80; border-color: #4ade80; }
+.dx-code-pre {
+    margin: 0;
+    padding: 14px;
+    overflow-x: auto;
+    font: 13px/1.6 ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+    color: #e2e8f0;
+}
+.dx-code-pre code { white-space: pre; }
+
+/* Component catalog */
+.dx-cat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+}
+.dx-comp-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px 16px 12px;
+    display: flex;
+    flex-direction: column;
+}
+.dx-comp-card:hover { border-color: #cbd5e1; box-shadow: 0 4px 16px rgba(2, 6, 23, 0.06); }
+.dx-comp-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.dx-comp-name {
+    font: 600 14px ui-monospace, "SF Mono", Consolas, monospace;
+    color: #1e293b;
+}
+.dx-comp-demo {
+    font-size: 12.5px;
+    color: #2563eb;
+    text-decoration: none;
+    white-space: nowrap;
+    font-weight: 600;
+}
+.dx-comp-demo:hover { text-decoration: underline; }
+.dx-comp-summary { color: #475569; font-size: 13.5px; line-height: 1.5; margin: 8px 0 10px; flex: 1 1 auto; }
+.dx-comp-card details { border-top: 1px solid #f1f5f9; padding-top: 8px; }
+.dx-comp-card summary {
+    cursor: pointer;
+    font-size: 12.5px;
+    color: #64748b;
+    font-weight: 600;
+    list-style: none;
+    user-select: none;
+}
+.dx-comp-card summary::-webkit-details-marker { display: none; }
+.dx-comp-card summary::before { content: "▸ "; color: #94a3b8; }
+.dx-comp-card details[open] summary::before { content: "▾ "; }
+.dx-comp-card details[open] summary { margin-bottom: 10px; }
+
+@media (max-width: 640px) {
+    .dx-hero h1 { font-size: 36px; }
+    .dx-hero { padding: 36px 20px; }
+}
+
+/* =========================================================================
+   Documentation site
+   ========================================================================= */
+.dx-docs { display: flex; gap: 28px; align-items: flex-start; }
+.dx-docs-nav {
+    flex: 0 0 220px;
+    position: sticky;
+    top: 16px;
+    max-height: calc(100vh - 32px);
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+.dx-docs-main { flex: 1 1 auto; min-width: 0; }
+.dx-docs-search {
+    width: 100%;
+    padding: 7px 10px;
+    margin-bottom: 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font: inherit;
+    box-sizing: border-box;
+}
+.dx-docs-cat {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+    font-weight: 700;
+    margin: 12px 0 4px;
+}
+.dx-docs-link {
+    display: block;
+    padding: 4px 8px;
+    border-radius: 6px;
+    color: #334155;
+    text-decoration: none;
+    font-size: 13.5px;
+}
+.dx-docs-link:hover { background: #e2e8f0; }
+.dx-docs-link.active { background: color-mix(in srgb, #2563eb 14%, transparent); color: #1d4ed8; font-weight: 600; }
+.dx-docs-empty { color: #64748b; font-size: 13px; padding: 8px; }
+.dx-docs-crumbs { font-size: 13px; color: #64748b; margin-bottom: 4px; }
+.dx-docs-crumbs a { color: #2563eb; text-decoration: none; }
+.dx-docs-api { width: 100%; border-collapse: collapse; margin: 8px 0 24px; font-size: 13.5px; }
+.dx-docs-api th { text-align: left; border-bottom: 2px solid #e2e8f0; padding: 6px 10px; color: #475569; }
+.dx-docs-api td { border-bottom: 1px solid #f1f5f9; padding: 6px 10px; vertical-align: top; }
+.dx-docs-api code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 12.5px; }
+.dx-docs-catgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-top: 16px; }
+.dx-docs-catcard { border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; }
+.dx-docs-catcard h3 { margin: 0 0 8px; font-size: 14px; }
+.dx-docs-catcard ul { margin: 0; padding-left: 18px; }
+.dx-docs-catcard li { margin: 2px 0; }
+.dx-docs-catcard a { color: #2563eb; text-decoration: none; font-size: 13px; }
+@media (max-width: 720px) {
+    .dx-docs { flex-direction: column; }
+    .dx-docs-nav { position: static; flex-basis: auto; max-height: none; }
+}
+
+.dx-demo-input {
+    padding: 8px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font: inherit;
+    min-width: 220px;
+}
+
+.dx-demo-button {
+    padding: 8px 14px;
+    border: 0;
+    border-radius: 6px;
+    background: #2563eb;
+    color: #fff;
+    cursor: pointer;
+    font: inherit;
+}
+
+.dx-demo-form {
+    display: flex;
+    gap: 8px;
+    margin: 16px 0;
+}
+
+.dx-echo-target .dx-echo {
+    padding: 10px 12px;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    border-radius: 6px;
+}
+
+.valid.modified:not([type=checkbox]) {
+    outline: 1px solid #26b050;
+}
+
+.invalid {
+    outline: 1px solid #e50000;
+}
+
+.validation-message {
+    color: #e50000;
+}
+
+.blazor-error-boundary {
+    background: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTYiIGhlaWdodD0iNDkiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIG92ZXJmbG93PSJoaWRkZW4iPjxkZWZzPjxjbGlwUGF0aCBpZD0iY2xpcDAiPjxyZWN0IHg9IjIzNSIgeT0iNTEiIHdpZHRoPSI1NiIgaGVpZ2h0PSI0OSIvPjwvY2xpcFBhdGg+PC9kZWZzPjxnIGNsaXAtcGF0aD0idXJsKCNjbGlwMCkiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yMzUgLTUxKSI+PHBhdGggZD0iTTI2My41MDYgNTFDMjY0LjcxNyA1MSAyNjUuODEzIDUxLjQ4MzcgMjY2LjYwNiA1Mi4yNjU4TDI2Ny4wNTIgNTIuNzk4NyAyNjcuNTM5IDUzLjYyODMgMjkwLjE4NSA5Mi4xODMxIDI5MC41NDUgOTIuNzk1IDI5MC42NTYgOTIuOTk2QzI5MC44NzcgOTMuNTEzIDI5MSA5NC4wODE1IDI5MSA5NC42NzgyIDI5MSA5Ny4wNjUxIDI4OS4wMzggOTkgMjg2LjYxNyA5OUwyNDAuMzgzIDk5QzIzNy45NjMgOTkgMjM2IDk3LjA2NTEgMjM2IDk0LjY3ODIgMjM2IDk0LjM3OTkgMjM2LjAzMSA5NC4wODg2IDIzNi4wODkgOTMuODA3MkwyMzYuMzM4IDkzLjAxNjIgMjM2Ljg1OCA5Mi4xMzE0IDI1OS40NzMgNTMuNjI5NCAyNTkuOTYxIDUyLjc5ODUgMjYwLjQwNyA1Mi4yNjU4QzI2MS4yIDUxLjQ4MzcgMjYyLjI5NiA1MSAyNjMuNTA2IDUxWk0yNjMuNTg2IDY2LjAxODNDMjYwLjczNyA2Ni4wMTgzIDI1OS4zMTMgNjcuMTI0NSAyNTkuMzEzIDY5LjMzNyAyNTkuMzEzIDY5LjYxMDIgMjU5LjMzMiA2OS44NjA4IDI1OS4zNzEgNzAuMDg4N0wyNjEuNzk1IDg0LjAxNjEgMjY1LjM4IDg0LjAxNjEgMjY3LjgyMSA2OS43NDc1QzI2Ny44NiA2OS43MzA5IDI2Ny44NzkgNjkuNTg3NyAyNjcuODc5IDY5LjMxNzkgMjY3Ljg3OSA2Ny4xMTgyIDI2Ni40NDggNjYuMDE4MyAyNjMuNTg2IDY2LjAxODNaTTI2My41NzYgODYuMDU0N0MyNjEuMDQ5IDg2LjA1NDcgMjU5Ljc4NiA4Ny4zMDA1IDI1OS43ODYgODkuNzkyMSAyNTkuNzg2IDkyLjI4MzcgMjYxLjA0OSA5My41Mjk1IDI2My41NzYgOTMuNTI5NSAyNjYuMTE2IDkzLjUyOTUgMjY3LjM4NyA5Mi4yODM3IDI2Ny4zODcgODkuNzkyMSAyNjcuMzg3IDg3LjMwMDUgMjY2LjExNiA4Ni4wNTQ3IDI2My41NzYgODYuMDU0N1oiIGZpbGw9IiNGRkU1MDAiIGZpbGwtcnVsZT0iZXZlbm9kZCIvPjwvZz48L3N2Zz4=) no-repeat 1rem/1.8rem, #b32121;
+    padding: 1rem 1rem 1rem 3.7rem;
+    color: white;
+}
+
+    .blazor-error-boundary::after {
+        content: "An error has occurred."
+    }
+
+.darker-border-checkbox.form-check-input {
+    border-color: #929292;
+}
+
+.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
+    color: var(--bs-secondary-color);
+    text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+    text-align: start;
+}
+/* Forms + AI tools demo */
+.dx-forms-demo { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; }
+@media (max-width: 900px) { .dx-forms-demo { grid-template-columns: 1fr; } }
+.dx-forms-col h2 { margin-top: 0; }
+.dx-forms-schema {
+  background: #0f172a; color: #e2e8f0; border-radius: 8px; padding: 12px 14px;
+  font-size: 12px; line-height: 1.5; overflow: auto; max-height: 320px; white-space: pre;
+}
+
+/* Diagnostics feed (errors demo) */
+.dx-diag-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.dx-diag-list li { font-size: 13px; padding: 8px 10px; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; }
+.dx-diag-sev { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 1px 6px; border-radius: 4px; margin-right: 6px; }
+.dx-diag-error { background: #fee2e2; color: #b91c1c; }
+.dx-diag-warning { background: #fef3c7; color: #b45309; }
+.dx-diag-info { background: #e0f2fe; color: #0369a1; }

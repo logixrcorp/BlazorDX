@@ -1,0 +1,32 @@
+@page "/command"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@using BlazorDX.Primitives.Overlays
+
+<PageTitle>Command Palette</PageTitle>
+
+<h1>BlazorDX Command Palette</h1>
+
+<p class="dx-demo-meta">
+    A modal palette composing the overlay behaviors (focus trap, scroll lock,
+    dismiss) with filtering and roving keyboard nav. Open it, type to filter, use
+    Arrow keys + Enter. Last action: <strong>@lastAction</strong>.
+</p>
+
+<button class="dx-demo-button" @onclick="() => open = true">Open command palette</button>
+
+<DxCommandPalette Commands="commands" @bind-Open="open" />
+
+@code {
+    private bool open;
+    private string lastAction = "(none)";
+
+    private IReadOnlyList<Command> commands => new[]
+    {
+        new Command("New document", () => lastAction = "New document", "File"),
+        new Command("Open settings", () => lastAction = "Open settings", "File"),
+        new Command("Toggle dark mode", () => lastAction = "Toggle dark mode", "View"),
+        new Command("Run diagnostics", () => lastAction = "Run diagnostics", "Tools"),
+        new Command("Sign out", () => lastAction = "Sign out", "Account"),
+    };
+}

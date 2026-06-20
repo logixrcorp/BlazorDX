@@ -1,0 +1,47 @@
+<Project>
+
+  <!--
+    Compiles the Rust compute crate to wasm32 and copies the module next to the
+    consuming project's static assets. Imported by BlazorDX.Compute.
+
+    The build degrades gracefully: if cargo is missing or the build fails, a
+    warning is emitted and the managed C# fallback in BlazorDX.Compute keeps the
+    library working. This keeps `dotnet build` green on machines without Rust.
+
+    Expected properties (set by the importing project):
+      RustCrateDir       - directory containing Cargo.toml
+      RustCrateName      - crate/output name (produces <name>.wasm)
+      RustWasmDest       - destination path for the copied .wasm
+  -->
+
+  <PropertyGroup>
+    <RustTarget>wasm32-unknown-unknown</RustTarget>
+    <RustManifest>$(RustCrateDir)\Cargo.toml</RustManifest>
+    <RustWasmBuilt>$(RustCrateDir)\target\$(RustTarget)\release\$(RustCrateName).wasm</RustWasmBuilt>
+  </PropertyGroup>
+
+  <Target Name="DxBuildRustWasm" BeforeTargets="BeforeBuild"
+          Condition="'$(SkipRustBuild)' != 'true'">
+
+    <Message Importance="high" Text="BlazorDX: compiling Rust crate '$(RustCrateName)' to $(RustTarget)..." />
+
+    <Exec Command="cargo build --release --target $(RustTarget) --manifest-path &quot;$(RustManifest)&quot;"
+          WorkingDirectory="$(RustCrateDir)"
+          ContinueOnError="true">
+      <Output TaskParameter="ExitCode" PropertyName="_DxCargoExit" />
+    </Exec>
+
+    <Warning Condition="'$(_DxCargoExit)' != '0'"
+             Text="BlazorDX: Rust build unavailable (cargo exit $(_DxCargoExit)). Using the managed compute fallback. Install Rust and run 'rustup target add $(RustTarget)' to enable the native path." />
+
+    <Copy Condition="'$(_DxCargoExit)' == '0' And Exists('$(RustWasmBuilt)')"
+          SourceFiles="$(RustWasmBuilt)"
+          DestinationFiles="$(RustWasmDest)"
+          SkipUnchangedFiles="true" />
+
+    <Message Condition="'$(_DxCargoExit)' == '0' And Exists('$(RustWasmBuilt)')"
+             Importance="high"
+             Text="BlazorDX: Rust module ready at $(RustWasmDest)" />
+  </Target>
+
+</Project>

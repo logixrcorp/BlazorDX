@@ -1,0 +1,75 @@
+/* BlazorDX Markdown preview + editor. Token-driven (see dx-theme.css). */
+
+.dx-markdown {
+  color: var(--dx-text, #0f172a);
+  line-height: 1.6;
+}
+.dx-markdown h1, .dx-markdown h2, .dx-markdown h3,
+.dx-markdown h4, .dx-markdown h5, .dx-markdown h6 {
+  margin: 1em 0 0.4em;
+  line-height: 1.25;
+}
+.dx-markdown h1 { font-size: 1.8rem; }
+.dx-markdown h2 { font-size: 1.4rem; }
+.dx-markdown h3 { font-size: 1.15rem; }
+.dx-markdown p { margin: 0.6em 0; }
+.dx-markdown a { color: var(--dx-accent, #2563eb); }
+.dx-markdown ul, .dx-markdown ol { margin: 0.6em 0; padding-left: 1.4em; }
+.dx-markdown li { margin: 0.2em 0; }
+.dx-markdown code {
+  padding: 0.1em 0.35em;
+  font-family: ui-monospace, "Cascadia Code", "Source Code Pro", monospace;
+  font-size: 0.9em;
+  background: var(--dx-surface-alt, #f1f5f9);
+  border-radius: 4px;
+}
+.dx-markdown pre {
+  margin: 0.8em 0;
+  padding: 12px 14px;
+  overflow: auto;
+  background: var(--dx-surface-alt, #f1f5f9);
+  border: 1px solid var(--dx-border, #e2e8f0);
+  border-radius: 8px;
+}
+.dx-markdown pre code {
+  padding: 0;
+  background: transparent;
+  white-space: pre;
+}
+
+/* ---- Editor split ---- */
+.dx-md-editor {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+.dx-md-source {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  font-family: ui-monospace, "Cascadia Code", "Source Code Pro", monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--dx-text, #0f172a);
+  background: var(--dx-surface, #ffffff);
+  border: 1px solid var(--dx-border, #cbd5e1);
+  border-radius: var(--dx-radius, 8px);
+  outline: none;
+  resize: vertical;
+}
+.dx-md-source:focus-visible {
+  border-color: var(--dx-accent, #2563eb);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dx-accent, #2563eb) 25%, transparent);
+}
+.dx-md-preview {
+  padding: 0 14px;
+  overflow: auto;
+  border: 1px solid var(--dx-border, #e2e8f0);
+  border-radius: var(--dx-radius, 8px);
+  background: var(--dx-surface, #ffffff);
+}
+
+@media (max-width: 720px) {
+  .dx-md-editor { grid-template-columns: 1fr; }
+}

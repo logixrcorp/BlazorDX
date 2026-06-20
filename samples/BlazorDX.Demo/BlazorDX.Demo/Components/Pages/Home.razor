@@ -1,0 +1,718 @@
+@page "/"
+@using BlazorDX.Components
+@using BlazorDX.Demo.Components
+
+<PageTitle>BlazorDX — headless, AOT-safe Blazor components</PageTitle>
+
+<section class="dx-hero">
+    <div class="dx-hero-inner">
+        <h1>Blazor<span class="dx-accent">DX</span></h1>
+        <p class="dx-hero-tagline">
+            A secure-by-default, <strong>headless</strong>, AOT-safe Blazor component
+            system for .NET&nbsp;10 — C# for the render tree, Rust for heavy compute,
+            TypeScript for the DOM bridge. Restyle anything through CSS variables.
+        </p>
+
+        <div class="dx-stats">
+            <span class="dx-stat"><strong>90+</strong> components</span>
+            <span class="dx-stat"><strong>386</strong> tests green</span>
+            <span class="dx-stat"><strong>0</strong> reflection · trim-clean</span>
+            <span class="dx-stat"><strong>MIT</strong> licensed</span>
+            <span class="dx-stat"><strong>1000-line</strong> file cap, enforced</span>
+        </div>
+
+        <div class="dx-hero-actions">
+            <a class="dx-btn-primary" href="#getting-started">Get started</a>
+            <a class="dx-btn-ghost" href="#catalog">Browse components</a>
+            <a class="dx-btn-ghost" href="/grid">Live DataGrid (100k rows)</a>
+        </div>
+
+        @* These previews are real components rendered during static SSR — pure SVG,
+           no JavaScript and no DI, so they paint instantly on first load. *@
+        <div class="dx-hero-preview">
+            <div class="dx-preview-card">
+                <span class="dx-preview-label">QR</span>
+                <DxQrCode Value="https://github.com" ModuleSize="4" />
+            </div>
+            <div class="dx-preview-card">
+                <span class="dx-preview-label">Bar chart</span>
+                <DxBarChart Bars="heroBars" Width="180" Height="92" />
+            </div>
+            <div class="dx-preview-card">
+                <span class="dx-preview-label">Radial gauge</span>
+                <DxRadialGauge Value="72" Size="104" Label="CPU %" />
+            </div>
+            <div class="dx-preview-card">
+                <span class="dx-preview-label">Sparkline</span>
+                <DxSparkline Values="heroSpark" Width="150" Height="46" />
+                <DxRating Value="4" ReadOnly="true" />
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="dx-section">
+    <h2>Why BlazorDX</h2>
+    <p class="dx-section-sub">Built to beat the incumbents on the dimensions they skip.</p>
+    <div class="dx-pillars">
+        <div class="dx-pillar">
+            <div class="dx-pillar-icon">🛡️</div>
+            <h3>Zero reflection, AOT-safe</h3>
+            <p>Grid binding is source-generated; JSON via contexts; interop via
+               <code>[JSImport]</code>. The whole catalog publishes trim-clean with
+               warnings-as-errors.</p>
+        </div>
+        <div class="dx-pillar">
+            <div class="dx-pillar-icon">🎨</div>
+            <h3>Headless, two-tier</h3>
+            <p>A Tier-1 primitive owns behavior, focus, and WAI-ARIA with no CSS.
+               A Tier-2 <code>Dx*</code> wrapper styles it through CSS variables —
+               no <code>!important</code> fights.</p>
+        </div>
+        <div class="dx-pillar">
+            <div class="dx-pillar-icon">⚙️</div>
+            <h3>C# · Rust · TypeScript</h3>
+            <p>Sort, filter, aggregate, histogram and downsample run in a Rust→wasm
+               kernel (with a managed fallback for SSR). TypeScript handles only what
+               the sandbox can't.</p>
+        </div>
+        <div class="dx-pillar">
+            <div class="dx-pillar-icon">📏</div>
+            <h3>Governed by tooling</h3>
+            <p>A hard 1000-line file cap, a <code>MarkupString</code> ban, and a
+               singleton-UI-state ban are Roslyn analyzers that fail the build — not
+               style guidelines.</p>
+        </div>
+    </div>
+</section>
+
+<section class="dx-section" id="getting-started">
+    <h2>Getting started</h2>
+    <p class="dx-section-sub">Three steps from empty project to a Rust-backed grid.</p>
+    <div class="dx-steps">
+        <div class="dx-step">
+            <div class="dx-step-num">1</div>
+            <div class="dx-step-body">
+                <h3>Add the packages</h3>
+                <p>Pull in the styled components plus the source generator and analyzers.</p>
+                <CodeBlock Language="bash" Code="@InstallCode" />
+            </div>
+        </div>
+        <div class="dx-step">
+            <div class="dx-step-num">2</div>
+            <div class="dx-step-body">
+                <h3>Register services &amp; styles</h3>
+                <p>Wire the interop bridge (browser real / SSR null) in <code>Program.cs</code>
+                   and link the component CSS. Register shared services in <em>both</em>
+                   the server and client projects — WASM pages prerender on the server too.</p>
+                <CodeBlock Language="csharp" Code="@RegisterCode" />
+            </div>
+        </div>
+        <div class="dx-step">
+            <div class="dx-step-num">3</div>
+            <div class="dx-step-body">
+                <h3>Drop in a component</h3>
+                <p>Mark your row type with <code>[GridRow]</code> and the generator emits a
+                   reflection-free accessor. No <code>PropertyInfo</code>, ever.</p>
+                <CodeBlock Language="razor" Code="@UsageCode" />
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="dx-section" id="catalog">
+    <h2>Component catalog</h2>
+    <p class="dx-section-sub">
+        Every component below ships a live demo and a copy-pasteable example. Click
+        <strong>Show code</strong> on any card, or follow <strong>Demo →</strong> to try it.
+    </p>
+
+    @foreach (Category category in Catalog)
+    {
+        <h3 style="font-size:17px; margin:28px 0 4px">@category.Title</h3>
+        <p class="dx-demo-meta" style="margin:0 0 14px">@category.Blurb</p>
+        <div class="dx-cat-grid">
+            @foreach (Comp comp in category.Items)
+            {
+                <div class="dx-comp-card">
+                    <div class="dx-comp-head">
+                        <span class="dx-comp-name">@comp.Name</span>
+                        <a class="dx-comp-demo" href="@comp.Href">Demo →</a>
+                    </div>
+                    <p class="dx-comp-summary">@comp.Summary</p>
+                    <details>
+                        <summary>Show code</summary>
+                        <CodeBlock Language="razor" Code="@comp.Code" />
+                    </details>
+                </div>
+            }
+        </div>
+    }
+</section>
+
+@code {
+    private readonly IReadOnlyList<ChartBar> heroBars =
+        [new("M", 12), new("T", 18), new("W", 9), new("T", 22), new("F", 16)];
+
+    private readonly IReadOnlyList<double> heroSpark =
+        [3, 7, 4, 8, 6, 11, 9, 14, 12, 16, 13, 18];
+
+    private const string InstallCode = """
+        dotnet add package BlazorDX.Components
+        dotnet add package BlazorDX.SourceGen
+        dotnet add package BlazorDX.Analyzers
+        """;
+
+    private const string RegisterCode = """
+        // Program.cs (server AND client)
+        using BlazorDX.Interop;
+
+        builder.Services.AddBlazorDXInterop();   // browser → real bridges, else null
+        builder.Services.AddScoped<ToastService>();
+
+        // App.razor <head>
+        // <link rel="stylesheet" href="_content/BlazorDX.Components/dx-theme.css" />
+        // <link rel="stylesheet" href="_content/BlazorDX.Components/dx-datagrid.css" />
+        """;
+
+    private const string UsageCode = """
+        @using BlazorDX.Components
+
+        <DxDataGrid TRow="Person" Items="people" Accessor="accessor"
+                    Selectable="true" Filterable="true" ShowExport="true"
+                    KeyboardNavigation="true" />
+
+        @code {
+            // [GridRow] on Person → PersonGridAccessor is source-generated.
+            private readonly PersonGridAccessor accessor = new();
+            private IReadOnlyList<Person> people = Person.Load();
+        }
+        """;
+
+    private record Comp(string Name, string Summary, string Href, string Code);
+
+    private record Category(string Title, string Blurb, Comp[] Items);
+
+    private static readonly Category[] Catalog =
+    [
+        new("Overlays & popups", "Anchored and modal surfaces sharing one focus/dismiss/positioning engine.",
+        [
+            new("DxDialog", "Modal dialog: focus trap, scroll lock, Esc / click-outside dismiss, exit animation.", "/dialog",
+                """
+                <button @onclick="() => open = true">Delete…</button>
+
+                <DxDialog @bind-Open="open" AriaLabel="Confirm delete">
+                    <h2>Delete project?</h2>
+                    <button @onclick="() => open = false">Cancel</button>
+                </DxDialog>
+
+                @code { private bool open; }
+                """),
+            new("DxSheet", "Edge-anchored offcanvas panel — a DialogPrimitive that slides in.", "/overlays",
+                """
+                <DxSheet @bind-Open="open" Side="right" AriaLabel="Settings">
+                    <h2>Settings</h2>
+                    <button @onclick="() => open = false">Close</button>
+                </DxSheet>
+                """),
+            new("DxPopover", "Anchored popover with collision flip + viewport shift.", "/popover",
+                """
+                <DxPopover @bind-Open="open" Side="bottom" Align="start">
+                    <Trigger><button>Details</button></Trigger>
+                    <ChildContent>Follows the trigger; flips near edges.</ChildContent>
+                </DxPopover>
+                """),
+            new("DxTooltip", "Hover/focus tooltip, anchored and flipping.", "/menu",
+                """
+                <DxTooltip Side="top">
+                    <Trigger><button>Hover me</button></Trigger>
+                    <ChildContent>A helpful hint.</ChildContent>
+                </DxTooltip>
+                """),
+            new("DxMenu", "Click menu with roving-tabindex keyboard nav and ARIA menu roles.", "/menu",
+                """
+                @using BlazorDX.Primitives.Overlays
+
+                <DxMenu @bind-Open="open" Items="items">
+                    <Trigger><button>Actions ▾</button></Trigger>
+                </DxMenu>
+
+                @code {
+                    private bool open;
+                    private IReadOnlyList<MenuItem> items =
+                        [new("Rename", () => {}), new("Delete", () => {})];
+                }
+                """),
+            new("DxContextMenu", "Right-click menu positioned at the cursor.", "/overlays",
+                """
+                <DxContextMenu Items="items">
+                    <div class="dropzone">Right-click here</div>
+                </DxContextMenu>
+                """),
+            new("DxCommandPalette", "⌘K palette: dialog + typeahead filter + run-on-Enter.", "/command",
+                """
+                @using BlazorDX.Primitives.Overlays
+
+                <DxCommandPalette @bind-Open="open" Commands="commands" />
+
+                @code {
+                    private bool open;
+                    private IReadOnlyList<Command> commands =
+                        [new("New file", () => {}, "File")];
+                }
+                """),
+        ]),
+
+        new("Selection & input", "Form controls and pickers — accessible, generic, and bindable.",
+        [
+            new("DxSelect<T>", "Single-select dropdown (positioning + dismiss + roving + selection).", "/select",
+                """
+                @using BlazorDX.Primitives.Overlays
+
+                <DxSelect TValue="string" Items="cities" @bind-Value="city"
+                          Placeholder="Choose a city…" />
+
+                @code {
+                    private string? city;
+                    private IReadOnlyList<ListOption<string>> cities =
+                        [new("ATX", "Austin"), new("BER", "Berlin")];
+                }
+                """),
+            new("DxListbox<T>", "Inline single/multi list, two-way bound to a value set.", "/select",
+                """
+                <DxListbox TValue="string" Items="cities" Multiple="true"
+                           @bind-Values="picked" />
+                """),
+            new("DxComboBox<T>", "Typeahead filter + dropdown (aria-activedescendant pattern).", "/select",
+                """
+                <DxComboBox TValue="string" Items="cities" @bind-Value="city"
+                            Placeholder="Type a city…" />
+                """),
+            new("DxTransferList", "Dual-listbox move-between, composed from two DxListbox.", "/transfer",
+                """
+                <DxTransferList Items="skills" @bind-Value="chosen"
+                                AvailableLabel="Available" SelectedLabel="Chosen" />
+                """),
+            new("DxCheckbox / DxSwitch", "Native-backed boolean inputs with styled visuals.", "/controls",
+                """
+                <DxCheckbox @bind-Value="notify" Label="Email me about updates" />
+                <DxSwitch @bind-Value="dark" Label="Dark mode" />
+                """),
+            new("DxRadioGroup<T>", "Roving-tabindex radio group (arrow keys move + select).", "/controls",
+                """
+                <DxRadioGroup TValue="string" Items="plans" @bind-Value="plan"
+                              AriaLabel="Plan" />
+                """),
+            new("DxTextBox / DxTextArea / DxPassword", "Text inputs; password has a reveal toggle.", "/controls",
+                """
+                <DxTextBox @bind-Value="name" Label="Full name" Immediate="true" />
+                <DxTextArea @bind-Value="notes" Label="Notes" Rows="3" />
+                <DxPassword @bind-Value="secret" Label="Password" />
+                """),
+            new("DxNumeric<T>", "Generic-math numeric + stepper (INumber<T>, no reflection).", "/controls",
+                """
+                <DxNumeric TValue="int" @bind-Value="seats" Label="Seats" Min="1" Max="50" />
+                <DxNumeric TValue="decimal" @bind-Value="price" Step="0.5m" Format="F2" />
+                """),
+            new("DxRating", "Star rating exposed as an ARIA slider.", "/rating",
+                """
+                <DxRating @bind-Value="stars" Max="5" />
+                """),
+            new("DxColorPicker", "Native color input with optional hex readout and preset swatches.", "/controls",
+                """
+                <DxColorPicker @bind-Value="color" Presets="swatches" />
+
+                @code { private string color = "#2563eb"; }
+                """),
+            new("DxMaskedTextBox", "Text input that formats against a mask (0=digit, A=letter, *=alnum).", "/controls",
+                """
+                <DxMaskedTextBox @bind-Value="phone" Mask="(000) 000-0000" Label="Phone" />
+                """),
+            new("DxRangeSlider", "Dual-thumb range — two overlaid native range inputs, clamped so they never cross.", "/controls",
+                """
+                <DxRangeSlider @bind-Low="low" @bind-High="high"
+                               Min="0" Max="1000" Step="50" ShowValue="true" />
+                """),
+            new("DxFileUpload", "Drag-drop upload zone over the native InputFile, with a selected-file list.", "/controls",
+                """
+                <DxFileUpload Accept="image/*,.pdf" OnFilesSelected="OnFiles" />
+
+                @code {
+                    private void OnFiles(IReadOnlyList<IBrowserFile> files) { /* stream them */ }
+                }
+                """),
+            new("DxDatePicker", "Calendar popover with 2-D keyboard navigation.", "/layout",
+                """
+                <DxDatePicker @bind-Value="date" />
+
+                @code { private DateOnly? date; }
+                """),
+            new("DxTimePicker", "Time input backed by the native time picker.", "/pickers",
+                """
+                <DxTimePicker @bind-Value="time" StepSeconds="60" />
+
+                @code { private TimeOnly? time = new(9, 30); }
+                """),
+            new("DxDateRangePicker", "Start/end range composing two DatePickers (kept consistent).", "/pickers",
+                """
+                <DxDateRangePicker @bind-Start="start" @bind-End="end" />
+                """),
+        ]),
+
+        new("Display & elements", "Small building blocks that compose into richer UIs — leaf components, token-themed.",
+        [
+            new("DxButton", "Styled button (primary/secondary/danger/ghost) with attribute splatting.", "/elements",
+                """
+                <DxButton Variant="primary" Text="Save" OnClick="OnSave" />
+                <DxButton Variant="ghost" Disabled="true">Cancel</DxButton>
+                """),
+            new("DxButtonGroup / DxToolbar", "Segmented button group and a role=toolbar container.", "/elements",
+                """
+                <DxToolbar AriaLabel="Formatting">
+                    <DxButtonGroup AriaLabel="Style">
+                        <DxButton Variant="secondary" Text="Bold" />
+                        <DxButton Variant="secondary" Text="Italic" />
+                    </DxButtonGroup>
+                </DxToolbar>
+                """),
+            new("DxSplitButton", "Primary action + a caret menu of secondary actions (composes DxMenu).", "/elements",
+                """
+                @using BlazorDX.Primitives.Overlays
+
+                <DxSplitButton Text="Save" OnClick="OnSave" Items="items" />
+
+                @code {
+                    private IReadOnlyList<MenuItem> items =
+                        [new("Save as draft", () => {}), new("Save a copy", () => {})];
+                }
+                """),
+            new("DxBadge", "Status pill or count badge; six variants, plus a bare status dot.", "/elements",
+                """
+                <DxBadge Variant="success" Text="Active" />
+                <DxBadge Variant="danger" Text="9" />
+                <DxBadge Variant="success" Dot="true" />
+                """),
+            new("DxChip", "Compact tag, optionally dismissible.", "/elements",
+                """
+                <DxChip Text="Rust" Dismissible="true" OnDismiss="() => Remove(tag)" />
+                """),
+            new("DxAvatar", "Circular avatar — image, or initials as a fallback.", "/elements",
+                """
+                <DxAvatar Initials="AL" AltText="Ada Lovelace" />
+                <DxAvatar ImageUrl="/me.png" AltText="Me" Size="48" />
+                """),
+            new("DxCard", "Surface container with optional header and footer regions.", "/elements",
+                """
+                <DxCard>
+                    <Header>Project status</Header>
+                    <ChildContent>Body content.</ChildContent>
+                    <Footer>Updated just now</Footer>
+                </DxCard>
+                """),
+            new("DxSlider", "Numeric slider — native range input, so keyboard + ARIA come free.", "/elements",
+                """
+                <DxSlider @bind-Value="volume" Min="0" Max="11" Step="1" ShowValue="true" />
+
+                @code { private double volume = 7; }
+                """),
+        ]),
+
+        new("Navigation & layout", "Structure, flow, and theming for whole subtrees.",
+        [
+            new("DxTabs", "Roving-tabindex tabs with automatic activation.", "/layout",
+                """
+                @using BlazorDX.Primitives.Navigation
+
+                <DxTabs Items="tabs" @bind-SelectedIndex="tab" />
+
+                @code {
+                    private int tab;
+                    private IReadOnlyList<TabItem> tabs =
+                        [new("Overview", Body), new("Specs", Body)];
+                    private static RenderFragment Body => @<p>Panel content.</p>;
+                }
+                """),
+            new("DxAccordion", "Single/multi expand using the selection-state primitive.", "/layout",
+                """
+                <DxAccordion Items="sections" InitiallyExpanded="0" />
+                """),
+            new("DxBreadcrumbs / DxDivider", "Navigation trail + labelled separators.", "/structure",
+                """
+                @using BlazorDX.Components
+
+                <DxBreadcrumbs Items="crumbs" />
+                <DxDivider Label="Section" />
+
+                @code {
+                    private IReadOnlyList<BreadcrumbItem> crumbs =
+                        [new("Home", "/"), new("Reports", "/reports"), new("Q3")];
+                }
+                """),
+            new("DxDrawer", "Persistent push-layout side panel (the non-modal counterpart to DxSheet).", "/structure",
+                """
+                <DxDrawer @bind-Open="open" Side="left" AriaLabel="Navigation">
+                    <Panel><strong>Menu</strong></Panel>
+                    <ChildContent><p>Content reflows — no overlay, no focus trap.</p></ChildContent>
+                </DxDrawer>
+                """),
+            new("DxTimeline / DxCarousel", "Event timeline + keyboard-navigable slide rotator.", "/structure",
+                """
+                <DxTimeline Items="events" />
+                <DxCarousel @bind-Index="slide" Slides="slides" AriaLabel="Highlights" />
+                """),
+            new("DxTreeView", "Hierarchical tree: expand/collapse, select, ARIA tree + keyboard nav.", "/structure",
+                """
+                <DxTreeView Items="roots" @bind-Selected="node" InitiallyExpanded="true" />
+
+                @code {
+                    private IReadOnlyList<TreeNode> roots =
+                        [new("src", new List<TreeNode> { new("App.cs") })];
+                }
+                """),
+            new("DxSplitter", "Two resizable panes; drag the divider (or Arrow keys) to resize.", "/structure",
+                """
+                <DxSplitter InitialSize="240" Orientation="horizontal">
+                    <First>Navigator</First>
+                    <Second>Editor</Second>
+                </DxSplitter>
+                """),
+            new("DxPager", "Pagination with windowed page numbers and ellipses.", "/paging",
+                """
+                <DxPager TotalItems="247" PageSize="10" @bind-Page="page" />
+
+                @code { private int page = 1; }
+                """),
+            new("DxStepper", "Wizard / multi-step flow with done/current/upcoming states.", "/wizard",
+                """
+                <DxStepper Steps="steps" @bind-Current="current" />
+                """),
+            new("DxTileLayout", "Reorderable dashboard tiles (drag + Alt+Arrow keyboard).", "/tiles",
+                """
+                <DxTileLayout Tiles="tiles" OrderChanged="OnReorder" />
+                """),
+            new("DxKanban", "Board of draggable cards across columns; drag + keyboard move.", "/kanban",
+                """
+                <DxKanban Columns="columns" OnChange="StateHasChanged" />
+
+                @code {
+                    private IReadOnlyList<KanbanColumn> columns =
+                        [new("To do", new[] { new KanbanCard("Task A") }), new("Done")];
+                }
+                """),
+            new("DxSortableList", "Drag/keyboard reorderable list, two-way bound.", "/sortable",
+                """
+                <DxSortableList @bind-Items="tasks" />
+
+                @code {
+                    private IReadOnlyList<string> tasks = ["Draft", "Review", "Ship"];
+                }
+                """),
+            new("DxVirtualize<T>", "Generalized windowing — only visible items in the DOM.", "/virtualize",
+                """
+                <DxVirtualize Items="names" ItemHeight="34" ViewportHeight="408">
+                    <div class="row">@context</div>
+                </DxVirtualize>
+                """),
+            new("DxThemeProvider", "Token theming (light/dark + accent) for a subtree.", "/theme",
+                """
+                <DxThemeProvider Theme="dark" Accent="#16a34a">
+                    @* every BlazorDX component below picks up the tokens *@
+                </DxThemeProvider>
+                """),
+        ]),
+
+        new("Data grids", "Virtualized, zero-reflection tables backed by Rust kernels.",
+        [
+            new("DxDataGrid<TRow>", "Sort, filter, group, aggregate, select, inline-edit, reorder, resize, pin — all zero-reflection.", "/grid",
+                """
+                @using BlazorDX.Components
+
+                <DxDataGrid TRow="Person" Items="people" Accessor="accessor"
+                            Selectable="true" Filterable="true" ShowExport="true"
+                            PinnedColumns="1" KeyboardNavigation="true" />
+
+                @code {
+                    // [GridRow] on Person generates PersonGridAccessor (no reflection).
+                    private readonly PersonGridAccessor accessor = new();
+                    private IReadOnlyList<Person> people = Person.Load();
+                }
+                """),
+            new("IGridDataSource<TRow>", "Server-side binding: the grid fetches only the visible window and pushes sort/filter to your backend.", "/remote",
+                """
+                <DxDataGrid TRow="Person" Accessor="accessor" DataSource="source" Filterable="true" />
+
+                @code {
+                    // Implement GetRowsAsync(request) → page + total; the grid holds no rows.
+                    private IGridDataSource<Person> source = new MyApiSource();
+                }
+                """),
+            new("DxTreeGrid<TRow>", "Hierarchical tree-table; flattened + virtualized, shared accessor.", "/tree",
+                """
+                <DxTreeGrid TRow="Node" Items="roots" Accessor="accessor"
+                            ChildrenSelector="@(n => n.Children)"
+                            InitiallyExpanded="true" />
+                """),
+            new("DxPivotGrid<TRow>", "Cross-tab reusing the Rust aggregation kernels.", "/pivot",
+                """
+                @using BlazorDX.Compute
+
+                <DxPivotGrid TRow="Sale" Items="sales" Accessor="accessor"
+                             RowField="0" ColumnField="1" ValueField="2"
+                             Aggregate="GridAggregateKind.Sum" />
+                """),
+        ]),
+
+        new("Data visualization", "Pure-SVG charts; the heavy ones downsample/bin in Rust.",
+        [
+            new("DxLineChart / DxAreaChart", "Series charts, LTTB-downsampled by Rust/wasm.", "/charts",
+                """
+                <DxLineChart X="xs" Y="ys" Threshold="400" Width="720" Height="240" />
+                <DxAreaChart Values="series" Threshold="300" />
+                """),
+            new("DxBarChart / DxPieChart", "Categorical bars (V/H) and pie/donut with legend.", "/charts",
+                """
+                <DxBarChart Bars="bars" />
+                <DxPieChart Slices="slices" Donut="true" />
+
+                @code {
+                    private IReadOnlyList<ChartBar> bars =
+                        [new("Mon", 12), new("Tue", 18), new("Wed", 9)];
+                }
+                """),
+            new("DxHistogram", "Bins values via the Rust histogram kernel.", "/charts",
+                """
+                <DxHistogram Values="samples" Bins="16" />
+                """),
+            new("DxSparkline", "Inline line/bar trend, no axes.", "/charts",
+                """
+                <DxSparkline Values="trend" Variant="line" />
+                <DxSparkline Values="trend" Variant="bar" />
+                """),
+            new("DxRadialGauge / DxLinearGauge", "270° arc meter and zoned bar meter.", "/charts",
+                """
+                <DxRadialGauge Value="72" Label="CPU %" />
+                <DxLinearGauge Value="72" Zones="zones" AriaLabel="Disk" />
+
+                @code {
+                    private IReadOnlyList<GaugeZone> zones =
+                        [new(50, "#16a34a"), new(80, "#d97706"), new(100, "#dc2626")];
+                }
+                """),
+            new("DxScatterChart / DxStackedBarChart", "XY scatter and stacked/grouped series bars.", "/charts",
+                """
+                <DxScatterChart Points="points" Width="720" Height="260" />
+                <DxStackedBarChart Categories="quarters" Series="series" />
+
+                @code {
+                    private IReadOnlyList<ChartSeries> series =
+                        [new("Direct", [18, 24, 30]), new("Search", [12, 16, 14])];
+                }
+                """),
+            new("DxRadarChart / DxFunnelChart / DxCandlestickChart", "Spider chart, conversion funnel, and OHLC candlesticks — all pure SVG.", "/charts",
+                """
+                <DxRadarChart Axes="axes" Series="series" />
+                <DxFunnelChart Stages="stages" />
+                <DxCandlestickChart Candles="candles" />
+
+                @code {
+                    private IReadOnlyList<Candle> candles =
+                        [new("Mon", 100, 112, 96, 108), new("Tue", 108, 114, 103, 105)];
+                }
+                """),
+        ]),
+
+        new("Scheduling", "Time-grid surfaces sharing the date-layout primitives.",
+        [
+            new("DxScheduler", "Week calendar with time-positioned event blocks.", "/scheduler",
+                """
+                <DxScheduler Events="events" @bind-WeekStart="week"
+                             StartHour="8" EndHour="18" OnEventSelected="OnSelect" />
+                """),
+            new("DxGantt", "Task timeline bars with progress fills.", "/gantt",
+                """
+                @using BlazorDX.Primitives.Scheduling
+
+                <DxGantt Tasks="tasks" />
+
+                @code {
+                    private IReadOnlyList<GanttTask> tasks =
+                        [new("Research", start, start.AddDays(4), 1.0)];
+                }
+                """),
+        ]),
+
+        new("Editors, files & AI", "Rich input surfaces — safe by construction.",
+        [
+            new("DxMarkdown / DxMarkdownEditor", "Encode-then-format renderer + live split editor.", "/markdown",
+                """
+                <DxMarkdownEditor @bind-Value="text" Rows="16" />
+                <DxMarkdown Value="readme" />
+                """),
+            new("DxRichTextEditor", "WYSIWYG over contentEditable, routed through an injected sanitizer.", "/richtext",
+                """
+                @* BlazorDX ships no parser — you supply a vetted HtmlSanitizer. *@
+                <DxRichTextEditor @bind-Value="html" Sanitizer="sanitizer"
+                                  AriaLabel="Document body" />
+                """),
+            new("DxChat", "AI chat surface; assistant turns render via DxMarkdown.", "/chat",
+                """
+                @using BlazorDX.Primitives.Chat
+
+                <DxChat Messages="messages" Busy="busy" OnSend="OnSend" />
+
+                @code {
+                    private List<ChatMessage> messages =
+                        [new(ChatRole.Assistant, "Hi! Ask me anything.")];
+                }
+                """),
+            new("DxFileManager", "Two-pane folder tree + contents with a breadcrumb.", "/files",
+                """
+                <DxFileManager Roots="roots" OnFileOpen="OnOpen" />
+                """),
+            new("DxQueryBuilder", "Visual, nestable predicate tree (AND/OR groups).", "/query",
+                """
+                <DxQueryBuilder Fields="fields" Root="query" OnChange="StateHasChanged" />
+                """),
+        ]),
+
+        new("Feedback", "Status, loading, and notification surfaces.",
+        [
+            new("DxToastHost + ToastService", "Scoped toast notifications.", "/feedback",
+                """
+                @inject ToastService Toasts
+
+                <button @onclick='() => Toasts.Show("Saved!", "success")'>Save</button>
+                <DxToastHost />
+                """),
+            new("DxAlert", "Inline alert with severities; role=alert for error/warning.", "/feedback",
+                """
+                <DxAlert Severity="success" Title="Deployed">Your site is live.</DxAlert>
+                <DxAlert Severity="error" Title="Build failed" Dismissible="true" />
+                """),
+            new("DxSpinner / DxProgress / DxSkeleton", "Loading spinner, progress bar, shimmer placeholder.", "/feedback",
+                """
+                <DxSpinner Size="36" />
+                <DxProgress Value="65" />
+                <DxSkeleton Width="70%" Height="1rem" />
+                """),
+        ]),
+
+        new("Barcodes & QR", "Pure-C# encoders verified against published reference vectors.",
+        [
+            new("DxQrCode", "QR (versions 1–4, all EC levels) — GF(256) Reed-Solomon, rendered as SVG.", "/barcodes",
+                """
+                @using BlazorDX.Primitives.Barcodes.Qr
+
+                <DxQrCode Value="https://anthropic.com" Level="QrErrorLevel.Medium" />
+                """),
+            new("DxBarcode", "Code 128 (Set B) — checksum + an independent decoder round-trip.", "/barcodes",
+                """
+                <DxBarcode Value="BLAZORDX-128" />
+                """),
+            new("DxEan13", "EAN-13 retail barcode with computed check digit.", "/barcodes",
+                """
+                <DxEan13 Value="5901234123457" />
+                """),
+        ]),
+    ];
+}

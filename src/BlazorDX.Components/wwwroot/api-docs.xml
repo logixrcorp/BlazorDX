@@ -1,0 +1,1689 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>BlazorDX.Components</name>
+    </assembly>
+    <members>
+        <member name="T:BlazorDX.Components.DxAccordion">
+            <summary>
+            Tier 2 styled accordion. Inherits all behavior from
+            <see cref="T:BlazorDX.Primitives.Navigation.AccordionPrimitive"/> and renders a list of disclosure sections with
+            WAI-ARIA semantics. Styling is CSS-variable driven (see dx-layout.css).
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxAlert">
+            <summary>
+            An inline message banner with a severity (info / success / warning / error),
+            optional title, and optional dismiss button. Styling is CSS-variable driven.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxAreaChart">
+            <summary>
+            An area chart: a single series rendered as a filled SVG polygon with a stroked
+            top edge. Like <see cref="T:BlazorDX.Components.DxLineChart"/> it offloads LTTB downsampling to the
+            compute backend (Rust in the browser) so a huge series draws as a few hundred
+            points. Styling is token-driven (see dx-chart.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxAreaChart.Threshold">
+            <summary>Approximate number of points to draw.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxAvatar">
+            <summary>
+            A circular avatar showing an image, or initials as a fallback. A leaf component;
+            styling is CSS-variable driven (see dx-display.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxAvatar.ImageUrl">
+            <summary>Image source. When set, the image is shown instead of initials.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxAvatar.Initials">
+            <summary>Initials to show when there is no image (e.g. "AL").</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxAvatar.AltText">
+            <summary>Accessible label / image alt text.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxAvatar.Size">
+            <summary>Diameter in pixels.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxAvatar.Class">
+            <summary>Extra CSS classes appended to the avatar.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxBadge">
+            <summary>
+            A small status or count badge. A leaf component (no separate primitive needed);
+            styling is CSS-variable driven (see dx-display.css). Use <see cref="P:BlazorDX.Components.DxBadge.Dot"/> for a
+            bare status dot, otherwise the content (or <see cref="P:BlazorDX.Components.DxBadge.Text"/>) is shown.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxBadge.ChildContent">
+            <summary>Badge content. Takes precedence over <see cref="P:BlazorDX.Components.DxBadge.Text"/>.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxBadge.Text">
+            <summary>Plain-text content, when no <see cref="P:BlazorDX.Components.DxBadge.ChildContent"/> is supplied.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxBadge.Variant">
+            <summary>Visual variant: default, primary, success, warning, danger, info.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxBadge.Dot">
+            <summary>Render a bare status dot instead of textual content.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxBadge.Class">
+            <summary>Extra CSS classes appended to the badge.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.ChartBar">
+            <summary>A single category in a bar or pie chart.</summary>
+            <param name="Label">Category name.</param>
+            <param name="Value">Magnitude (non-negative).</param>
+            <param name="Color">Optional CSS color override; otherwise a palette color is used.</param>
+        </member>
+        <member name="M:BlazorDX.Components.ChartBar.#ctor(System.String,System.Double,System.String)">
+            <summary>A single category in a bar or pie chart.</summary>
+            <param name="Label">Category name.</param>
+            <param name="Value">Magnitude (non-negative).</param>
+            <param name="Color">Optional CSS color override; otherwise a palette color is used.</param>
+        </member>
+        <member name="P:BlazorDX.Components.ChartBar.Label">
+            <summary>Category name.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.ChartBar.Value">
+            <summary>Magnitude (non-negative).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.ChartBar.Color">
+            <summary>Optional CSS color override; otherwise a palette color is used.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxBarChart">
+            <summary>
+            A categorical bar chart rendered as scaled SVG rectangles with value and
+            category labels. Vertical columns by default; set <see cref="P:BlazorDX.Components.DxBarChart.Horizontal"/> for
+            a horizontal bar chart. Styling is token-driven (see dx-chart.css).
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxBarcode">
+            <summary>
+            Renders a Code 128 (Set B) barcode as SVG rectangles. The module pattern comes
+            from <see cref="T:BlazorDX.Primitives.Barcodes.Code128Encoder"/> (pure, reflection-free); this component only
+            draws it. Suitable for alphanumeric payloads (SKUs, tracking ids, URLs).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxBarcode.Value">
+            <summary>The text to encode (printable ASCII 32–126).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxBarcode.ModuleWidth">
+            <summary>Pixel width of a single module (narrowest bar).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxBarcode.BarHeight">
+            <summary>Height of the bars in pixels (excludes the caption).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxBarcode.ShowText">
+            <summary>Whether to print the encoded text beneath the bars.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxBarcode.Class">
+            <summary>Extra CSS classes for the root <c>svg</c>.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.BreadcrumbItem">
+            <summary>One entry in a <see cref="T:BlazorDX.Components.DxBreadcrumbs"/> trail.</summary>
+            <param name="Text">Visible label.</param>
+            <param name="Href">Optional link target; the last item is rendered as the current page.</param>
+        </member>
+        <member name="M:BlazorDX.Components.BreadcrumbItem.#ctor(System.String,System.String)">
+            <summary>One entry in a <see cref="T:BlazorDX.Components.DxBreadcrumbs"/> trail.</summary>
+            <param name="Text">Visible label.</param>
+            <param name="Href">Optional link target; the last item is rendered as the current page.</param>
+        </member>
+        <member name="P:BlazorDX.Components.BreadcrumbItem.Text">
+            <summary>Visible label.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.BreadcrumbItem.Href">
+            <summary>Optional link target; the last item is rendered as the current page.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxBreadcrumbs">
+            <summary>
+            A breadcrumb navigation trail. Renders a semantic <c>&lt;nav&gt;</c> /
+            <c>&lt;ol&gt;</c>; the final item is marked <c>aria-current="page"</c> and is
+            never a link. Styling is token-driven (see dx-structure.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxBreadcrumbs.Separator">
+            <summary>Separator glyph between items.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxButton">
+            <summary>
+            A styled button. A leaf component; styling is CSS-variable driven (see
+            dx-display.css). Unmatched attributes (e.g. <c>title</c>, <c>aria-*</c>) are
+            splatted onto the underlying <c>button</c>.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxButton.ChildContent">
+            <summary>Button content. Takes precedence over <see cref="P:BlazorDX.Components.DxButton.Text"/>.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxButton.Text">
+            <summary>Plain-text label, when no <see cref="P:BlazorDX.Components.DxButton.ChildContent"/> is supplied.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxButton.Variant">
+            <summary>Visual variant: primary, secondary, danger, ghost.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxButton.Type">
+            <summary>The native button type (button, submit, reset).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxButton.Disabled">
+            <summary>Disables the button.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxButton.OnClick">
+            <summary>Click handler.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxButton.Class">
+            <summary>Extra CSS classes appended to the button.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxButton.AdditionalAttributes">
+            <summary>Arbitrary extra attributes splatted onto the button element.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxButtonGroup">
+            <summary>
+            Visually groups adjacent buttons into a single segmented control (shared borders,
+            rounded outer corners). A presentational wrapper with <c>role="group"</c>.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxButtonGroup.ChildContent">
+            <summary>The buttons to group.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxButtonGroup.AriaLabel">
+            <summary>Accessible label for the group.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxButtonGroup.Class">
+            <summary>Extra CSS classes appended to the group.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.Candle">
+            <summary>One OHLC candle for <see cref="T:BlazorDX.Components.DxCandlestickChart"/>.</summary>
+        </member>
+        <member name="M:BlazorDX.Components.Candle.#ctor(System.String,System.Double,System.Double,System.Double,System.Double)">
+            <summary>One OHLC candle for <see cref="T:BlazorDX.Components.DxCandlestickChart"/>.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxCandlestickChart">
+            <summary>
+            A candlestick (OHLC) chart: a high-low wick and an open-close body per candle,
+            coloured up or down. Pure SVG; styling via dx-chart.css.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxCandlestickChart.Candles">
+            <summary>The candles, left to right.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxCandlestickChart.UpColor">
+            <summary>Colour for candles that closed at or above their open.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxCandlestickChart.DownColor">
+            <summary>Colour for candles that closed below their open.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxCard">
+            <summary>
+            A surface container with optional header and footer regions. A leaf component;
+            styling is CSS-variable driven (see dx-display.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxCard.Header">
+            <summary>Optional header region.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxCard.ChildContent">
+            <summary>Card body.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxCard.Footer">
+            <summary>Optional footer region.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxCard.Class">
+            <summary>Extra CSS classes appended to the card.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxCarousel">
+            <summary>
+            A slide carousel with previous/next controls, dot indicators, and
+            Left/Right-arrow keyboard navigation. Slides wrap around. Follows the WAI-ARIA
+            carousel pattern (group + roledescription). Two-way bind the active slide via
+            <c>@bind-Index</c>. Styling is token-driven (see dx-structure.css).
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxChat">
+            <summary>
+            An AI chat surface: a scrolling transcript of role-styled message bubbles plus
+            a composer. Assistant messages render through <see cref="T:BlazorDX.Components.DxMarkdown"/> (so the
+            model's Markdown is shown safely), user messages render as plain text. A typing
+            indicator shows while <see cref="P:BlazorDX.Components.DxChat.Busy"/>. Send with the button or Ctrl+Enter;
+            <see cref="P:BlazorDX.Components.DxChat.OnSend"/> receives the text and the composer clears. Styling is
+            token-driven (see dx-chat.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxChat.OnSend">
+            <summary>Raised with the composed text when the user sends.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxChat.Busy">
+            <summary>Show a typing indicator (e.g. while awaiting a response).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxChat.RenderMarkdown">
+            <summary>Render assistant message content as Markdown (default true).</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxCheckbox">
+            <summary>
+            A labelled checkbox built on a native <c>&lt;input type="checkbox"&gt;</c> for
+            free accessibility and keyboard handling, with a styled box. Two-way bind via
+            <c>@bind-Value</c>. Styling is CSS-variable driven (see dx-layout.css).
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxChip">
+            <summary>
+            A compact chip / tag, optionally dismissible. A leaf component; styling is
+            CSS-variable driven (see dx-display.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxChip.ChildContent">
+            <summary>Chip content. Takes precedence over <see cref="P:BlazorDX.Components.DxChip.Text"/>.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxChip.Text">
+            <summary>Plain-text content, when no <see cref="P:BlazorDX.Components.DxChip.ChildContent"/> is supplied.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxChip.Variant">
+            <summary>Visual variant: default, primary, success, warning, danger, info.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxChip.Dismissible">
+            <summary>When true, shows a remove button that raises <see cref="P:BlazorDX.Components.DxChip.OnDismiss"/>.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxChip.OnDismiss">
+            <summary>Raised when the remove button is clicked.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxChip.Class">
+            <summary>Extra CSS classes appended to the chip.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxColorPicker">
+            <summary>
+            A color picker backed by a native <c>&lt;input type="color"&gt;</c> (so the OS
+            picker, keyboard, and ARIA come for free), with an optional hex readout and
+            preset swatches. A leaf component, consistent with the other native-backed
+            inputs. Styling is CSS-variable driven (see dx-input.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxColorPicker.Value">
+            <summary>The selected color as a hex string (e.g. <c>#2563eb</c>).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxColorPicker.ValueChanged">
+            <summary>Raised when the color changes.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxColorPicker.Presets">
+            <summary>Optional preset swatches shown beside the picker.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxColorPicker.ShowValue">
+            <summary>Show the hex value as text.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxColorPicker.Disabled">
+            <summary>Disables interaction.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxColorPicker.AriaLabel">
+            <summary>Accessible label.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxColorPicker.Class">
+            <summary>Extra CSS classes appended to the wrapper.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxComboBox`1">
+            <summary>
+            Tier 2 styled combo box (typeahead). Inherits all behavior from
+            <see cref="T:BlazorDX.Primitives.Overlays.ComboBoxPrimitive`1"/> and renders a filtering text input plus
+            an anchored dropdown of matching options, following the WAI-ARIA combobox
+            pattern (focus stays in the input; the active option is exposed via
+            aria-activedescendant). Styling is CSS-variable driven (see dx-overlay.css).
+            </summary>
+            <typeparam name="TValue">The option value type.</typeparam>
+        </member>
+        <member name="T:BlazorDX.Components.DxCommandPalette">
+            <summary>
+            Tier 2 styled command palette (⌘K). Inherits all behavior from
+            <see cref="T:BlazorDX.Primitives.Overlays.CommandPalettePrimitive"/> and renders a centered modal with a
+            filtering input and a command list. Styling is CSS-variable driven (see
+            dx-overlay.css).
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxContextMenu">
+            <summary>
+            Tier 2 styled context menu. Wrap a region in it; right-clicking opens a menu at
+            the cursor with keyboard navigation and dismissal. Styling is CSS-variable
+            driven (see dx-overlay.css).
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxDataGrid`1">
+            <summary>
+            Tier 2 styled data grid. It inherits all behavior from
+            <see cref="T:BlazorDX.Primitives.Grid.DataGridPrimitive`1"/> and only supplies markup, built with
+            <see cref="T:Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder"/> and hardcoded sequence numbers so Blazor's
+            linear-time diff stays intact across thousands of cells. Styling is class- and
+            CSS-variable-based (see dx-datagrid.css); nothing here imposes a design system.
+            </summary>
+            <typeparam name="TRow">The row type, bound via a generated accessor.</typeparam>
+        </member>
+        <member name="P:BlazorDX.Components.DxDataGrid`1.Class">
+            <summary>Optional extra CSS classes appended to the grid container.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxDatePicker">
+            <summary>
+            Tier 2 styled date picker. Inherits all behavior from
+            <see cref="T:BlazorDX.Primitives.Inputs.DatePickerPrimitive"/> and renders a trigger plus an anchored
+            calendar with month navigation and a keyboard-navigable day grid. Styling is
+            CSS-variable driven (see dx-layout.css).
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxDateRangePicker">
+            <summary>
+            A start/end date range, composed from two <see cref="T:BlazorDX.Components.DxDatePicker"/>s — no new
+            behavior, just the existing calendar popover reused twice. The two ends are kept
+            consistent: picking a start after the end pushes the end out, and an end before
+            the start is clamped. Styling is CSS-variable driven (see dx-display.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxDateRangePicker.Start">
+            <summary>The range start (two-way bindable via <c>@bind-Start</c>).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxDateRangePicker.StartChanged">
+            <summary>Raised when the start changes.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxDateRangePicker.End">
+            <summary>The range end (two-way bindable via <c>@bind-End</c>).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxDateRangePicker.EndChanged">
+            <summary>Raised when the end changes.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxDateRangePicker.Culture">
+            <summary>Culture for the two pickers' formatting.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxDateRangePicker.Class">
+            <summary>Extra CSS classes appended to the root.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxDialog">
+            <summary>
+            Tier 2 styled modal dialog. Inherits all behavior from
+            <see cref="T:BlazorDX.Primitives.Overlays.DialogPrimitive"/> and supplies a backdrop + centered panel, wrapped
+            in a <see cref="T:BlazorDX.Primitives.Motion.PresenceBoundary"/> so it animates both in and out. Styling is
+            CSS-variable driven (see dx-overlay.css); the component imposes no design system.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxDialog.Class">
+            <summary>Optional extra CSS classes appended to the panel.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxDivider">
+            <summary>
+            A horizontal or vertical separator. With a <see cref="P:BlazorDX.Components.DxDivider.Label"/> it becomes a
+            labelled section break; without one it is a decorative rule
+            (<c>role="separator"</c>). Styling is token-driven (see dx-structure.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxDivider.Orientation">
+            <summary>"horizontal" (default) or "vertical".</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxDivider.Label">
+            <summary>Optional centered label (horizontal only).</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DocumentKind">
+            <summary>The kind of document a <see cref="T:BlazorDX.Components.DxDocumentViewer"/> knows how to render.</summary>
+        </member>
+        <member name="F:BlazorDX.Components.DocumentKind.Image">
+            <summary>A raster or vector image, rendered in an <c>&lt;img&gt;</c>.</summary>
+        </member>
+        <member name="F:BlazorDX.Components.DocumentKind.Pdf">
+            <summary>A PDF, rendered with the browser's native viewer via <c>&lt;embed&gt;</c>.</summary>
+        </member>
+        <member name="F:BlazorDX.Components.DocumentKind.Markdown">
+            <summary>Markdown source, rendered safely through <see cref="T:BlazorDX.Components.DxMarkdown"/>.</summary>
+        </member>
+        <member name="F:BlazorDX.Components.DocumentKind.Text">
+            <summary>Plain text or code, rendered in a <c>&lt;pre&gt;</c>.</summary>
+        </member>
+        <member name="F:BlazorDX.Components.DocumentKind.Unknown">
+            <summary>Anything else — only a download link is offered.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.ViewerDocument">
+            <summary>
+            One document to show in a <see cref="T:BlazorDX.Components.DxDocumentViewer"/>. For
+            <see cref="F:BlazorDX.Components.DocumentKind.Image"/> and <see cref="F:BlazorDX.Components.DocumentKind.Pdf"/>,
+            <paramref name="Source"/> is a URL or data URL; for
+            <see cref="F:BlazorDX.Components.DocumentKind.Markdown"/> and <see cref="F:BlazorDX.Components.DocumentKind.Text"/> it is the
+            literal content (so the viewer needs no network access of its own).
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Components.ViewerDocument.#ctor(System.String,BlazorDX.Components.DocumentKind,System.String)">
+            <summary>
+            One document to show in a <see cref="T:BlazorDX.Components.DxDocumentViewer"/>. For
+            <see cref="F:BlazorDX.Components.DocumentKind.Image"/> and <see cref="F:BlazorDX.Components.DocumentKind.Pdf"/>,
+            <paramref name="Source"/> is a URL or data URL; for
+            <see cref="F:BlazorDX.Components.DocumentKind.Markdown"/> and <see cref="F:BlazorDX.Components.DocumentKind.Text"/> it is the
+            literal content (so the viewer needs no network access of its own).
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Components.ViewerDocument.KindFromName(System.String)">
+            <summary>Infers the kind from a file name's extension.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxDocumentViewer">
+            <summary>
+            A multi-format document viewer. It dispatches on each document's
+            <see cref="T:BlazorDX.Components.DocumentKind"/>: images render in an <c>&lt;img&gt;</c> with zoom, PDFs
+            in the browser's native <c>&lt;embed&gt;</c> viewer (no bundled PDF engine),
+            Markdown through the safe <see cref="T:BlazorDX.Components.DxMarkdown"/> renderer, and text/code in a
+            <c>&lt;pre&gt;</c>. With more than one document a sidebar switches between them.
+            A leaf component; styling is CSS-variable driven (see dx-display.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxDocumentViewer.Documents">
+            <summary>The documents to show. The first is selected initially.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxDocumentViewer.Class">
+            <summary>Extra CSS classes appended to the viewer root.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxDrawer">
+            <summary>
+            A persistent, collapsible side panel that pushes content rather than overlaying
+            it — the non-modal counterpart to <see cref="T:BlazorDX.Components.DxSheet"/>. No backdrop, no focus
+            trap, no scroll lock: the panel simply collapses its width (a CSS transition)
+            and the main content reflows. Use it for app sidebars and navigation rails;
+            use <see cref="T:BlazorDX.Components.DxSheet"/> when you need a modal overlay. Two-way bind via
+            <c>@bind-Open</c>. Styling is token-driven (see dx-structure.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxDrawer.Side">
+            <summary>Edge the panel docks to: "left" (default) or "right".</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxDrawer.Panel">
+            <summary>The collapsible side panel content.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxDrawer.ChildContent">
+            <summary>The main content the panel sits beside.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxEan13">
+            <summary>
+            Renders an EAN-13 barcode as crisp SVG rectangles. The bar pattern comes from
+            <see cref="T:BlazorDX.Primitives.Barcodes.Ean13Encoder"/> (pure, reflection-free); this component only draws
+            it. Colours use CSS variables so the symbol can be themed, though scanners need
+            dark-on-light contrast.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxEan13.Value">
+            <summary>The 12- or 13-digit code. With 12 digits the check digit is appended.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxEan13.ModuleWidth">
+            <summary>Pixel width of a single module (narrowest bar). Larger = bigger symbol.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxEan13.BarHeight">
+            <summary>Height of the bars in pixels (excludes the digit caption).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxEan13.ShowText">
+            <summary>Whether to print the human-readable digits beneath the bars.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxEan13.Class">
+            <summary>Extra CSS classes for the root <c>svg</c>.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxErrorBoundary">
+            <summary>
+            Contains exceptions thrown while rendering its content so one broken component
+            doesn't take down the page. On an error it reports to <see cref="T:BlazorDX.Primitives.Diagnostics.IDxDiagnostics"/>
+            (resolved optionally — no-op if none is registered), raises <see cref="P:BlazorDX.Components.DxErrorBoundary.OnError"/>,
+            and shows a fallback: your <c>ErrorContent</c> template, or a styled default with a
+            Retry button. Builds on the framework's <see cref="T:Microsoft.AspNetCore.Components.ErrorBoundaryBase"/>.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxErrorBoundary.OnError">
+            <summary>Raised with the caught exception (after it is reported to diagnostics).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxErrorBoundary.FallbackTitle">
+            <summary>Heading shown by the default fallback.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxErrorBoundary.ShowDetail">
+            <summary>Show the exception message in the default fallback (use only in development).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxErrorBoundary.RetryText">
+            <summary>Label for the default fallback's recover button.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxErrorBoundary.Class">
+            <summary>Extra CSS classes appended to the default fallback.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxFileManager">
+            <summary>
+            Tier 2 styled file manager built on <see cref="T:BlazorDX.Primitives.Files.FileManagerPrimitive"/>: a
+            breadcrumb, a folder navigation tree on the left, and the selected folder's
+            contents on the right. Double-click a folder to drill in, or a file to open it.
+            Styling is token-driven (see dx-filemanager.css).
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxFileUpload">
+            <summary>
+            A drag-and-drop file upload zone built over the framework's <see cref="T:Microsoft.AspNetCore.Components.Forms.InputFile"/>
+            (so file selection, drag-drop, and the security model come from the platform — no
+            custom JS). Shows the chosen files with sizes and a remove button. A leaf component;
+            styling is CSS-variable driven (see dx-display.css). The component surfaces the
+            selected <see cref="T:Microsoft.AspNetCore.Components.Forms.IBrowserFile"/>s via <see cref="P:BlazorDX.Components.DxFileUpload.OnFilesSelected"/>; actually
+            streaming them somewhere is the consumer's job.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxFileUpload.Accept">
+            <summary>The accept filter (e.g. <c>image/*,.pdf</c>).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxFileUpload.Multiple">
+            <summary>Allow selecting more than one file.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxFileUpload.MaxFiles">
+            <summary>Maximum number of files accepted from a selection.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxFileUpload.MaxSize">
+            <summary>Maximum size per file in bytes; larger files are skipped.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxFileUpload.PromptText">
+            <summary>Prompt shown in the drop zone.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxFileUpload.OnFilesSelected">
+            <summary>Raised with the current set of accepted files whenever it changes.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxFileUpload.Class">
+            <summary>Extra CSS classes appended to the root.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxForm`1">
+            <summary>
+            Renders and validates a <c>[DxFormModel]</c>-annotated model through its generated
+            <see cref="T:BlazorDX.Primitives.Forms.IFormModel`1"/> descriptor — no reflection. With no
+            <see cref="P:BlazorDX.Components.DxForm`1.ChildContent"/> it auto-renders every field; supply child content (e.g.
+            <see cref="T:BlazorDX.Components.DxFormSection"/>, <see cref="T:BlazorDX.Components.DxFormGrid"/>, <see cref="T:BlazorDX.Components.DxFormField"/>) to
+            lay them out yourself. Every layer is templatable via
+            <see cref="P:BlazorDX.Components.DxForm`1.FieldTemplate"/>/<see cref="P:BlazorDX.Components.DxForm`1.InputTemplate"/>/<see cref="P:BlazorDX.Components.DxForm`1.LabelTemplate"/>.
+            The same descriptor powers the AI-tool projection (see <c>FormTool</c>), so this UI
+            and an AI tool call share one model and one set of validation rules.
+            </summary>
+            <typeparam name="TModel">The annotated model type.</typeparam>
+        </member>
+        <member name="P:BlazorDX.Components.DxForm`1.Model">
+            <summary>The model instance the form edits.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxForm`1.Descriptor">
+            <summary>The generated descriptor for <typeparamref name="TModel"/> (e.g. <c>new MyModelFormModel()</c>).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxForm`1.OnValidSubmit">
+            <summary>Raised with the model when submitted and validation passes.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxForm`1.OnInvalidSubmit">
+            <summary>Raised with the errors when submitted and validation fails.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxForm`1.ChildContent">
+            <summary>Manual layout. When null, all fields auto-render in declared order.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxForm`1.FieldTemplate">
+            <summary>Overrides the entire per-field row (label + input + errors).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxForm`1.InputTemplate">
+            <summary>Overrides just the input control for every field.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxForm`1.LabelTemplate">
+            <summary>Overrides the label for every field.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxForm`1.ValidateOnChange">
+            <summary>Re-validate after every field change (default: validate on submit only).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxForm`1.ShowSubmit">
+            <summary>Show the built-in submit button.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxForm`1.SubmitText">
+            <summary>Submit button text.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxForm`1.Class">
+            <summary>Extra CSS classes appended to the form element.</summary>
+        </member>
+        <member name="M:BlazorDX.Components.DxForm`1.Refresh">
+            <summary>
+            Re-reads the model into the rendered fields. Call this after the model is changed
+            from outside the form — e.g. when an AI tool call fills it via <c>FormTool</c>.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxFormField">
+            <summary>
+            Renders one field of the enclosing <see cref="T:BlazorDX.Components.DxForm`1"/> by name. Use it
+            inside a form's child content to lay fields out manually — across
+            <see cref="T:BlazorDX.Components.DxFormSection"/>s, a <see cref="T:BlazorDX.Components.DxFormGrid"/>, or any markup — while
+            keeping the generated binding, validation, and templates.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxFormField.Name">
+            <summary>The model property name to render.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxFormGrid">
+            <summary>
+            Lays its child fields out in a responsive multi-column grid (collapsing to one
+            column on narrow viewports). A simple, modern way to organize a form's fields
+            without hand-written column math.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxFormGrid.Columns">
+            <summary>Maximum number of columns on a wide viewport.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxFormGrid.ChildContent">
+            <summary>The fields/content to lay out.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxFormGrid.Class">
+            <summary>Extra CSS classes appended to the grid.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxFormSection">
+            <summary>
+            Groups related form fields into a labelled, optionally collapsible
+            <c>&lt;fieldset&gt;</c> — the "containerization within forms" that keeps long forms
+            scannable. Drop <see cref="T:BlazorDX.Components.DxFormField"/>s (or any markup) inside it.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxFormSection.Title">
+            <summary>Section heading (the fieldset legend).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxFormSection.Description">
+            <summary>Optional helper text under the legend.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxFormSection.Collapsible">
+            <summary>Allow the section to collapse/expand.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxFormSection.Collapsed">
+            <summary>Initial/!two-way collapsed state.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxFormSection.ChildContent">
+            <summary>The section's fields/content.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxFormSection.Class">
+            <summary>Extra CSS classes appended to the section.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxFunnelChart">
+            <summary>
+            A funnel chart: stacked, centered trapezoids whose widths are proportional to each
+            stage's value (reusing <see cref="T:BlazorDX.Components.ChartBar"/>). Pure SVG; styling via dx-chart.css.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxFunnelChart.Stages">
+            <summary>The funnel stages, top to bottom.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxGantt">
+            <summary>
+            Tier 2 styled Gantt chart built on <see cref="T:BlazorDX.Primitives.Scheduling.GanttPrimitive"/>. A fixed task-
+            name column sits beside a horizontally-scrolling day timeline; each task renders
+            as a bar (with a progress fill) positioned by the inherited day layout. Styling
+            is token-driven (see dx-scheduler.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxGantt.DayWidth">
+            <summary>Pixel width of one day column.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxGantt.RowHeight">
+            <summary>Pixel height of one task row.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxGantt.NameWidth">
+            <summary>Width of the task-name column in pixels.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxHistogram">
+            <summary>
+            A histogram: bins a raw value series into equal-width buckets and draws the
+            per-bin counts as bars. The binning runs on the compute backend (Rust in the
+            browser, managed C# on the server), so large datasets bin off the UI thread.
+            Styling is token-driven (see dx-chart.css).
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.Hotkey">
+            <summary>A global keyboard shortcut and the action it runs.</summary>
+            <param name="Combo">Key combo, e.g. "Ctrl+K" or "Ctrl+Shift+P" (case- and order-insensitive).</param>
+            <param name="Invoke">Invoked when the combo is pressed; an <see cref="T:Microsoft.AspNetCore.Components.EventCallback"/> so the host re-renders.</param>
+            <param name="Description">Optional human-readable label (for a future cheatsheet).</param>
+        </member>
+        <member name="M:BlazorDX.Components.Hotkey.#ctor(System.String,Microsoft.AspNetCore.Components.EventCallback,System.String)">
+            <summary>A global keyboard shortcut and the action it runs.</summary>
+            <param name="Combo">Key combo, e.g. "Ctrl+K" or "Ctrl+Shift+P" (case- and order-insensitive).</param>
+            <param name="Invoke">Invoked when the combo is pressed; an <see cref="T:Microsoft.AspNetCore.Components.EventCallback"/> so the host re-renders.</param>
+            <param name="Description">Optional human-readable label (for a future cheatsheet).</param>
+        </member>
+        <member name="P:BlazorDX.Components.Hotkey.Combo">
+            <summary>Key combo, e.g. "Ctrl+K" or "Ctrl+Shift+P" (case- and order-insensitive).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.Hotkey.Invoke">
+            <summary>Invoked when the combo is pressed; an <see cref="T:Microsoft.AspNetCore.Components.EventCallback"/> so the host re-renders.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.Hotkey.Description">
+            <summary>Optional human-readable label (for a future cheatsheet).</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxHotkeys">
+            <summary>
+            Registers global keyboard shortcuts. Place once (e.g. in a layout); pressing a
+            registered combo runs its action and suppresses the browser default. Matching
+            happens in JS so the default can be prevented synchronously. Renders nothing.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Components.DxHotkeys.Normalize(System.String)">
+            <summary>
+            Normalizes a combo to the JS form: lowercase, modifiers in ctrl/alt/shift
+            order, Cmd/Meta folded into Ctrl. So "⌘K", "Ctrl+k", and "k+ctrl" all match.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxImageEditor">
+            <summary>
+            A canvas-backed image editor: load an image, adjust brightness / contrast /
+            saturation, toggle grayscale / sepia / invert, rotate and flip, then download
+            the result. Editing is non-destructive — every change repaints the canvas from
+            the original decoded bitmap (held in the TypeScript bridge). The .NET side owns
+            the edit state; the DOM/canvas work happens in <c>image-editor.js</c> via
+            <see cref="T:BlazorDX.Interop.IImageEditorInterop"/>. Styling is CSS-variable driven (see
+            dx-display.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxImageEditor.MaxSize">
+            <summary>Largest image accepted from the file picker, in bytes.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxImageEditor.DownloadName">
+            <summary>File name used for the downloaded PNG.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxImageEditor.InitialSource">
+            <summary>Optional image to load on first render (a data URL or same-origin URL).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxImageEditor.OnChange">
+            <summary>Raised after each render with the current image as a PNG data URL.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxImageEditor.Class">
+            <summary>Extra CSS classes appended to the editor root.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.KanbanCard">
+            <summary>A card on a <see cref="T:BlazorDX.Components.DxKanban"/> board (a class for reference identity).</summary>
+        </member>
+        <member name="T:BlazorDX.Components.KanbanColumn">
+            <summary>A column on a <see cref="T:BlazorDX.Components.DxKanban"/> board.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxKanban">
+            <summary>
+            A Kanban board: columns of cards that move by drag-and-drop (HTML5 native drag — no
+            JS) across and within columns, or by keyboard (Alt+Up/Down to reorder within a
+            column, Ctrl+Left/Right to move to an adjacent column), with focus following the
+            moved card. Raises <see cref="P:BlazorDX.Components.DxKanban.OnChange"/> after any move. Styling via dx-display.css.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxKanban.Columns">
+            <summary>The board columns (mutated in place as cards move).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxKanban.OnChange">
+            <summary>Raised after a card is moved.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxKanban.Class">
+            <summary>Extra CSS classes appended to the board.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxKbd">
+            <summary>
+            Renders a keyboard shortcut as a sequence of styled <c>&lt;kbd&gt;</c> keys —
+            e.g. <c>Combo="Ctrl+Shift+P"</c> becomes Ctrl ＋ Shift ＋ P. A leaf component
+            (no primitive); styling is CSS-variable driven (see dx-display.css). Modifier
+            and special-key names are prettified for display, and the whole combo carries
+            a readable <c>aria-label</c> so screen readers announce it as words.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxKbd.Combo">
+            <summary>The shortcut, e.g. "Ctrl+K" or "Ctrl+Shift+P" (parts split on "+").</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxKbd.Class">
+            <summary>Extra CSS classes appended to the combo wrapper.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxKeyboardShortcuts">
+            <summary>
+            A "press ? for shortcuts" cheat-sheet overlay. Pass it the same
+            <see cref="T:BlazorDX.Components.Hotkey"/> list you register with <see cref="T:BlazorDX.Components.DxHotkeys"/> and it
+            renders a labelled table of each shortcut (description + a <see cref="T:BlazorDX.Components.DxKbd"/>
+            rendering of its combo). Controlled via <see cref="P:BlazorDX.Components.DxKeyboardShortcuts.Open"/>/<see cref="P:BlazorDX.Components.DxKeyboardShortcuts.OpenChanged"/>;
+            closes on backdrop click, the close button, or Escape. Styling is CSS-variable
+            driven (see dx-overlay.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxKeyboardShortcuts.Bindings">
+            <summary>The shortcuts to list (typically the same list given to <see cref="T:BlazorDX.Components.DxHotkeys"/>).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxKeyboardShortcuts.Open">
+            <summary>Whether the overlay is shown. Controlled — pair with <see cref="P:BlazorDX.Components.DxKeyboardShortcuts.OpenChanged"/>.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxKeyboardShortcuts.OpenChanged">
+            <summary>Raised when the overlay requests to open or close (backdrop, button, Escape).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxKeyboardShortcuts.Title">
+            <summary>Heading shown at the top of the panel.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxKeyboardShortcuts.ExitDurationMs">
+            <summary>Exit animation duration in milliseconds.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxKeyboardShortcuts.Class">
+            <summary>Extra CSS classes appended to the panel.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.GaugeZone">
+            <summary>A colored zone for <see cref="T:BlazorDX.Components.DxLinearGauge"/>: applies up to <paramref name="UpTo"/>.</summary>
+            <param name="UpTo">Upper bound (inclusive) of the zone, in value units.</param>
+            <param name="Color">CSS color for values at or below the bound.</param>
+        </member>
+        <member name="M:BlazorDX.Components.GaugeZone.#ctor(System.Double,System.String)">
+            <summary>A colored zone for <see cref="T:BlazorDX.Components.DxLinearGauge"/>: applies up to <paramref name="UpTo"/>.</summary>
+            <param name="UpTo">Upper bound (inclusive) of the zone, in value units.</param>
+            <param name="Color">CSS color for values at or below the bound.</param>
+        </member>
+        <member name="P:BlazorDX.Components.GaugeZone.UpTo">
+            <summary>Upper bound (inclusive) of the zone, in value units.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.GaugeZone.Color">
+            <summary>CSS color for values at or below the bound.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxLinearGauge">
+            <summary>
+            A horizontal (linear) gauge: a track with a value fill and an optional set of
+            colored threshold zones. Reports its value as an ARIA <c>meter</c>. Pure SVG.
+            Styling is token-driven (see dx-chart.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxLinearGauge.Zones">
+            <summary>Optional zones (ascending by <see cref="P:BlazorDX.Components.GaugeZone.UpTo"/>) that color the fill.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxLineChart">
+            <summary>
+            A line chart that renders a large (x, y) series as a single SVG polyline,
+            LTTB-downsampled by the compute backend (Rust in the browser) to keep the
+            visual shape while drawing only a few hundred points. Styling is CSS-variable
+            driven (see dx-layout.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxLineChart.Threshold">
+            <summary>Approximate number of points to draw.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxListbox`1">
+            <summary>
+            Tier 2 styled inline listbox. Inherits all behavior from
+            <see cref="T:BlazorDX.Primitives.Overlays.ListboxPrimitive`1"/> and renders a bordered, scrollable list
+            of selectable options with WAI-ARIA listbox semantics. Styling is
+            CSS-variable driven (see dx-overlay.css).
+            </summary>
+            <typeparam name="TValue">The option value type.</typeparam>
+        </member>
+        <member name="T:BlazorDX.Components.DxMarkdown">
+            <summary>
+            Renders a Markdown string as sanitized HTML via <see cref="T:BlazorDX.Components.MarkdownRenderer"/>.
+            The HTML is safe by construction (text encoded, fixed tag set, scheme-checked
+            links). Styling is token-driven (see dx-markdown.css).
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxMarkdownEditor">
+            <summary>
+            A split Markdown editor: a source textarea on the left and a live, sanitized
+            preview on the right (rendered through <see cref="T:BlazorDX.Components.DxMarkdown"/>). Two-way bind
+            the source via <c>@bind-Value</c>. Styling is token-driven (see dx-markdown.css).
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxMaskedTextBox">
+            <summary>
+            A text input that formats its value against a fixed mask as the user types.
+            Mask tokens: <c>0</c> = digit, <c>A</c> = letter, <c>*</c> = letter or digit; any
+            other character is a literal that is inserted automatically. A leaf component;
+            the masking is pure and reflection-free (see <see cref="M:BlazorDX.Components.DxMaskedTextBox.ApplyMask(System.String,System.String)"/>).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxMaskedTextBox.Value">
+            <summary>The formatted value (two-way bindable via <c>@bind-Value</c>).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxMaskedTextBox.ValueChanged">
+            <summary>Raised with the re-masked value as the user types.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxMaskedTextBox.Mask">
+            <summary>The mask pattern, e.g. <c>(000) 000-0000</c>.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxMaskedTextBox.Placeholder">
+            <summary>Placeholder shown when empty.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxMaskedTextBox.Label">
+            <summary>Optional field label.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxMaskedTextBox.Disabled">
+            <summary>Disables the input.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxMaskedTextBox.AriaLabel">
+            <summary>Accessible label (falls back to <see cref="P:BlazorDX.Components.DxMaskedTextBox.Label"/>).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxMaskedTextBox.Class">
+            <summary>Extra CSS classes appended to the field.</summary>
+        </member>
+        <member name="M:BlazorDX.Components.DxMaskedTextBox.ApplyMask(System.String,System.String)">
+            <summary>
+            Formats <paramref name="raw"/> input against <paramref name="mask"/>. Significant
+            characters are placed into the token positions; literals are inserted as needed
+            and any literals the user typed are skipped. Trailing literals (with no further
+            input) are omitted. Reflection-free and pure — safe to unit test directly.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxMenu">
+            <summary>
+            Tier 2 styled menu. Inherits all behavior from <see cref="T:BlazorDX.Primitives.Overlays.MenuPrimitive"/> and
+            renders a trigger plus an anchored, keyboard-navigable list of menu items with
+            WAI-ARIA menu semantics. Styling is CSS-variable driven (see dx-overlay.css).
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxNumeric`1">
+            <summary>
+            A labelled numeric input with stepper buttons, generic over any numeric type
+            via .NET generic math (<see cref="T:System.Numerics.INumber`1"/>) — so <c>int</c>,
+            <c>decimal</c>, <c>double</c>, etc. all parse and clamp type-safely with no
+            reflection. Two-way bind via <c>@bind-Value</c> (nullable: empty = no value).
+            Styling is token-driven (see dx-input.css).
+            </summary>
+            <typeparam name="TValue">A numeric value type (e.g. <c>int</c>, <c>decimal</c>).</typeparam>
+        </member>
+        <member name="P:BlazorDX.Components.DxNumeric`1.Step">
+            <summary>Amount added/removed by the stepper buttons (defaults to one).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxNumeric`1.Format">
+            <summary>Standard/custom numeric format string for display (e.g. "F2", "C").</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxNumeric`1.Culture">
+            <summary>Culture for display and parsing (defaults to the current UI culture).</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxPager">
+            <summary>
+            A standalone pagination control: first / previous / next / last plus a windowed
+            run of page numbers with ellipses. Page is 1-based and two-way bindable. Pure
+            presentation + arithmetic; pair it with any paged data source.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxPager.Page">
+            <summary>The current 1-based page. Two-way bindable.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxPager.PageCount">
+            <summary>The number of pages (at least one).</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxPassword">
+            <summary>
+            A labelled password field with a show/hide toggle. Built on a native
+            <c>&lt;input&gt;</c> whose type flips between <c>password</c> and <c>text</c>.
+            Two-way bind via <c>@bind-Value</c>. Styling is token-driven (see dx-input.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxPassword.AllowReveal">
+            <summary>Show the show/hide reveal toggle (default true).</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxPieChart">
+            <summary>
+            A pie or donut chart rendered as SVG arc segments with a legend. Reuses the
+            <see cref="T:BlazorDX.Components.ChartBar"/> category model. Set <see cref="P:BlazorDX.Components.DxPieChart.Donut"/> for a donut.
+            Styling is token-driven (see dx-chart.css).
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxPivotGrid`1">
+            <summary>
+            Tier 2 styled pivot table built on <see cref="T:BlazorDX.Primitives.Grid.PivotGridPrimitive`1"/>. It
+            renders a cross-tab: pivot-row keys down the side, pivot-column keys across the
+            top, aggregated value cells in the body, and row/column/grand totals. Styling
+            is class- and CSS-variable-based (see dx-datagrid.css).
+            </summary>
+            <typeparam name="TRow">The row type, bound via a generated accessor.</typeparam>
+        </member>
+        <member name="T:BlazorDX.Components.DxPopover">
+            <summary>
+            Tier 2 styled popover. Inherits all behavior from <see cref="T:BlazorDX.Primitives.Overlays.PopoverPrimitive"/>
+            and renders the trigger plus an anchored, animated floating panel. Styling is
+            CSS-variable driven (see dx-overlay.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxPopover.Class">
+            <summary>Optional extra CSS classes appended to the panel.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxProgress">
+            <summary>
+            A progress bar. Determinate when <see cref="P:BlazorDX.Components.DxProgress.Value"/> is set (0–100); indeterminate
+            (animated) when null. WAI-ARIA progressbar. Styling via dx-layout.css.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxQrCode">
+            <summary>
+            Renders a QR code as SVG. The module matrix comes from <see cref="T:BlazorDX.Primitives.Barcodes.Qr.QrCode"/>
+            (pure, reflection-free; versions 1–4, all EC levels); this component only draws
+            it, with a standard quiet zone. Colours use CSS variables, though scanners need
+            dark-on-light contrast.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxQrCode.Value">
+            <summary>The payload to encode.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxQrCode.Level">
+            <summary>Error-correction level (higher tolerates more damage but holds less data).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxQrCode.ModuleSize">
+            <summary>Pixel size of a single module.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxQrCode.Class">
+            <summary>Extra CSS classes for the root <c>svg</c>.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxQueryBuilder">
+            <summary>
+            A visual query builder: nestable AND/OR groups of field-operator-value
+            conditions over a declared field list. Edits the bound <see cref="P:BlazorDX.Components.DxQueryBuilder.Root"/> tree
+            in place; evaluate it with <c>QueryEvaluator</c>. Styling is token-driven (see
+            dx-querybuilder.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxQueryBuilder.OnChange">
+            <summary>Raised whenever the query tree changes.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxRadarChart">
+            <summary>
+            A radar (spider) chart: one polygon per <see cref="T:BlazorDX.Components.ChartSeries"/> over a shared
+            set of <see cref="P:BlazorDX.Components.DxRadarChart.Axes"/>. Pure SVG, no JS or DI; styling via dx-chart.css.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxRadarChart.Axes">
+            <summary>Axis labels (one per spoke); series values align to these by index.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxRadarChart.Series">
+            <summary>The series to plot; each must have one value per axis.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxRadarChart.Max">
+            <summary>Axis maximum; 0 (default) auto-scales to the largest value.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxRadarChart.Rings">
+            <summary>Number of concentric grid rings.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxRadialGauge">
+            <summary>
+            A radial (circular) gauge: a 270° arc track with a value arc and a center
+            readout. Reports its value as an ARIA <c>meter</c>. Pure SVG. Styling is
+            token-driven (see dx-chart.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxRadialGauge.Label">
+            <summary>Optional label shown under the value.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxRadialGauge.Color">
+            <summary>Optional value-arc color override (defaults to the accent token).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxRadialGauge.Format">
+            <summary>Display format for the center value (e.g. "0", "0.0", "P0").</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxRadioGroup`1">
+            <summary>
+            A single-select radio group following the WAI-ARIA radio pattern: one tab stop,
+            arrow keys move and select (roving tabindex). Reuses the roving-tabindex
+            primitive. Two-way bind via <c>@bind-Value</c>. Styling is CSS-variable driven.
+            </summary>
+            <typeparam name="TValue">The option value type.</typeparam>
+        </member>
+        <member name="T:BlazorDX.Components.DxRangeSlider">
+            <summary>
+            A two-thumb range slider built from two overlaid native range inputs (so keyboard
+            and ARIA come for free) plus a fill bar between the thumbs. The low/high values
+            are clamped so they never cross. A leaf component; styling is CSS-variable driven
+            (see dx-display.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxRangeSlider.Low">
+            <summary>The lower bound (two-way bindable via <c>@bind-Low</c>).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxRangeSlider.LowChanged">
+            <summary>Raised when the lower bound changes.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxRangeSlider.High">
+            <summary>The upper bound (two-way bindable via <c>@bind-High</c>).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxRangeSlider.HighChanged">
+            <summary>Raised when the upper bound changes.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxRangeSlider.Min">
+            <summary>Minimum value.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxRangeSlider.Max">
+            <summary>Maximum value.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxRangeSlider.Step">
+            <summary>Step increment.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxRangeSlider.Disabled">
+            <summary>Disables interaction.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxRangeSlider.ShowValue">
+            <summary>Show the current range beside the slider.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxRangeSlider.AriaLabel">
+            <summary>Accessible label prefix for the two thumbs.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxRangeSlider.Class">
+            <summary>Extra CSS classes appended to the wrapper.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxRating">
+            <summary>
+            A star rating input. Click or use the keyboard (Arrow keys, Home/End) to set a
+            value; hovering previews. Follows the WAI-ARIA slider pattern. A leaf component:
+            the behavior is small enough that no separate primitive is warranted. Styling is
+            CSS-variable driven (see dx-layout.css).
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxRichTextEditor">
+            <summary>
+            A WYSIWYG rich-text editor over a <c>contentEditable</c> region with a
+            formatting toolbar. Edited HTML is read back from the DOM and routed through an
+            injected <see cref="T:BlazorDX.Security.HtmlSanitizer"/> before it becomes <see cref="P:BlazorDX.Components.DxRichTextEditor.Value"/> — so
+            the application's own vetted policy decides what HTML survives (BlazorDX ships
+            no HTML parser of its own). Without a real sanitizer the default policy renders
+            content inert; supply one for actual rich editing. Two-way bind via
+            <c>@bind-Value</c>. Styling is token-driven (see dx-richtext.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxRichTextEditor.Sanitizer">
+            <summary>The sanitizer applied to edited HTML. Defaults to an inert (encode-all) policy.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.ChartPoint">
+            <summary>An (x, y) point for a scatter plot.</summary>
+        </member>
+        <member name="M:BlazorDX.Components.ChartPoint.#ctor(System.Double,System.Double)">
+            <summary>An (x, y) point for a scatter plot.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxScatterChart">
+            <summary>
+            A scatter plot: each (x, y) point is drawn as a dot, scaled to the data's
+            bounds. Pure SVG. Styling is token-driven (see dx-chart.css).
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxScheduler">
+            <summary>
+            Tier 2 styled week scheduler built on <see cref="T:BlazorDX.Primitives.Scheduling.SchedulerPrimitive"/>. Renders
+            a toolbar, day-column headers, an hour grid, and each event as an absolutely
+            positioned block within its day column. Styling is token-driven (see
+            dx-scheduler.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxScheduler.HourHeight">
+            <summary>Pixel height of one hour row.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxSelect`1">
+            <summary>
+            Tier 2 styled single-select dropdown. Inherits all behavior from
+            <see cref="T:BlazorDX.Primitives.Overlays.SelectPrimitive`1"/> and renders a trigger plus an anchored,
+            keyboard-navigable option list with WAI-ARIA listbox semantics. Styling is
+            CSS-variable driven (see dx-overlay.css).
+            </summary>
+            <typeparam name="TValue">The option value type.</typeparam>
+        </member>
+        <member name="T:BlazorDX.Components.DxSheet">
+            <summary>
+            A sheet / offcanvas panel that slides in from a screen edge. It is a
+            <see cref="T:BlazorDX.Primitives.Overlays.DialogPrimitive"/> (same focus-trap, scroll-lock, and dismissal) with
+            edge-anchored positioning and a slide transition instead of a centered panel.
+            Styling is CSS-variable driven (see dx-overlay.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxSheet.Side">
+            <summary>Edge the sheet slides from: left, right, top, or bottom.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxSkeleton">
+            <summary>A shimmering placeholder block shown while content loads. Decorative
+            (aria-hidden). Styling via dx-layout.css.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxSlider">
+            <summary>
+            A numeric slider, backed by a native <c>&lt;input type="range"&gt;</c> so keyboard
+            interaction and the ARIA slider semantics come for free, then styled through CSS
+            variables (see dx-input.css). A leaf component, consistent with the other
+            native-backed inputs (<see cref="T:BlazorDX.Components.DxCheckbox"/>, <see cref="T:BlazorDX.Components.DxSwitch"/>).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxSlider.Value">
+            <summary>The current value (two-way bindable via <c>@bind-Value</c>).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxSlider.ValueChanged">
+            <summary>Raised as the value changes.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxSlider.Min">
+            <summary>Minimum value.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxSlider.Max">
+            <summary>Maximum value.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxSlider.Step">
+            <summary>Step increment.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxSlider.Disabled">
+            <summary>Disables interaction.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxSlider.ShowValue">
+            <summary>Show the current value beside the track.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxSlider.AriaLabel">
+            <summary>Accessible label for the slider.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxSlider.Class">
+            <summary>Extra CSS classes appended to the wrapper.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxSortableList">
+            <summary>
+            Tier 2 styled sortable list. Inherits all behavior from
+            <see cref="T:BlazorDX.Primitives.Interaction.SortablePrimitive"/> and renders draggable, keyboard-reorderable
+            rows. Styling is CSS-variable driven (see dx-layout.css).
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxSparkline">
+            <summary>
+            A compact, inline trend chart with no axes or labels — a line or bar
+            sparkline scaled to a small box. Pure SVG, no compute dependency (sparkline
+            series are small by nature). Styling is token-driven (see dx-chart.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxSparkline.Variant">
+            <summary>"line" (default) or "bar".</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxSpinner">
+            <summary>An accessible loading spinner (CSS-animated ring). Styling via dx-layout.css.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxSplitButton">
+            <summary>
+            A primary action button paired with a caret that opens a menu of secondary
+            actions. Composes <see cref="T:BlazorDX.Components.DxMenu"/> for the dropdown — no new overlay behavior,
+            just the existing anchored/dismiss/roving engine reused. Styling is CSS-variable
+            driven (see dx-display.css / dx-overlay.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxSplitButton.ChildContent">
+            <summary>Primary button content. Takes precedence over <see cref="P:BlazorDX.Components.DxSplitButton.Text"/>.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxSplitButton.Text">
+            <summary>Primary button label, when no <see cref="P:BlazorDX.Components.DxSplitButton.ChildContent"/> is supplied.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxSplitButton.Variant">
+            <summary>Visual variant: primary, secondary, danger, ghost.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxSplitButton.Disabled">
+            <summary>Disables the primary action.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxSplitButton.OnClick">
+            <summary>Primary action click handler.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxSplitButton.Items">
+            <summary>The secondary actions shown in the dropdown menu.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxSplitButton.Class">
+            <summary>Extra CSS classes appended to the wrapper.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxSplitter">
+            <summary>
+            Two resizable panes separated by a draggable divider. Resizing uses the same
+            pure-Blazor pointer-overlay technique as the data grid's column resize (a
+            full-window overlay captures pointer move/up so the gesture never loses the thin
+            divider). Arrow keys nudge the divider for keyboard users. Styling is
+            CSS-variable driven (see dx-display.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxSplitter.Orientation">
+            <summary>Layout direction: "horizontal" (side by side) or "vertical" (stacked).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxSplitter.First">
+            <summary>The first (sized) pane.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxSplitter.Second">
+            <summary>The second (growing) pane.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxSplitter.InitialSize">
+            <summary>Initial size of the first pane, in pixels.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxSplitter.MinFirst">
+            <summary>Minimum size of the first pane, in pixels.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxSplitter.Step">
+            <summary>Keyboard nudge step, in pixels.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxSplitter.Class">
+            <summary>Extra CSS classes appended to the root.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.ChartSeries">
+            <summary>A named data series for a multi-series chart.</summary>
+            <param name="Name">Series label (shown in the legend).</param>
+            <param name="Values">One value per category, in category order.</param>
+            <param name="Color">Optional color override; otherwise a palette color.</param>
+        </member>
+        <member name="M:BlazorDX.Components.ChartSeries.#ctor(System.String,System.Collections.Generic.IReadOnlyList{System.Double},System.String)">
+            <summary>A named data series for a multi-series chart.</summary>
+            <param name="Name">Series label (shown in the legend).</param>
+            <param name="Values">One value per category, in category order.</param>
+            <param name="Color">Optional color override; otherwise a palette color.</param>
+        </member>
+        <member name="P:BlazorDX.Components.ChartSeries.Name">
+            <summary>Series label (shown in the legend).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.ChartSeries.Values">
+            <summary>One value per category, in category order.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.ChartSeries.Color">
+            <summary>Optional color override; otherwise a palette color.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxStackedBarChart">
+            <summary>
+            A multi-series bar chart, stacked by default or grouped side-by-side when
+            <see cref="P:BlazorDX.Components.DxStackedBarChart.Stacked"/> is false. Categories run along the x axis; a legend names
+            the series. Pure SVG. Styling is token-driven (see dx-chart.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxStackedBarChart.Stacked">
+            <summary>Stack the series (default) or draw them grouped side-by-side.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.StepItem">
+            <summary>One step in a stepper: a title and the content shown when it is active.</summary>
+        </member>
+        <member name="M:BlazorDX.Components.StepItem.#ctor(System.String,Microsoft.AspNetCore.Components.RenderFragment)">
+            <summary>One step in a stepper: a title and the content shown when it is active.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxStepper">
+            <summary>
+            A horizontal stepper / wizard: numbered step indicators (completed / current /
+            upcoming), the current step's content, and Back / Next navigation. Steps can
+            also be clicked. The current index is two-way bindable. Styling is CSS-variable
+            driven (see dx-layout.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxStepper.Current">
+            <summary>The active step index (0-based). Two-way bindable.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxSwitch">
+            <summary>
+            A toggle switch built on a native checkbox with <c>role="switch"</c>, styled as
+            a track + thumb. Two-way bind via <c>@bind-Value</c>. Styling is CSS-variable
+            driven (see dx-layout.css).
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxTabs">
+            <summary>
+            Tier 2 styled tabs. Inherits all behavior from <see cref="T:BlazorDX.Primitives.Navigation.TabsPrimitive"/> and
+            renders a tab list plus the selected panel with WAI-ARIA tab semantics. Styling
+            is CSS-variable driven (see dx-layout.css).
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxTextArea">
+            <summary>
+            A labelled multi-line text input on a native <c>&lt;textarea&gt;</c>. Two-way
+            bind via <c>@bind-Value</c>; <see cref="P:BlazorDX.Components.DxTextArea.Rows"/> sets the initial height.
+            Styling is token-driven (see dx-input.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxTextArea.Immediate">
+            <summary>Bind on each keystroke (<c>oninput</c>) instead of on commit (<c>onchange</c>).</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxTextBox">
+            <summary>
+            A labelled single-line text input on a native <c>&lt;input&gt;</c> for free
+            accessibility, with CSS-variable styling. Two-way bind via <c>@bind-Value</c>.
+            The <see cref="P:BlazorDX.Components.DxTextBox.Type"/> selects the HTML input type (text, email, url, tel,
+            search). For passwords use <see cref="T:BlazorDX.Components.DxPassword"/>; for numbers,
+            <see cref="T:BlazorDX.Components.DxNumeric`1"/>. Styling is token-driven (see dx-input.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxTextBox.Type">
+            <summary>HTML input type: text (default), email, url, tel, or search.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxTextBox.Immediate">
+            <summary>Bind on each keystroke (<c>oninput</c>) instead of on commit (<c>onchange</c>).</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxThemeProvider">
+            <summary>
+            Scopes a theme over its children by setting <c>data-dx-theme</c> (light/dark)
+            and optional inline token overrides. Everything inside inherits the tokens via
+            CSS custom properties — no per-component wiring. Requires dx-theme.css.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxThemeProvider.Theme">
+            <summary>"light" or "dark" (or any value matching a [data-dx-theme] rule).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxThemeProvider.Accent">
+            <summary>Optional override for the accent token (any CSS color).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxThemeProvider.Direction">
+            <summary>Text direction for the subtree: "ltr" (default) or "rtl".</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxTileLayout">
+            <summary>
+            Tier 2 styled tile dashboard built on <see cref="T:BlazorDX.Primitives.Interaction.TileLayoutPrimitive"/>. Tiles
+            lay out in a responsive CSS grid; each tile's header is a drag handle that also
+            supports keyboard reordering (Alt+Arrow). Styling is token-driven (see
+            dx-layout.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxTileLayout.MinColumnWidth">
+            <summary>Minimum tile column width before the grid wraps (px).</summary>
+        </member>
+        <member name="T:BlazorDX.Components.TimelineItem">
+            <summary>One event on a <see cref="T:BlazorDX.Components.DxTimeline"/>.</summary>
+            <param name="Title">Headline for the event.</param>
+            <param name="Time">Optional timestamp/label shown above the title.</param>
+            <param name="Description">Optional supporting text.</param>
+            <param name="Variant">Marker style hint: "default", "success", "warning", or "danger".</param>
+        </member>
+        <member name="M:BlazorDX.Components.TimelineItem.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>One event on a <see cref="T:BlazorDX.Components.DxTimeline"/>.</summary>
+            <param name="Title">Headline for the event.</param>
+            <param name="Time">Optional timestamp/label shown above the title.</param>
+            <param name="Description">Optional supporting text.</param>
+            <param name="Variant">Marker style hint: "default", "success", "warning", or "danger".</param>
+        </member>
+        <member name="P:BlazorDX.Components.TimelineItem.Title">
+            <summary>Headline for the event.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.TimelineItem.Time">
+            <summary>Optional timestamp/label shown above the title.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.TimelineItem.Description">
+            <summary>Optional supporting text.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.TimelineItem.Variant">
+            <summary>Marker style hint: "default", "success", "warning", or "danger".</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxTimeline">
+            <summary>
+            A vertical timeline of events, each with a marker, an optional timestamp, and
+            connecting line. Renders a semantic ordered list. Styling is token-driven
+            (see dx-structure.css).
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxTimePicker">
+            <summary>
+            A time input backed by the native <c>&lt;input type="time"&gt;</c> (so the picker,
+            keyboard, and locale formatting come from the platform). A leaf component,
+            consistent with the other native-backed inputs; styling reuses dx-input.css.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxTimePicker.Value">
+            <summary>The selected time (two-way bindable via <c>@bind-Value</c>).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxTimePicker.ValueChanged">
+            <summary>Raised when the time changes.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxTimePicker.Min">
+            <summary>Earliest allowed time.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxTimePicker.Max">
+            <summary>Latest allowed time.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxTimePicker.StepSeconds">
+            <summary>Step in seconds; values under 60 enable a seconds field.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxTimePicker.Disabled">
+            <summary>Disables the input.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxTimePicker.Label">
+            <summary>Optional field label.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxTimePicker.AriaLabel">
+            <summary>Accessible label (falls back to <see cref="P:BlazorDX.Components.DxTimePicker.Label"/>).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxTimePicker.Class">
+            <summary>Extra CSS classes appended to the field.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxToastHost">
+            <summary>
+            Renders the active toasts from the <see cref="T:BlazorDX.Components.ToastService"/> in a fixed corner.
+            Place one near the app root. Styling is CSS-variable driven (see dx-layout.css).
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxToolbar">
+            <summary>
+            A horizontal toolbar container with <c>role="toolbar"</c>. Lays out buttons,
+            button groups, and other controls with consistent spacing; styling is
+            CSS-variable driven (see dx-display.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxToolbar.ChildContent">
+            <summary>The toolbar contents.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxToolbar.AriaLabel">
+            <summary>Accessible label for the toolbar.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxToolbar.Class">
+            <summary>Extra CSS classes appended to the toolbar.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxTooltip">
+            <summary>
+            Tier 2 styled tooltip. Inherits all behavior from <see cref="T:BlazorDX.Primitives.Overlays.TooltipPrimitive"/>
+            and shows an anchored panel on hover/focus of its trigger. Styling is
+            CSS-variable driven (see dx-overlay.css).
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxTransferList">
+            <summary>
+            A dual list box: move items between an "available" and a "selected" list. It is
+            a pure composition of two <see cref="T:BlazorDX.Components.DxListbox`1"/> (multi-select) plus
+            move buttons — no new behavior, demonstrating how components assemble from the
+            shared engine. <c>Value</c> is the set of items currently in the selected list.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxTransferList.Value">
+            <summary>The items currently in the "selected" list. Two-way bindable.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxTreeGrid`1">
+            <summary>
+            Tier 2 styled tree grid: a hierarchical table built on
+            <see cref="T:BlazorDX.Primitives.Grid.TreeGridPrimitive`1"/>. The first column carries the expand/
+            collapse twisty and indentation; the rest render like a normal grid. Markup
+            uses <see cref="T:Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder"/> with static sequence numbers and the
+            inherited virtualization. Styling is CSS-variable-based (see dx-datagrid.css).
+            </summary>
+            <typeparam name="TRow">The node type (a reference type).</typeparam>
+        </member>
+        <member name="T:BlazorDX.Components.TreeNode">
+            <summary>A node in a <see cref="T:BlazorDX.Components.DxTreeView"/>. A class so expand/select track by reference.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxTreeView">
+            <summary>
+            A hierarchical tree view with expand/collapse, single selection, and keyboard
+            navigation following the WAI-ARIA tree pattern: one tab stop, a roving active node
+            tracked with <c>aria-activedescendant</c>, Arrow keys to move/expand/collapse, and
+            Enter/Space to select. Styling is CSS-variable driven (see dx-display.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxTreeView.Items">
+            <summary>Root nodes.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxTreeView.Selected">
+            <summary>The selected node (two-way bindable via <c>@bind-Selected</c>).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxTreeView.SelectedChanged">
+            <summary>Raised when the selection changes.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxTreeView.InitiallyExpanded">
+            <summary>Expand every node initially.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxTreeView.Class">
+            <summary>Extra CSS classes appended to the root.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxVirtualize`1">
+            <summary>
+            Renders only the items intersecting the scroll viewport (plus a small overscan),
+            keeping the DOM small for arbitrarily large lists. This is the grid's
+            virtualization windowing, generalized into a reusable component for any
+            fixed-height list (option lists, logs, timelines). Reuses the shared scroll/DOM
+            bridge; off-browser it renders the initial window.
+            </summary>
+            <typeparam name="TItem">The item type.</typeparam>
+        </member>
+        <member name="P:BlazorDX.Components.DxVirtualize`1.ItemHeight">
+            <summary>Fixed height of each row in pixels (the windowing math depends on it).</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxVirtualKeyboard">
+            <summary>
+            An on-screen QWERTY keyboard for touch, kiosk, and accessibility text entry.
+            Keys edit a two-way-bound <see cref="P:BlazorDX.Components.DxVirtualKeyboard.Value"/>; Shift toggles letter case and the
+            number row's symbols, Backspace deletes, Space inserts a space, and Enter raises
+            <see cref="P:BlazorDX.Components.DxVirtualKeyboard.OnEnter"/> (it does not insert a newline). A leaf component; styling is
+            CSS-variable driven (see dx-display.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxVirtualKeyboard.Value">
+            <summary>The text being edited. Two-way bindable via <c>@bind-Value</c>.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxVirtualKeyboard.ValueChanged">
+            <summary>Raised whenever <see cref="P:BlazorDX.Components.DxVirtualKeyboard.Value"/> changes from a key press.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxVirtualKeyboard.OnEnter">
+            <summary>Raised when the Enter key is pressed (e.g. to submit).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxVirtualKeyboard.Class">
+            <summary>Extra CSS classes appended to the keyboard container.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.FormFieldRenderContext">
+            <summary>What a field template receives: the field metadata, its current value, a
+            callback to change it, and any validation errors against it.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.FormContext">
+            <summary>
+            Cascaded by <see cref="T:BlazorDX.Components.DxForm`1"/> so child components (<see cref="T:BlazorDX.Components.DxFormField"/>,
+            containers) can render fields without knowing the model's type. It exposes string
+            get/set over the generated descriptor plus any author-supplied templates.
+            </summary>
+        </member>
+        <member name="E:BlazorDX.Components.FormContext.Changed">
+            <summary>Raised when any field value or the validation state changes, so manually
+            laid-out <see cref="T:BlazorDX.Components.DxFormField"/>s re-render even when the model is mutated elsewhere
+            (e.g. an AI tool call).</summary>
+        </member>
+        <member name="T:BlazorDX.Components.FormFieldRenderer">
+            <summary>
+            Renders a single field — label, the input appropriate to its
+            <see cref="T:BlazorDX.Primitives.Forms.FormFieldKind"/>, and validation errors — honoring any
+            <see cref="P:BlazorDX.Components.FormContext.FieldTemplate"/>/<see cref="P:BlazorDX.Components.FormContext.InputTemplate"/>/
+            <see cref="P:BlazorDX.Components.FormContext.LabelTemplate"/>. Shared by the auto-render loop and
+            <see cref="T:BlazorDX.Components.DxFormField"/>.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.MarkdownRenderer">
+            <summary>
+            Converts a safe subset of Markdown to HTML. Security is structural: every text
+            run is HTML-encoded <em>before</em> any formatting tags are inserted, so the
+            only tags in the output are the fixed structural set this renderer emits — user
+            input can never introduce a tag. Link targets are checked against a scheme
+            allow-list (so <c>javascript:</c> URLs are dropped). This is the one audited
+            place outside <c>BlazorDX.Security</c> that builds a <see cref="T:Microsoft.AspNetCore.Components.MarkupString"/>
+            from runtime data; correctness here is the safety guarantee.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Components.MarkdownRenderer.Render(System.String)">
+            <summary>Renders Markdown to a sanitized <see cref="T:Microsoft.AspNetCore.Components.MarkupString"/> ready to display.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.Toast">
+            <summary>A transient notification.</summary>
+            <param name="Id">Unique id (used as the render key).</param>
+            <param name="Message">Text shown to the user.</param>
+            <param name="Severity">info / success / warning / error.</param>
+        </member>
+        <member name="M:BlazorDX.Components.Toast.#ctor(System.String,System.String,System.String)">
+            <summary>A transient notification.</summary>
+            <param name="Id">Unique id (used as the render key).</param>
+            <param name="Message">Text shown to the user.</param>
+            <param name="Severity">info / success / warning / error.</param>
+        </member>
+        <member name="P:BlazorDX.Components.Toast.Id">
+            <summary>Unique id (used as the render key).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.Toast.Message">
+            <summary>Text shown to the user.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.Toast.Severity">
+            <summary>info / success / warning / error.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.ToastService">
+            <summary>
+            Queues transient toast notifications and auto-dismisses them. Registered with a
+            scoped lifetime (never Singleton — that would share notifications across users on
+            Blazor Server, per the BlazorDX state-isolation rule). A <c>DxToastHost</c>
+            subscribes to <see cref="E:BlazorDX.Components.ToastService.OnChange"/> to render the active toasts.
+            </summary>
+        </member>
+        <member name="E:BlazorDX.Components.ToastService.OnChange">
+            <summary>Raised whenever the set of active toasts changes.</summary>
+        </member>
+        <member name="M:BlazorDX.Components.ToastService.Show(System.String,System.String,System.Int32)">
+            <summary>Shows a toast and removes it automatically after <paramref name="durationMs"/>.</summary>
+        </member>
+    </members>
+</doc>

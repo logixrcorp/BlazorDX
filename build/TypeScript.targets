@@ -1,0 +1,46 @@
+<Project>
+
+  <!--
+    Bundles the TypeScript DOM-bridge sources to minified ESM with esbuild and
+    drops the output next to the consuming project's static assets. Imported by
+    BlazorDX.Interop.
+
+    Like the Rust target, this degrades gracefully: if Node is missing the build
+    warns and skips bundling. (The interop bindings still compile; only the
+    runtime JS modules are absent until Node is installed.)
+
+    Expected properties (set by the importing project):
+      TsSourceDir   - directory containing package.json and build.mjs
+      TsOutputDir   - destination directory for the bundled ESM
+  -->
+
+  <Target Name="DxBuildTypeScript" BeforeTargets="BeforeBuild"
+          Condition="'$(SkipTypeScriptBuild)' != 'true'">
+
+    <Message Importance="high" Text="BlazorDX: bundling TypeScript bridge from '$(TsSourceDir)'..." />
+
+    <Exec Command="npm install --no-audit --no-fund --silent"
+          WorkingDirectory="$(TsSourceDir)"
+          ContinueOnError="true">
+      <Output TaskParameter="ExitCode" PropertyName="_DxNpmExit" />
+    </Exec>
+
+    <Warning Condition="'$(_DxNpmExit)' != '0'"
+             Text="BlazorDX: Node/npm unavailable (npm exit $(_DxNpmExit)). Skipping TypeScript bundling. Install Node.js to enable the DOM bridge." />
+
+    <Exec Condition="'$(_DxNpmExit)' == '0'"
+          Command="node build.mjs &quot;$(TsOutputDir)&quot;"
+          WorkingDirectory="$(TsSourceDir)"
+          ContinueOnError="true">
+      <Output TaskParameter="ExitCode" PropertyName="_DxEsbuildExit" />
+    </Exec>
+
+    <Warning Condition="'$(_DxNpmExit)' == '0' And '$(_DxEsbuildExit)' != '0'"
+             Text="BlazorDX: esbuild bundling failed (exit $(_DxEsbuildExit))." />
+
+    <Message Condition="'$(_DxEsbuildExit)' == '0'"
+             Importance="high"
+             Text="BlazorDX: TypeScript bridge bundled to $(TsOutputDir)" />
+  </Target>
+
+</Project>

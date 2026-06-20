@@ -1,0 +1,46 @@
+@namespace BlazorDX.Demo.Client
+@using BlazorDX.Demo.Client.Docs
+
+<nav class="dx-docs-nav" aria-label="Documentation">
+    <input class="dx-docs-search" type="search" placeholder="Search components…"
+           aria-label="Search components" @bind="query" @bind:event="oninput" />
+
+    <a class="dx-docs-link @(Active.Length == 0 ? "active" : string.Empty)" href="/docs">Overview</a>
+
+    <div class="dx-docs-cat">Guides</div>
+    <a class="dx-docs-link @(Active == "guide-theming" ? "active" : string.Empty)" href="/docs/guide/theming">Theming</a>
+    <a class="dx-docs-link @(Active == "guide-architecture" ? "active" : string.Empty)" href="/docs/guide/architecture">Architecture</a>
+    <a class="dx-docs-link @(Active == "guide-accessibility" ? "active" : string.Empty)" href="/docs/guide/accessibility">Accessibility</a>
+
+    @foreach (string category in ComponentCatalog.Categories)
+    {
+        List<DocEntry> items = ComponentCatalog.InCategory(category).Where(Matches).ToList();
+        if (items.Count == 0)
+        {
+            continue;
+        }
+
+        <div class="dx-docs-cat">@category</div>
+        @foreach (DocEntry entry in items)
+        {
+            <a class="dx-docs-link @(Active == entry.Slug ? "active" : string.Empty)" href="@($"/docs/{entry.Slug}")">@entry.Name</a>
+        }
+    }
+
+    @if (!string.IsNullOrEmpty(query) && !ComponentCatalog.Entries.Any(Matches))
+    {
+        <p class="dx-docs-empty">No matches for "@query".</p>
+    }
+</nav>
+
+@code {
+    /// <summary>The active component slug (highlights the current page); empty for the overview.</summary>
+    [Parameter] public string Active { get; set; } = string.Empty;
+
+    private string query = string.Empty;
+
+    private bool Matches(DocEntry e) =>
+        string.IsNullOrWhiteSpace(query)
+        || e.Name.Contains(query, StringComparison.OrdinalIgnoreCase)
+        || e.Summary.Contains(query, StringComparison.OrdinalIgnoreCase);
+}

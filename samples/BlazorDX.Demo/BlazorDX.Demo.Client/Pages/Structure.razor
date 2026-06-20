@@ -1,0 +1,101 @@
+@page "/structure"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+
+<PageTitle>Structure &amp; Navigation</PageTitle>
+
+<h1>BlazorDX Structure &amp; Navigation</h1>
+
+<p class="dx-demo-meta">
+    Breadcrumbs, dividers, a persistent push-layout drawer, a timeline, and a
+    keyboard-navigable carousel. Slide: <strong>@(slide + 1)</strong> of 3.
+</p>
+
+<DxBreadcrumbs Items="crumbs" />
+
+<DxDivider Label="Drawer (pushes content, not a modal)" />
+
+<button class="dx-demo-button" @onclick="() => drawerOpen = !drawerOpen">
+    @(drawerOpen ? "Collapse" : "Expand") drawer
+</button>
+
+<div style="border:1px solid var(--dx-border); border-radius:8px; margin-top:12px; overflow:hidden">
+    <DxDrawer @bind-Open="drawerOpen" AriaLabel="Navigation">
+        <Panel>
+            <strong>Navigation</strong>
+            <DxDivider />
+            <div>Dashboard</div>
+            <div>Reports</div>
+            <div>Settings</div>
+        </Panel>
+        <ChildContent>
+            <p>Main content reflows as the panel collapses — no overlay, no focus trap.
+                This is the difference between a <em>drawer</em> and a <em>sheet</em>.</p>
+        </ChildContent>
+    </DxDrawer>
+</div>
+
+<DxDivider Label="Timeline" />
+
+<DxTimeline Items="events" />
+
+<DxDivider Label="Carousel" />
+
+<DxCarousel @bind-Index="slide" Slides="slides" AriaLabel="Feature highlights" />
+
+<DxDivider Label="Tree view" />
+
+<p class="dx-demo-meta">
+    Click a ▸ twisty to expand, click a row to select, or focus the tree and use
+    Arrow keys (←/→ collapse/expand, ↑/↓ move, Enter select). Selected:
+    <strong>@(selectedNode?.Text ?? "(none)")</strong>.
+</p>
+<DxTreeView Items="treeRoots" @bind-Selected="selectedNode" InitiallyExpanded="true" />
+
+<DxDivider Label="Splitter" />
+
+<p class="dx-demo-meta">Drag the divider, or focus it and use ← / →.</p>
+<DxSplitter InitialSize="200" Class="dx-demo-splitter">
+    <First><strong>Navigator</strong><p class="dx-demo-meta">A sized, resizable pane.</p></First>
+    <Second><strong>Editor</strong><p class="dx-demo-meta">This pane grows to fill the rest.</p></Second>
+</DxSplitter>
+
+@code {
+    private bool drawerOpen = true;
+    private int slide;
+
+    private readonly IReadOnlyList<BreadcrumbItem> crumbs =
+    [
+        new BreadcrumbItem("Home", "/"),
+        new BreadcrumbItem("Components", "/structure"),
+        new BreadcrumbItem("Structure"),
+    ];
+
+    private readonly IReadOnlyList<TimelineItem> events =
+    [
+        new TimelineItem("Project created", "Jan 4", "Repository scaffolded", "success"),
+        new TimelineItem("First release", "Mar 12", "v0.1 shipped to npm"),
+        new TimelineItem("Incident", "Apr 2", "Brief outage, since resolved", "warning"),
+        new TimelineItem("Audit failed", "May 9", "Two high-severity findings", "danger"),
+    ];
+
+    private readonly IReadOnlyList<RenderFragment> slides =
+    [
+        @<div><h3>Headless first</h3><p>Behavior and ARIA, zero CSS opinions.</p></div>,
+        @<div><h3>Rust-powered</h3><p>Heavy compute compiled to wasm.</p></div>,
+        @<div><h3>Secure by default</h3><p>No reflection, scoped state.</p></div>,
+    ];
+
+    private TreeNode? selectedNode;
+
+    private readonly IReadOnlyList<TreeNode> treeRoots =
+    [
+        new TreeNode("src", new List<TreeNode>
+        {
+            new("BlazorDX.Components", new List<TreeNode> { new("DxTreeView.cs"), new("DxSplitter.cs") }),
+            new("BlazorDX.Primitives", new List<TreeNode> { new("Grid"), new("Overlays") }),
+        }),
+        new TreeNode("docs", new List<TreeNode> { new("ARCHITECTURE.md"), new("ROADMAP.md") }),
+        new TreeNode("README.md"),
+    ];
+}

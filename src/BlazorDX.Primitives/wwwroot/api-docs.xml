@@ -1,0 +1,2067 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>BlazorDX.Primitives</name>
+    </assembly>
+    <members>
+        <member name="T:BlazorDX.Primitives.Barcodes.Code128Encoder">
+            <summary>
+            Pure, reflection-free Code 128 encoder (Code Set B — all printable ASCII 32–126).
+            Produces the module pattern (true = bar) of the full symbol: Start B · data ·
+            weighted modulo-103 check symbol · Stop. The width table is the published Code 128
+            table, so output can be checked against reference symbols; an independent
+            <see cref="M:BlazorDX.Primitives.Barcodes.Code128Encoder.Decode(System.Boolean[])"/> round-trips the pattern back to text.
+            </summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Barcodes.Code128Encoder.MinChar">
+            <summary>The lowest / highest ASCII codes Code Set B represents.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Code128Encoder.SymbolValues(System.String)">
+            <summary>
+            The symbol values for the text, including the leading Start B but excluding
+            the check symbol and Stop. Each printable ASCII char maps to value (char − 32).
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Code128Encoder.Checksum(System.Collections.Generic.IReadOnlyList{System.Int32})">
+            <summary>
+            The weighted modulo-103 check symbol: the start value (weight 1) plus each data
+            value times its 1-based position, mod 103. Matches the published worked example
+            (PJJ123C with Start A → 54).
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Code128Encoder.Encode(System.String)">
+            <summary>Encodes text into the full Code 128B module pattern (true = bar).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Code128Encoder.Decode(System.Boolean[])">
+            <summary>
+            Independent decoder: reads a Code 128B module pattern back to its text,
+            verifying the check symbol. Used to round-trip-verify <see cref="M:BlazorDX.Primitives.Barcodes.Code128Encoder.Encode(System.String)"/>.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Barcodes.Ean13Encoder">
+             <summary>
+             Pure, reflection-free EAN-13 encoder. Turns a 12- or 13-digit string into the
+             95-module bar pattern of the symbol (true = dark bar). The tables and structure
+             follow the EAN-13 / UPC standard exactly, so the output can be checked against
+             published reference symbols.
+            
+             Structure: start guard <c>101</c> · six left digits (7 modules each, encoded
+             with L/G parity chosen by the first digit) · centre guard <c>01010</c> · six
+             right digits (7 modules each, R parity) · end guard <c>101</c> — 95 modules.
+             </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Ean13Encoder.CheckDigit(System.ReadOnlySpan{System.Char})">
+            <summary>
+            Computes the EAN-13 check digit for the first 12 digits (positions weighted
+            1, 3, 1, 3, …). Returns a value 0–9.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Ean13Encoder.Normalize(System.String)">
+            <summary>
+            Normalises input to a full 13-digit code: validates digits, appends the
+            check digit when given 12, and verifies it when given 13.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Ean13Encoder.Encode(System.String)">
+            <summary>
+            Encodes a 12- or 13-digit code into its 95-module bar pattern (true = bar).
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Barcodes.Qr.GaloisField">
+            <summary>
+            Arithmetic over GF(256) with the QR-code primitive polynomial 0x11D and a
+            generator of 2. Precomputes exponent/log tables so multiply is a table lookup.
+            Pure and allocation-free at call time.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Qr.GaloisField.Exponent(System.Int32)">
+            <summary>The field element α^<paramref name="power"/>.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Qr.GaloisField.Multiply(System.Int32,System.Int32)">
+            <summary>Multiplies two field elements.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Barcodes.Qr.QrSymbol">
+            <summary>
+            A finished QR symbol: its module grid plus the parameters chosen to build it.
+            </summary>
+            <param name="Version">QR version (1–4); the side length is 17 + 4·version.</param>
+            <param name="Level">The error-correction level used.</param>
+            <param name="Mode">The data-encoding mode chosen for the payload.</param>
+            <param name="Mask">The data-mask pattern (0–7) the encoder selected.</param>
+            <param name="Modules">The square grid of modules; <c>true</c> = dark.</param>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Qr.QrSymbol.#ctor(System.Int32,BlazorDX.Primitives.Barcodes.Qr.QrErrorLevel,BlazorDX.Primitives.Barcodes.Qr.QrMode,System.Int32,System.Boolean[0:,0:])">
+            <summary>
+            A finished QR symbol: its module grid plus the parameters chosen to build it.
+            </summary>
+            <param name="Version">QR version (1–4); the side length is 17 + 4·version.</param>
+            <param name="Level">The error-correction level used.</param>
+            <param name="Mode">The data-encoding mode chosen for the payload.</param>
+            <param name="Mask">The data-mask pattern (0–7) the encoder selected.</param>
+            <param name="Modules">The square grid of modules; <c>true</c> = dark.</param>
+        </member>
+        <member name="P:BlazorDX.Primitives.Barcodes.Qr.QrSymbol.Version">
+            <summary>QR version (1–4); the side length is 17 + 4·version.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Barcodes.Qr.QrSymbol.Level">
+            <summary>The error-correction level used.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Barcodes.Qr.QrSymbol.Mode">
+            <summary>The data-encoding mode chosen for the payload.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Barcodes.Qr.QrSymbol.Mask">
+            <summary>The data-mask pattern (0–7) the encoder selected.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Barcodes.Qr.QrSymbol.Modules">
+            <summary>The square grid of modules; <c>true</c> = dark.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Barcodes.Qr.QrSymbol.Size">
+            <summary>Side length of the symbol in modules.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Qr.QrSymbol.IsDark(System.Int32,System.Int32)">
+            <summary>Whether the module at (row, col) is dark.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Barcodes.Qr.QrCode">
+            <summary>
+            Pure, reflection-free QR encoder (versions 1–4; numeric, alphanumeric, and byte
+            modes; all four error-correction levels). Heavy lifting — Galois-field
+            Reed-Solomon, bitstream assembly, module placement, masking — lives in the
+            <c>Qr</c> internals; this is the public entry point.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Qr.QrCode.Encode(System.String,BlazorDX.Primitives.Barcodes.Qr.QrErrorLevel,System.Nullable{System.Int32})">
+            <summary>
+            Encodes <paramref name="text"/> into a QR symbol at the given error-correction
+            level, picking the most compact mode and smallest fitting version (1–4).
+            </summary>
+            <param name="forceMask">
+            Forces a specific data mask (0–7) instead of penalty-based selection. Intended
+            for verification against fixed reference symbols; leave null in normal use.
+            </param>
+        </member>
+        <member name="T:BlazorDX.Primitives.Barcodes.Qr.QrEncoder">
+            <summary>
+            Builds the QR data codeword stream: picks a mode and version, encodes the
+            payload bitstream with terminator and padding, splits it into Reed-Solomon
+            blocks, and interleaves data and EC codewords per the standard. Pure and
+            reflection-free. Supports versions 1–4.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Qr.QrEncoder.SelectMode(System.String)">
+            <summary>Picks the most compact mode that can represent the text.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Qr.QrEncoder.DataBitLength(System.String,BlazorDX.Primitives.Barcodes.Qr.QrMode)">
+            <summary>The number of payload data bits the text needs in the given mode.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Qr.QrEncoder.SelectVersion(System.String,BlazorDX.Primitives.Barcodes.Qr.QrMode,BlazorDX.Primitives.Barcodes.Qr.QrErrorLevel)">
+            <summary>The smallest supported version that fits the payload at the given level.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Qr.QrEncoder.BuildDataCodewords(System.String,BlazorDX.Primitives.Barcodes.Qr.QrMode,System.Int32,BlazorDX.Primitives.Barcodes.Qr.QrErrorLevel)">
+            <summary>
+            Encodes the text into the full set of data codewords (concatenated across all
+            blocks), including mode, character count, terminator, and pad codewords.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Qr.QrEncoder.InterleaveWithEc(System.Int32[],System.Int32,BlazorDX.Primitives.Barcodes.Qr.QrErrorLevel)">
+            <summary>
+            Splits data codewords into blocks, computes EC codewords for each, then
+            interleaves data then EC column-by-column per the standard, producing the
+            final codeword stream laid into the matrix.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Barcodes.Qr.QrEncoder.BitWriter">
+            <summary>A minimal MSB-first bit accumulator used to build the codeword stream.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Barcodes.Qr.QrMask">
+            <summary>
+            QR data-mask conditions and the four penalty rules used to choose the mask that
+            scans most reliably. Pure and reflection-free.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Qr.QrMask.Flip(System.Int32,System.Int32,System.Int32)">
+            <summary>Whether mask pattern <paramref name="mask"/> (0–7) flips module (row, col).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Qr.QrMask.Penalty(System.Boolean[0:,0:])">
+            <summary>The total penalty score of a finished module grid (lower is better).</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Barcodes.Qr.QrMatrix">
+            <summary>
+            Lays the QR module matrix: function patterns (finders, separators, timing,
+            alignment, dark module), the zig-zag data placement, mask selection by penalty,
+            and the BCH-coded format information. Pure and reflection-free. Versions 1–4.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Qr.QrMatrix.Build(System.Int32,BlazorDX.Primitives.Barcodes.Qr.QrErrorLevel,System.Int32[],System.Nullable{System.Int32})">
+            <summary>
+            Builds the finished module grid (true = dark) and returns the mask it chose.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Qr.QrMatrix.FormatBits(BlazorDX.Primitives.Barcodes.Qr.QrErrorLevel,System.Int32)">
+            <summary>The 15-bit BCH format string for a (level, mask) — exposed for verification.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Barcodes.Qr.QrErrorLevel">
+            <summary>Error-correction level for a QR code (ascending recovery capacity).</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Barcodes.Qr.QrErrorLevel.Low">
+            <summary>~7% recovery.</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Barcodes.Qr.QrErrorLevel.Medium">
+            <summary>~15% recovery.</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Barcodes.Qr.QrErrorLevel.Quartile">
+            <summary>~25% recovery.</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Barcodes.Qr.QrErrorLevel.High">
+            <summary>~30% recovery.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Barcodes.Qr.QrMode">
+            <summary>The data-encoding mode chosen for the payload.</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Barcodes.Qr.QrMode.Numeric">
+            <summary>Digits 0–9 only.</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Barcodes.Qr.QrMode.Alphanumeric">
+            <summary>0–9, A–Z, and nine symbols (space $ % * + - . / :).</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Barcodes.Qr.QrMode.Byte">
+            <summary>Arbitrary bytes (ISO-8859-1 / UTF-8).</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Barcodes.Qr.QrTables">
+            <summary>
+            Static QR specification tables for versions 1–4 (the range this encoder
+            supports): error-correction block structure, alignment-pattern centres, mode
+            indicators, and character-count widths. Values are from the QR standard.
+            </summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Barcodes.Qr.QrTables.MinVersion">
+            <summary>The supported version range (inclusive).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Qr.QrTables.SizeOf(System.Int32)">
+            <summary>Module count along one side of a version's symbol.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Qr.QrTables.ModeIndicator(BlazorDX.Primitives.Barcodes.Qr.QrMode)">
+            <summary>The 4-bit mode indicator.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Qr.QrTables.CharCountBits(BlazorDX.Primitives.Barcodes.Qr.QrMode)">
+            <summary>The character-count indicator width (bits) for versions 1–9.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Qr.QrTables.LevelBits(BlazorDX.Primitives.Barcodes.Qr.QrErrorLevel)">
+            <summary>The 2-bit error-correction level field used in the format string.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Qr.QrTables.Blocks(System.Int32,BlazorDX.Primitives.Barcodes.Qr.QrErrorLevel)">
+            <summary>
+            The error-correction block layout for a (version, level): one entry per block,
+            each giving (data codewords, EC codewords). Sourced from the QR EC table.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Qr.QrTables.DataCodewordCount(System.Int32,BlazorDX.Primitives.Barcodes.Qr.QrErrorLevel)">
+            <summary>Total data codewords available for a (version, level).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Qr.QrTables.AlignmentPositions(System.Int32)">
+            <summary>
+            The (row, col) centres of the alignment patterns for a version, excluding the
+            three that would collide with the finder patterns at the corners.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Qr.QrTables.AlphanumericValue(System.Char)">
+            <summary>The alphanumeric value of a character, or −1 if not representable.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Qr.QrTables.IsAlphanumeric(System.String)">
+            <summary>Whether every character in the text is alphanumeric-encodable.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Qr.QrTables.IsNumeric(System.String)">
+            <summary>Whether every character is a digit.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Barcodes.Qr.ReedSolomon">
+            <summary>
+            Reed-Solomon error-correction codeword generation over <see cref="T:BlazorDX.Primitives.Barcodes.Qr.GaloisField"/>,
+            as used by QR codes. Pure and reflection-free.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Qr.ReedSolomon.GeneratorPolynomial(System.Int32)">
+            <summary>
+            The generator polynomial of the given degree: the product of
+            (x − α^i) for i = 0 … degree−1, with coefficients as field elements.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Barcodes.Qr.ReedSolomon.Encode(System.Collections.Generic.IReadOnlyList{System.Int32},System.Int32)">
+            <summary>
+            Computes <paramref name="ecCount"/> error-correction codewords for the data
+            codewords via polynomial division — the remainder of data·x^ecCount ÷ generator.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Chat.ChatRole">
+            <summary>Who authored a chat message.</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Chat.ChatRole.User">
+            <summary>The end user.</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Chat.ChatRole.Assistant">
+            <summary>The AI assistant.</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Chat.ChatRole.System">
+            <summary>A system/context note.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Chat.ChatMessage">
+            <summary>One turn in a chat transcript.</summary>
+            <param name="Role">Who sent the message.</param>
+            <param name="Content">Message text (Markdown for assistant turns).</param>
+        </member>
+        <member name="M:BlazorDX.Primitives.Chat.ChatMessage.#ctor(BlazorDX.Primitives.Chat.ChatRole,System.String)">
+            <summary>One turn in a chat transcript.</summary>
+            <param name="Role">Who sent the message.</param>
+            <param name="Content">Message text (Markdown for assistant turns).</param>
+        </member>
+        <member name="P:BlazorDX.Primitives.Chat.ChatMessage.Role">
+            <summary>Who sent the message.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Chat.ChatMessage.Content">
+            <summary>Message text (Markdown for assistant turns).</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Diagnostics.DiagnosticsServiceCollectionExtensions">
+            <summary>Registers a BlazorDX diagnostics sink. Scoped, never Singleton.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Diagnostics.DiagnosticsServiceCollectionExtensions.AddBlazorDXDiagnostics(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>Routes every BlazorDX diagnostic to the app's <c>ILogger</c> (the zero-config default).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Diagnostics.DiagnosticsServiceCollectionExtensions.AddBlazorDXDiagnostics(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{BlazorDX.Primitives.Diagnostics.DiagnosticEvent})">
+            <summary>Reports every diagnostic to <paramref name="sink"/> (e.g. an <c>ILogger</c> call).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Diagnostics.DiagnosticsServiceCollectionExtensions.AddBlazorDXDiagnostics``1(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>Registers a custom <see cref="T:BlazorDX.Primitives.Diagnostics.IDxDiagnostics"/> implementation.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Diagnostics.DiagnosticSeverity">
+            <summary>How serious a <see cref="T:BlazorDX.Primitives.Diagnostics.DiagnosticEvent"/> is.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Diagnostics.DiagnosticEvent">
+            <summary>
+            One diagnostic emitted by a BlazorDX component: what happened, where, and the
+            exception if any. Components report these instead of silently swallowing failures,
+            so apps get a single place to log/observe them.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Diagnostics.DiagnosticEvent.#ctor(BlazorDX.Primitives.Diagnostics.DiagnosticSeverity,System.String,System.String,System.Exception)">
+            <summary>
+            One diagnostic emitted by a BlazorDX component: what happened, where, and the
+            exception if any. Components report these instead of silently swallowing failures,
+            so apps get a single place to log/observe them.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Diagnostics.IDxDiagnostics">
+            <summary>
+            The observability sink BlazorDX reports failures to. Register one (e.g. wiring it to
+            <c>ILogger</c>, Application Insights, or OpenTelemetry) via
+            <c>AddBlazorDXDiagnostics</c>. It is resolved <em>optionally</em> — if none is
+            registered, components keep their resilient behavior and report nowhere.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Diagnostics.DxDiagnosticsExtensions">
+            <summary>Convenience reporting helpers.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Diagnostics.DxDiagnosticsExtensions.TryReportError(BlazorDX.Primitives.Diagnostics.IDxDiagnostics,System.String,System.String,System.Exception)">
+            <summary>Reports an error to <paramref name="diagnostics"/> when it is non-null; a no-op otherwise.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Diagnostics.DxDiagnosticsExtensions.TryReportWarning(BlazorDX.Primitives.Diagnostics.IDxDiagnostics,System.String,System.String)">
+            <summary>Reports a warning to <paramref name="diagnostics"/> when it is non-null; a no-op otherwise.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Diagnostics.NullDxDiagnostics">
+            <summary>A sink that does nothing — the default when no diagnostics are registered.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Diagnostics.DelegateDxDiagnostics">
+            <summary>A sink that forwards every event to a delegate — the easy way to wire any logger.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Diagnostics.LoggerDxDiagnostics">
+            <summary>
+            An <see cref="T:BlazorDX.Primitives.Diagnostics.IDxDiagnostics"/> that forwards every event to <c>ILogger</c> —
+            the zero-config way to send BlazorDX failures wherever the app already logs
+            (console, Application Insights, OpenTelemetry, Serilog, …). Register with the
+            no-argument <c>AddBlazorDXDiagnostics()</c>.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Files.FileSystemEntry">
+            <summary>
+            A node in a file tree. Reference identity matters (expand/select track the
+            instance), so this is a class, not a record.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Files.FileSystemEntry.Size">
+            <summary>Size in bytes (files only).</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Files.FolderRow">
+            <summary>One visible folder row in the navigation tree.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Files.FolderRow.#ctor(BlazorDX.Primitives.Files.FileSystemEntry,System.Int32,System.Boolean,System.Boolean,System.Boolean)">
+            <summary>One visible folder row in the navigation tree.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Files.FileManagerPrimitive">
+            <summary>
+            Tier 1 headless file manager. Maintains the expanded/selected folder state,
+            flattens the folder hierarchy for the navigation pane, exposes the selected
+            folder's contents and its breadcrumb path, and routes "open" actions (drill
+            into a folder, or raise a file-open event). Renders nothing itself.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Files.FileManagerPrimitive.OnFileOpen">
+            <summary>Raised when a file (not a folder) is opened.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Files.FileManagerPrimitive.SelectedFolderChanged">
+            <summary>Raised when the selected folder changes.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Files.FileManagerPrimitive.FolderRows">
+            <summary>The folder hierarchy flattened to the currently-visible rows.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Files.FileManagerPrimitive.Contents">
+            <summary>The children of the selected folder (or the roots when nothing is selected).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Files.FileManagerPrimitive.Breadcrumb">
+            <summary>The path from the root to the selected folder, root first.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Files.FileManagerPrimitive.SelectFolderAsync(BlazorDX.Primitives.Files.FileSystemEntry)">
+            <summary>Selects a folder, expanding its ancestors so it is visible in the tree.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Files.FileManagerPrimitive.OpenEntryAsync(BlazorDX.Primitives.Files.FileSystemEntry)">
+            <summary>Opens an entry: drills into folders, raises <see cref="P:BlazorDX.Primitives.Files.FileManagerPrimitive.OnFileOpen"/> for files.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Forms.AiToolResult">
+            <summary>The outcome of an AI tool invocation: a text payload and whether it is an error.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Forms.AiToolResult.#ctor(System.Boolean,System.String)">
+            <summary>The outcome of an AI tool invocation: a text payload and whether it is an error.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Forms.IAiTool">
+            <summary>
+            A callable AI tool: a name, a description, a JSON-Schema for its arguments, and an
+            async invocation. <see cref="T:BlazorDX.Primitives.Forms.McpToolServer"/> exposes a set of these over the Model
+            Context Protocol so an assistant can call them.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Forms.IAiTool.InputSchemaJson">
+            <summary>The JSON-Schema <c>object</c> describing the tool's arguments.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Forms.IAiTool.InvokeAsync(System.String)">
+            <summary>Runs the tool with a JSON object of arguments.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Forms.FormAiTool`1">
+            <summary>
+            Turns a <see cref="T:BlazorDX.Primitives.Forms.IFormModel`1"/> into a callable <see cref="T:BlazorDX.Primitives.Forms.IAiTool"/>: an AI
+            call's arguments are applied to a fresh model and validated with the form's own rules;
+            if valid, <paramref name="handler"/> runs and its text is returned, otherwise the
+            validation errors are returned as an error result so the model can correct itself.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Forms.DxFormModelAttribute">
+            <summary>
+            Marks a class as a BlazorDX form model. The <c>BlazorDX.SourceGen</c> generator
+            emits a strongly-typed <see cref="T:BlazorDX.Primitives.Forms.IFormModel`1"/> for it — field metadata,
+            validation, and zero-reflection get/set — which both <c>DxForm</c> renders and
+            <see cref="T:BlazorDX.Primitives.Forms.FormTool"/> projects into an AI tool (JSON-Schema) definition. One
+            model, two faces: a UI a person fills, and a tool an AI calls.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Forms.DxFormModelAttribute.Name">
+            <summary>Tool name exposed to an AI host (defaults to the type name). Use snake_case for function-calling hosts.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Forms.DxFormModelAttribute.Description">
+            <summary>What the form/tool does — shown to the AI so it knows when to call it.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Forms.DxFieldAttribute">
+            <summary>
+            Declares a property as a form field. The label, description, and constraints feed
+            both the rendered input (and its validation) and the generated AI tool schema —
+            the <see cref="P:BlazorDX.Primitives.Forms.DxFieldAttribute.Description"/> in particular is what an AI reads to fill the field.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Forms.DxFieldAttribute.Label">
+            <summary>Human label (defaults to the property name).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Forms.DxFieldAttribute.Description">
+            <summary>Field description — also the AI-facing parameter description.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Forms.DxFieldAttribute.Required">
+            <summary>Whether a value is required.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Forms.DxFieldAttribute.Order">
+            <summary>Display/declaration order; lower comes first.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Forms.DxFieldAttribute.Min">
+            <summary>Minimum for numeric fields (NaN = unset).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Forms.DxFieldAttribute.Max">
+            <summary>Maximum for numeric fields (NaN = unset).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Forms.DxFieldAttribute.MaxLength">
+            <summary>Maximum length for text fields (0 = unset).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Forms.DxFieldAttribute.Pattern">
+            <summary>Validation/format regex for text fields.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Forms.DxFieldAttribute.Placeholder">
+            <summary>Placeholder text for the rendered input.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Forms.DxFieldAttribute.Multiline">
+            <summary>Render as a multi-line text area.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Forms.FormFieldKind">
+            <summary>How a field is edited and typed — drives both the rendered input and the JSON-Schema type.</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Forms.FormFieldKind.Text">
+            <summary>Single-line text.</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Forms.FormFieldKind.Multiline">
+            <summary>Multi-line text.</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Forms.FormFieldKind.Integer">
+            <summary>Whole number.</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Forms.FormFieldKind.Number">
+            <summary>Decimal number.</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Forms.FormFieldKind.Bool">
+            <summary>Boolean (checkbox / true|false).</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Forms.FormFieldKind.Date">
+            <summary>Date (ISO-8601 string).</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Forms.FormFieldKind.Enum">
+            <summary>One of a fixed set (<see cref="P:BlazorDX.Primitives.Forms.FormFieldInfo.Choices"/>).</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Forms.FormFieldInfo">
+            <summary>
+            Static metadata for one field — everything <c>DxForm</c> needs to render and
+            validate it, and everything <see cref="T:BlazorDX.Primitives.Forms.FormTool"/> needs to describe it to an AI.
+            Generated, never reflected.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Forms.FormFieldInfo.#ctor(System.String,System.String,System.String,BlazorDX.Primitives.Forms.FormFieldKind,System.Boolean,System.Nullable{System.Double},System.Nullable{System.Double},System.Nullable{System.Int32},System.String,System.String,System.Collections.Generic.IReadOnlyList{System.String})">
+            <summary>
+            Static metadata for one field — everything <c>DxForm</c> needs to render and
+            validate it, and everything <see cref="T:BlazorDX.Primitives.Forms.FormTool"/> needs to describe it to an AI.
+            Generated, never reflected.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Forms.FormValidationError">
+            <summary>A single validation failure: which field, and why.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Forms.FormValidationError.#ctor(System.String,System.String)">
+            <summary>A single validation failure: which field, and why.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Forms.IFormModel`1">
+            <summary>
+            A reflection-free description of a <c>[DxFormModel]</c> type, emitted by
+            <c>BlazorDX.SourceGen</c>. It is the single source of truth shared by the rendered
+            form and the AI-tool projection (<see cref="T:BlazorDX.Primitives.Forms.FormTool"/>).
+            </summary>
+            <typeparam name="TModel">The annotated model type.</typeparam>
+        </member>
+        <member name="P:BlazorDX.Primitives.Forms.IFormModel`1.ToolName">
+            <summary>Tool name for AI hosts (snake_case), from <c>[DxFormModel(Name=...)]</c> or the type name.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Forms.IFormModel`1.ToolDescription">
+            <summary>What the form/tool does, for the AI to decide when to call it.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Forms.IFormModel`1.Fields">
+            <summary>The fields, in declared order.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Forms.IFormModel`1.GetString(`0,System.String)">
+            <summary>Reads a field as an invariant string (for binding / serialization).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Forms.IFormModel`1.SetString(`0,System.String,System.String)">
+            <summary>Writes a field from an invariant string, parsing to the property's type. Bad input is ignored.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Forms.IFormModel`1.Validate(`0)">
+            <summary>Validates the model against the declared field constraints.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Forms.FormTool">
+            <summary>
+            Projects a <see cref="T:BlazorDX.Primitives.Forms.IFormModel`1"/> into an AI tool and back: it emits a
+            JSON-Schema tool definition an AI host can call (the shape shared by the Model
+            Context Protocol and OpenAI/Anthropic function-calling), and applies a tool call's
+            JSON arguments onto a model instance — then validates with the very same rules the
+            rendered form uses. So a form a person fills and a tool an AI invokes are one thing.
+            All JSON is built by hand / parsed with <see cref="T:System.Text.Json.JsonDocument"/> — no reflection,
+            AOT- and trim-safe.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Forms.FormTool.BuildInputSchema``1(BlazorDX.Primitives.Forms.IFormModel{``0})">
+            <summary>
+            Builds the JSON-Schema <c>object</c> describing the model's parameters
+            (types, constraints, descriptions, and the required set).
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Forms.FormTool.BuildToolDefinition``1(BlazorDX.Primitives.Forms.IFormModel{``0})">
+            <summary>
+            Builds the full tool definition envelope <c>{ name, description, input_schema }</c>
+            (MCP / Anthropic shape; OpenAI nests the same schema under <c>parameters</c>).
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Forms.FormTool.ApplyArguments``1(BlazorDX.Primitives.Forms.IFormModel{``0},``0,System.String)">
+            <summary>
+            Applies an AI tool call's JSON arguments to <paramref name="target"/> (only the
+            fields present are set), then returns the validation result. Invalid JSON yields
+            a single error rather than throwing.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Forms.McpToolServer">
+            <summary>
+            A minimal, transport-agnostic Model Context Protocol tool server. Register
+            <see cref="T:BlazorDX.Primitives.Forms.IAiTool"/>s (e.g. <see cref="T:BlazorDX.Primitives.Forms.FormAiTool`1"/> built from a
+            <c>[DxFormModel]</c>) and feed it JSON-RPC requests; it answers <c>initialize</c>,
+            <c>tools/list</c>, and <c>tools/call</c>. Wire <see cref="M:BlazorDX.Primitives.Forms.McpToolServer.HandleAsync(System.String)"/> to any
+            transport (stdio, a SSE/HTTP endpoint) to expose a BlazorDX form to an AI assistant.
+            Pure JSON (built by hand / parsed with <see cref="T:System.Text.Json.JsonDocument"/>) — no reflection.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Forms.McpToolServer.ServerName">
+            <summary>Server name advertised during <c>initialize</c>.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Forms.McpToolServer.Add(BlazorDX.Primitives.Forms.IAiTool)">
+            <summary>Registers a tool (replacing any with the same name). Fluent.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Forms.McpToolServer.Tools">
+            <summary>The registered tools, by name.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Forms.McpToolServer.HandleAsync(System.String)">
+            <summary>
+            Handles one JSON-RPC 2.0 request and returns the JSON-RPC response string.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Grid.DataGridPrimitive`1">
+            <summary>
+            Footer and per-group aggregates for <see cref="T:BlazorDX.Primitives.Grid.DataGridPrimitive`1"/>. Kept in
+            its own partial so the core grid file stays under the 1000-line cap (this is the
+            aggregation concern). Aggregates are computed over the in-memory <c>Items</c> via
+            the compute backend; they are not available in remote mode.
+            </summary>
+            <typeparam name="TRow">The row type, bound through a generated accessor.</typeparam>
+             <summary>
+             Tier 1 headless data grid: owns row ordering, grouping, the virtualization
+             window, sorting, aggregates, and ARIA wiring, but renders nothing on its own.
+             A Tier 2 component (or a custom subclass) supplies the markup by overriding
+             <see cref="M:Microsoft.AspNetCore.Components.ComponentBase.BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder)"/> and
+             reading the protected state below.
+            
+             Rendering is driven by a flat list of <see cref="T:BlazorDX.Primitives.Grid.GridRowSlot"/> (group headers
+             interleaved with data rows), so one windowing implementation serves both the
+             grouped and ungrouped views.
+             </summary>
+             <typeparam name="TRow">The row type, bound through a generated accessor.</typeparam>
+            <summary>
+            CSV export for <see cref="T:BlazorDX.Primitives.Grid.DataGridPrimitive`1"/>. Kept in its own partial so
+            the core grid file stays under the 1000-line cap (this is the export concern,
+            not the data/ordering concern).
+            </summary>
+            <typeparam name="TRow">The row type, bound through a generated accessor.</typeparam>
+            <summary>
+            In-memory row grouping for <see cref="T:BlazorDX.Primitives.Grid.DataGridPrimitive`1"/>: buckets the current
+            (filtered, sorted) row order by the grouped column into collapsible groups, and flattens
+            them — a header per group plus the rows of expanded groups — into the slot list that
+            drives virtualization. Server-side grouping lives in the RemoteGroup partial; this is the
+            path used when all rows are held in memory.
+            </summary>
+            <typeparam name="TRow">The row type.</typeparam>
+             <summary>
+             Keyboard cell navigation for <see cref="T:BlazorDX.Primitives.Grid.DataGridPrimitive`1"/> (the ARIA
+             "grid" pattern). Kept in its own partial so the core grid file stays under the
+             1000-line cap — this is the navigation concern, not the data concern.
+            
+             The active cell is addressed by a slot position (into the full, virtualized
+             slot list) plus a display-column position. Focus stays on the grid body and
+             the active cell is pointed to with <c>aria-activedescendant</c>, so navigation
+             works regardless of which rows are currently realized in the DOM. When the
+             active cell crosses the rendered window the grid scrolls it back into view.
+             </summary>
+             <typeparam name="TRow">The row type, bound through a generated accessor.</typeparam>
+            <summary>
+            PDF export for <see cref="T:BlazorDX.Primitives.Grid.DataGridPrimitive`1"/>. Sits beside the CSV and
+            Excel exports so the core grid file stays under the 1000-line cap; the actual
+            PDF generation lives in <see cref="T:BlazorDX.Primitives.Grid.PdfWriter"/>.
+            </summary>
+            <typeparam name="TRow">The row type, bound through a generated accessor.</typeparam>
+            <summary>
+            Server-side data binding for <see cref="T:BlazorDX.Primitives.Grid.DataGridPrimitive`1"/>. Kept in its own
+            partial: when <see cref="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.DataSource"/> is set the grid enters <see cref="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.RemoteMode"/>,
+            where it no longer holds all rows. It fetches only the virtualization window, caches
+            loaded rows by absolute index, and pushes sort/filter down to the source. Grouping,
+            aggregates, in-memory selection, and inline edit are in-memory features and are
+            disabled in remote mode.
+            </summary>
+            <typeparam name="TRow">The row type.</typeparam>
+            <summary>
+            Server-side grouping for <see cref="T:BlazorDX.Primitives.Grid.DataGridPrimitive`1"/>. When the bound
+            <see cref="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.DataSource"/> implements <see cref="T:BlazorDX.Primitives.Grid.IGridGroupDataSource`1"/> and a
+            group column is chosen, the grid asks the server for group summaries (key + count +
+            aggregates) up front and renders collapsed headers, then lazily fetches each group's
+            rows — scoped by the group key — only when it is expanded. So grouping and subtotals
+            scale past memory. Kept in its own partial to hold the core grid file under the cap.
+            </summary>
+            <typeparam name="TRow">The row type.</typeparam>
+            <summary>
+            Layout persistence for <see cref="T:BlazorDX.Primitives.Grid.DataGridPrimitive`1"/>: capture the user's
+            column order / widths / hidden columns / sort / filters as a serializable
+            <see cref="T:BlazorDX.Primitives.Grid.GridState"/>, and restore it later. <see cref="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.OnStateChanged"/> fires on
+            every layout mutation so a host can auto-save (e.g. to localStorage or a profile).
+            </summary>
+            <typeparam name="TRow">The row type.</typeparam>
+            <summary>
+            Excel (.xlsx) export for <see cref="T:BlazorDX.Primitives.Grid.DataGridPrimitive`1"/>. Sits in its own
+            partial alongside the CSV export so the core grid file stays under the
+            1000-line cap; the actual OOXML packaging lives in <see cref="T:BlazorDX.Primitives.Grid.XlsxWriter"/>.
+            </summary>
+            <typeparam name="TRow">The row type, bound through a generated accessor.</typeparam>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.HasAggregations">
+            <summary>Whether an aggregate footer should render (grand totals; in-memory only).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ShowGroupAggregates">
+            <summary>
+            Whether per-group subtotals should render in group headers. True for in-memory
+            grouping and for server-side grouping (where the server computes them).
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.AggregationKind(System.Int32)">
+            <summary>The aggregate statistic configured for a column, or null.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.AggregateFor(System.Int32)">
+            <summary>The computed aggregate for a column (empty until computed).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.GroupAggregate(System.Int32,System.Int32)">
+            <summary>The computed subtotal for one column within one group (in-memory or server).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.Items">
+            <summary>
+            The in-memory rows. Provide this for client-side data, or set
+            <see cref="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.DataSource"/> for server-side (remote) binding instead.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.Accessor">
+            <summary>The generated, reflection-free accessor for <typeparamref name="TRow"/>.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.RowHeight">
+            <summary>Fixed row height in pixels; virtualization math depends on it.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ViewportHeight">
+            <summary>Visible container height in pixels.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.Overscan">
+            <summary>Extra rows rendered above and below the viewport to cover fast scrolls.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.GroupByColumn">
+            <summary>Column index to group rows by, or -1 for no grouping.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.Aggregations">
+            <summary>Optional per-column aggregates to show in a footer (column index → statistic).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.Selectable">
+            <summary>When true, a selection checkbox column is shown and rows can be selected.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.SelectionChanged">
+            <summary>Raised with the selected rows (in row order) whenever the selection changes.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.Filterable">
+            <summary>When true, a per-column filter row is shown beneath the header.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.PinnedColumns">
+            <summary>Number of leading display columns frozen to the left while scrolling horizontally.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ShowExport">
+            <summary>When true, an "Export CSV" action is available (the styled layer renders the button).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ExportFileName">
+            <summary>File name used for the CSV export.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ShowExcelExport">
+            <summary>When true, an "Export Excel" action produces a real .xlsx workbook.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ExcelFileName">
+            <summary>File name used for the Excel (.xlsx) export.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ShowPdfExport">
+            <summary>When true, an "Export PDF" action produces a paginated table PDF.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.PdfFileName">
+            <summary>File name used for the PDF export.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ShowColumnChooser">
+            <summary>When true, a column chooser (show/hide columns) is available.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ShowClipboard">
+            <summary>When true, a "Copy" action copies the selected rows (or all visible) as TSV.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ShowFilterMenu">
+            <summary>When true, each header offers an Excel-style distinct-value filter menu.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.DetailTemplate">
+            <summary>
+            Optional expandable detail panel rendered beneath a row. When set, each data
+            row gets an expand twisty and its detail is shown when expanded.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.Editable">
+            <summary>When true, editable cells can be edited in place (double-click).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.RowEdited">
+            <summary>Raised with the row after an inline edit is committed.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.Columns">
+            <summary>The columns to render, in display order.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ContainerId">
+            <summary>Stable element id for the scroll container (drives DOM measurement).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.TotalRows">
+            <summary>Total data rows (for aria-rowcount).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.SlotCount">
+            <summary>Total display slots (group headers + data rows) driving virtualization.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.GroupColumnHeader">
+            <summary>Header text of the grouped column, when grouping (in-memory or server) is active.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.TopPadding">
+            <summary>Pixel height of the spacer above the rendered window.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.BottomPadding">
+            <summary>Pixel height of the spacer below the rendered window.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.SortColumn">
+            <summary>The primary sort column (first key), or -1 when unsorted.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.SortDescending">
+            <summary>Whether the primary sort key is descending.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.SortStateOf(System.Int32)">
+            <summary>
+            The sort state of a column: whether it is a sort key, its direction, and its
+            1-based position in the multi-column sort order (0 when not sorted).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.SortKeyCount">
+            <summary>Number of active sort keys (for showing order badges only when &gt; 1).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ColumnOrder">
+            <summary>The actual column index shown at each display position (left to right).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.MoveColumn(System.Int32,System.Int32)">
+            <summary>Moves a column from one display position to another (drag or keyboard reorder).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ColumnWidth(System.Int32)">
+            <summary>Explicit pixel width of a column, or 0 when it auto-sizes (1fr).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.IsResizing">
+            <summary>True while a column is being dragged to a new width.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.StartColumnResize(System.Int32,System.Double)">
+            <summary>Begins a resize gesture for a column at the pointer's X position.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ResizeColumnTo(System.Double)">
+            <summary>Updates the resizing column's width as the pointer moves.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.EndColumnResize">
+            <summary>Ends the resize gesture.</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Grid.DataGridPrimitive`1.SelectionColumnWidth">
+            <summary>Width pinned columns occupy when frozen (resized width, or a fixed default).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.HasPinnedColumns">
+            <summary>Whether any columns are pinned (drives horizontal-scroll behavior).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.IsPinned(System.Int32)">
+            <summary>Whether the column at a display position is frozen.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.IsLastPinned(System.Int32)">
+            <summary>Whether a display position is the last frozen column (gets the divider shadow).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.PinnedLeft(System.Int32)">
+            <summary>The sticky left offset (px) for a frozen column or the selection cell.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.PinnedColumnWidth(System.Int32)">
+            <summary>A pinned column needs a definite width; falls back to a fixed default when auto.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.IsColumnHidden(System.Int32)">
+            <summary>Whether a column is hidden by the chooser.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.VisibleColumnCount">
+            <summary>Count of currently-visible columns.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ToggleColumnVisibility(System.Int32)">
+            <summary>Shows or hides a column (by its actual index).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.VisibleSlots">
+            <summary>The display slots currently inside the virtualization window.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ToggleGroup(System.Int32)">
+            <summary>Toggles a group's expanded state and rebuilds the display list.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ColumnFilter(System.Int32)">
+            <summary>The current filter text for a column (empty when unfiltered).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.HasActiveFilters">
+            <summary>Whether any column filter is active.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.VisibleRowCount">
+            <summary>Number of data rows currently passing the filters.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.SetFilter(System.Int32,System.String)">
+            <summary>Sets (or clears) the contains-filter for a column and rebuilds the view.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.DistinctValues(System.Int32)">
+            <summary>The distinct values of a column (sorted, capped), for the filter menu.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.IsValueChecked(System.Int32,System.String)">
+            <summary>Whether a value is currently included (checked) for a column.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.HasValueFilter(System.Int32)">
+            <summary>Whether a column has an active value filter.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ToggleValueFilter(System.Int32,System.String)">
+            <summary>Includes or excludes a value from a column's filter and rebuilds the view.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ClearValueFilter(System.Int32)">
+            <summary>Clears a column's value filter.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.HasDetail">
+            <summary>Whether a detail panel is configured.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ToggleRowExpanded(System.Int32)">
+            <summary>Toggles a row's expanded detail panel.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.AllVisibleSelected">
+            <summary>True when every currently-visible (filtered) data row is selected.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.SomeVisibleSelected">
+            <summary>True when some but not all visible rows are selected (header indeterminate state).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ToggleRow(System.Int32)">
+            <summary>Toggles selection of a single row.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ToggleSelectAll">
+            <summary>Selects all visible rows, or clears them if all are already selected.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.EditingRow">
+            <summary>The row index being edited, or -1 when not editing.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.EditingColumn">
+            <summary>The column index being edited, or -1 when not editing.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.EditInput">
+            <summary>The editor input element, captured by the styled layer for focus.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.EditDraft">
+            <summary>Live text in the open editor (tracked so Enter can commit without a blur).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.SetEditDraft(System.String)">
+            <summary>Updates the draft text as the user types in the editor.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.BeginEdit(System.Int32,System.Int32)">
+            <summary>Enters edit mode for a cell, if the column is editable.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.CancelEdit">
+            <summary>Cancels the in-progress edit without writing back.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.CommitEditAsync">
+            <summary>Writes the current draft back through the generated accessor and exits edit mode.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.SortByAsync(System.Int32,System.Boolean)">
+            <summary>
+            Sorts by a column. A plain click sorts by that column alone (toggling its
+            direction); an additive click (Shift) adds or toggles it as an extra key,
+            keeping the existing keys for a multi-column sort. Single-column sorts still
+            offload numeric columns to the compute backend; multi-column sorts use a
+            managed stable comparer.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.BuildCsv">
+            <summary>
+            Builds RFC 4180 CSV of the grid in display-column order over the currently
+            filtered rows in their sorted order. Cell text comes from the generated
+            accessor — no reflection. Hidden columns, group headers, and aggregates are
+            excluded.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ExportCsvAsync">
+            <summary>Generates the CSV and triggers a client-side download.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.BuildSelectionTsv">
+            <summary>
+            Builds tab-separated text (header + rows) for the clipboard. Copies the
+            selected rows, or all visible rows when nothing is selected. Hidden columns
+            are excluded; tabs/newlines inside cells collapse to spaces.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.CopySelectionAsync">
+            <summary>Copies <see cref="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.BuildSelectionTsv"/> to the system clipboard, reporting a failure.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.KeyboardNavigation">
+            <summary>
+            When true, the grid supports arrow-key cell navigation: arrows move the
+            active cell, Home/End jump to the row edges, Ctrl+Home/End to the grid
+            corners, and PageUp/PageDown move by a viewport.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ActiveCellId">
+            <summary>The element id of the active cell, for <c>aria-activedescendant</c>.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ActiveRow">
+            <summary>The original data-row index of the active cell, or -1 when none.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ActiveColumn">
+            <summary>The display-column position of the active cell, or -1 when none.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.HasActiveCell">
+            <summary>Whether keyboard navigation is on and an active cell currently exists.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.IsActiveCell(System.Int32,System.Int32)">
+            <summary>Whether the cell at (row, display column) is the active cell.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ClampActiveCell">
+            <summary>
+            Re-anchors the active cell onto a real, visible data cell after the data or
+            columns reshape (sort/filter/group/hide). Called at the end of OnParametersSet.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.OnCellNavigationAsync(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs)">
+            <summary>Moves the active cell in response to a navigation key.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.SetActiveCell(System.Int32,System.Int32)">
+            <summary>Makes a cell the active cell (e.g. on click), if keyboard nav is on.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.BuildPdf">
+            <summary>
+            Builds a paginated table PDF of the grid in display-column order over the
+            currently filtered rows in their sorted order. Cell text comes from the
+            generated accessor — no reflection. Hidden columns, group headers, and
+            aggregates are excluded, matching the CSV and Excel exports.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ExportPdfAsync">
+            <summary>Generates the PDF and triggers a client-side download.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.DataSource">
+            <summary>A server-side data source. When set, the grid binds remotely (see remarks on the type).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.OnDataError">
+            <summary>Raised when a remote data fetch fails (after it is reported to diagnostics).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.RemoteMode">
+            <summary>Whether the grid is bound to a server-side <see cref="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.DataSource"/>.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.RemoteTotalCount">
+            <summary>The total row count reported by the data source (drives the scrollbar).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.IsRowLoaded(System.Int32)">
+            <summary>Whether the row at an absolute index has been fetched into the cache.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.RemoteRowAt(System.Int32)">
+            <summary>The cached row at an absolute index, or null if not yet loaded.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.RefreshRemoteAsync">
+            <summary>
+            Discards the cache and re-fetches from the start of the current window. Called when
+            the sort or filters change so the server re-orders/re-filters the whole result.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.FetchWindowAsync(System.Boolean)">
+            <summary>Fetches the current virtualization window if any of its rows are missing.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.RemoteGrouped">
+            <summary>Whether the grid is grouping server-side (a grouping source + a chosen column).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.VisibleRemoteGroupSlots">
+            <summary>The materialized server-group slots inside the current virtualization window.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.RemoteGroupRowAt(System.Int32)">
+            <summary>Resolves a server-group data-row slot to its fetched row.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.RemoteGroupKey(System.Int32)">
+            <summary>The group key (grouped column text) of a server group.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.RemoteGroupCount(System.Int32)">
+            <summary>The server-reported row count of a group.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.RemoteGroupExpanded(System.Int32)">
+            <summary>Whether a server group is expanded.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.RemoteGroupAggregate(System.Int32,System.Int32)">
+            <summary>A server-computed subtotal for a column within a group (empty when none).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ToggleRemoteGroupAsync(System.Int32)">
+            <summary>Expands or collapses a server group, lazily fetching its rows on first expand.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.DataGridPrimitive`1.OnStateChanged">
+            <summary>Raised after any layout change (reorder, resize, hide, sort, filter) with the new state.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.CaptureState">
+            <summary>Captures the current layout for persistence.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ApplyStateAsync(BlazorDX.Primitives.Grid.GridState)">
+            <summary>
+            Restores a captured layout. Entries that don't fit the current columns (wrong
+            count, out-of-range indices, a non-permutation order) are ignored, so stale saved
+            state can never corrupt the grid.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.BuildXlsx">
+            <summary>
+            Builds a real .xlsx workbook of the grid in display-column order over the
+            currently filtered rows in their sorted order. Cell text comes from the
+            generated accessor — no reflection. Hidden columns, group headers, and
+            aggregates are excluded, matching the CSV export.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.DataGridPrimitive`1.ExportXlsxAsync">
+            <summary>Generates the workbook and triggers a client-side download.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Grid.GridRowAttribute">
+            <summary>
+            Marks a row type as bindable by BlazorDX's grid. The
+            <c>BlazorDX.SourceGen</c> generator emits a strongly-typed accessor for each
+            type carrying this attribute, so the grid never reflects over the type at runtime.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Grid.GridColumnAttribute">
+            <summary>
+            Declares a property as a grid column. The generator reads the header and order
+            and infers whether the column is numeric (and therefore sortable by the Rust
+            kernels) from the property's type.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.GridColumnAttribute.Header">
+            <summary>Column header text.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.GridColumnAttribute.Order">
+            <summary>Left-to-right column order; lower comes first.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Grid.GridSortKey">
+            <summary>A requested sort key: the column's index and header, and direction.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.GridSortKey.#ctor(System.Int32,System.String,System.Boolean)">
+            <summary>A requested sort key: the column's index and header, and direction.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Grid.GridColumnFilter">
+            <summary>A requested column text filter: the column's index and header, and the text.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.GridColumnFilter.#ctor(System.Int32,System.String,System.String)">
+            <summary>A requested column text filter: the column's index and header, and the text.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Grid.GridDataRequest">
+            <summary>
+            A windowed data request the grid sends to an <see cref="T:BlazorDX.Primitives.Grid.IGridDataSource`1"/>:
+            which slice of the (sorted, filtered) result to return, plus the active sort and
+            filters to apply server-side.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.GridDataRequest.#ctor(System.Int32,System.Int32,System.Collections.Generic.IReadOnlyList{BlazorDX.Primitives.Grid.GridSortKey},System.Collections.Generic.IReadOnlyList{BlazorDX.Primitives.Grid.GridColumnFilter})">
+            <summary>
+            A windowed data request the grid sends to an <see cref="T:BlazorDX.Primitives.Grid.IGridDataSource`1"/>:
+            which slice of the (sorted, filtered) result to return, plus the active sort and
+            filters to apply server-side.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Grid.GridDataPage`1">
+            <summary>A page returned by a data source: the requested rows plus the total count.</summary>
+            <typeparam name="TRow">The row type.</typeparam>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.GridDataPage`1.#ctor(System.Collections.Generic.IReadOnlyList{`0},System.Int32)">
+            <summary>A page returned by a data source: the requested rows plus the total count.</summary>
+            <typeparam name="TRow">The row type.</typeparam>
+        </member>
+        <member name="T:BlazorDX.Primitives.Grid.IGridDataSource`1">
+            <summary>
+            A server-side data source for <see cref="T:BlazorDX.Primitives.Grid.DataGridPrimitive`1"/>. When supplied,
+            the grid stops holding all rows in memory and instead fetches the visible window,
+            pushing sorting and filtering down to this source. The implementation maps the
+            column indices/headers in the request to its own query (SQL, an API, LINQ, …).
+            </summary>
+            <typeparam name="TRow">The row type, bound through the generated accessor.</typeparam>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.IGridDataSource`1.GetRowsAsync(BlazorDX.Primitives.Grid.GridDataRequest,System.Threading.CancellationToken)">
+            <summary>Returns the requested window of rows and the total row count.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Grid.GridAggregateRequest">
+            <summary>An aggregate the grid asks a data source to compute server-side for a group.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.GridAggregateRequest.#ctor(System.Int32,System.String,BlazorDX.Compute.GridAggregateKind)">
+            <summary>An aggregate the grid asks a data source to compute server-side for a group.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Grid.GridGroupRequest">
+            <summary>
+            A request for the distinct groups of a column, computed server-side: the column to
+            group by, the active filters to apply first, and the per-group aggregates to compute.
+            The data source typically answers with a single <c>GROUP BY</c> query.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.GridGroupRequest.#ctor(System.Int32,System.String,System.Collections.Generic.IReadOnlyList{BlazorDX.Primitives.Grid.GridColumnFilter},System.Collections.Generic.IReadOnlyList{BlazorDX.Primitives.Grid.GridAggregateRequest})">
+            <summary>
+            A request for the distinct groups of a column, computed server-side: the column to
+            group by, the active filters to apply first, and the per-group aggregates to compute.
+            The data source typically answers with a single <c>GROUP BY</c> query.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Grid.GridGroupAggregateResult">
+            <summary>A server-computed aggregate value for one column within one group.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.GridGroupAggregateResult.#ctor(System.Int32,BlazorDX.Compute.GridAggregateKind,System.Double)">
+            <summary>A server-computed aggregate value for one column within one group.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Grid.GridGroupSummary">
+            <summary>
+            One group as summarized by the server: the group key (the grouped column's text), how
+            many rows it holds, and any requested per-group aggregates. Rows themselves are not
+            returned here — the grid lazily fetches them via <c>GetRowsAsync</c> when the group is
+            expanded, scoping the request to this group's key.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.GridGroupSummary.#ctor(System.String,System.Int32,System.Collections.Generic.IReadOnlyList{BlazorDX.Primitives.Grid.GridGroupAggregateResult})">
+            <summary>
+            One group as summarized by the server: the group key (the grouped column's text), how
+            many rows it holds, and any requested per-group aggregates. Rows themselves are not
+            returned here — the grid lazily fetches them via <c>GetRowsAsync</c> when the group is
+            expanded, scoping the request to this group's key.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Grid.GridGroupPage">
+            <summary>The set of groups for a grouped column, as summarized by a data source.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.GridGroupPage.#ctor(System.Collections.Generic.IReadOnlyList{BlazorDX.Primitives.Grid.GridGroupSummary})">
+            <summary>The set of groups for a grouped column, as summarized by a data source.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Grid.IGridGroupDataSource`1">
+            <summary>
+            A server-side data source that can also group. When a grid is bound to one of these and
+            a group column is chosen, the grid asks the server for group summaries (key + count +
+            aggregates) up front, then lazily fetches each group's rows through the inherited
+            <see cref="M:BlazorDX.Primitives.Grid.IGridDataSource`1.GetRowsAsync(BlazorDX.Primitives.Grid.GridDataRequest,System.Threading.CancellationToken)"/> — with the group's key added as a
+            filter on the grouped column — only when that group is expanded. So grouping and
+            subtotals scale to data far larger than memory.
+            </summary>
+            <typeparam name="TRow">The row type, bound through the generated accessor.</typeparam>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.IGridGroupDataSource`1.GetGroupsAsync(BlazorDX.Primitives.Grid.GridGroupRequest,System.Threading.CancellationToken)">
+            <summary>Returns the distinct groups of the requested column with their counts and aggregates.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Grid.GridRowSlot">
+            <summary>
+            One entry in the grid's virtualized display list. The grid renders a flat list
+            of slots — group headers interleaved with data rows — so the same windowing math
+            drives both grouped and ungrouped views.
+            </summary>
+            <param name="IsGroupHeader">True for a group header, false for a data row.</param>
+            <param name="GroupIndex">Index into the grid's group list (header slots, and the owning group of a row).</param>
+            <param name="RowIndex">Absolute index into <c>Items</c> for data slots; -1 for header slots.</param>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.GridRowSlot.#ctor(System.Boolean,System.Int32,System.Int32)">
+            <summary>
+            One entry in the grid's virtualized display list. The grid renders a flat list
+            of slots — group headers interleaved with data rows — so the same windowing math
+            drives both grouped and ungrouped views.
+            </summary>
+            <param name="IsGroupHeader">True for a group header, false for a data row.</param>
+            <param name="GroupIndex">Index into the grid's group list (header slots, and the owning group of a row).</param>
+            <param name="RowIndex">Absolute index into <c>Items</c> for data slots; -1 for header slots.</param>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.GridRowSlot.IsGroupHeader">
+            <summary>True for a group header, false for a data row.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.GridRowSlot.GroupIndex">
+            <summary>Index into the grid's group list (header slots, and the owning group of a row).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.GridRowSlot.RowIndex">
+            <summary>Absolute index into <c>Items</c> for data slots; -1 for header slots.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Grid.GridSortState">
+            <summary>A column's sort within saved grid state.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.GridSortState.#ctor(System.Int32,System.Boolean)">
+            <summary>A column's sort within saved grid state.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Grid.GridFilterState">
+            <summary>A column's text filter within saved grid state.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.GridFilterState.#ctor(System.Int32,System.String)">
+            <summary>A column's text filter within saved grid state.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Grid.GridState">
+            <summary>
+            A serializable snapshot of a <see cref="T:BlazorDX.Primitives.Grid.DataGridPrimitive`1"/>'s layout — column
+            order, widths, hidden columns, sort, and column filters. Capture it with
+            <c>CaptureState()</c>, persist <see cref="M:BlazorDX.Primitives.Grid.GridState.ToJson"/> (localStorage, a user profile,
+            …), and restore later with <c>ApplyStateAsync</c>. JSON is built/parsed by hand
+            (no reflection), so it stays trim- and AOT-safe.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.GridState.ToJson">
+            <summary>Serializes the state to JSON for persistence.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.GridState.FromJson(System.String)">
+            <summary>Parses state previously produced by <see cref="M:BlazorDX.Primitives.Grid.GridState.ToJson"/>.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Grid.GridColumnInfo">
+            <summary>Describes one grid column. Emitted by the source generator.</summary>
+            <param name="Header">Column header text.</param>
+            <param name="Order">Left-to-right position.</param>
+            <param name="IsNumeric">Whether the column's values are numeric (and sortable by the Rust kernels).</param>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.GridColumnInfo.#ctor(System.String,System.Int32,System.Boolean)">
+            <summary>Describes one grid column. Emitted by the source generator.</summary>
+            <param name="Header">Column header text.</param>
+            <param name="Order">Left-to-right position.</param>
+            <param name="IsNumeric">Whether the column's values are numeric (and sortable by the Rust kernels).</param>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.GridColumnInfo.Header">
+            <summary>Column header text.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.GridColumnInfo.Order">
+            <summary>Left-to-right position.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.GridColumnInfo.IsNumeric">
+            <summary>Whether the column's values are numeric (and sortable by the Rust kernels).</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Grid.IGridRowAccessor`1">
+            <summary>
+            Strongly-typed, reflection-free access to a row type's columns. The source
+            generator implements this for every <see cref="T:BlazorDX.Primitives.Grid.GridRowAttribute"/> type, so
+            the grid reads cell text and numeric values through generated <c>switch</c>
+            expressions rather than <c>PropertyInfo.GetValue</c>.
+            </summary>
+            <typeparam name="TRow">The row type being bound.</typeparam>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.IGridRowAccessor`1.Columns">
+            <summary>The columns, already ordered by <see cref="P:BlazorDX.Primitives.Grid.GridColumnInfo.Order"/>.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.IGridRowAccessor`1.GetCellText(`0,System.Int32)">
+            <summary>Returns the display text for a cell.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.IGridRowAccessor`1.GetCellValue(`0,System.Int32)">
+            <summary>Returns a cell's numeric value, or <see cref="F:System.Double.NaN"/> for non-numeric columns.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.IGridRowAccessor`1.CanEditColumn(System.Int32)">
+            <summary>Whether a column can be edited (its property has a usable setter).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.IGridRowAccessor`1.SetCellText(`0,System.Int32,System.String)">
+            <summary>
+            Parses <paramref name="value"/> and writes it back to the row's property for
+            an editable column. No-op for non-editable columns or unparseable input.
+            Generated as a typed <c>switch</c> — no reflection.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Grid.PdfWriter">
+            <summary>
+            A tiny, dependency-free writer for a tabular PDF document. It emits a valid
+            PDF 1.4 file by hand — catalog, page tree, the two built-in Helvetica fonts
+            (so nothing has to be embedded), and one uncompressed content stream per page
+            — with a byte-accurate cross-reference table. No third-party library, no
+            reflection: AOT- and trim-safe, so it runs unchanged in the browser runtime.
+            </summary>
+            <remarks>
+            Rows are laid out as a simple grid on US-Letter pages, the header repeated in
+            bold at the top of each page; cell text is left-aligned and truncated to its
+            column width. Text uses WinAnsi (ASCII) — characters outside it become '?'.
+            </remarks>
+        </member>
+        <member name="F:BlazorDX.Primitives.Grid.PdfWriter.MimeType">
+            <summary>The IANA media type browsers expect for a .pdf download.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.PdfWriter.Write(System.Collections.Generic.IReadOnlyList{System.String},System.Collections.Generic.IReadOnlyList{System.Collections.Generic.IReadOnlyList{System.String}})">
+            <summary>
+            Builds a paginated table PDF: <paramref name="headers"/> form a bold,
+            per-page header row, then each item of <paramref name="rows"/> is a row.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Grid.PivotGridPrimitive`1">
+            <summary>
+            Tier 1 headless pivot table (cross-tab). Buckets rows by a row field and a
+            column field, then aggregates a numeric value field within each bucket using
+            the compute backend (Rust in the browser, managed C# on the server) — the same
+            kernels the data grid uses. Row, column, and grand totals are aggregated from
+            the underlying values (not from the cells), so means stay correct. Renders
+            nothing itself; a Tier 2 component supplies the table markup.
+            </summary>
+            <typeparam name="TRow">The row type, bound through a generated accessor.</typeparam>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.PivotGridPrimitive`1.RowField">
+            <summary>Column index whose distinct values become pivot rows.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.PivotGridPrimitive`1.ColumnField">
+            <summary>Column index whose distinct values become pivot columns.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.PivotGridPrimitive`1.ValueField">
+            <summary>Numeric column index aggregated into the cells.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.PivotGridPrimitive`1.Backend">
+            <summary>Active compute backend name, for diagnostics UI.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.PivotGridPrimitive`1.RowKeys">
+            <summary>Distinct pivot-row keys, sorted.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.PivotGridPrimitive`1.ColumnKeys">
+            <summary>Distinct pivot-column keys, sorted.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.PivotGridPrimitive`1.Cell(System.String,System.String)">
+            <summary>The aggregated value of one cell, or NaN when the bucket is empty.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Grid.TreeGridRow`1">
+            <summary>One visible row in a flattened tree: the row, its nesting depth, and state.</summary>
+            <typeparam name="TRow">The row type.</typeparam>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.TreeGridRow`1.#ctor(`0,System.Int32,System.Boolean,System.Boolean)">
+            <summary>One visible row in a flattened tree: the row, its nesting depth, and state.</summary>
+            <typeparam name="TRow">The row type.</typeparam>
+        </member>
+        <member name="T:BlazorDX.Primitives.Grid.TreeGridPrimitive`1">
+            <summary>
+            Tier 1 headless tree grid: a hierarchical table. Roots come from
+            <see cref="P:BlazorDX.Primitives.Grid.TreeGridPrimitive`1.Items"/>; children come from a host-supplied
+            <see cref="P:BlazorDX.Primitives.Grid.TreeGridPrimitive`1.ChildrenSelector"/>. The tree is flattened to the rows currently
+            visible (honoring each node's expand state) and that flat list is virtualized
+            exactly like the flat grid, so deep trees stay cheap. Renders nothing itself.
+            </summary>
+            <typeparam name="TRow">The node type (a reference type, for identity-based expand state).</typeparam>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.TreeGridPrimitive`1.Items">
+            <summary>The root nodes of the tree.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.TreeGridPrimitive`1.Accessor">
+            <summary>The generated, reflection-free column accessor for <typeparamref name="TRow"/>.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.TreeGridPrimitive`1.ChildrenSelector">
+            <summary>Returns a node's children (empty for leaves).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.TreeGridPrimitive`1.InitiallyExpanded">
+            <summary>Expand the whole tree on first load.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.TreeGridPrimitive`1.Columns">
+            <summary>The columns to render, in display order.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.TreeGridPrimitive`1.ContainerId">
+            <summary>Stable element id for the scroll container (drives DOM measurement).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Grid.TreeGridPrimitive`1.VisibleRowCount">
+            <summary>Total visible (flattened) rows, for aria-rowcount and virtualization.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.TreeGridPrimitive`1.VisibleRows">
+            <summary>The flattened rows currently inside the virtualization window.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.TreeGridPrimitive`1.Toggle(`0)">
+            <summary>Toggles a node's expand state and rebuilds the visible list.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.TreeGridPrimitive`1.OnRowKeyDown(`0,System.String)">
+            <summary>Keyboard expand/collapse: Right opens, Left closes (or moves to a leaf's parent state).</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Grid.XlsxWriter">
+            <summary>
+            A tiny, dependency-free writer for the Office Open XML spreadsheet (.xlsx)
+            format. It assembles the minimal set of OOXML parts (content types, package
+            relationships, a workbook, a styles part, and one worksheet) into a ZIP
+            package by hand — no third-party library, no reflection, AOT- and trim-safe,
+            so it runs unchanged in the browser WebAssembly runtime.
+            </summary>
+            <remarks>
+            Cells are written as inline strings, except values that round-trip exactly as
+            an invariant number (so "10" becomes a real numeric cell while "007" stays
+            text). The first row is rendered bold via a single styled cell format.
+            </remarks>
+        </member>
+        <member name="F:BlazorDX.Primitives.Grid.XlsxWriter.MimeType">
+            <summary>The IANA media type browsers expect for an .xlsx download.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Grid.XlsxWriter.Write(System.Collections.Generic.IReadOnlyList{System.String},System.Collections.Generic.IReadOnlyList{System.Collections.Generic.IReadOnlyList{System.String}})">
+            <summary>
+            Builds a single-worksheet workbook: <paramref name="headers"/> become a
+            bold first row, then each item of <paramref name="rows"/> becomes a row.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Inputs.DatePickerPrimitive">
+            <summary>
+            Tier 1 headless date picker: a trigger that opens an anchored calendar with
+            month navigation, day selection, and 2D keyboard navigation. Focus stays on the
+            calendar grid; the focused day is surfaced via aria-activedescendant (the
+            WAI-ARIA grid pattern). Composes the anchored-positioning and dismissal
+            primitives; renders no markup itself.
+            </summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Inputs.DatePickerPrimitive.CalendarCellCount">
+            <summary>A calendar always shows six weeks so the layout never reflows.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Inputs.DatePickerPrimitive.Culture">
+            <summary>Culture for the month label and selected-date text (defaults to current UI culture).</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Inputs.DatePickerPrimitive.viewMonth">
+            <summary>First day of the month currently shown in the calendar.</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Inputs.DatePickerPrimitive.focusedDate">
+            <summary>The day the keyboard cursor is on (drives aria-activedescendant).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Inputs.DatePickerPrimitive.CalendarDays">
+            <summary>The 42 days of the calendar grid, starting on the Sunday on/before the 1st.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Interaction.ListReorder">
+            <summary>
+            Pure list-reordering helper shared by drag-and-drop and keyboard reordering.
+            No Blazor or DOM dependency, so it is unit-testable in isolation.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Interaction.ListReorder.Move``1(System.Collections.Generic.IReadOnlyList{``0},System.Int32,System.Int32)">
+            <summary>
+            Returns a new list with the item at <paramref name="from"/> moved to
+            <paramref name="to"/>. Out-of-range or no-op moves return an unchanged copy.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Interaction.SortablePrimitive">
+            <summary>
+            Tier 1 headless sortable list: reorder items by dragging or with the keyboard
+            (Alt+Arrow moves the focused item; Arrow alone moves focus). Drag uses native
+            HTML5 drag events — no JS interop. Composes the roving-tabindex primitive for
+            keyboard focus. Renders no markup itself.
+            </summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Interaction.SortablePrimitive.Roving">
+            <summary>Roving state shared with the styled layer for focus/tabindex.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Interaction.TileItem">
+            <summary>A dashboard tile: a titled card whose body is arbitrary content.</summary>
+            <param name="Title">Header text (also the drag handle label).</param>
+            <param name="Content">The tile body.</param>
+            <param name="ColumnSpan">How many grid columns the tile spans (default 1).</param>
+        </member>
+        <member name="M:BlazorDX.Primitives.Interaction.TileItem.#ctor(System.String,Microsoft.AspNetCore.Components.RenderFragment,System.Int32)">
+            <summary>A dashboard tile: a titled card whose body is arbitrary content.</summary>
+            <param name="Title">Header text (also the drag handle label).</param>
+            <param name="Content">The tile body.</param>
+            <param name="ColumnSpan">How many grid columns the tile spans (default 1).</param>
+        </member>
+        <member name="P:BlazorDX.Primitives.Interaction.TileItem.Title">
+            <summary>Header text (also the drag handle label).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Interaction.TileItem.Content">
+            <summary>The tile body.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Interaction.TileItem.ColumnSpan">
+            <summary>How many grid columns the tile spans (default 1).</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Interaction.TileLayoutPrimitive">
+            <summary>
+            Tier 1 headless tile dashboard: a set of tiles the user can reorder by dragging
+            a tile's header onto another, or with the keyboard (Alt+Arrow moves the focused
+            tile; Arrow alone moves focus). Order is a permutation over the tile list — the
+            tiles themselves never move — so it composes with the shared reorder helper.
+            Native HTML5 drag, no JS interop. Renders no markup itself.
+            </summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Interaction.TileLayoutPrimitive.Roving">
+            <summary>Roving state shared with the styled layer for focus/tabindex.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Interaction.TileLayoutPrimitive.OrderChanged">
+            <summary>Raised with the new display order (positions hold tile indices) after a reorder.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Interaction.TileLayoutPrimitive.TileAt(System.Int32)">
+            <summary>The tile shown at a display position (left-to-right, top-to-bottom).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Interaction.TileLayoutPrimitive.Order">
+            <summary>Display order: each position holds the index of the tile shown there.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Motion.PresenceBoundary">
+            <summary>
+            Delays a child's removal from the DOM so it can animate out — the piece
+            Blazor lacks natively (an <c>@if</c> that turns false destroys the node at
+            once). When <see cref="P:BlazorDX.Primitives.Motion.PresenceBoundary.Visible"/> flips to false, the boundary keeps the child
+            mounted, swaps in <see cref="P:BlazorDX.Primitives.Motion.PresenceBoundary.LeaveClass"/> to trigger the CSS exit transition,
+            waits <see cref="P:BlazorDX.Primitives.Motion.PresenceBoundary.ExitDurationMs"/>, then releases it. This is the
+            AnimatePresence equivalent described in ADR 0005.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Motion.PresenceBoundary.EnterClass">
+            <summary>CSS class applied while the child is entering/visible.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Motion.PresenceBoundary.LeaveClass">
+            <summary>CSS class applied while the child is animating out.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Motion.PresenceBoundary.ExitDurationMs">
+            <summary>How long to keep the child mounted after it is hidden, in milliseconds.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Navigation.AccordionItem">
+            <summary>One accordion section: a title and its collapsible content.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Navigation.AccordionItem.#ctor(System.String,Microsoft.AspNetCore.Components.RenderFragment,System.Boolean)">
+            <summary>One accordion section: a title and its collapsible content.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Navigation.AccordionPrimitive">
+            <summary>
+            Tier 1 headless accordion: a list of collapsible sections, single- or
+            multiple-expand, with the WAI-ARIA disclosure pattern. Composes the
+            selection-state primitive (the set of expanded indices). Renders no markup.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Navigation.AccordionPrimitive.Multiple">
+            <summary>When true, multiple sections may be open at once.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Navigation.AccordionPrimitive.InitiallyExpanded">
+            <summary>Index expanded on first render, or -1 for all collapsed.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Navigation.AccordionPrimitive.Toggle(System.Int32)">
+            <summary>Toggles a section open/closed (single mode collapses the others).</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Navigation.RovingTabIndex">
+            <summary>
+            Roving-tabindex state: tracks which item in a list is the active (tabbable)
+            one and moves it with arrow / Home / End semantics, wrapping around and
+            skipping disabled items. This is the keyboard-navigation backbone shared by
+            Menu, Listbox, Select, ComboBox, RadioGroup, and grid cells. Pure logic — no
+            Blazor or DOM dependency — so it is unit-testable in isolation.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Navigation.RovingTabIndex.ActiveIndex">
+            <summary>The active index, or -1 when nothing is active.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Navigation.RovingTabIndex.Configure(System.Int32,System.Func{System.Int32,System.Boolean})">
+            <summary>Sets the item count and an optional enabled predicate (to skip disabled items).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Navigation.RovingTabIndex.MoveTo(System.Int32)">
+            <summary>Sets the active item directly (ignored if out of range or disabled).</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Navigation.TabItem">
+            <summary>One tab: a title and the content shown when it is selected.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Navigation.TabItem.#ctor(System.String,Microsoft.AspNetCore.Components.RenderFragment,System.Boolean)">
+            <summary>One tab: a title and the content shown when it is selected.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Navigation.TabsPrimitive">
+            <summary>
+            Tier 1 headless tabs: a roving-tabindex tab list with automatic activation
+            (arrow keys move focus and selection together) and the WAI-ARIA tab pattern.
+            Composes the roving-tabindex primitive; renders no markup itself.
+            </summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Navigation.TabsPrimitive.Roving">
+            <summary>Roving state shared with the styled layer for focus/tabindex.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Overlays.ComboBoxPrimitive`1">
+            <summary>
+            Tier 1 headless combo box: a text input that filters options (typeahead) with
+            an anchored dropdown and single selection. Focus stays in the input; the active
+            option is tracked via roving state and surfaced through aria-activedescendant,
+            the WAI-ARIA combobox pattern. Composes positioning, dismissal, and
+            roving-tabindex. Renders no markup itself.
+            </summary>
+            <typeparam name="TValue">The option value type.</typeparam>
+        </member>
+        <member name="F:BlazorDX.Primitives.Overlays.ComboBoxPrimitive`1.Roving">
+            <summary>Roving state over the filtered options (highlight only; focus stays in the input).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Overlays.ComboBoxPrimitive`1.Filter">
+            <summary>Current text in the input (also the filter term).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Overlays.ComboBoxPrimitive`1.ActiveOptionId">
+            <summary>The DOM id of the active option, for aria-activedescendant (empty when none).</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Overlays.Command">
+            <summary>One command in the palette: a title and the action to run.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Overlays.Command.#ctor(System.String,System.Action,System.String)">
+            <summary>One command in the palette: a title and the action to run.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Overlays.CommandPalettePrimitive">
+            <summary>
+            Tier 1 headless command palette (⌘K): a modal overlay with a filtering input
+            and a keyboard-navigable command list. Composes the overlay behaviors
+            (focus-trap, scroll-lock, dismissal), ComboBox-style filtering, and
+            roving-tabindex — focus stays in the input via aria-activedescendant.
+            Renders no markup itself.
+            </summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Overlays.CommandPalettePrimitive.Roving">
+            <summary>Roving state over the filtered commands (highlight only; focus stays in the input).</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Overlays.ContextMenuPrimitive">
+            <summary>
+            Tier 1 headless context menu: right-click a wrapped region to open a menu at the
+            cursor. Reuses the roving-tabindex and dismissal primitives (shares the
+            <see cref="T:BlazorDX.Primitives.Overlays.MenuItem"/> model with the click menu). Renders no markup itself.
+            </summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Overlays.ContextMenuPrimitive.Roving">
+            <summary>Roving state shared with the styled layer.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Overlays.ContextMenuPrimitive.X">
+            <summary>Viewport coordinates the menu opens at.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Overlays.DialogPrimitive">
+            <summary>
+            Tier 1 headless dialog: owns open state, focus trapping, scroll locking,
+            Escape/click-outside dismissal, and the ARIA contract — but renders no markup.
+            A Tier 2 component (or a custom subclass) supplies the panel by overriding
+            <see cref="M:Microsoft.AspNetCore.Components.ComponentBase.BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder)"/> and
+            reading the protected members. Exit animation is delegated to a
+            <c>PresenceBoundary</c> in the styled layer.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Overlays.DialogPrimitive.Open">
+            <summary>Whether the dialog is open. Two-way bindable via <see cref="P:BlazorDX.Primitives.Overlays.DialogPrimitive.OpenChanged"/>.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Overlays.DialogPrimitive.AriaLabel">
+            <summary>Accessible label when the panel has no visible heading to reference.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Overlays.DialogPrimitive.ExitDurationMs">
+            <summary>Milliseconds the panel stays mounted to play its exit animation.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Overlays.DialogPrimitive.PanelId">
+            <summary>Stable element id for the panel, used by the overlay DOM bridge.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Overlays.DialogPrimitive.RequestCloseAsync">
+            <summary>Asks the host to close the dialog (raises <see cref="P:BlazorDX.Primitives.Overlays.DialogPrimitive.OpenChanged"/>).</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Overlays.ListboxPrimitive`1">
+            <summary>
+            Tier 1 headless inline listbox: an always-visible list of options with roving
+            keyboard navigation and single- or multiple-selection. No positioning or
+            dismissal (it is inline, not a popup). Composes the roving-tabindex and
+            selection-state primitives; renders no markup itself.
+            </summary>
+            <typeparam name="TValue">The option value type.</typeparam>
+        </member>
+        <member name="F:BlazorDX.Primitives.Overlays.ListboxPrimitive`1.Roving">
+            <summary>Roving-tabindex state shared with the styled layer.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Overlays.ListboxPrimitive`1.Value">
+            <summary>Single-selection binding (used when <see cref="P:BlazorDX.Primitives.Overlays.ListboxPrimitive`1.Multiple"/> is false).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Overlays.ListboxPrimitive`1.Values">
+            <summary>Multiple-selection binding (used when <see cref="P:BlazorDX.Primitives.Overlays.ListboxPrimitive`1.Multiple"/> is true).</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Overlays.ListOption`1">
+            <summary>
+            One option in a Select / Listbox / ComboBox. Data-driven so the component owns
+            roving focus and selection without each option being a separate registration.
+            </summary>
+            <typeparam name="TValue">The option's underlying value type.</typeparam>
+            <param name="Value">The value bound when this option is chosen.</param>
+            <param name="Text">The label shown to the user.</param>
+            <param name="Disabled">When true the option is skipped by navigation and not selectable.</param>
+        </member>
+        <member name="M:BlazorDX.Primitives.Overlays.ListOption`1.#ctor(`0,System.String,System.Boolean)">
+            <summary>
+            One option in a Select / Listbox / ComboBox. Data-driven so the component owns
+            roving focus and selection without each option being a separate registration.
+            </summary>
+            <typeparam name="TValue">The option's underlying value type.</typeparam>
+            <param name="Value">The value bound when this option is chosen.</param>
+            <param name="Text">The label shown to the user.</param>
+            <param name="Disabled">When true the option is skipped by navigation and not selectable.</param>
+        </member>
+        <member name="P:BlazorDX.Primitives.Overlays.ListOption`1.Value">
+            <summary>The value bound when this option is chosen.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Overlays.ListOption`1.Text">
+            <summary>The label shown to the user.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Overlays.ListOption`1.Disabled">
+            <summary>When true the option is skipped by navigation and not selectable.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Overlays.MenuItem">
+            <summary>
+            One entry in a menu. Data-driven so the menu owns roving focus and keyboard
+            activation without each item being a separate component registration.
+            </summary>
+            <param name="Text">The label shown to the user.</param>
+            <param name="OnSelect">Invoked when the item is chosen; the menu then closes.</param>
+            <param name="Disabled">When true the item is skipped by keyboard navigation and not selectable.</param>
+        </member>
+        <member name="M:BlazorDX.Primitives.Overlays.MenuItem.#ctor(System.String,System.Action,System.Boolean)">
+            <summary>
+            One entry in a menu. Data-driven so the menu owns roving focus and keyboard
+            activation without each item being a separate component registration.
+            </summary>
+            <param name="Text">The label shown to the user.</param>
+            <param name="OnSelect">Invoked when the item is chosen; the menu then closes.</param>
+            <param name="Disabled">When true the item is skipped by keyboard navigation and not selectable.</param>
+        </member>
+        <member name="P:BlazorDX.Primitives.Overlays.MenuItem.Text">
+            <summary>The label shown to the user.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Overlays.MenuItem.OnSelect">
+            <summary>Invoked when the item is chosen; the menu then closes.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Overlays.MenuItem.Disabled">
+            <summary>When true the item is skipped by keyboard navigation and not selectable.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Overlays.MenuPrimitive">
+            <summary>
+            Tier 1 headless menu: an anchored, dismissible list of actions with full
+            keyboard navigation (arrows, Home/End, Enter/Space to select, Escape/Tab to
+            close). Composes anchored positioning + dismissal + the roving-tabindex
+            primitive. Renders no markup itself.
+            </summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Overlays.MenuPrimitive.Roving">
+            <summary>Roving-tabindex state shared with the styled layer for highlight/tabindex.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Overlays.MenuPrimitive.Trigger">
+            <summary>The clickable anchor; clicking toggles the menu.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Overlays.PopoverPrimitive">
+            <summary>
+            Tier 1 headless popover: a floating panel anchored to a trigger. Composes the
+            shared primitives — anchored positioning (flip/shift), dismissal (Escape /
+            click-outside), and exit motion (in the styled layer's PresenceBoundary).
+            Unlike a dialog it does not trap focus or lock scroll. Renders no markup itself.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Overlays.PopoverPrimitive.Open">
+            <summary>Whether the panel is open. Two-way bindable via <see cref="P:BlazorDX.Primitives.Overlays.PopoverPrimitive.OpenChanged"/>.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Overlays.PopoverPrimitive.Trigger">
+            <summary>The clickable anchor content; clicking it toggles the panel.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Overlays.PopoverPrimitive.ChildContent">
+            <summary>The floating panel content.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Overlays.PopoverPrimitive.Side">
+            <summary>Preferred side: top, bottom, left, or right (flips if there is no room).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Overlays.PopoverPrimitive.Align">
+            <summary>Cross-axis alignment: start, center, or end.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Overlays.PopoverPrimitive.Offset">
+            <summary>Gap in pixels between the anchor and the panel.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Overlays.SelectPrimitive`1">
+            <summary>
+            Tier 1 headless single-select dropdown. Composes the shared primitives —
+            anchored positioning, dismissal, roving-tabindex keyboard navigation, and
+            selection state — into one self-contained widget. Renders no markup itself.
+            </summary>
+            <typeparam name="TValue">The option value type.</typeparam>
+        </member>
+        <member name="F:BlazorDX.Primitives.Overlays.SelectPrimitive`1.Roving">
+            <summary>Roving-tabindex state, shared with the styled layer for highlight/tabindex.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Overlays.SelectPrimitive`1.HasSelection">
+            <summary>Whether any option is currently selected (false shows the placeholder).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Overlays.SelectPrimitive`1.DisplayText">
+            <summary>The label of the selected option, or the placeholder when none is selected.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Overlays.TooltipPrimitive">
+            <summary>
+            Tier 1 headless tooltip: shows an anchored panel on hover or focus and hides it
+            on leave or blur. Reuses the anchored-positioning primitive; it neither traps
+            focus nor locks scroll nor needs click dismissal, so it does not use the overlay
+            dismiss bridge. Renders no markup itself.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Overlays.TooltipPrimitive.Visible">
+            <summary>Whether the tooltip is currently shown.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Query.QueryEvaluator">
+            <summary>
+            Evaluates a <see cref="T:BlazorDX.Primitives.Query.QueryNode"/> tree against a row, addressed only by a
+            field-name → cell-text resolver — so it is data-source agnostic and has no
+            reflection. Numeric operators parse both sides with the invariant culture;
+            an empty group matches everything.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Query.QueryEvaluator.Evaluate(BlazorDX.Primitives.Query.QueryNode,System.Func{System.String,System.String})">
+            <summary>Returns whether a row (via its <paramref name="cell"/> resolver) satisfies the tree.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Query.QueryCombinator">
+            <summary>How a group combines its children.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Query.QueryOperator">
+            <summary>The comparison a condition applies.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Query.QueryField">
+            <summary>A field the query can target.</summary>
+            <param name="Name">Field name (matches the cell resolver key).</param>
+            <param name="IsNumeric">Whether to compare numerically for &gt;/&lt;.</param>
+        </member>
+        <member name="M:BlazorDX.Primitives.Query.QueryField.#ctor(System.String,System.Boolean)">
+            <summary>A field the query can target.</summary>
+            <param name="Name">Field name (matches the cell resolver key).</param>
+            <param name="IsNumeric">Whether to compare numerically for &gt;/&lt;.</param>
+        </member>
+        <member name="P:BlazorDX.Primitives.Query.QueryField.Name">
+            <summary>Field name (matches the cell resolver key).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Query.QueryField.IsNumeric">
+            <summary>Whether to compare numerically for &gt;/&lt;.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Query.QueryNode">
+            <summary>Base type for a node in a query tree (a condition or a group).</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Query.QueryCondition">
+            <summary>A leaf comparison: field OP value.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Query.QueryGroup">
+            <summary>A combinator over child nodes, enabling nested logic.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Scheduling.GanttTask">
+            <summary>A task on a Gantt timeline.</summary>
+            <param name="Name">Task label.</param>
+            <param name="Start">First day (inclusive).</param>
+            <param name="End">Last day (inclusive).</param>
+            <param name="Progress">Completion fraction 0..1, shown as a fill.</param>
+            <param name="Color">Optional bar color override.</param>
+        </member>
+        <member name="M:BlazorDX.Primitives.Scheduling.GanttTask.#ctor(System.String,System.DateOnly,System.DateOnly,System.Double,System.String)">
+            <summary>A task on a Gantt timeline.</summary>
+            <param name="Name">Task label.</param>
+            <param name="Start">First day (inclusive).</param>
+            <param name="End">Last day (inclusive).</param>
+            <param name="Progress">Completion fraction 0..1, shown as a fill.</param>
+            <param name="Color">Optional bar color override.</param>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.GanttTask.Name">
+            <summary>Task label.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.GanttTask.Start">
+            <summary>First day (inclusive).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.GanttTask.End">
+            <summary>Last day (inclusive).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.GanttTask.Progress">
+            <summary>Completion fraction 0..1, shown as a fill.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.GanttTask.Color">
+            <summary>Optional bar color override.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Scheduling.GanttBar">
+            <summary>A task's placement on the timeline, in day units from the range start.</summary>
+            <param name="OffsetDays">Days from the range start to the bar's left edge.</param>
+            <param name="LengthDays">Bar width in days (clamped to the visible range).</param>
+        </member>
+        <member name="M:BlazorDX.Primitives.Scheduling.GanttBar.#ctor(System.Double,System.Double)">
+            <summary>A task's placement on the timeline, in day units from the range start.</summary>
+            <param name="OffsetDays">Days from the range start to the bar's left edge.</param>
+            <param name="LengthDays">Bar width in days (clamped to the visible range).</param>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.GanttBar.OffsetDays">
+            <summary>Days from the range start to the bar's left edge.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.GanttBar.LengthDays">
+            <summary>Bar width in days (clamped to the visible range).</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Scheduling.GanttPrimitive">
+            <summary>
+            Tier 1 headless Gantt chart. Lays each task onto a day timeline as an offset +
+            length (in days) from the range start, clamped to the visible window. Owns no
+            markup; the styled layer turns the per-task placement into positioned bars.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.GanttPrimitive.RangeStart">
+            <summary>First day shown on the timeline.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.GanttPrimitive.DayCount">
+            <summary>Number of days the timeline spans.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.GanttPrimitive.Days">
+            <summary>The day columns, left to right.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Scheduling.GanttPrimitive.Layout(BlazorDX.Primitives.Scheduling.GanttTask)">
+            <summary>The visible placement of a task, or null if it falls outside the window.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Scheduling.SchedulerEvent">
+            <summary>A scheduled event placed on the calendar.</summary>
+            <param name="Title">Event label.</param>
+            <param name="Start">Start timestamp.</param>
+            <param name="End">End timestamp (same day as <paramref name="Start"/> for this view).</param>
+            <param name="Color">Optional CSS color override for the event block.</param>
+        </member>
+        <member name="M:BlazorDX.Primitives.Scheduling.SchedulerEvent.#ctor(System.String,System.DateTime,System.DateTime,System.String)">
+            <summary>A scheduled event placed on the calendar.</summary>
+            <param name="Title">Event label.</param>
+            <param name="Start">Start timestamp.</param>
+            <param name="End">End timestamp (same day as <paramref name="Start"/> for this view).</param>
+            <param name="Color">Optional CSS color override for the event block.</param>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerEvent.Title">
+            <summary>Event label.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerEvent.Start">
+            <summary>Start timestamp.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerEvent.End">
+            <summary>End timestamp (same day as <paramref name="Start"/> for this view).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerEvent.Color">
+            <summary>Optional CSS color override for the event block.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Scheduling.ScheduledBlock">
+            <summary>One event laid out within a day column.</summary>
+            <param name="Event">The source event.</param>
+            <param name="DayIndex">Zero-based day column.</param>
+            <param name="OffsetHours">Hours from the view's start hour to the block's top.</param>
+            <param name="LengthHours">Block height in hours (clamped to the visible range).</param>
+        </member>
+        <member name="M:BlazorDX.Primitives.Scheduling.ScheduledBlock.#ctor(BlazorDX.Primitives.Scheduling.SchedulerEvent,System.Int32,System.Double,System.Double)">
+            <summary>One event laid out within a day column.</summary>
+            <param name="Event">The source event.</param>
+            <param name="DayIndex">Zero-based day column.</param>
+            <param name="OffsetHours">Hours from the view's start hour to the block's top.</param>
+            <param name="LengthHours">Block height in hours (clamped to the visible range).</param>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.ScheduledBlock.Event">
+            <summary>The source event.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.ScheduledBlock.DayIndex">
+            <summary>Zero-based day column.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.ScheduledBlock.OffsetHours">
+            <summary>Hours from the view's start hour to the block's top.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.ScheduledBlock.LengthHours">
+            <summary>Block height in hours (clamped to the visible range).</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Scheduling.SchedulerPrimitive">
+            <summary>
+            Tier 1 headless week scheduler. Computes the visible day columns and lays each
+            event out as a <see cref="T:BlazorDX.Primitives.Scheduling.ScheduledBlock"/> (day column + vertical offset and
+            height in hours, clamped to the visible hour range). Owns week navigation but
+            renders nothing; the styled layer turns blocks into positioned markup.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.WeekStart">
+            <summary>First day shown (left column).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.StartHour">
+            <summary>First hour shown (24h).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.EndHour">
+            <summary>Last hour shown (exclusive upper bound, 24h).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.Days">
+            <summary>The day columns, left to right.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.Hours">
+            <summary>Hour labels down the time axis (start..end, inclusive of the start of each hour).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.Blocks">
+            <summary>Lays every event that falls within the visible week and hour range into a block.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Selection.SelectionState`1">
+            <summary>
+            Tracks selected values for single- or multiple-selection components (Select,
+            ComboBox, Listbox, DataGrid rows, TransferList). Pure logic — no Blazor or DOM
+            dependency — so it is unit-testable in isolation. Values are compared with the
+            default equality comparer for <typeparamref name="TValue"/>.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Selection.SelectionState`1.Multiple">
+            <summary>When true, multiple values may be selected; otherwise selecting replaces.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Selection.SelectionState`1.Selected">
+            <summary>The selected values, in no particular order.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Selection.SelectionState`1.Current">
+            <summary>The single selected value (or default when nothing is selected).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Selection.SelectionState`1.Set(System.Collections.Generic.IEnumerable{`0})">
+            <summary>Replaces the selection with the given values.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Selection.SelectionState`1.Toggle(`0)">
+            <summary>
+            Toggles a value. In single mode this selects exactly the value; in multiple
+            mode it adds the value if absent or removes it if present.
+            </summary>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,146 @@
+@page "/remote"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@using BlazorDX.Compute
+@using BlazorDX.Primitives.Grid
+@using BlazorDX.Demo.Client
+
+<PageTitle>Server-side grid</PageTitle>
+
+<h1>BlazorDX DataGrid — server-side data</h1>
+
+<p class="dx-demo-meta">
+    The grid is bound to an <code>IGridDataSource&lt;PersonRow&gt;</code> instead of an
+    in-memory list. It holds <strong>no rows</strong> itself — only the visible window
+    is fetched, and sorting and filtering are pushed into the request. The source here
+    simulates a server over <strong>@total.ToString("N0")</strong> rows with ~150&nbsp;ms
+    latency, so you'll see skeleton rows flash in while a window loads. Scroll fast,
+    click a header to sort, or type in a column filter.
+</p>
+
+<DxDataGrid TRow="PersonRow"
+            Accessor="accessor"
+            DataSource="source"
+            Filterable="true"
+            ShowColumnChooser="true"
+            RowHeight="32"
+            ViewportHeight="520" />
+
+<h2 style="margin-top:40px">Server-side grouping</h2>
+<p class="dx-demo-meta">
+    The same source also implements <code>IGridGroupDataSource&lt;PersonRow&gt;</code>. Grouped
+    by <strong>City</strong>, the grid asks the server for the distinct groups — each city's
+    <strong>row count</strong> and <strong>per-group subtotals</strong> (mean Score, total
+    Visits) computed server-side in one query — and renders them collapsed. Expand a city and
+    only <em>that</em> group's rows are fetched, scoped by its key. Nothing is held in memory.
+</p>
+
+<DxDataGrid TRow="PersonRow"
+            Accessor="accessor"
+            DataSource="source"
+            GroupByColumn="2"
+            Aggregations="aggregations"
+            RowHeight="32"
+            ViewportHeight="520" />
+
+@code {
+    private const int total = 250_000;
+    private readonly PersonRowGridAccessor accessor = new();
+    private readonly PeopleDataSource source = new(SampleData.People(total));
+
+    // City (col 2) grouped; server computes mean Score (3) and total Visits (4) per city.
+    private readonly Dictionary<int, GridAggregateKind> aggregations = new()
+    {
+        [3] = GridAggregateKind.Mean,
+        [4] = GridAggregateKind.Sum,
+    };
+
+    // A stand-in for a real backend: an in-memory set queried per request, with a
+    // delay to make the windowed fetching (and the skeletons) visible. A production
+    // source would translate the request into SQL or an API call.
+    private sealed class PeopleDataSource(IReadOnlyList<PersonRow> all) : IGridGroupDataSource<PersonRow>
+    {
+        public async Task<GridGroupPage> GetGroupsAsync(GridGroupRequest request, CancellationToken ct)
+        {
+            await Task.Delay(150, ct);
+
+            IEnumerable<PersonRow> query = Filtered(all, request.Filters);
+            List<GridGroupSummary> groups = query
+                .GroupBy(r => Text(r, request.GroupColumn), StringComparer.OrdinalIgnoreCase)
+                .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
+                .Select(g => new GridGroupSummary(
+                    g.Key,
+                    g.Count(),
+                    request.Aggregations
+                        .Select(a => new GridGroupAggregateResult(a.Column, a.Kind, Aggregate(g, a)))
+                        .ToList()))
+                .ToList();
+
+            return new GridGroupPage(groups);
+        }
+
+        private static double Aggregate(IEnumerable<PersonRow> group, GridAggregateRequest a)
+        {
+            IEnumerable<double> values = group.Select(r => a.Column == 3 ? r.Score : r.Visits);
+            return a.Kind switch
+            {
+                GridAggregateKind.Sum => values.Sum(),
+                GridAggregateKind.Mean => values.Average(),
+                GridAggregateKind.Min => values.Min(),
+                GridAggregateKind.Max => values.Max(),
+                _ => values.Count(),
+            };
+        }
+
+        private static IEnumerable<PersonRow> Filtered(IEnumerable<PersonRow> rows, IReadOnlyList<GridColumnFilter> filters)
+        {
+            foreach (GridColumnFilter f in filters)
+            {
+                rows = rows.Where(r => Text(r, f.Column).Contains(f.Text, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return rows;
+        }
+
+        public async Task<GridDataPage<PersonRow>> GetRowsAsync(GridDataRequest request, CancellationToken ct)
+        {
+            await Task.Delay(150, ct);
+
+            IEnumerable<PersonRow> query = all;
+            foreach (GridColumnFilter f in request.Filters)
+            {
+                query = query.Where(r => Text(r, f.Column).Contains(f.Text, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (request.Sort.Count > 0)
+            {
+                GridSortKey key = request.Sort[0];
+                query = key.Descending
+                    ? query.OrderByDescending(r => Key(r, key.Column))
+                    : query.OrderBy(r => Key(r, key.Column));
+            }
+
+            List<PersonRow> filtered = query.ToList();
+            List<PersonRow> window = filtered.Skip(request.Skip).Take(request.Take).ToList();
+            return new GridDataPage<PersonRow>(window, filtered.Count);
+        }
+
+        private static string Text(PersonRow r, int col) => col switch
+        {
+            0 => r.Id.ToString(),
+            1 => r.Name,
+            2 => r.City,
+            3 => r.Score.ToString("F2"),
+            _ => r.Visits.ToString(),
+        };
+
+        private static IComparable Key(PersonRow r, int col) => col switch
+        {
+            0 => r.Id,
+            1 => r.Name,
+            2 => r.City,
+            3 => r.Score,
+            _ => r.Visits,
+        };
+    }
+}

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <!--
+    The static-SSR + HTMX forms tier. These components render as plain server
+    HTML enhanced with hx-* attributes: no SignalR circuit, no WASM payload.
+    Use them for forms and progressive enhancement where interactivity cost is
+    not worth paying (see ADR 0004).
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+  </ItemGroup>
+
+</Project>

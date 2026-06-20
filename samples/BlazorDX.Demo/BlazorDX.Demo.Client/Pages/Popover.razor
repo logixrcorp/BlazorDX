@@ -1,0 +1,42 @@
+@page "/popover"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+
+<PageTitle>Popover</PageTitle>
+
+<h1>BlazorDX Popover</h1>
+
+<p class="dx-demo-meta">
+    Anchored positioning with collision flip + viewport shift, click-outside and
+    Escape dismissal, and an enter/exit animation. The panel near the bottom edge
+    flips above its trigger automatically.
+</p>
+
+<div style="display:flex; justify-content:space-between; align-items:flex-start; min-height:60vh">
+    <DxPopover @bind-Open="topOpen" Side="bottom" Align="start">
+        <Trigger>
+            <button class="dx-demo-button">Open (prefers below)</button>
+        </Trigger>
+        <ChildContent>
+            <strong>Anchored popover</strong>
+            <p style="margin:6px 0 0">Positioned by the Rust-free TypeScript positioning primitive. Scroll or resize — it follows the trigger.</p>
+        </ChildContent>
+    </DxPopover>
+</div>
+
+<div style="display:flex; justify-content:flex-end">
+    <DxPopover @bind-Open="bottomOpen" Side="bottom" Align="end">
+        <Trigger>
+            <button class="dx-demo-button">Near bottom edge (flips up)</button>
+        </Trigger>
+        <ChildContent>
+            <strong>Collision handling</strong>
+            <p style="margin:6px 0 0">There is no room below, so this panel flips above its trigger.</p>
+        </ChildContent>
+    </DxPopover>
+</div>
+
+@code {
+    private bool topOpen;
+    private bool bottomOpen;
+}

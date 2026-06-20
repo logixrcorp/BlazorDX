@@ -1,0 +1,30 @@
+@page "/select"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@using BlazorDX.Primitives.Overlays
+
+<PageTitle>Select</PageTitle>
+
+<h1>BlazorDX Select</h1>
+
+<p class="dx-demo-meta">
+    A single-select dropdown composing every primitive at once: anchored
+    positioning, click-outside / Escape dismissal, roving-tabindex keyboard
+    navigation, and selection state. Open it and use Arrow keys + Enter, or click.
+    Selected: <strong>@(selected ?? "(none)")</strong>.
+</p>
+
+<DxSelect TValue="string" Items="cities" @bind-Value="selected" Placeholder="Choose a city..." />
+
+@code {
+    private string? selected;
+
+    private readonly IReadOnlyList<ListOption<string>> cities =
+    [
+        new ListOption<string>("ATX", "Austin"),
+        new ListOption<string>("BER", "Berlin"),
+        new ListOption<string>("CAI", "Cairo", Disabled: true),
+        new ListOption<string>("DEN", "Denver"),
+        new ListOption<string>("EDI", "Edinburgh"),
+    ];
+}

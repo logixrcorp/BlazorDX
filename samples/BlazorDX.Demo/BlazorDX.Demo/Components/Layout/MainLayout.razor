@@ -1,0 +1,92 @@
+@inherits LayoutComponentBase
+
+<nav class="dx-nav">
+    <a class="dx-nav-brand" href="/">Blazor<span class="dx-nav-brand-accent">DX</span></a>
+
+    <a href="/docs">Docs</a>
+
+    <div class="dx-nav-group">
+        <span class="dx-nav-group-label">Grids</span>
+        <a href="/grid">DataGrid</a>
+        <a href="/remote">Server data</a>
+        <a href="/tree">TreeGrid</a>
+        <a href="/pivot">Pivot</a>
+    </div>
+
+    <div class="dx-nav-group">
+        <span class="dx-nav-group-label">Viz & codes</span>
+        <a href="/charts">Charts</a>
+        <a href="/barcodes">Barcodes</a>
+    </div>
+
+    <div class="dx-nav-group">
+        <span class="dx-nav-group-label">Overlays</span>
+        <a href="/dialog">Dialog</a>
+        <a href="/popover">Popover</a>
+        <a href="/menu">Menu</a>
+        <a href="/overlays">Sheet</a>
+        <a href="/command">⌘K</a>
+        <a href="/hotkeys">Hotkeys</a>
+        <a href="/keyboard">Keyboard</a>
+    </div>
+
+    <div class="dx-nav-group">
+        <span class="dx-nav-group-label">Inputs</span>
+        <a href="/forms">Forms + AI</a>
+        <a href="/select">Select</a>
+        <a href="/controls">Controls</a>
+        <a href="/rating">Rating</a>
+        <a href="/pickers">Pickers</a>
+        <a href="/transfer">Transfer</a>
+    </div>
+
+    <div class="dx-nav-group">
+        <span class="dx-nav-group-label">Layout</span>
+        <a href="/layout">Tabs</a>
+        <a href="/structure">Structure</a>
+        <a href="/elements">Elements</a>
+        <a href="/paging">Pager</a>
+        <a href="/wizard">Wizard</a>
+        <a href="/tiles">Tiles</a>
+        <a href="/kanban">Kanban</a>
+        <a href="/sortable">Sortable</a>
+        <a href="/virtualize">Virtualize</a>
+        <a href="/theme">Theme</a>
+    </div>
+
+    <div class="dx-nav-group">
+        <span class="dx-nav-group-label">Scheduling</span>
+        <a href="/scheduler">Scheduler</a>
+        <a href="/gantt">Gantt</a>
+    </div>
+
+    <div class="dx-nav-group">
+        <span class="dx-nav-group-label">Editors & data</span>
+        <a href="/markdown">Markdown</a>
+        <a href="/richtext">Rich Text</a>
+        <a href="/chat">Chat</a>
+        <a href="/files">Files</a>
+        <a href="/query">Query</a>
+        <a href="/imageeditor">Image</a>
+        <a href="/docviewer">Viewer</a>
+    </div>
+
+    <div class="dx-nav-group">
+        <span class="dx-nav-group-label">Feedback & server</span>
+        <a href="/feedback">Feedback</a>
+        <a href="/errors">Errors</a>
+        @* Full page load so htmx initializes on the statically-rendered form
+           (Blazor enhanced navigation would swap the DOM after htmx had bound). *@
+        <a href="/htmx" data-enhance-nav="false">HTMX</a>
+    </div>
+</nav>
+
+<main class="dx-main">
+    @Body
+</main>
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>

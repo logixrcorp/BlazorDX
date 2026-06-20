@@ -1,0 +1,19 @@
+@page "/htmx"
+@using BlazorDX.Htmx
+
+<PageTitle>HTMX tier</PageTitle>
+
+<h1>Static-SSR + HTMX forms</h1>
+
+<p>
+    This page is statically server-rendered: no SignalR circuit, no WebAssembly
+    download. The form below posts through htmx and the server's HTML fragment is
+    swapped in place — the BlazorDX hypermedia tier (ADR 0004).
+</p>
+
+<DxHtmxForm Action="/htmx/echo" Target="#dx-echo-target" Swap="innerHTML" Class="dx-demo-form">
+    <input type="text" name="message" placeholder="Type something..." class="dx-demo-input" />
+    <button type="submit" class="dx-demo-button">Send</button>
+</DxHtmxForm>
+
+<div id="dx-echo-target" class="dx-echo-target"></div>

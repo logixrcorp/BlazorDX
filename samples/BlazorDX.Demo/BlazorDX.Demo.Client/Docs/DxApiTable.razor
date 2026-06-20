@@ -1,0 +1,230 @@
+@using System.Reflection
+@using System.Text.RegularExpressions
+@using System.Xml.Linq
+@using Microsoft.AspNetCore.Components
+@using Microsoft.Extensions.DependencyInjection
+@inject IServiceProvider Services
+
+@*
+    Auto-generated API reference: reflects the [Parameter] properties of a component
+    type (name, type, default) and pulls each one's description from the library's
+    generated XML doc comments. Reflection + XML-doc parsing happen in the DOCS app
+    only — the BlazorDX libraries themselves stay reflection-free.
+*@
+
+@if (rows.Count > 0)
+{
+    <table class="dx-docs-api">
+        <thead>
+            <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+            @foreach (Row row in rows)
+            {
+                <tr>
+                    <td><code>@row.Name</code></td>
+                    <td><code>@row.Type</code></td>
+                    <td><code>@row.Default</code></td>
+                    <td>@row.Description</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p class="dx-demo-meta">No public parameters.</p>
+}
+
+@code {
+    /// <summary>The component type to document.</summary>
+    [Parameter, EditorRequired] public Type ComponentType { get; set; } = default!;
+
+    private readonly List<Row> rows = new();
+
+    private readonly record struct Row(string Name, string Type, string Default, string Description);
+
+    // Member-id → summary, merged across the libraries' XML docs. Loaded once per session.
+    private static Dictionary<string, string>? docs;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // HttpClient is only registered in the WebAssembly client, not the server
+        // host. Resolve it optionally so server-side prerender renders the table
+        // (with blank descriptions) instead of throwing; descriptions then fill in
+        // once the component re-initializes in the browser after hydration.
+        HttpClient? http = Services.GetService<HttpClient>();
+        if (docs is null && http is not null)
+        {
+            docs = await LoadDocsAsync(http);
+            BuildRows();
+            StateHasChanged();
+        }
+    }
+
+    protected override void OnParametersSet() => BuildRows();
+
+    private static async Task<Dictionary<string, string>> LoadDocsAsync(HttpClient http)
+    {
+        Dictionary<string, string> map = new(StringComparer.Ordinal);
+        foreach (string lib in new[] { "BlazorDX.Components", "BlazorDX.Primitives" })
+        {
+            try
+            {
+                string xml = await http.GetStringAsync($"_content/{lib}/api-docs.xml");
+                foreach (XElement member in XDocument.Parse(xml).Descendants("member"))
+                {
+                    string? name = member.Attribute("name")?.Value;
+                    XElement? summary = member.Element("summary");
+                    if (name is not null && summary is not null)
+                    {
+                        map[name] = RenderSummary(summary);
+                    }
+                }
+            }
+            catch
+            {
+                // XML not served (e.g. SSR before assets resolve); descriptions stay blank.
+            }
+        }
+
+        return map;
+    }
+
+    // Flatten a <summary> to plain text, turning <see cref="…"/> / <paramref/> /
+    // <see langword="…"/> into their readable short names instead of dropping them
+    // (XElement.Value ignores those attribute-only nodes, leaving dangling spaces).
+    private static string RenderSummary(XElement summary)
+    {
+        System.Text.StringBuilder sb = new();
+        foreach (XNode node in summary.Nodes())
+        {
+            switch (node)
+            {
+                case XText text:
+                    sb.Append(text.Value);
+                    break;
+                case XElement el when el.Name == "see" || el.Name == "seealso":
+                    sb.Append(ShortName(el.Attribute("cref")?.Value) ?? el.Attribute("langword")?.Value ?? el.Value);
+                    break;
+                case XElement el when el.Name == "paramref" || el.Name == "typeparamref":
+                    sb.Append(el.Attribute("name")?.Value ?? string.Empty);
+                    break;
+                case XElement el:
+                    sb.Append(el.Value);
+                    break;
+            }
+        }
+
+        return Regex.Replace(sb.ToString(), @"\s+", " ").Trim();
+    }
+
+    // "P:BlazorDX.Components.DxButton.Text" → "Text"; strips the doc-id prefix and
+    // any method parameter list, keeping the last dotted segment.
+    private static string? ShortName(string? cref)
+    {
+        if (string.IsNullOrEmpty(cref))
+        {
+            return null;
+        }
+
+        string id = cref.Length > 1 && cref[1] == ':' ? cref[2..] : cref;
+        int paren = id.IndexOf('(');
+        if (paren >= 0)
+        {
+            id = id[..paren];
+        }
+
+        int dot = id.LastIndexOf('.');
+        return dot >= 0 ? id[(dot + 1)..] : id;
+    }
+
+    private void BuildRows()
+    {
+        rows.Clear();
+
+        object? instance = null;
+        if (!ComponentType.IsGenericTypeDefinition && !ComponentType.ContainsGenericParameters)
+        {
+            try { instance = Activator.CreateInstance(ComponentType); }
+            catch { /* no parameterless ctor; defaults shown as — */ }
+        }
+
+        foreach (PropertyInfo prop in ComponentType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        {
+            if (prop.GetCustomAttribute<ParameterAttribute>() is null)
+            {
+                continue;
+            }
+
+            rows.Add(new Row(prop.Name, FriendlyType(prop.PropertyType), DefaultOf(prop, instance), DescriptionOf(prop)));
+        }
+
+        rows.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.Ordinal));
+    }
+
+    private static string DescriptionOf(PropertyInfo prop)
+    {
+        if (docs is null)
+        {
+            return string.Empty;
+        }
+
+        Type declaring = prop.DeclaringType!;
+        if (declaring.IsGenericType && !declaring.IsGenericTypeDefinition)
+        {
+            declaring = declaring.GetGenericTypeDefinition();
+        }
+
+        return docs.TryGetValue($"P:{declaring.FullName}.{prop.Name}", out string? text) ? text : string.Empty;
+    }
+
+    private static string DefaultOf(PropertyInfo prop, object? instance)
+    {
+        if (instance is null)
+        {
+            return "—";
+        }
+
+        object? value = prop.GetValue(instance);
+        return value switch
+        {
+            null => "null",
+            string s => s.Length == 0 ? "\"\"" : $"\"{s}\"",
+            bool b => b ? "true" : "false",
+            Enum e => e.ToString(),
+            int or long or double or decimal => Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? "—",
+            _ => "—",
+        };
+    }
+
+    private static readonly Dictionary<Type, string> Aliases = new()
+    {
+        [typeof(bool)] = "bool", [typeof(int)] = "int", [typeof(long)] = "long",
+        [typeof(double)] = "double", [typeof(decimal)] = "decimal", [typeof(string)] = "string",
+        [typeof(object)] = "object",
+    };
+
+    private static string FriendlyType(Type t)
+    {
+        Type? underlying = Nullable.GetUnderlyingType(t);
+        if (underlying is not null)
+        {
+            return FriendlyType(underlying) + "?";
+        }
+
+        if (t.IsGenericParameter)
+        {
+            return t.Name;
+        }
+
+        if (t.IsGenericType)
+        {
+            string name = t.Name[..t.Name.IndexOf('`')];
+            string args = string.Join(", ", t.GetGenericArguments().Select(FriendlyType));
+            return $"{name}<{args}>";
+        }
+
+        return Aliases.TryGetValue(t, out string? alias) ? alias : t.Name;
+    }
+}
