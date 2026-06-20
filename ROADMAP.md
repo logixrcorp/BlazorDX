@@ -79,9 +79,10 @@ mostly **trust** — the binding constraint on adoption — plus a few targeted 
 
 ### Depth & breadth enhancements
 
-- **AI access** — the secured tool core + stdio transport are done; next are the HTTP/SSE MCP
-  transport (remote agents), the DataGrid as a read tool over `IGridDataSource`, and the wider
-  MCP surface (resources / prompts). See [docs/ai-integration.md](docs/ai-integration.md).
+- **AI access** — the secured tool core, the stdio transport, and an HTTP (request/response)
+  endpoint are done; next are HTTP+SSE/sessions for server-initiated streaming, the DataGrid as
+  a read tool over `IGridDataSource`, and the wider MCP surface (resources / prompts). See
+  [docs/ai-integration.md](docs/ai-integration.md).
 - **Chart interactivity** — tooltips, legend toggling, zoom/pan over the SVG charts.
 - **Forms depth** — array / nested / conditional fields.
 - **Breadth tail** — a handful of leaves still worth adding (FAB/SpeedDial, Mention,

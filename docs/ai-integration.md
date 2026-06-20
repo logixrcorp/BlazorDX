@@ -78,10 +78,29 @@ string response = await server.HandleAsync(jsonRpcRequest, cancellationToken);
 | Transport | How | Status |
 |---|---|---|
 | **stdio** | `McpStdioHost.RunAsync(server, Console.In, Console.Out, ct)` — newline-delimited JSON-RPC. How local assistants (e.g. Claude Desktop) connect. | ✅ Built — see [`samples/BlazorDX.McpServer`](../samples/BlazorDX.McpServer) |
-| **HTTP / SSE** | Map `HandleAsync` to an authenticated endpoint for remote/web agents (MCP Streamable HTTP). | Planned |
+| **HTTP** | A web agent POSTs a JSON-RPC message and gets the JSON-RPC response — the request/response subset of MCP Streamable HTTP. Enough for request/response tools. | ✅ Built — `/mcp` in the demo |
+| **HTTP + SSE / sessions** | Server-initiated streaming (progress, sampling) over Server-Sent Events with session ids. | Planned |
 
 A complete, runnable stdio server lives in [`samples/BlazorDX.McpServer`](../samples/BlazorDX.McpServer/README.md),
-with the exact Claude Desktop config.
+with the exact Claude Desktop config. The HTTP transport is ~10 lines of standard ASP.NET Core,
+since the server is transport-agnostic — the host owns the transport:
+
+```csharp
+app.MapPost("/mcp", async (HttpContext http) =>
+{
+    using StreamReader reader = new(http.Request.Body);
+    string body = await reader.ReadToEndAsync(http.RequestAborted);
+
+    McpToolServer mcp = new McpToolServer
+    {
+        Authorizer = new MyAuthorizer(http.User),   // gate per caller (see Security below)
+        Diagnostics = http.RequestServices.GetService<IDxDiagnostics>(),
+    }.Add(/* your tools */);
+
+    string response = await mcp.HandleAsync(body, http.RequestAborted);
+    return Results.Content(response, "application/json");
+}).RequireAuthorization();   // HTTPS + auth in production
+```
 
 ## Security model
 
