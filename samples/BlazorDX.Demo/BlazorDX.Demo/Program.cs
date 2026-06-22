@@ -47,6 +47,18 @@ if (behindProxy)
     app.UseForwardedHeaders();
 }
 
+// Header-only security hardening applied to every response (incl. static assets):
+// stop MIME sniffing, limit referrer leakage, and gate powerful browser features off.
+app.Use(async (context, next) =>
+{
+    var headers = context.Response.Headers;
+    headers["X-Content-Type-Options"] = "nosniff";
+    headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    headers["Permissions-Policy"] =
+        "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()";
+    await next();
+});
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

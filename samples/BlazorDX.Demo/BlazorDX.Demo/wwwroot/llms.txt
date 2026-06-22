@@ -1,0 +1,21 @@
+# BlazorDX
+
+> A secure-by-default, headless, AOT-safe Blazor component system for .NET 10. MIT-licensed,
+> with zero runtime reflection (C# source generators), a Rust/WebAssembly compute tier, and a
+> thin TypeScript DOM bridge. ~95 components built on one headless engine. Currently a beta
+> preview, built with substantial AI assistance — not intended for production use.
+
+## Docs
+- [Documentation](https://blazordx.com/docs): Component catalog, guides, and architecture.
+- [DataGrid](https://blazordx.com/grid): Flagship grid — 100k rows, Rust-backed sort/filter/aggregate.
+- [Forms + AI](https://blazordx.com/forms): One model renders a form and a Model Context Protocol tool.
+- [Charts](https://blazordx.com/charts): SVG charts, gauges, and sparklines.
+
+## Project
+- [Support](https://blazordx.com/support): Community, priority, enterprise/SLA, and consulting.
+- [Privacy](https://blazordx.com/privacy): What the site collects (essentially nothing) and your rights.
+- [Source on GitHub](https://github.com/logixrcorp/BlazorDX): MIT-licensed source, issues, releases.
+
+## Notes
+- License: MIT (owned by Logixr Corp).
+- Status: beta / AI-generated / not for production use.

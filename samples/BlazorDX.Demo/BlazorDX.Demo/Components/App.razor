@@ -1,10 +1,61 @@
-﻿<!DOCTYPE html>
+﻿@inject NavigationManager Nav
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
+
+    @* SEO / social / structured data. PageTitle per page sets the <title>; these are
+       site-wide defaults. Canonical and og:url reflect the current request URL. *@
+    <meta name="description" content="A secure-by-default, headless, AOT-safe Blazor component system for .NET 10 — ~95 MIT-licensed components, zero runtime reflection. Beta preview." />
+    <link rel="canonical" href="@CanonicalUrl" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="BlazorDX" />
+    <meta property="og:title" content="BlazorDX — headless, AOT-safe Blazor components" />
+    <meta property="og:description" content="Secure-by-default, headless, AOT-safe Blazor components for .NET 10. MIT-licensed, zero runtime reflection. Beta preview." />
+    <meta property="og:url" content="@CanonicalUrl" />
+    <meta property="og:image" content="https://blazordx.com/og-image.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="BlazorDX — headless, AOT-safe Blazor components" />
+    <meta name="twitter:description" content="Secure-by-default, headless, AOT-safe Blazor components for .NET 10. MIT-licensed, zero runtime reflection. Beta preview." />
+    <meta name="twitter:image" content="https://blazordx.com/og-image.svg" />
+    <script type="application/ld+json">
+    {
+      "@@context": "https://schema.org",
+      "@@graph": [
+        {
+          "@@type": "Organization",
+          "@@id": "https://blazordx.com/#org",
+          "name": "Logixr Corp",
+          "url": "https://blazordx.com",
+          "sameAs": ["https://github.com/logixrcorp/BlazorDX"]
+        },
+        {
+          "@@type": "WebSite",
+          "@@id": "https://blazordx.com/#website",
+          "url": "https://blazordx.com",
+          "name": "BlazorDX",
+          "publisher": { "@@id": "https://blazordx.com/#org" }
+        },
+        {
+          "@@type": "SoftwareApplication",
+          "name": "BlazorDX",
+          "applicationCategory": "DeveloperApplication",
+          "operatingSystem": "Cross-platform (.NET 10)",
+          "softwareVersion": "0.1.0",
+          "datePublished": "2026-06-22",
+          "dateModified": "2026-06-22",
+          "license": "https://opensource.org/licenses/MIT",
+          "offers": { "@@type": "Offer", "price": "0", "priceCurrency": "USD" },
+          "author": { "@@id": "https://blazordx.com/#org" },
+          "publisher": { "@@id": "https://blazordx.com/#org" },
+          "description": "A secure-by-default, headless, AOT-safe Blazor component system for .NET 10."
+        }
+      ]
+    }
+    </script>
     <ResourcePreloader />
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["BlazorDX.Demo.styles.css"]" />
@@ -51,3 +102,9 @@
 </body>
 
 </html>
+
+@code {
+    // Canonical / og:url for the current request, without query string or fragment.
+    // Behind the Cloudflare tunnel, forwarded headers make this the public https URL.
+    private string CanonicalUrl => new Uri(Nav.Uri).GetLeftPart(UriPartial.Path);
+}
