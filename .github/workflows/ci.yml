@@ -12,15 +12,15 @@ jobs:
     name: Build + unit tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up .NET 10
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
 
       - name: Set up Node (esbuild for the TypeScript bridge)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
 
@@ -49,15 +49,15 @@ jobs:
       matrix:
         browser: [chromium, firefox, webkit]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up .NET 10
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
 
       - name: Set up Node (esbuild for the TypeScript bridge)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
 
@@ -98,15 +98,15 @@ jobs:
     if: github.event_name != 'pull_request'
     needs: build-and-unit
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up .NET 10
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
 
       - name: Set up Node (esbuild for the TypeScript bridge)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
 
@@ -122,6 +122,11 @@ jobs:
 
       - name: Publish AOT + trimmed (warnings are errors)
         run: dotnet publish samples/BlazorDX.Demo/BlazorDX.Demo/BlazorDX.Demo.csproj -c Release -p:EnableAot=true -o publish
+
+      # The smoke run drives the AOT app with the E2E suite, so the test project
+      # must be built first — it generates playwright.ps1 and is run with --no-build below.
+      - name: Build the E2E test project (provides playwright.ps1)
+        run: dotnet build tests/BlazorDX.E2E.Tests/BlazorDX.E2E.Tests.csproj -c Release
 
       - name: Install Playwright (chromium)
         run: pwsh tests/BlazorDX.E2E.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium

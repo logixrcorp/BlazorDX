@@ -15,6 +15,12 @@ public sealed class PlaywrightFixture : IAsyncLifetime
     public string BaseUrl { get; } =
         Environment.GetEnvironmentVariable("BLAZORDX_BASEURL")?.TrimEnd('/') ?? "http://localhost:5296";
 
+    /// <summary>The engine under test (<c>chromium</c> | <c>firefox</c> | <c>webkit</c>),
+    /// from <c>BLAZORDX_BROWSER</c>. Lets a test skip itself on an engine with a known
+    /// platform limitation.</summary>
+    public string BrowserName { get; } =
+        (Environment.GetEnvironmentVariable("BLAZORDX_BROWSER") ?? "chromium").ToLowerInvariant();
+
     public bool Ready { get; private set; }
     public string SkipReason { get; private set; } = "E2E disabled";
 
@@ -33,7 +39,7 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         try
         {
             playwright = await Playwright.CreateAsync();
-            IBrowserType engine = (Environment.GetEnvironmentVariable("BLAZORDX_BROWSER") ?? "chromium") switch
+            IBrowserType engine = BrowserName switch
             {
                 "firefox" => playwright.Firefox,
                 "webkit" => playwright.Webkit,
