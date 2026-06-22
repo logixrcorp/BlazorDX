@@ -246,10 +246,9 @@ DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES.
 12. GOVERNING LAW
 ================================================================================
 
-This License is governed by the laws of the State of [CONFIRM: e.g., Delaware],
-United States, without regard to its conflict-of-laws rules. The exclusive
-venue for any dispute shall be the state and federal courts located in
-[CONFIRM: county/state].
+This License is governed by the laws of the State of Iowa, United States,
+without regard to its conflict-of-laws rules. The exclusive venue for any
+dispute shall be the state and federal courts located in the State of Iowa.
 
 ================================================================================
 13. GENERAL
