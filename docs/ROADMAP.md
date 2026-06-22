@@ -1,12 +1,17 @@
 # BlazorDX Roadmap
 
-The foundation goal — *prove a secure-by-default, AOT-safe, headless component
-system is possible* — is met, and the catalog has grown well past the original plan:
-**~95 components** on a shared headless engine, a deep DataGrid family (flat / tree /
-pivot, with server-side data and grouping), data visualization, scheduling, editors,
-file management, forms (one model that doubles as an AI/MCP tool), AI chat, and
-standards-verified barcodes/QR — all trim-clean. See [COMPONENTS.md](COMPONENTS.md)
-and [ARCHITECTURE.md](ARCHITECTURE.md).
+> **Status: early beta.** BlazorDX was built with substantial AI assistance and has had
+> only limited real-world testing. This roadmap describes direction and intent, not a
+> finished or production-ready product. Dates, scope, and claims below are aspirational and
+> subject to change. It is not intended for production use.
+
+The original foundation goal — *explore whether a secure-by-default, AOT-safe, headless
+component system is possible* — is largely met as a proof of concept, and the catalog has
+grown well past the original plan: **~95 components** on a shared headless engine, a
+DataGrid family (flat / tree / pivot, with server-side data and grouping), data
+visualization, scheduling, editors, file management, forms (one model that doubles as an
+AI/MCP tool), AI chat, and standards-verified barcodes/QR — built to publish trim-clean.
+See [COMPONENTS.md](COMPONENTS.md) and [ARCHITECTURE.md](ARCHITECTURE.md).
 
 This roadmap is now about **finishing the library to a coherent 1.0** and **earning
 adoption**, deliberately scoped so we deepen our identity instead of chasing a
@@ -49,9 +54,11 @@ Raw component count is explicitly **not** the target — see *Out of scope*.
   `[DxField(Sensitive)]` redaction of PII. See [docs/ai-integration.md](ai-integration.md).
 - **Packaging & delivery**: eight NuGet packages (incl. analyzer/source-gen) packed clean
   and published to a feed; containerized demo deployment behind a Cloudflare tunnel.
-- **Proof**: ~460 tests green (bUnit + compute + analyzer + Playwright E2E) + Rust
-  `cargo test`; **trim-clean publish** under `IsTrimmable`/`IsAotCompatible` +
-  warnings-as-errors; 1000-line cap holding via DX1000.
+- **Automated checks**: ~460 automated tests (bUnit + compute + analyzer + Playwright E2E)
+  and Rust `cargo test` currently pass; **trim-clean publish** under
+  `IsTrimmable`/`IsAotCompatible` + warnings-as-errors; 1000-line cap holding via DX1000.
+  This is automated coverage only — with limited real-world use, treat the green suite as a
+  starting point, not evidence of production readiness.
 - **Showcase**: the demo home page is now a developer landing — live previews,
   getting-started code, and a categorized catalog with copy-pasteable examples per
   component, behind a categorized nav.
@@ -60,9 +67,10 @@ Raw component count is explicitly **not** the target — see *Out of scope*.
 
 ## Remaining toward 1.0
 
-Breadth is essentially line-of-business-complete and the high-value depth items have
-landed (server-side grid binding, `.xlsx` / PDF export, full AOT pass). What's left is
-mostly **trust** — the binding constraint on adoption — plus a few targeted enhancements.
+Breadth is wide and several high-value depth items are in place (server-side grid binding,
+`.xlsx` / PDF export, an AOT pass). What's left is substantial: **trust and real-world
+hardening** — the binding constraint on any adoption — plus a number of targeted
+enhancements. None of this should be read as "ready"; it is a beta with work ahead.
 
 ### Trust (the actual binding constraint)
 
@@ -75,7 +83,8 @@ mostly **trust** — the binding constraint on adoption — plus a few targeted 
   COMPONENTS/ARCHITECTURE/ADRs are the seed; publish a generated API reference.
 - **Independent senior review** — proof of the differentiating claims; see
   [docs/REVIEW.md](REVIEW.md).
-- **Production track record** — the deployed showcase is a start; grow real adoption.
+- **Production track record** — none yet. The deployed showcase is only a demo; the library
+  has no production use, and real-world adoption and hardening would have to be earned over time.
 
 ### Depth & breadth enhancements
 
