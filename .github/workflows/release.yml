@@ -1,0 +1,63 @@
+name: Release
+
+# Publishes the BlazorDX NuGet packages to nuget.org.
+#
+# Triggered by pushing a version tag (e.g. `v0.1.0`), or manually via the
+# Actions tab. The push is idempotent (`--skip-duplicate`), so re-running a
+# release that partially succeeded will not fail on already-published packages.
+#
+# Requires a repository secret `NUGET_API_KEY` — a nuget.org API key scoped to
+# "Push new packages and package versions" with a glob like `BlazorDX.*`.
+
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Pack + push to nuget.org
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Set up Node (esbuild for the TypeScript bridge)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Add the wasm Rust target (dx_grid)
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Restore TypeScript toolchain
+        run: npm ci
+        working-directory: src/BlazorDX.Interop.Ts
+
+      - name: Build (warnings are errors)
+        run: dotnet build BlazorDX.slnx -c Release
+
+      - name: Pack (libraries only; demo/tests are not packable)
+        run: dotnet pack BlazorDX.slnx -c Release --no-build -o artifacts
+
+      - name: Push to nuget.org
+        run: >
+          dotnet nuget push "artifacts/*.nupkg"
+          --api-key "${{ secrets.NUGET_API_KEY }}"
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate
+
+      - name: Upload packages as a build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nupkg
+          path: |
+            artifacts/*.nupkg
+            artifacts/*.snupkg
