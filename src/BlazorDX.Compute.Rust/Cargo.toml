@@ -3,7 +3,7 @@ name = "dx_grid"
 version = "0.1.0"
 edition = "2021"
 description = "BlazorDX heavy-compute kernels (sort/filter) compiled to wasm32."
-license = "MIT"
+license-file = "../../LICENSE.txt"
 
 [lib]
 # cdylib produces a standalone dx_grid.wasm with C-ABI exports, loaded as a

@@ -3,7 +3,7 @@
 ### 🌐 Live demo & docs → **[blazordx.com](https://blazordx.com)**
 
 > An enterprise-grade, secure-by-default, headless component system for .NET 10 Blazor.
-> MIT-licensed. Zero runtime reflection. C# + Rust + TypeScript, each used where it is strongest.
+> Source-available under the BlazorDX License. Zero runtime reflection. C# + Rust + TypeScript, each used where it is strongest.
 
 BlazorDX starts from a question that has gotten less attention in the Blazor
 component space than productivity and feature count:
@@ -142,14 +142,16 @@ full catalog.
 
 ## License & support
 
-BlazorDX is **free and open source under the [MIT license](LICENSE)** — the full
-component library, source generators, Rust compute, and tooling. No license keys, no
-paid tiers gating the code, no runtime license checks. Use it in commercial products
-without restriction.
+BlazorDX is **source-available under the [BlazorDX License](LICENSE.txt)**, owned by
+Logixr Corp. There are no license keys and no runtime license checks. **Private use and
+any organization's internal tools are free.** Commercial use is free too — with one
+exception: large companies (publicly traded firms in the top 50% of the U.S. market by
+revenue, or private firms with over $25M in gross sales) need a paid support contract
+with Logixr Corp. AI training for building Blazor apps is permitted, with attribution.
+See the [LICENSE](LICENSE.txt) for the exact terms.
 
-Sustaining the project and serving teams that need more than community help is funded
-through **optional support**, not by locking the code — see **[SUPPORT.md](.github/SUPPORT.md)**
-for community help, sponsorship, and commercial support / SLA / consulting options.
+Community help, sponsorship, and commercial support / SLA / consulting options are in
+**[SUPPORT.md](.github/SUPPORT.md)**.
 Security reports: **[SECURITY.md](.github/SECURITY.md)**.
 
 ---

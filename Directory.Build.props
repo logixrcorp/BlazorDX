@@ -28,7 +28,7 @@
   <PropertyGroup Label="Repository metadata">
     <Authors>BlazorDX contributors</Authors>
     <Product>BlazorDX</Product>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <RepositoryUrl>https://github.com/logixrcorp/BlazorDX.git</RepositoryUrl>
     <PackageProjectUrl>https://blazordx.com</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>

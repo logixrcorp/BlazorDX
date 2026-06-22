@@ -1,9 +1,11 @@
 # Support
 
-BlazorDX is **free and open source (MIT)** — the entire library, forever. There are no
-license keys and nothing in the code is gated behind a paid tier. The paid tiers below fund
-continued development and serve teams that need guarantees the community channel can't
-provide; they buy *people's time and commitments*, not access to the code.
+BlazorDX is **source-available under the [BlazorDX License](../LICENSE.txt)**, owned by
+Logixr Corp. There are no license keys or runtime checks. Private use and any
+organization's internal tools are free; commercial use is free except for large companies,
+which need a paid support contract (see the [LICENSE](../LICENSE.txt) for the exact test).
+The tiers below buy *people's time and guarantees* — and, for the companies the License
+requires it of, the support contract that authorizes their commercial use.
 
 ## Community — free
 
@@ -41,6 +43,7 @@ For production-critical adoption and procurement.
 
 ---
 
-The code stays MIT regardless of tier. Paying for support never removes anything from the
-open-source library — it adds people, guarantees, and time. Security reports go to
+The full source stays available under the BlazorDX License regardless of tier. Paying for
+support adds people, guarantees, and time — and satisfies the support-contract requirement
+for the large companies the License applies it to. Security reports go to
 **security@blazordx.com** — see [SECURITY.md](SECURITY.md).
