@@ -29,7 +29,7 @@
     <Authors>BlazorDX contributors</Authors>
     <Product>BlazorDX</Product>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <RepositoryUrl>http://192.168.0.58:3300/eschlueter/BlazorDX.git</RepositoryUrl>
+    <RepositoryUrl>https://github.com/logixrcorp/BlazorDX.git</RepositoryUrl>
     <PackageProjectUrl>https://blazordx.com</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
     <Version>0.1.0</Version>

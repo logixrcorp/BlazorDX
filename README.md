@@ -39,33 +39,9 @@ DataGrid at 100k rows.
 
 ## Install
 
-BlazorDX is published to the team NuGet feed (a private Gitea package registry). Drop a
-`nuget.config` next to your solution. The feed needs **credentials** (it's private) and the
-`allowInsecureConnections` flag (it's served over plain HTTP on the LAN):
-
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<configuration>
-  <packageSources>
-    <add key="blazordx" value="http://192.168.0.58:3300/api/packages/eschlueter/nuget/index.json"
-         allowInsecureConnections="true" />
-  </packageSources>
-  <packageSourceCredentials>
-    <blazordx>
-      <add key="Username" value="YOUR_GITEA_USERNAME" />
-      <!-- A Gitea access token with the `read:package` scope (Settings ▸ Applications). -->
-      <add key="ClearTextPassword" value="YOUR_GITEA_TOKEN" />
-    </blazordx>
-  </packageSourceCredentials>
-</configuration>
-```
-
-> Keep real credentials out of source control — use a per-developer `nuget.config` (e.g. in
-> `%APPDATA%\NuGet\NuGet.Config`) or Visual Studio's *Package Sources* dialog, not a checked-in
-> file. In CI, inject the token from a secret.
-
-Then add the one package you need — it transitively pulls the primitives, Rust/WASM compute,
-JS interop, and the source generator:
+BlazorDX is published on [nuget.org](https://www.nuget.org/packages/BlazorDX.Components). Add the
+one package you need — it transitively pulls the primitives, Rust/WASM compute, JS interop, and
+the source generator:
 
 ```bash
 dotnet add package BlazorDX.Components

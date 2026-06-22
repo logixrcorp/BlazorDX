@@ -20,7 +20,7 @@ no open inbound ports on the dev server, TLS terminated at Cloudflare's edge.
 
 - A Linux dev server with **Docker** + **Docker Compose v2** (`docker compose version`).
 - The domain **blazordx.com** added to your Cloudflare account (any plan, including free).
-- This repository checked out on the server (e.g. `git clone http://192.168.0.58:3300/eschlueter/BlazorDX.git`).
+- This repository checked out on the server (e.g. `git clone https://github.com/logixrcorp/BlazorDX.git`).
 
 ## 1. Create the tunnel in Cloudflare
 
