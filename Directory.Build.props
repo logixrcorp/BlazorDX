@@ -33,7 +33,7 @@
     <PackageProjectUrl>https://blazordx.com</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
     <Version>0.1.0</Version>
-    <Description>BlazorDX — a secure-by-default, AOT-safe, headless Blazor component system for .NET 10. Zero runtime reflection; C# + Rust + TypeScript.</Description>
+    <Description>BlazorDX — a secure-by-default, AOT-safe, headless Blazor component system for .NET 10. Zero runtime reflection; C# + Rust + TypeScript. BETA / AI-generated / not for production use — see the license.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>blazor;components;datagrid;headless;aot;trimming;wasm;rust;ui;dotnet</PackageTags>
     <IncludeSymbols>true</IncludeSymbols>

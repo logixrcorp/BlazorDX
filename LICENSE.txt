@@ -4,20 +4,28 @@ Version 1.0 (2026)
 Copyright (c) 2026 Logixr Corp. All rights reserved.
 
 BlazorDX (the "Software") is source-available software owned and published by
-Logixr Corp ("Logixr"). THIS IS NOT THE MIT LICENSE AND IS NOT AN OSI-APPROVED
-OPEN-SOURCE LICENSE, although several permissions below are intentionally
-modeled on the permissiveness of the MIT License. By downloading, installing,
-copying, accessing, training on, or otherwise using the Software, You agree to
-be bound by this License. If You do not agree, do not use the Software.
+Logixr Corp ("Logixr"). The permissions granted for the code and modules are
+based on the MIT License (see Section 3), EXCEPT that Logixr retains full
+rights and ownership of the Software (Section 2) and that all use is subject to
+the conditions of this License (including Sections 5-7 and 13-15). It is
+therefore NOT a plain MIT License and is NOT an OSI-approved open-source
+license.
+
+ACCEPTANCE BY USE. By downloading, installing, copying, accessing, training on,
+or otherwise using the Software, You agree to, and become legally bound by, this
+entire License, including the governing-law, venue, litigation, and class-action
+provisions in Section 12. If You do not agree, do not use the Software.
 
 ================================================================================
 0. PLAIN-LANGUAGE SUMMARY (non-binding)
 ================================================================================
 
 This summary is provided for convenience only. If it conflicts with Sections 1
-through 13, those Sections control.
+through 16, those Sections control.
 
-  - Private and personal use is free, on essentially MIT-style terms.
+  - The code and modules are licensed on MIT-style terms, EXCEPT that Logixr
+    retains full ownership and rights and the conditions below apply.
+  - Private and personal use is free.
   - ANY organization may use the Software to build, run, and maintain its own
     INTERNAL tools, free of charge, regardless of that organization's size.
   - Commercial use (shipping the Software, or something built with it, to third
@@ -34,8 +42,12 @@ through 13, those Sections control.
     attribute it (Section 6).
   - You MAY NOT reverse engineer the Software's compiled/binary components, and
     You may not circumvent the terms of this License (Section 7).
-  - Logixr owns the Software and retains all rights not expressly granted
-    (Section 8).
+  - Logixr owns the Software and retains all rights not expressly granted, and
+    may make future releases closed-source (Sections 2 and 14).
+  - Using the Software binds You to this agreement; disputes, litigation, and
+    class actions go through Harrison County, Iowa (Section 12).
+  - THE SOFTWARE IS AI-GENERATED, IN BETA, LARGELY UNTESTED, AND NOT FOR
+    PRODUCTION USE (Section 13).
 
 ================================================================================
 1. DEFINITIONS
@@ -105,25 +117,35 @@ You except as expressly set out in this License, and ALL RIGHTS NOT EXPRESSLY
 GRANTED ARE RESERVED to Logixr.
 
 ================================================================================
-3. LICENSE GRANT
+3. LICENSE GRANT (MIT-BASED)
 ================================================================================
 
-Subject to Your continuous compliance with this License (including the Support
-Contract requirement in Section 5), Logixr grants You a worldwide,
-royalty-free (except as stated in Section 5), non-exclusive, non-transferable,
-non-sublicensable (except as permitted in Section 9), and revocable license to:
+3.1 Subject to Your continuous compliance with this License (including the
+    Support Contract requirement in Section 5), Logixr grants You a worldwide,
+    royalty-free (except as stated in Section 5), non-exclusive,
+    non-transferable, non-sublicensable (except as permitted in Section 8), and
+    revocable license to:
 
-  (a) use, copy, and internally distribute the Software;
-  (b) modify the Software and create derivative works of it; and
-  (c) reproduce and distribute the Software and Your derivative works to third
-      parties, provided You do so under the terms of this License and in
-      compliance with Section 9.
+      (a) use, copy, and internally distribute the Software;
+      (b) modify the Software and create derivative works of it; and
+      (c) reproduce and distribute the Software and Your derivative works to
+          third parties, provided You do so under the terms of this License.
+
+3.2 MIT basis. The permissions in this Section 3 are intended to be as
+    permissive, for permitted uses, as those of the MIT License. The classic
+    MIT permission -- to use, copy, modify, merge, publish, distribute,
+    sublicense, and/or sell copies of the Software -- applies to the code and
+    modules, EXCEPT that (i) Logixr retains full rights and ownership of the
+    Software under Section 2, and (ii) every exercise of these permissions
+    remains subject to the conditions of this License, including Sections 5
+    (support contract), 6 (AI), 7 (restrictions), and 8 (redistribution). Where
+    those conditions and the MIT-style grant conflict, the conditions control.
 
 ================================================================================
 4. PERMITTED USE WITHOUT FEE
 ================================================================================
 
-The following uses are permitted at no charge, subject to Sections 6 through 9:
+The following uses are permitted at no charge, subject to Sections 6 through 8:
 
   4.1 Private Use, by anyone.
 
@@ -194,7 +216,7 @@ You may not:
       License; or
 
   7.5 sublicense the Software except as part of a distribution expressly
-      permitted by Section 9.
+      permitted by Section 8.
 
 ================================================================================
 8. REDISTRIBUTION AND ATTRIBUTION
@@ -217,8 +239,8 @@ distribution remains subject to Sections 5, 6, and 7.
     within thirty (30) days of becoming aware of it.
 
 9.3 Upon termination, You must cease all use of the Software and destroy all
-    copies in Your possession or control. Sections 2, 7, 9, 10, 11, and 12
-    survive termination.
+    copies in Your possession or control. Sections 2, 7, 9, 10, 11, 12, 13, and
+    14 survive termination.
 
 9.4 Logixr may reinstate Your rights at its sole discretion upon Your cure of
     the breach.
@@ -227,10 +249,11 @@ distribution remains subject to Sections 5, 6, and 7.
 10. DISCLAIMER OF WARRANTY
 ================================================================================
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-FOR A PARTICULAR PURPOSE, TITLE, AND NONINFRINGEMENT. THE ENTIRE RISK AS TO THE
-QUALITY AND PERFORMANCE OF THE SOFTWARE IS WITH YOU.
+THE SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE", WITHOUT WARRANTY OF ANY
+KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NONINFRINGEMENT.
+THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE SOFTWARE IS WITH YOU.
+SEE ALSO SECTION 13 (BETA; NOT FOR PRODUCTION).
 
 ================================================================================
 11. LIMITATION OF LIABILITY
@@ -243,15 +266,63 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE, INCLUDING ANY
 DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES.
 
 ================================================================================
-12. GOVERNING LAW
+12. GOVERNING LAW, VENUE, AND DISPUTE RESOLUTION
 ================================================================================
 
-This License is governed by the laws of the State of Iowa, United States,
-without regard to its conflict-of-laws rules. The exclusive venue for any
-dispute shall be the state and federal courts located in the State of Iowa.
+12.1 Governing law. This License is governed by the laws of the State of Iowa,
+    United States, without regard to its conflict-of-laws rules.
+
+12.2 Venue and litigation. Any litigation, claim, suit, or legal action arising
+    out of or relating to this License or the Software shall be brought and
+    resolved EXCLUSIVELY in the state or federal courts located in Harrison
+    County, Iowa, and You irrevocably consent to the personal jurisdiction and
+    venue of those courts.
+
+12.3 Class actions. To the fullest extent permitted by law, any class,
+    collective, consolidated, or representative action arising out of or
+    relating to this License or the Software must likewise be brought
+    EXCLUSIVELY in the state or federal courts located in Harrison County, Iowa.
 
 ================================================================================
-13. GENERAL
+13. BETA STATUS, AI GENERATION, AND NO PRODUCTION USE
+================================================================================
+
+13.1 AI-generated. The Software was created with substantial assistance from
+    artificial-intelligence systems.
+
+13.2 Beta; largely untested. The Software is a BETA release made available for
+    evaluation and testing purposes only. It has undergone only limited testing
+    and may contain defects, errors, regressions, or security vulnerabilities.
+
+13.3 No production use. The Software is NOT designed or intended for use in
+    production workloads, nor in any environment where a failure could result
+    in harm, loss, or damage. You assume all risk arising from any production,
+    mission-critical, or other reliance on the Software. This Section reinforces,
+    and in no way limits, Sections 10 and 11.
+
+================================================================================
+14. FUTURE LICENSING; RIGHT TO CLOSE SOURCE
+================================================================================
+
+Logixr may, in its sole discretion, change the license terms for, stop
+publishing the source code of, or make closed-source any future version or
+release of the Software. Any such change applies prospectively to the affected
+future version(s) only; it does not retroactively alter the license of a
+version already released by Logixr under this License. Logixr is under no
+obligation to publish source for, support, or continue developing any future
+version of the Software.
+
+================================================================================
+15. SPONSORSHIP AND DONATIONS
+================================================================================
+
+Logixr intends to fund continued development and future advancement of the
+Software through Support Contracts, sponsorships, and voluntary donations. This
+Section states intent only; it creates no obligation on Logixr or on You, and
+it does not alter any right or fee set out elsewhere in this License.
+
+================================================================================
+16. GENERAL
 ================================================================================
 
 This License is the entire agreement between You and Logixr concerning the

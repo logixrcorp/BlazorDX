@@ -2,7 +2,11 @@
 
 ### 🌐 Live demo & docs → **[blazordx.com](https://blazordx.com)**
 
-> An enterprise-grade, secure-by-default, headless component system for .NET 10 Blazor.
+> ⚠️ **Beta — not for production.** BlazorDX was built with substantial AI assistance, is
+> largely untested, and is published for **evaluation and testing only**. It is not designed
+> for production workloads. See [Status](#status) and the [LICENSE](LICENSE.txt) (§13).
+
+> A secure-by-default, headless component system for .NET 10 Blazor.
 > Source-available under the BlazorDX License. Zero runtime reflection. C# + Rust + TypeScript, each used where it is strongest.
 
 BlazorDX starts from a question that has gotten less attention in the Blazor
@@ -120,6 +124,10 @@ selection, inline edit, column reorder/resize, and pinned columns. The nav links
 every other component's demo — see [COMPONENTS.md](docs/COMPONENTS.md).
 
 ## Status
+
+> **Beta release.** This project was created with substantial assistance from AI systems and
+> has had only limited testing. Expect defects, gaps, and breaking changes. It is **not intended
+> for production use** — treat it as a preview to evaluate and give feedback on.
 
 BlazorDX spans **~95 components** across overlays, inputs, navigation, the data-grid
 family (flat / tree / pivot, with server-side data and grouping), data visualization,
