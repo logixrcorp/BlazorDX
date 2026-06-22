@@ -161,4 +161,4 @@ malicious tool calls — and the errors are returned to the AI so it can self-co
 
 The secured core and stdio transport are in place. Planned: the HTTP/SSE transport, exposing the
 DataGrid as a read tool over `IGridDataSource`, and the broader MCP surface (resources, prompts).
-See [ROADMAP.md](../ROADMAP.md).
+See [ROADMAP.md](ROADMAP.md).

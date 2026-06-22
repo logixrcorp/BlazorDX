@@ -1,7 +1,7 @@
 # BlazorDX Architecture
 
 This document is the authoritative blueprint. Each major decision also has a
-short Architecture Decision Record under [docs/adr](docs/adr); this file ties
+short Architecture Decision Record under [docs/adr](adr); this file ties
 them together into one picture.
 
 ## 1. The problem we are solving
@@ -36,7 +36,7 @@ documentation footnotes to warn about.
 
 A team that wants total design control consumes Tier 1 and styles it themselves.
 A team that wants batteries-included consumes Tier 2. Neither path fights the
-other. See [ADR 0001](docs/adr/0001-two-tier-headless.md).
+other. See [ADR 0001](adr/0001-two-tier-headless.md).
 
 ## 3. Language boundaries
 
@@ -52,7 +52,7 @@ each language only for what it is best at:
 The C# ↔ JS boundary uses **`[JSImport]` / `[JSExport]`**
 (`System.Runtime.InteropServices.JavaScript`) exclusively — compile-time,
 AOT-compatible bindings, never the reflection-based `IJSRuntime` path.
-See [ADR 0003](docs/adr/0003-rust-wasm-heavy-compute.md).
+See [ADR 0003](adr/0003-rust-wasm-heavy-compute.md).
 
 ### Data flow for a DataGrid sort
 
@@ -84,7 +84,7 @@ forbids it for anything on a hot or trimmable path:
 
 Every library is marked `IsTrimmable` and `IsAotCompatible`, so the trimmer
 analyzes our code and the build fails on a trim warning rather than the user's
-browser failing at runtime. See [ADR 0002](docs/adr/0002-zero-reflection-source-generation.md).
+browser failing at runtime. See [ADR 0002](adr/0002-zero-reflection-source-generation.md).
 
 ## 5. Rendering strategy
 
@@ -103,7 +103,7 @@ browser failing at runtime. See [ADR 0002](docs/adr/0002-zero-reflection-source-
 ## 6. Security model
 
 Security is part of the component lifecycle, not a deployment afterthought.
-See [ADR 0007](docs/adr/0007-security-baseline.md).
+See [ADR 0007](adr/0007-security-baseline.md).
 
 - **Component-scoped state only.** UI state is never stored in a Singleton.
   `BlazorDX.Security` provides scoped state helpers, and the analyzer flags
@@ -124,7 +124,7 @@ no SignalR circuit, no WASM payload — for the parts of an app (sign-in, settin
 forms) that should be fast and resilient without interactivity cost; the demo's
 `/htmx/echo` endpoint shows the swap round-trip. Interactive tiers remain pure
 Blazor. The broader form suite is the main area still to be filled out.
-See [ADR 0004](docs/adr/0004-htmx-static-ssr-tier.md).
+See [ADR 0004](adr/0004-htmx-static-ssr-tier.md).
 
 ## 8. Declarative motion
 
@@ -132,7 +132,7 @@ Blazor destroys a DOM node the instant `@if` turns false, which makes exit
 animations impossible without hacks. `PresenceBoundary` (Tier 1) intercepts the
 disposal lifecycle: when a child is toggled off it delays destruction, plays the
 CSS/TS exit transition, then releases the node. This is the AnimatePresence
-equivalent for .NET. See [ADR 0005](docs/adr/0005-intercepted-unmounting-motion.md).
+equivalent for .NET. See [ADR 0005](adr/0005-intercepted-unmounting-motion.md).
 
 ## 9. Governance: readability and the 1000-line cap
 
@@ -142,9 +142,9 @@ Every source file is capped at 1000 lines:
 - **Rust, TypeScript, CSS**: the `FileLength` MSBuild target fails the build.
 
 The cap is a forcing function for single-responsibility files and reviewable
-diffs. Combined with the readability rules in [CONTRIBUTING.md](CONTRIBUTING.md),
+diffs. Combined with the readability rules in [CONTRIBUTING.md](../.github/CONTRIBUTING.md),
 it keeps the codebase navigable by humans as it grows. See
-[ADR 0006](docs/adr/0006-1000-line-file-cap.md).
+[ADR 0006](adr/0006-1000-line-file-cap.md).
 
 ## 10. Project map
 
@@ -173,8 +173,8 @@ components. A Sheet *is* a Dialog anchored to an edge; a Command Palette *is* a
 Dialog plus a typeahead plus roving; a Pivot *is* the grid's Rust aggregation in a
 cross-tab; a tree grid *is* the grid's accessor and virtualizer over a flattened
 hierarchy. Building the engine well is what made the catalog cheap and consistent.
-See [ADR 0008](docs/adr/0008-shared-primitive-engine.md) and
-[ADR 0009](docs/adr/0009-source-generated-binding.md); the full list of components
+See [ADR 0008](adr/0008-shared-primitive-engine.md) and
+[ADR 0009](adr/0009-source-generated-binding.md); the full list of components
 and their demos is in [COMPONENTS.md](COMPONENTS.md).
 
 ## 12. AI / MCP tool surface
@@ -194,4 +194,4 @@ The surface is **secured with the same primitives as the rest of the system**: a
 distinguishable from an unknown one); every call is audited through the `IDxDiagnostics` sink
 (§ observability); invocations carry a `CancellationToken`; and `[DxField(Sensitive)]` / `[AiHidden]`
 keep PII and secrets out of the generated schema and unsettable by AI, while a human still edits
-them. See [docs/ai-integration.md](docs/ai-integration.md).
+them. See [docs/ai-integration.md](ai-integration.md).

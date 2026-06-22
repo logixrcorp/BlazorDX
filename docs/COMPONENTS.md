@@ -100,7 +100,7 @@ sample app (`samples/BlazorDX.Demo`).
   `IGridRowAccessor<TRow>` (read **and** write-back) — no `PropertyInfo`. `[DxFormModel]`
   emits an `IFormModel<T>` that `DxForm` renders **and** projects into an AI tool (JSON-Schema
   over MCP) — secured, audited, with sensitive fields kept from the AI. See
-  [docs/ai-integration.md](docs/ai-integration.md).
+  [docs/ai-integration.md](ai-integration.md).
 - **`[JSImport]` bridges** (TypeScript → minified ESM): grid-dom, overlay,
   positioning, grid-interop, richtext. No `IJSRuntime`.
 - **Governance**: hard 1000-line file cap (DX1000 analyzer + build target),
@@ -108,5 +108,5 @@ sample app (`samples/BlazorDX.Demo`).
   (DX1002), warnings-as-errors, `IsTrimmable`/`IsAotCompatible` — the whole catalog
   publishes trim-clean.
 
-See [README.md](README.md) for prerequisites and [ARCHITECTURE.md](ARCHITECTURE.md)
-plus [docs/adr](docs/adr) for the decisions behind all of this.
+See [README.md](../README.md) for prerequisites and [ARCHITECTURE.md](ARCHITECTURE.md)
+plus [docs/adr](adr) for the decisions behind all of this.

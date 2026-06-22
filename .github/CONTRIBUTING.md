@@ -42,7 +42,7 @@ These are the reasons BlazorDX exists; the analyzer treats them as errors.
 
 ## Language boundaries
 
-Put logic in the right tier (see [ARCHITECTURE.md](ARCHITECTURE.md) §3):
+Put logic in the right tier (see [ARCHITECTURE.md](../docs/ARCHITECTURE.md) §3):
 
 - **C#** — components, state, the public API.
 - **Rust** (`BlazorDX.Compute.Rust`) — CPU-heavy algorithms only.
@@ -58,7 +58,7 @@ dotnet test
 ```
 
 The build compiles the Rust and TypeScript tiers automatically. Install the
-prerequisites in [README.md](README.md) first. Warnings are errors here, so a
+prerequisites in [README.md](../README.md) first. Warnings are errors here, so a
 clean build is the bar.
 
 ## Commit and PR hygiene

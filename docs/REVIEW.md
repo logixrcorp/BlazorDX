@@ -26,7 +26,7 @@ Review in two stages — deep on the load-bearing 20%, broad on the rest:
 ### 30-minute orientation
 
 Read, in order: [`docs/adr/`](adr) (0001–0009, one decision each),
-[`ARCHITECTURE.md`](../ARCHITECTURE.md), [`COMPONENTS.md`](../COMPONENTS.md), then this file.
+[`ARCHITECTURE.md`](ARCHITECTURE.md), [`COMPONENTS.md`](COMPONENTS.md), then this file.
 
 ### Repo map
 
@@ -213,7 +213,7 @@ These are deliberately excluded — they're separate products (server-side docum
 engines, not UI components) and pursuing them would dilute the headless/auditable
 identity: **document processing (PDF/Word/Excel generation & parsing), report
 designer, full in-browser spreadsheet, PDF viewer, mapping/GIS, Outlook-depth
-recurring scheduler.** See [ROADMAP.md](../ROADMAP.md) for the scoped definition of
+recurring scheduler.** See [ROADMAP.md](ROADMAP.md) for the scoped definition of
 "complete."
 
 ---

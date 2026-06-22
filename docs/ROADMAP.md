@@ -44,9 +44,9 @@ Raw component count is explicitly **not** the target — see *Out of scope*.
 - **Forms as AI tools**: one source-generated model renders a `DxForm` *and* projects a
   JSON-Schema tool definition served over the **Model Context Protocol** (incl. interop with
   standard `System.ComponentModel.DataAnnotations` models), with a runnable stdio server
-  ([`samples/BlazorDX.McpServer`](samples/BlazorDX.McpServer)). The tool surface is **secured**:
+  ([`samples/BlazorDX.McpServer`](../samples/BlazorDX.McpServer)). The tool surface is **secured**:
   per-tool authorization, audit via the diagnostics sink, cancellation, and `[AiHidden]` /
-  `[DxField(Sensitive)]` redaction of PII. See [docs/ai-integration.md](docs/ai-integration.md).
+  `[DxField(Sensitive)]` redaction of PII. See [docs/ai-integration.md](ai-integration.md).
 - **Packaging & delivery**: eight NuGet packages (incl. analyzer/source-gen) packed clean
   and published to a feed; containerized demo deployment behind a Cloudflare tunnel.
 - **Proof**: ~460 tests green (bUnit + compute + analyzer + Playwright E2E) + Rust
@@ -74,7 +74,7 @@ mostly **trust** — the binding constraint on adoption — plus a few targeted 
 - **Hosted docs site + API reference** — the in-app docs and the
   COMPONENTS/ARCHITECTURE/ADRs are the seed; publish a generated API reference.
 - **Independent senior review** — proof of the differentiating claims; see
-  [docs/REVIEW.md](docs/REVIEW.md).
+  [docs/REVIEW.md](REVIEW.md).
 - **Production track record** — the deployed showcase is a start; grow real adoption.
 
 ### Depth & breadth enhancements
@@ -82,7 +82,7 @@ mostly **trust** — the binding constraint on adoption — plus a few targeted 
 - **AI access** — the secured tool core, the stdio transport, and an HTTP (request/response)
   endpoint are done; next are HTTP+SSE/sessions for server-initiated streaming, the DataGrid as
   a read tool over `IGridDataSource`, and the wider MCP surface (resources / prompts). See
-  [docs/ai-integration.md](docs/ai-integration.md).
+  [docs/ai-integration.md](ai-integration.md).
 - **Chart interactivity** — tooltips, legend toggling, zoom/pan over the SVG charts.
 - **Forms depth** — array / nested / conditional fields.
 - **Breadth tail** — a handful of leaves still worth adding (FAB/SpeedDial, Mention,

@@ -4,7 +4,7 @@
 
 ## Context
 
-The enterprise component wishlist (see [ROADMAP.md](../../ROADMAP.md)) is ~120
+The enterprise component wishlist (see [ROADMAP.md](../ROADMAP.md)) is ~120
 components, but roughly 80% of them reduce to a dozen shared behaviors: anchor
 positioning, a dismiss layer, focus trapping, roving-tabindex list navigation,
 selection/collection state, virtualization, a data query pipeline, drag-and-drop,

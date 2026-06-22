@@ -29,9 +29,9 @@ server.
 | **AI-callable, securely** | One `[DxFormModel]` is both a form a person fills and a tool an assistant calls — served over the **Model Context Protocol**, gated by authorization, audited, and with sensitive fields kept out of the AI's reach. See [docs/ai-integration.md](docs/ai-integration.md). |
 | **Readable forever** | Every source file is capped at **1000 lines**, enforced at build time. |
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for the full blueprint,
-[COMPONENTS.md](COMPONENTS.md) for the component catalog,
-[docs/adr](docs/adr) for the decisions behind it, and [ROADMAP.md](ROADMAP.md) for what
+See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full blueprint,
+[COMPONENTS.md](docs/COMPONENTS.md) for the component catalog,
+[docs/adr](docs/adr) for the decisions behind it, and [ROADMAP.md](docs/ROADMAP.md) for what
 "complete" means and what is still ahead.
 
 **Live showcase:** [blazordx.com](https://blazordx.com) — every component, the docs, and the
@@ -117,7 +117,7 @@ across Chromium, Firefox, and WebKit (GitHub Actions format; adapt for your CI h
 Then open the printed URL. The **DataGrid** page shows 100,000 rows, virtualized to
 the viewport, sorted/filtered/aggregated by the Rust WASM module, with row
 selection, inline edit, column reorder/resize, and pinned columns. The nav links to
-every other component's demo — see [COMPONENTS.md](COMPONENTS.md).
+every other component's demo — see [COMPONENTS.md](docs/COMPONENTS.md).
 
 ## Status
 
@@ -125,7 +125,7 @@ BlazorDX spans **~95 components** across overlays, inputs, navigation, the data-
 family (flat / tree / pivot, with server-side data and grouping), data visualization,
 scheduling (calendar / Gantt), editors (Markdown / WYSIWYG), files, forms (rendered from one
 model that doubles as an AI/MCP tool), and an AI chat surface — every one built on the shared
-headless engine and verified in a real browser. See [COMPONENTS.md](COMPONENTS.md) for the
+headless engine and verified in a real browser. See [COMPONENTS.md](docs/COMPONENTS.md) for the
 full catalog.
 
 - **Tests:** bUnit + compute + analyzer suites green, plus the Rust crate's own unit
@@ -148,9 +148,9 @@ paid tiers gating the code, no runtime license checks. Use it in commercial prod
 without restriction.
 
 Sustaining the project and serving teams that need more than community help is funded
-through **optional support**, not by locking the code — see **[SUPPORT.md](SUPPORT.md)**
+through **optional support**, not by locking the code — see **[SUPPORT.md](.github/SUPPORT.md)**
 for community help, sponsorship, and commercial support / SLA / consulting options.
-Security reports: **[SECURITY.md](SECURITY.md)**.
+Security reports: **[SECURITY.md](.github/SECURITY.md)**.
 
 ---
 
