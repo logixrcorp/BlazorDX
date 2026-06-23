@@ -5,33 +5,61 @@
 @inject NavigationManager Nav
 @inject ToastService Toasts
 
-<PageTitle>TicketDesk — New ticket</PageTitle>
+<PageTitle>Service Desk — New record</PageTitle>
 
 <div class="td-head">
     <div>
-        <h1>New ticket</h1>
-        <p>Rendered by <code>DxForm</code> from one <code>[DxFormModel]</code> — the same model is also an MCP/AI tool (<code>create_ticket</code>). Enum fields become dropdowns; validation comes from DataAnnotations.</p>
+        <h1>New record</h1>
+        <p>One <code>[DxFormModel]</code> renders this form, validates it, and is the <code>open_record</code> MCP/AI tool. Priority is <strong>derived</strong> from Impact × Urgency — see the matrix.</p>
     </div>
 </div>
 
-<div style="max-width:640px">
-    <div class="td-card">
-        <DxForm TModel="NewTicket" Model="model" Descriptor="descriptor" ValidateOnChange="true"
-                OnValidSubmit="Submit" SubmitText="Create ticket">
-            <DxFormSection Title="What's the issue?">
-                <DxFormField Name="Title" />
-                <DxFormField Name="Description" />
-            </DxFormSection>
-            <DxFormSection Title="Triage">
-                <DxFormGrid Columns="2">
-                    <DxFormField Name="Priority" />
-                    <DxFormField Name="Category" />
-                    <DxFormField Name="Requester" />
-                    <DxFormField Name="Assignee" />
-                </DxFormGrid>
-            </DxFormSection>
-        </DxForm>
+<div class="td-detail">
+    <div class="td-detail-main" style="max-width:640px">
+        <div class="td-card">
+            <DxForm TModel="NewTicket" Model="model" Descriptor="descriptor" ValidateOnChange="true"
+                    OnValidSubmit="Submit" SubmitText="Create record">
+                <DxFormSection Title="Record">
+                    <DxFormField Name="Type" />
+                    <DxFormField Name="ShortDescription" />
+                    <DxFormField Name="Description" />
+                </DxFormSection>
+                <DxFormSection Title="Prioritization &amp; routing">
+                    <DxFormGrid Columns="2">
+                        <DxFormField Name="Impact" />
+                        <DxFormField Name="Urgency" />
+                        <DxFormField Name="Requester" />
+                        <DxFormField Name="ConfigItem" />
+                    </DxFormGrid>
+                </DxFormSection>
+            </DxForm>
+        </div>
     </div>
+
+    <aside class="td-side">
+        <div class="td-card">
+            <h2>Priority matrix</h2>
+            <table class="td-matrix-table">
+                <thead>
+                    <tr><th></th><th>U: High</th><th>Med</th><th>Low</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (Impact imp in new[] { Impact.High, Impact.Medium, Impact.Low })
+                    {
+                        <tr>
+                            <th>I: @imp</th>
+                            @foreach (Urgency urg in new[] { Urgency.High, Urgency.Medium, Urgency.Low })
+                            {
+                                Priority p = PriorityMatrix.Compute(imp, urg);
+                                <td><span class="@ItilUi.PriorityClass(p)">P@((int)p)</span></td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <p class="dx-demo-meta" style="margin-top:10px">SLA targets follow the resulting priority (P1 = 4 h to resolve … P5 = 120 h).</p>
+        </div>
+    </aside>
 </div>
 
 <DxToastHost />
@@ -43,7 +71,7 @@
     private void Submit(NewTicket form)
     {
         Ticket created = Store.Add(form);
-        Toasts.Show($"Ticket #{created.Id} created.", "success");
-        Nav.NavigateTo($"/app/ticket/{created.Id}");
+        Toasts.Show($"{created.Number} created.", "success");
+        Nav.NavigateTo($"/app/record/{created.Id}");
     }
 }

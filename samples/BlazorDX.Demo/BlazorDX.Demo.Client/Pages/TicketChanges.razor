@@ -1,0 +1,59 @@
+@page "/app/changes"
+@layout TicketDeskLayout
+@rendermode InteractiveWebAssembly
+@inject TicketStore Store
+@inject ToastService Toasts
+
+<PageTitle>Service Desk — Changes</PageTitle>
+
+<div class="td-head">
+    <div>
+        <h1>Change pipeline</h1>
+        <p>The change (CAB) workflow as a board — drag a change between states. Native HTML5 drag, no JavaScript. Closed/cancelled changes drop off.</p>
+    </div>
+    <a class="td-btn td-btn-primary" href="/app/new">＋ New record</a>
+</div>
+
+<DxKanban Columns="columns" OnChange="OnBoardChange" />
+
+<DxToastHost />
+
+@code {
+    private readonly List<KanbanColumn> columns = new();
+    private readonly Dictionary<KanbanCard, int> cardToId = new();
+
+    private static readonly ServiceState[] Pipeline =
+        { ServiceState.New, ServiceState.Assess, ServiceState.Authorize, ServiceState.Scheduled, ServiceState.Implement, ServiceState.Review };
+
+    protected override void OnInitialized()
+    {
+        foreach (ServiceState st in Pipeline)
+        {
+            KanbanColumn col = new(ItilUi.StateLabel(st));
+            foreach (Ticket t in Store.ChangesInState(st))
+            {
+                KanbanCard card = new($"{t.Number} · {t.ShortDescription}", ItilUi.PriorityLabel(t.Priority));
+                col.Cards.Add(card);
+                cardToId[card] = t.Id;
+            }
+
+            columns.Add(col);
+        }
+    }
+
+    private void OnBoardChange()
+    {
+        for (int i = 0; i < columns.Count; i++)
+        {
+            foreach (KanbanCard card in columns[i].Cards)
+            {
+                if (cardToId.TryGetValue(card, out int id))
+                {
+                    Store.Transition(id, Pipeline[i]);
+                }
+            }
+        }
+
+        Toasts.Show("Change pipeline updated.", "success");
+    }
+}

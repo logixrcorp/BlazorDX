@@ -1,0 +1,31 @@
+@page "/app/kb"
+@layout TicketDeskLayout
+@rendermode InteractiveWebAssembly
+@inject TicketStore Store
+
+<PageTitle>Service Desk — Knowledge</PageTitle>
+
+<div class="td-head">
+    <div>
+        <h1>Knowledge base</h1>
+        <p>Workarounds, how-tos, and known errors — the deflection layer in front of the queues.</p>
+    </div>
+</div>
+
+<div style="max-width:760px; display:flex; flex-direction:column; gap:8px">
+    @foreach (KnowledgeArticle a in Store.Articles)
+    {
+        <details class="td-kb">
+            <summary>
+                <span class="td-row-id">@a.Number</span>
+                <strong>@a.Title</strong>
+                <span class="td-badge td-pri-low">@a.Category</span>
+            </summary>
+            <p style="margin:10px 0 4px; line-height:1.6; color:#334155">@a.Body</p>
+            @if (a.RelatedCi is not null)
+            {
+                <p class="dx-demo-meta" style="margin:0">Related CI: <strong>@a.RelatedCi</strong></p>
+            }
+        </details>
+    }
+</div>

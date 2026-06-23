@@ -622,3 +622,61 @@ body {
     .td-main { padding: 18px 16px 40px; }
     .td-detail { grid-template-columns: 1fr; }
 }
+
+/* ---- ITIL service desk: badges, tabs, SLA bar, matrix, CMDB ---- */
+/* Priority (P1..P5) */
+.td-pri-critical { background: #fee2e2; color: #b91c1c; }
+.td-pri-high     { background: #ffedd5; color: #c2410c; }
+.td-pri-moderate { background: #e0f2fe; color: #0369a1; }
+.td-pri-planning { background: #ede9fe; color: #6d28d9; }
+/* Record type */
+.td-type-incident       { background: #fef2f2; color: #b91c1c; }
+.td-type-servicerequest { background: #eff6ff; color: #1d4ed8; }
+.td-type-problem        { background: #fefce8; color: #a16207; }
+.td-type-change         { background: #f0fdf4; color: #15803d; }
+/* Workflow state */
+.td-state-new       { background: #e0f2fe; color: #0369a1; }
+.td-state-active    { background: #fef3c7; color: #b45309; }
+.td-state-hold      { background: #f1f5f9; color: #475569; }
+.td-state-resolved  { background: #dcfce7; color: #15803d; }
+.td-state-closed    { background: #e2e8f0; color: #475569; }
+.td-state-cancelled { background: #fee2e2; color: #b91c1c; }
+/* SLA badge */
+.td-sla-ok     { background: #dcfce7; color: #15803d; }
+.td-sla-breach { background: #fee2e2; color: #b91c1c; }
+.td-sla-met    { background: #e2e8f0; color: #475569; }
+/* CI health */
+.td-ci-operational { background: #dcfce7; color: #15803d; }
+.td-ci-degraded    { background: #fef3c7; color: #b45309; }
+.td-ci-down        { background: #fee2e2; color: #b91c1c; }
+.td-ci-maintenance { background: #e0f2fe; color: #0369a1; }
+
+/* Practice tabs */
+.td-tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid #e2e8f0; margin-bottom: 16px; }
+.td-tab { padding: 8px 14px; color: #475569; text-decoration: none; font-size: 14px; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.td-tab:hover { color: #1e293b; }
+.td-tab.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 600; }
+
+/* SLA progress bar */
+.td-sla { margin: 6px 0 16px; }
+.td-sla-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 12px; color: #64748b; margin-bottom: 5px; }
+.td-sla-bar { height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
+.td-sla-fill { height: 100%; border-radius: 999px; transition: width .3s; }
+.td-sla-good { background: #16a34a; }
+.td-sla-warn { background: #d97706; }
+.td-sla-over { background: #dc2626; }
+
+/* Priority derivation note + matrix table */
+.td-matrix { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; font-size: 13.5px; color: #475569; margin-bottom: 16px; }
+.td-matrix-table { border-collapse: collapse; font-size: 12px; width: 100%; }
+.td-matrix-table th, .td-matrix-table td { padding: 5px 6px; text-align: center; }
+.td-matrix-table thead th { color: #64748b; font-weight: 600; }
+.td-matrix-table tbody th { text-align: right; color: #475569; font-weight: 600; white-space: nowrap; }
+
+/* CMDB grid + internal work note */
+.td-cigrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.td-note-internal { background: #fffbeb; border-color: #fde68a; }
+
+/* Knowledge base disclosures */
+.td-kb { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; }
+.td-kb summary { cursor: pointer; display: flex; gap: 10px; align-items: center; font-size: 14px; }

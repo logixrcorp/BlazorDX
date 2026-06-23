@@ -1,0 +1,45 @@
+@page "/app/cmdb"
+@layout TicketDeskLayout
+@rendermode InteractiveWebAssembly
+@inject TicketStore Store
+
+<PageTitle>Service Desk — CMDB</PageTitle>
+
+<div class="td-head">
+    <div>
+        <h1>CMDB</h1>
+        <p>Configuration items and the records affecting each — the service map behind the tickets.</p>
+    </div>
+</div>
+
+<div class="td-cigrid">
+    @foreach (ConfigurationItem ci in Store.Cis)
+    {
+        IReadOnlyList<Ticket> recs = Store.RecordsForCi(ci.Name);
+        int open = recs.Count(r => !r.IsResolved);
+        <div class="td-card">
+            <div style="display:flex; justify-content:space-between; align-items:start; gap:8px">
+                <div>
+                    <h3 style="margin:0; font-size:15px">@ci.Name</h3>
+                    <span class="dx-demo-meta">@ci.Type · @ci.Owner</span>
+                </div>
+                <span class="@ItilUi.CiHealthClass(ci.Health)">@ci.Health</span>
+            </div>
+            <p class="dx-demo-meta" style="margin:10px 0 6px"><strong>@open</strong> open · @recs.Count total record(s)</p>
+            <div class="td-list">
+                @foreach (Ticket r in recs.Take(4))
+                {
+                    <a class="td-row" href="@($"/app/record/{r.Id}")">
+                        <span class="td-row-id">@r.Number</span>
+                        <span class="td-row-title">@r.ShortDescription</span>
+                        <span class="td-row-meta"><span class="@ItilUi.PriorityClass(r.Priority)">P@((int)r.Priority)</span></span>
+                    </a>
+                }
+                @if (recs.Count == 0)
+                {
+                    <span class="dx-demo-meta" style="padding:6px 12px">No records.</span>
+                }
+            </div>
+        </div>
+    }
+</div>

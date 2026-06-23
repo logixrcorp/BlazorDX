@@ -1,18 +1,27 @@
-@page "/app/tickets"
+@page "/app/records"
+@page "/app/records/{TypeName}"
 @layout TicketDeskLayout
 @rendermode InteractiveWebAssembly
 @using BlazorDX.Primitives.Grid
 @inject TicketStore Store
 @inject NavigationManager Nav
 
-<PageTitle>TicketDesk — Tickets</PageTitle>
+<PageTitle>Service Desk — @Heading</PageTitle>
 
 <div class="td-head">
     <div>
-        <h1>Tickets</h1>
-        <p>The BlazorDX DataGrid: sort, filter, choose columns, and export to CSV / Excel / PDF. Select a row to open it.</p>
+        <h1>@Heading</h1>
+        <p>BlazorDX DataGrid: sort, filter, choose columns, export to CSV / Excel / PDF. Select a row to open it.</p>
     </div>
-    <a class="td-btn td-btn-primary" href="/app/new">＋ New ticket</a>
+    <a class="td-btn td-btn-primary" href="/app/new">＋ New record</a>
+</div>
+
+<div class="td-tabs">
+    <a class="td-tab @(Filter is null ? "active" : "")" href="/app/records">All</a>
+    <a class="td-tab @(Filter == RecordType.Incident ? "active" : "")" href="/app/records/incident">Incidents</a>
+    <a class="td-tab @(Filter == RecordType.ServiceRequest ? "active" : "")" href="/app/records/request">Requests</a>
+    <a class="td-tab @(Filter == RecordType.Problem ? "active" : "")" href="/app/records/problem">Problems</a>
+    <a class="td-tab" href="/app/changes">Changes ↗</a>
 </div>
 
 <DxDataGrid TRow="TicketRow"
@@ -23,29 +32,42 @@
             ShowColumnChooser="true"
             ShowFilterMenu="true"
             ShowExport="true"
-            ExportFileName="tickets.csv"
+            ExportFileName="records.csv"
             ShowExcelExport="true"
-            ExcelFileName="tickets.xlsx"
+            ExcelFileName="records.xlsx"
             ShowPdfExport="true"
-            PdfFileName="tickets.pdf"
+            PdfFileName="records.pdf"
             ShowClipboard="true"
             KeyboardNavigation="true"
             PinnedColumns="1"
             SelectionChanged="OnSelectionChanged"
             RowHeight="34"
-            ViewportHeight="540" />
+            ViewportHeight="520" />
 
 @code {
+    [Parameter] public string? TypeName { get; set; }
+
     private readonly TicketRowGridAccessor accessor = new();
     private IReadOnlyList<TicketRow> rows = [];
 
-    protected override void OnInitialized() => rows = Store.Rows();
+    private RecordType? Filter => TypeName?.ToLowerInvariant() switch
+    {
+        "incident" => RecordType.Incident,
+        "request" or "servicerequest" => RecordType.ServiceRequest,
+        "problem" => RecordType.Problem,
+        "change" => RecordType.Change,
+        _ => null,
+    };
+
+    private string Heading => Filter is null ? "All records" : ItilUi.TypeLabel(Filter.Value) + "s";
+
+    protected override void OnParametersSet() => rows = Store.Rows(Filter);
 
     private void OnSelectionChanged(IReadOnlyList<TicketRow> selected)
     {
         if (selected.Count > 0)
         {
-            Nav.NavigateTo($"/app/ticket/{selected[^1].Id}");
+            Nav.NavigateTo($"/app/record/{selected[^1].Id}");
         }
     }
 }

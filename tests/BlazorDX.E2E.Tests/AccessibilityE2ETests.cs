@@ -17,10 +17,12 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
     [SkippableTheory]
     [InlineData("/")]
     [InlineData("/app")]
-    [InlineData("/app/tickets")]
-    [InlineData("/app/board")]
+    [InlineData("/app/records")]
+    [InlineData("/app/changes")]
+    [InlineData("/app/cmdb")]
+    [InlineData("/app/kb")]
     [InlineData("/app/new")]
-    [InlineData("/app/ticket/1")]
+    [InlineData("/app/record/1")]
     public async Task Page_has_no_serious_axe_violations(string route)
     {
         Skip.IfNot(fx.Ready, fx.SkipReason);

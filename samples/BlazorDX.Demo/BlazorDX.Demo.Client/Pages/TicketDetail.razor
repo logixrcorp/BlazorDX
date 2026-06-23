@@ -1,64 +1,94 @@
-@page "/app/ticket/{Id:int}"
+@page "/app/record/{Id:int}"
 @layout TicketDeskLayout
 @rendermode InteractiveWebAssembly
 @inject TicketStore Store
 @inject ToastService Toasts
 
-<PageTitle>TicketDesk — Ticket #@Id</PageTitle>
+<PageTitle>Service Desk — @(ticket?.Number ?? "Record")</PageTitle>
 
 @if (ticket is null)
 {
-    <div class="td-head"><div><h1>Ticket not found</h1><p>There is no ticket #@Id.</p></div></div>
-    <a class="td-btn" href="/app/tickets">← All tickets</a>
+    <div class="td-head"><div><h1>Record not found</h1><p>There is no record #@Id.</p></div></div>
+    <a class="td-btn" href="/app/records">← All records</a>
 }
 else
 {
     <div class="td-head">
         <div>
-            <p style="margin:0 0 4px"><a href="/app/tickets" style="color:#2563eb;text-decoration:none">← Tickets</a></p>
-            <h1>#@ticket.Id · @ticket.Title</h1>
+            <p style="margin:0 0 4px"><a href="/app/records" style="color:#2563eb;text-decoration:none">← Records</a></p>
+            <h1><span style="font-family:ui-monospace,Consolas,monospace;color:#64748b">@ticket.Number</span> · @ticket.ShortDescription</h1>
         </div>
     </div>
 
     <div class="td-detail">
         <div class="td-detail-main">
             <div class="td-meta-row">
-                <span class="@TicketUi.StatusClass(ticket.Status)">@TicketUi.Label(ticket.Status)</span>
-                <span class="@TicketUi.PriorityClass(ticket.Priority)">@ticket.Priority priority</span>
-                <span class="td-badge td-pri-low">@ticket.Category</span>
+                <span class="@ItilUi.TypeClass(ticket.Type)">@ItilUi.TypeLabel(ticket.Type)</span>
+                <span class="@ItilUi.PriorityClass(ticket.Priority)">@ItilUi.PriorityLabel(ticket.Priority)</span>
+                <span class="@ItilUi.StateClass(ticket.State)">@ItilUi.StateLabel(ticket.State)</span>
+                <span class="@ItilUi.SlaClass(ticket)">SLA: @ItilUi.SlaLabel(ticket)</span>
+            </div>
+
+            <div class="td-sla">
+                <div class="td-sla-head">
+                    <span>Resolution SLA — @ticket.Sla.ResolveHours.ToString("0.##") h target</span>
+                    <span>@(ticket.IsResolved ? "resolved" : $"{ticket.SlaConsumedPercent:0}% elapsed · due {ticket.ResolveDueAt:MMM d, HH:mm}")</span>
+                </div>
+                <div class="td-sla-bar"><div class="td-sla-fill @SlaFillClass" style="width:@($"{ticket.SlaConsumedPercent:0}%")"></div></div>
             </div>
 
             <div class="td-desc">@ticket.Description</div>
 
+            <div class="td-matrix">
+                <strong>Priority = Impact × Urgency.</strong>
+                Impact <b>@ticket.Impact</b> × Urgency <b>@ticket.Urgency</b> →
+                <span class="@ItilUi.PriorityClass(ticket.Priority)">@ItilUi.PriorityLabel(ticket.Priority)</span>
+            </div>
+
+            @if (ticket.Type == RecordType.Change && ticket.Approval == ApprovalState.Requested)
+            {
+                <div class="td-actions">
+                    <span style="font-size:13px;color:#64748b;align-self:center;margin-right:4px">CAB approval:</span>
+                    <button class="td-btn td-btn-primary" @onclick="() => Approve(true)">Approve change</button>
+                    <button class="td-btn" @onclick="() => Approve(false)">Reject</button>
+                </div>
+            }
+
             <div class="td-actions">
-                <span style="font-size:13px;color:#64748b;align-self:center;margin-right:4px">Set status:</span>
-                @foreach (TicketStatus s in TicketUi.Statuses)
+                <span style="font-size:13px;color:#64748b;align-self:center;margin-right:4px">Move to:</span>
+                @foreach (ServiceState s in Workflow.StatesFor(ticket.Type))
                 {
-                    <button class="td-btn @(ticket.Status == s ? "td-btn-primary" : "")" @onclick="() => ChangeStatus(s)">@TicketUi.Label(s)</button>
+                    @if (s != ticket.State)
+                    {
+                        <button class="td-btn" @onclick="() => Move(s)">@ItilUi.StateLabel(s)</button>
+                    }
                 }
             </div>
 
             <div class="td-comments">
-                <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:#475569">Activity (@ticket.Comments.Count)</h2>
-                @if (ticket.Comments.Count == 0)
+                <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:#475569">Activity (@ticket.Notes.Count)</h2>
+                @if (ticket.Notes.Count == 0)
                 {
-                    <p class="dx-demo-meta">No comments yet — start the thread below.</p>
+                    <p class="dx-demo-meta">No activity yet — add a work note or comment below.</p>
                 }
-                @foreach (TicketComment c in ticket.Comments)
+                @foreach (WorkNote n in ticket.Notes)
                 {
-                    <div class="td-comment">
+                    <div class="td-comment @(n.Internal ? "td-note-internal" : "")">
                         <div class="td-comment-head">
-                            <span class="td-comment-author">@c.Author</span>
-                            <span class="td-comment-time">@c.At.ToString("MMM d, HH:mm")</span>
+                            <span class="td-comment-author">@n.Author @(n.Internal ? "· work note" : "· comment")</span>
+                            <span class="td-comment-time">@n.At.ToString("MMM d, HH:mm")</span>
                         </div>
-                        <div class="td-comment-body">@c.Body</div>
+                        <div class="td-comment-body">@n.Body</div>
                     </div>
                 }
                 <div class="td-comment-form">
                     <input class="dx-demo-input" placeholder="Your name" @bind="author" />
-                    <textarea rows="3" placeholder="Add a comment…" @bind="commentBody" @bind:event="oninput"></textarea>
-                    <div>
-                        <button class="td-btn td-btn-primary" @onclick="AddComment" disabled="@string.IsNullOrWhiteSpace(commentBody)">Comment</button>
+                    <textarea rows="3" placeholder="Add a note…" @bind="noteBody" @bind:event="oninput"></textarea>
+                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+                        <label style="font-size:13px; color:#475569; display:flex; gap:6px; align-items:center">
+                            <input type="checkbox" @bind="internalNote" /> Internal work note
+                        </label>
+                        <button class="td-btn td-btn-primary" @onclick="AddNote" disabled="@string.IsNullOrWhiteSpace(noteBody)">Post</button>
                     </div>
                 </div>
             </div>
@@ -69,12 +99,52 @@ else
                 <h2>Details</h2>
                 <dl>
                     <dt>Requester</dt><dd>@ticket.Requester</dd>
-                    <dt>Assignee</dt><dd>@ticket.Assignee</dd>
-                    <dt>Category</dt><dd>@ticket.Category</dd>
-                    <dt>Created</dt><dd>@ticket.Created.ToString("MMM d")</dd>
+                    <dt>Group</dt><dd>@ticket.AssignmentGroup</dd>
+                    <dt>Assigned</dt><dd>@ticket.AssignedTo</dd>
+                    <dt>CI</dt><dd>@(ticket.ConfigItem ?? "—")</dd>
+                    <dt>Opened</dt><dd>@ticket.Opened.ToString("MMM d, HH:mm")</dd>
                     <dt>Updated</dt><dd>@ticket.Updated.ToString("MMM d, HH:mm")</dd>
                 </dl>
             </div>
+
+            @if (ticket.Type == RecordType.Change)
+            {
+                <div class="td-card" style="margin-top:12px">
+                    <h2>Change</h2>
+                    <dl>
+                        <dt>Type</dt><dd>@ticket.ChangeType</dd>
+                        <dt>Risk</dt><dd>@ticket.Risk</dd>
+                        <dt>Approval</dt><dd>@ticket.Approval</dd>
+                        <dt>Planned</dt><dd>@(ticket.PlannedStart?.ToString("MMM d, HH:mm") ?? "—")</dd>
+                    </dl>
+                </div>
+            }
+
+            @if (ticket.Type == RecordType.Problem)
+            {
+                <div class="td-card" style="margin-top:12px">
+                    <h2>Problem</h2>
+                    <dl>
+                        <dt>Known error</dt><dd>@(ticket.KnownError ? "Yes" : "No")</dd>
+                    </dl>
+                    @if (!string.IsNullOrWhiteSpace(ticket.Workaround))
+                    {
+                        <p class="dx-demo-meta" style="margin-top:8px"><strong>Workaround:</strong> @ticket.Workaround</p>
+                    }
+                </div>
+            }
+
+            @if (ticket.RelatedProblem is not null)
+            {
+                <div class="td-card" style="margin-top:12px">
+                    <h2>Related</h2>
+                    @{ var prob = Store.ByNumber(ticket.RelatedProblem); }
+                    @if (prob is not null)
+                    {
+                        <a class="td-row" href="@($"/app/record/{prob.Id}")"><span class="td-row-id">@prob.Number</span><span class="td-row-title">@prob.ShortDescription</span></a>
+                    }
+                </div>
+            }
         </aside>
     </div>
 }
@@ -86,30 +156,45 @@ else
 
     private Ticket? ticket;
     private string author = string.Empty;
-    private string commentBody = string.Empty;
+    private string noteBody = string.Empty;
+    private bool internalNote = true;
+
+    private string SlaFillClass =>
+        ticket is null ? "" : ticket.SlaBreached ? "td-sla-over" : ticket.SlaConsumedPercent >= 70 ? "td-sla-warn" : "td-sla-good";
 
     protected override void OnParametersSet() => ticket = Store.Get(Id);
 
-    private void ChangeStatus(TicketStatus s)
+    private void Move(ServiceState s)
     {
         if (ticket is null)
         {
             return;
         }
 
-        Store.SetStatus(ticket.Id, s);
-        Toasts.Show($"Status set to {TicketUi.Label(s)}.", "success");
+        Store.Transition(ticket.Id, s);
+        Toasts.Show($"State → {ItilUi.StateLabel(s)}.", "success");
     }
 
-    private void AddComment()
+    private void Approve(bool approved)
     {
-        if (ticket is null || string.IsNullOrWhiteSpace(commentBody))
+        if (ticket is null)
         {
             return;
         }
 
-        Store.AddComment(ticket.Id, author, commentBody);
-        commentBody = string.Empty;
-        Toasts.Show("Comment added.", "success");
+        Store.Approve(ticket.Id, approved);
+        Toasts.Show(approved ? "Change approved — scheduled." : "Change rejected.", approved ? "success" : "warning");
+    }
+
+    private void AddNote()
+    {
+        if (ticket is null || string.IsNullOrWhiteSpace(noteBody))
+        {
+            return;
+        }
+
+        Store.AddNote(ticket.Id, author, noteBody, internalNote);
+        noteBody = string.Empty;
+        Toasts.Show("Activity added.", "success");
     }
 }

@@ -4,36 +4,38 @@ using BlazorDX.Primitives.Forms;
 namespace BlazorDX.Demo.Client.TicketDesk;
 
 /// <summary>
-/// The "open a ticket" form. One class-level <c>[DxFormModel]</c> over ordinary
-/// DataAnnotations makes it a rendered <c>DxForm</c>, a validation contract, AND an
-/// MCP/AI tool (<c>create_ticket</c>) — the same model a person fills or an assistant calls.
-/// Enum fields render as dropdowns automatically.
+/// ITIL record intake. One <c>[DxFormModel]</c> renders the form, validates it, AND projects an
+/// <c>open_record</c> MCP/AI tool. Note it captures <b>Impact</b> and <b>Urgency</b> — never
+/// Priority, which ITIL derives from them. Enum fields render as dropdowns automatically.
 /// </summary>
-[DxFormModel(Name = "create_ticket", Description = "Open a new support ticket.")]
+[DxFormModel(Name = "open_record", Description = "Open an ITIL service record (incident, request, problem, or change).")]
 public sealed class NewTicket
 {
-    [Required]
-    [StringLength(80, MinimumLength = 4)]
-    [Display(Name = "Title", Description = "A short, specific summary.", Order = 0, Prompt = "e.g. Login button does nothing on Safari")]
-    public string Title { get; set; } = string.Empty;
+    [Display(Name = "Record type", Description = "Which ITIL practice this belongs to.", Order = 0)]
+    public RecordType Type { get; set; } = RecordType.Incident;
 
     [Required]
-    [StringLength(2000, MinimumLength = 10)]
-    [Display(Name = "Description", Description = "What happened, and how to reproduce it.", Order = 1, Prompt = "Steps, expected vs actual…")]
+    [StringLength(100, MinimumLength = 5)]
+    [Display(Name = "Short description", Order = 1, Prompt = "One-line summary")]
+    public string ShortDescription { get; set; } = string.Empty;
+
+    [Required]
+    [StringLength(4000, MinimumLength = 10)]
+    [Display(Name = "Description", Order = 2, Prompt = "Details, steps, expected vs actual…")]
     public string Description { get; set; } = string.Empty;
 
-    [Display(Name = "Priority", Order = 2)]
-    public TicketPriority Priority { get; set; } = TicketPriority.Medium;
+    [Display(Name = "Impact", Description = "How widely is it felt?", Order = 3)]
+    public Impact Impact { get; set; } = Impact.Medium;
 
-    [Display(Name = "Category", Order = 3)]
-    public TicketCategory Category { get; set; } = TicketCategory.Bug;
+    [Display(Name = "Urgency", Description = "How fast must it be resolved?", Order = 4)]
+    public Urgency Urgency { get; set; } = Urgency.Medium;
 
     [Required]
     [StringLength(60)]
-    [Display(Name = "Requester", Description = "Who is reporting this.", Order = 4, Prompt = "Your name")]
+    [Display(Name = "Requester", Order = 5, Prompt = "Your name")]
     public string Requester { get; set; } = string.Empty;
 
     [StringLength(60)]
-    [Display(Name = "Assignee", Description = "Leave as Unassigned to triage later.", Order = 5)]
-    public string Assignee { get; set; } = "Unassigned";
+    [Display(Name = "Configuration item (CI)", Description = "Affected service or asset.", Order = 6, Prompt = "e.g. Email Service")]
+    public string ConfigItem { get; set; } = string.Empty;
 }

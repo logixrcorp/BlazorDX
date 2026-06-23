@@ -3,49 +3,57 @@
 @rendermode InteractiveWebAssembly
 @inject TicketStore Store
 
-<PageTitle>TicketDesk — Dashboard</PageTitle>
+<PageTitle>Service Desk — Dashboard</PageTitle>
 
 <div class="td-head">
     <div>
-        <h1>Dashboard</h1>
-        <p>@Store.All().Count tickets · a BlazorDX DataGrid, Kanban, charts, and a source-generated form, wired into one app.</p>
+        <h1>Service Desk</h1>
+        <p>ITIL incidents, requests, problems &amp; changes — priority from the Impact × Urgency matrix, with live SLA tracking.</p>
     </div>
-    <a class="td-btn td-btn-primary" href="/app/new">＋ New ticket</a>
+    <a class="td-btn td-btn-primary" href="/app/new">＋ New record</a>
 </div>
 
 <div class="td-stats">
     <div class="td-stat"><div class="td-stat-n">@Store.OpenCount</div><div class="td-stat-l">Open</div></div>
-    <div class="td-stat"><div class="td-stat-n" style="color:#b45309">@Store.Count(TicketStatus.InProgress)</div><div class="td-stat-l">In progress</div></div>
-    <div class="td-stat"><div class="td-stat-n" style="color:#b91c1c">@Store.Count(TicketStatus.Blocked)</div><div class="td-stat-l">Blocked</div></div>
-    <div class="td-stat"><div class="td-stat-n" style="color:#b91c1c">@Store.Count(TicketPriority.Urgent)</div><div class="td-stat-l">Urgent</div></div>
-    <div class="td-stat"><div class="td-stat-n" style="color:#15803d">@Store.ResolutionRate.ToString("0")%</div><div class="td-stat-l">Resolved</div></div>
+    <div class="td-stat"><div class="td-stat-n" style="color:#b91c1c">@Store.SlaBreaches</div><div class="td-stat-l">SLA breached</div></div>
+    <div class="td-stat"><div class="td-stat-n" style="color:#c2410c">@Store.AtRisk</div><div class="td-stat-l">SLA at risk</div></div>
+    <div class="td-stat"><div class="td-stat-n" style="color:#b91c1c">@Store.Count(Priority.Critical)</div><div class="td-stat-l">P1 critical open</div></div>
+    <div class="td-stat"><div class="td-stat-n" style="color:#15803d">@Store.SlaCompliance.ToString("0")%</div><div class="td-stat-l">SLA compliance</div></div>
 </div>
 
 <div class="td-grid2">
     <div class="td-card">
-        <h2>Tickets by status</h2>
-        <DxBarChart Bars="statusBars" Width="420" Height="220" />
+        <h2>Open by priority</h2>
+        <DxBarChart Bars="priorityBars" Width="420" Height="220" />
     </div>
     <div class="td-card">
-        <h2>By priority</h2>
+        <h2>Records by practice</h2>
         <div style="display:flex; gap:24px; align-items:center; flex-wrap:wrap">
-            <DxPieChart Slices="priorityBars" Donut="true" />
-            <DxRadialGauge Value="@Store.ResolutionRate" Label="Resolved %" Size="120" Color="#16a34a" Format="0" />
+            <DxPieChart Slices="typeBars" Donut="true" />
+            <DxRadialGauge Value="@Store.SlaCompliance" Label="SLA %" Size="120" Color="#16a34a" Format="0" />
         </div>
     </div>
 </div>
 
 <div class="td-card" style="margin-top:16px">
-    <h2>Recently updated</h2>
+    <h2>SLA breached &amp; at risk</h2>
+    @{
+        var attention = Store.All().Where(r => !r.IsResolved && (r.SlaBreached || r.SlaConsumedPercent >= 70))
+            .OrderByDescending(r => r.SlaBreached).ThenByDescending(r => r.SlaConsumedPercent).Take(8).ToList();
+    }
+    @if (attention.Count == 0)
+    {
+        <p class="dx-demo-meta">Everything is within SLA. 🎉</p>
+    }
     <div class="td-list">
-        @foreach (Ticket t in Store.All().OrderByDescending(t => t.Updated).Take(7))
+        @foreach (Ticket t in attention)
         {
-            <a class="td-row" href="@($"/app/ticket/{t.Id}")">
-                <span class="td-row-id">#@t.Id</span>
-                <span class="td-row-title">@t.Title</span>
+            <a class="td-row" href="@($"/app/record/{t.Id}")">
+                <span class="td-row-id">@t.Number</span>
+                <span class="td-row-title">@t.ShortDescription</span>
                 <span class="td-row-meta">
-                    <span class="@TicketUi.PriorityClass(t.Priority)">@t.Priority</span>
-                    <span class="@TicketUi.StatusClass(t.Status)">@TicketUi.Label(t.Status)</span>
+                    <span class="@ItilUi.PriorityClass(t.Priority)">@ItilUi.PriorityLabel(t.Priority)</span>
+                    <span class="@ItilUi.SlaClass(t)">@ItilUi.SlaLabel(t)</span>
                 </span>
             </a>
         }
@@ -53,12 +61,12 @@
 </div>
 
 @code {
-    private IReadOnlyList<ChartBar> statusBars = [];
     private IReadOnlyList<ChartBar> priorityBars = [];
+    private IReadOnlyList<ChartBar> typeBars = [];
 
     protected override void OnInitialized()
     {
-        statusBars = TicketUi.Statuses.Select(s => new ChartBar(TicketUi.Label(s), Store.Count(s))).ToList();
-        priorityBars = TicketUi.Priorities.Select(p => new ChartBar(p.ToString(), Store.Count(p))).ToList();
+        priorityBars = ItilUi.Priorities.Select(p => new ChartBar(ItilUi.PriorityLabel(p), Store.Count(p))).ToList();
+        typeBars = ItilUi.Types.Select(t => new ChartBar(ItilUi.TypeLabel(t), Store.OpenOfType(t))).ToList();
     }
 }
