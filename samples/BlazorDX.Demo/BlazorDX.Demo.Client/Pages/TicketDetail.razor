@@ -1,0 +1,115 @@
+@page "/app/ticket/{Id:int}"
+@layout TicketDeskLayout
+@rendermode InteractiveWebAssembly
+@inject TicketStore Store
+@inject ToastService Toasts
+
+<PageTitle>TicketDesk — Ticket #@Id</PageTitle>
+
+@if (ticket is null)
+{
+    <div class="td-head"><div><h1>Ticket not found</h1><p>There is no ticket #@Id.</p></div></div>
+    <a class="td-btn" href="/app/tickets">← All tickets</a>
+}
+else
+{
+    <div class="td-head">
+        <div>
+            <p style="margin:0 0 4px"><a href="/app/tickets" style="color:#2563eb;text-decoration:none">← Tickets</a></p>
+            <h1>#@ticket.Id · @ticket.Title</h1>
+        </div>
+    </div>
+
+    <div class="td-detail">
+        <div class="td-detail-main">
+            <div class="td-meta-row">
+                <span class="@TicketUi.StatusClass(ticket.Status)">@TicketUi.Label(ticket.Status)</span>
+                <span class="@TicketUi.PriorityClass(ticket.Priority)">@ticket.Priority priority</span>
+                <span class="td-badge td-pri-low">@ticket.Category</span>
+            </div>
+
+            <div class="td-desc">@ticket.Description</div>
+
+            <div class="td-actions">
+                <span style="font-size:13px;color:#64748b;align-self:center;margin-right:4px">Set status:</span>
+                @foreach (TicketStatus s in TicketUi.Statuses)
+                {
+                    <button class="td-btn @(ticket.Status == s ? "td-btn-primary" : "")" @onclick="() => ChangeStatus(s)">@TicketUi.Label(s)</button>
+                }
+            </div>
+
+            <div class="td-comments">
+                <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:#475569">Activity (@ticket.Comments.Count)</h2>
+                @if (ticket.Comments.Count == 0)
+                {
+                    <p class="dx-demo-meta">No comments yet — start the thread below.</p>
+                }
+                @foreach (TicketComment c in ticket.Comments)
+                {
+                    <div class="td-comment">
+                        <div class="td-comment-head">
+                            <span class="td-comment-author">@c.Author</span>
+                            <span class="td-comment-time">@c.At.ToString("MMM d, HH:mm")</span>
+                        </div>
+                        <div class="td-comment-body">@c.Body</div>
+                    </div>
+                }
+                <div class="td-comment-form">
+                    <input class="dx-demo-input" placeholder="Your name" @bind="author" />
+                    <textarea rows="3" placeholder="Add a comment…" @bind="commentBody" @bind:event="oninput"></textarea>
+                    <div>
+                        <button class="td-btn td-btn-primary" @onclick="AddComment" disabled="@string.IsNullOrWhiteSpace(commentBody)">Comment</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <aside class="td-side">
+            <div class="td-card">
+                <h2>Details</h2>
+                <dl>
+                    <dt>Requester</dt><dd>@ticket.Requester</dd>
+                    <dt>Assignee</dt><dd>@ticket.Assignee</dd>
+                    <dt>Category</dt><dd>@ticket.Category</dd>
+                    <dt>Created</dt><dd>@ticket.Created.ToString("MMM d")</dd>
+                    <dt>Updated</dt><dd>@ticket.Updated.ToString("MMM d, HH:mm")</dd>
+                </dl>
+            </div>
+        </aside>
+    </div>
+}
+
+<DxToastHost />
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Ticket? ticket;
+    private string author = string.Empty;
+    private string commentBody = string.Empty;
+
+    protected override void OnParametersSet() => ticket = Store.Get(Id);
+
+    private void ChangeStatus(TicketStatus s)
+    {
+        if (ticket is null)
+        {
+            return;
+        }
+
+        Store.SetStatus(ticket.Id, s);
+        Toasts.Show($"Status set to {TicketUi.Label(s)}.", "success");
+    }
+
+    private void AddComment()
+    {
+        if (ticket is null || string.IsNullOrWhiteSpace(commentBody))
+        {
+            return;
+        }
+
+        Store.AddComment(ticket.Id, author, commentBody);
+        commentBody = string.Empty;
+        Toasts.Show("Comment added.", "success");
+    }
+}

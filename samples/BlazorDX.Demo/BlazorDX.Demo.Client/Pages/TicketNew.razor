@@ -1,0 +1,49 @@
+@page "/app/new"
+@layout TicketDeskLayout
+@rendermode InteractiveWebAssembly
+@inject TicketStore Store
+@inject NavigationManager Nav
+@inject ToastService Toasts
+
+<PageTitle>TicketDesk — New ticket</PageTitle>
+
+<div class="td-head">
+    <div>
+        <h1>New ticket</h1>
+        <p>Rendered by <code>DxForm</code> from one <code>[DxFormModel]</code> — the same model is also an MCP/AI tool (<code>create_ticket</code>). Enum fields become dropdowns; validation comes from DataAnnotations.</p>
+    </div>
+</div>
+
+<div style="max-width:640px">
+    <div class="td-card">
+        <DxForm TModel="NewTicket" Model="model" Descriptor="descriptor" ValidateOnChange="true"
+                OnValidSubmit="Submit" SubmitText="Create ticket">
+            <DxFormSection Title="What's the issue?">
+                <DxFormField Name="Title" />
+                <DxFormField Name="Description" />
+            </DxFormSection>
+            <DxFormSection Title="Triage">
+                <DxFormGrid Columns="2">
+                    <DxFormField Name="Priority" />
+                    <DxFormField Name="Category" />
+                    <DxFormField Name="Requester" />
+                    <DxFormField Name="Assignee" />
+                </DxFormGrid>
+            </DxFormSection>
+        </DxForm>
+    </div>
+</div>
+
+<DxToastHost />
+
+@code {
+    private readonly NewTicket model = new();
+    private readonly NewTicketFormModel descriptor = new();
+
+    private void Submit(NewTicket form)
+    {
+        Ticket created = Store.Add(form);
+        Toasts.Show($"Ticket #{created.Id} created.", "success");
+        Nav.NavigateTo($"/app/ticket/{created.Id}");
+    }
+}

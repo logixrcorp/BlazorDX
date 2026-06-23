@@ -1,0 +1,51 @@
+@page "/app/tickets"
+@layout TicketDeskLayout
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Primitives.Grid
+@inject TicketStore Store
+@inject NavigationManager Nav
+
+<PageTitle>TicketDesk — Tickets</PageTitle>
+
+<div class="td-head">
+    <div>
+        <h1>Tickets</h1>
+        <p>The BlazorDX DataGrid: sort, filter, choose columns, and export to CSV / Excel / PDF. Select a row to open it.</p>
+    </div>
+    <a class="td-btn td-btn-primary" href="/app/new">＋ New ticket</a>
+</div>
+
+<DxDataGrid TRow="TicketRow"
+            Items="rows"
+            Accessor="accessor"
+            Selectable="true"
+            Filterable="true"
+            ShowColumnChooser="true"
+            ShowFilterMenu="true"
+            ShowExport="true"
+            ExportFileName="tickets.csv"
+            ShowExcelExport="true"
+            ExcelFileName="tickets.xlsx"
+            ShowPdfExport="true"
+            PdfFileName="tickets.pdf"
+            ShowClipboard="true"
+            KeyboardNavigation="true"
+            PinnedColumns="1"
+            SelectionChanged="OnSelectionChanged"
+            RowHeight="34"
+            ViewportHeight="540" />
+
+@code {
+    private readonly TicketRowGridAccessor accessor = new();
+    private IReadOnlyList<TicketRow> rows = [];
+
+    protected override void OnInitialized() => rows = Store.Rows();
+
+    private void OnSelectionChanged(IReadOnlyList<TicketRow> selected)
+    {
+        if (selected.Count > 0)
+        {
+            Nav.NavigateTo($"/app/ticket/{selected[^1].Id}");
+        }
+    }
+}

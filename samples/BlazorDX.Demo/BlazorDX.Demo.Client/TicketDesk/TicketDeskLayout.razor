@@ -1,0 +1,31 @@
+@inherits LayoutComponentBase
+
+<div class="td-shell">
+    <aside class="td-sidebar">
+        <div class="td-brand">
+            <a class="td-brand-name" href="/app">🎫 TicketDesk</a>
+            <span class="td-brand-sub">a demo app built on <strong>BlazorDX</strong></span>
+        </div>
+
+        <nav class="td-nav">
+            <NavLink class="td-nav-link" href="/app" Match="NavLinkMatch.All">
+                <span class="td-nav-ico">▦</span> Dashboard
+            </NavLink>
+            <NavLink class="td-nav-link" href="/app/tickets">
+                <span class="td-nav-ico">≣</span> Tickets
+            </NavLink>
+            <NavLink class="td-nav-link" href="/app/board">
+                <span class="td-nav-ico">▤</span> Board
+            </NavLink>
+            <NavLink class="td-nav-link td-nav-cta" href="/app/new">
+                <span class="td-nav-ico">＋</span> New ticket
+            </NavLink>
+        </nav>
+
+        <a class="td-back" href="/">← Back to component demos</a>
+    </aside>
+
+    <main class="td-main">
+        @Body
+    </main>
+</div>

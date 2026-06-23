@@ -1,0 +1,64 @@
+@page "/app"
+@layout TicketDeskLayout
+@rendermode InteractiveWebAssembly
+@inject TicketStore Store
+
+<PageTitle>TicketDesk — Dashboard</PageTitle>
+
+<div class="td-head">
+    <div>
+        <h1>Dashboard</h1>
+        <p>@Store.All().Count tickets · a BlazorDX DataGrid, Kanban, charts, and a source-generated form, wired into one app.</p>
+    </div>
+    <a class="td-btn td-btn-primary" href="/app/new">＋ New ticket</a>
+</div>
+
+<div class="td-stats">
+    <div class="td-stat"><div class="td-stat-n">@Store.OpenCount</div><div class="td-stat-l">Open</div></div>
+    <div class="td-stat"><div class="td-stat-n" style="color:#b45309">@Store.Count(TicketStatus.InProgress)</div><div class="td-stat-l">In progress</div></div>
+    <div class="td-stat"><div class="td-stat-n" style="color:#b91c1c">@Store.Count(TicketStatus.Blocked)</div><div class="td-stat-l">Blocked</div></div>
+    <div class="td-stat"><div class="td-stat-n" style="color:#b91c1c">@Store.Count(TicketPriority.Urgent)</div><div class="td-stat-l">Urgent</div></div>
+    <div class="td-stat"><div class="td-stat-n" style="color:#15803d">@Store.ResolutionRate.ToString("0")%</div><div class="td-stat-l">Resolved</div></div>
+</div>
+
+<div class="td-grid2">
+    <div class="td-card">
+        <h2>Tickets by status</h2>
+        <DxBarChart Bars="statusBars" Width="420" Height="220" />
+    </div>
+    <div class="td-card">
+        <h2>By priority</h2>
+        <div style="display:flex; gap:24px; align-items:center; flex-wrap:wrap">
+            <DxPieChart Slices="priorityBars" Donut="true" />
+            <DxRadialGauge Value="@Store.ResolutionRate" Label="Resolved %" Size="120" Color="#16a34a" Format="0" />
+        </div>
+    </div>
+</div>
+
+<div class="td-card" style="margin-top:16px">
+    <h2>Recently updated</h2>
+    <div class="td-list">
+        @foreach (Ticket t in Store.All().OrderByDescending(t => t.Updated).Take(7))
+        {
+            <a class="td-row" href="@($"/app/ticket/{t.Id}")">
+                <span class="td-row-id">#@t.Id</span>
+                <span class="td-row-title">@t.Title</span>
+                <span class="td-row-meta">
+                    <span class="@TicketUi.PriorityClass(t.Priority)">@t.Priority</span>
+                    <span class="@TicketUi.StatusClass(t.Status)">@TicketUi.Label(t.Status)</span>
+                </span>
+            </a>
+        }
+    </div>
+</div>
+
+@code {
+    private IReadOnlyList<ChartBar> statusBars = [];
+    private IReadOnlyList<ChartBar> priorityBars = [];
+
+    protected override void OnInitialized()
+    {
+        statusBars = TicketUi.Statuses.Select(s => new ChartBar(TicketUi.Label(s), Store.Count(s))).ToList();
+        priorityBars = TicketUi.Priorities.Select(p => new ChartBar(p.ToString(), Store.Count(p))).ToList();
+    }
+}
