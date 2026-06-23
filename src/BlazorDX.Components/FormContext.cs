@@ -152,6 +152,7 @@ internal static class FormFieldRenderer
                 b.OpenElement(30, "input");
                 b.AddAttribute(31, "class", "dx-checkbox");
                 b.AddAttribute(32, "type", "checkbox");
+                b.AddAttribute(40, "aria-label", field.Label);
                 b.AddAttribute(33, "checked", value is "true" or "True");
                 b.AddAttribute(34, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(
                     receiver, e => changed.InvokeAsync(e.Value is true ? "true" : "false")));
@@ -163,6 +164,7 @@ internal static class FormFieldRenderer
                 b.AddAttribute(31, "class", "dx-input dx-select-native");
                 b.AddAttribute(32, "value", value);
                 b.AddAttribute(33, "onchange", onText);
+                b.AddAttribute(37, "aria-label", field.Label);
                 if (field.Choices is { } choices)
                 {
                     for (int i = 0; i < choices.Count; i++)
@@ -204,6 +206,7 @@ internal static class FormFieldRenderer
                 b.OpenElement(30, "input");
                 b.AddAttribute(31, "class", "dx-input");
                 b.AddAttribute(32, "type", "date");
+                b.AddAttribute(40, "aria-label", field.Label);
                 b.AddAttribute(38, "value", value);
                 b.AddAttribute(39, "oninput", onText);
                 b.CloseElement();
@@ -223,6 +226,9 @@ internal static class FormFieldRenderer
 
     private static void AddCommon(RenderTreeBuilder b, FormFieldInfo field)
     {
+        // The visible <label> is not associated by id, so give the control its own accessible
+        // name. Without this, screen readers (and axe) see an unlabeled input.
+        b.AddAttribute(40, "aria-label", field.Label);
         if (!string.IsNullOrEmpty(field.Placeholder))
         {
             b.AddAttribute(36, "placeholder", field.Placeholder);

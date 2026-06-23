@@ -77,7 +77,10 @@ enhancements. None of this should be read as "ready"; it is a beta with work ahe
 - **Localization & RTL** — `IStringLocalizer` integration for component-supplied strings
   and a right-to-left layout pass. *Not yet started; a hard requirement for many
   enterprise and international buyers.*
-- **Formal accessibility audit + VPAT** — automated axe checks pass today; lift this to a
+- **Formal accessibility audit + VPAT** — automated **axe-core checks now run in CI**
+  (`AccessibilityE2ETests`, across Chromium/Firefox/WebKit) over the showcase and the
+  TicketDesk demo app, with zero serious/critical violations; wiring this up already caught
+  and fixed real form-labeling and contrast gaps. The remaining work is to lift this to a
   screen-reader audit and an attested **WCAG / VPAT** statement procurement can cite.
 - **Hosted docs site + API reference** — the in-app docs and the
   COMPONENTS/ARCHITECTURE/ADRs are the seed; publish a generated API reference.

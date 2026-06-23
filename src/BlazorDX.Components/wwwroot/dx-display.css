@@ -232,8 +232,10 @@
   align-self: flex-start;
   font-size: 11px;
   font-weight: 600;
-  color: var(--dx-accent, #2563eb);
-  background: color-mix(in srgb, var(--dx-accent, #2563eb) 12%, transparent);
+  /* Darkened toward the foreground so the tag text clears 4.5:1 on its own tint
+     (accent-on-tint-of-accent is otherwise too low-contrast — caught by axe). */
+  color: color-mix(in srgb, var(--dx-accent, #2563eb) 68%, #0f172a);
+  background: color-mix(in srgb, var(--dx-accent, #2563eb) 16%, transparent);
   border-radius: 999px;
   padding: 1px 8px;
 }

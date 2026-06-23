@@ -146,8 +146,11 @@ Each claim lists: **where** it lives · **verify** (do this) · **falsified if**
 - **Verify:** this is the claim we are **least** able to self-attest, and where your
   experience is most valuable. Run a real screen reader (NVDA/VoiceOver) and a
   keyboard-only pass over: DataGrid, Select/ComboBox/Listbox, Dialog/Sheet, Menu,
-  DatePicker, Tabs. Run axe-core against the demo pages. Check focus management on
-  open/close, `aria-*` correctness, and that nothing is mouse-only.
+  DatePicker, Tabs. (axe-core already runs in CI — `AccessibilityE2ETests`, across
+  Chromium/Firefox/WebKit, over the showcase and the TicketDesk demo, with zero
+  serious/critical violations — so spend your time on the manual screen-reader and
+  keyboard passes it can't do.) Check focus management on open/close, `aria-*`
+  correctness, and that nothing is mouse-only.
 - **Falsified if:** keyboard traps, missing/incorrect ARIA, unmanaged focus, or
   components unusable with a screen reader.
 - **Severity:** High — currently self-graded **B**; an external audit is exactly what
