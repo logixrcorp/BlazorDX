@@ -45,7 +45,7 @@ body {
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #64748b;
+    color: #94a3b8;
     font-weight: 700;
 }
 
@@ -64,15 +64,15 @@ body {
 }
 
 /* --- Responsive nav -----------------------------------------------------
-   Desktop: the <details> wrapper is transparent (display:contents) so the
-   links flow inline as before; the hamburger summary is hidden, and the link
-   container is forced visible (!important beats the closed-<details> UA rule).
-   Mobile: the wrapper becomes a real box with a tap-to-open hamburger, and
-   the links stack vertically with larger tap targets. */
-.dx-nav-menu { display: contents; }
+   The links live in a normal <div> that is ALWAYS rendered, so display is
+   controlled purely by author CSS (no fragile override of the closed-<details>
+   UA hiding, which Firefox/Safari don't reliably allow — that hid the menu).
+   Desktop: links inline, hamburger hidden. Mobile: a visually-hidden checkbox
+   toggled by the <label> hamburger reveals the stacked links via :checked. */
+.dx-nav-checkbox { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .dx-nav-toggle { display: none; }
 .dx-nav-links {
-    display: flex !important;
+    display: flex;
     align-items: center;
     flex-wrap: wrap;
     gap: 10px 18px;
@@ -80,11 +80,10 @@ body {
 
 @media (max-width: 760px) {
     .dx-nav { gap: 8px 12px; padding: 10px 16px; }
-    .dx-nav-menu { display: block; margin-left: auto; }
     .dx-nav-toggle {
         display: inline-block;
+        margin-left: auto;
         cursor: pointer;
-        list-style: none;
         color: #e2e8f0;
         font-size: 14px;
         font-weight: 600;
@@ -93,12 +92,12 @@ body {
         border-radius: 6px;
         user-select: none;
     }
-    .dx-nav-toggle::-webkit-details-marker { display: none; }
     .dx-nav-toggle::before { content: "\2630\00a0"; }       /* ☰ */
-    .dx-nav-menu[open] .dx-nav-toggle::before { content: "\2715\00a0"; }  /* ✕ */
-    .dx-nav-links { display: none !important; }
-    .dx-nav-menu[open] .dx-nav-links {
-        display: flex !important;
+    .dx-nav-checkbox:checked ~ .dx-nav-toggle::before { content: "\2715\00a0"; }  /* ✕ */
+    .dx-nav-checkbox:focus-visible ~ .dx-nav-toggle { outline: 2px solid #60a5fa; outline-offset: 2px; }
+    .dx-nav-links { display: none; }
+    .dx-nav-checkbox:checked ~ .dx-nav-links {
+        display: flex;
         flex-direction: column;
         align-items: stretch;
         gap: 2px;
