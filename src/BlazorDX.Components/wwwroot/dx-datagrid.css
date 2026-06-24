@@ -362,13 +362,37 @@
 .dx-grid-chooser-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
+  gap: 4px;
+  padding: 2px 4px;
   border-radius: 6px;
-  cursor: pointer;
   white-space: nowrap;
 }
 .dx-grid-chooser-item:hover { background: var(--dx-surface-alt, #f1f5f9); }
+.dx-grid-chooser-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  padding: 4px;
+  cursor: pointer;
+}
+/* Single-pointer reorder controls — kept at the 24x24 CSS-px minimum (WCAG 2.5.8). */
+.dx-grid-chooser-move {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dx-muted, #64748b);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+}
+.dx-grid-chooser-move:hover { background: var(--dx-surface, #ffffff); color: var(--dx-text, #0f172a); }
+.dx-grid-chooser-move:disabled { opacity: 0.3; cursor: default; }
 
 /* ---- Excel-style value filter menu ---- */
 .dx-grid-funnel {

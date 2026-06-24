@@ -2,6 +2,26 @@
   Layout / content-organization components (Tabs, Accordion). CSS-variable driven.
 */
 
+/* ---- Skip link (WCAG 2.4.1 Bypass Blocks) ---- */
+/* Offscreen until focused; the 24px+ tap target and visible focus appear on focus. */
+.dx-skip-link {
+  position: absolute;
+  left: 8px;
+  top: -48px;
+  z-index: 2000;
+  padding: 8px 14px;
+  background: var(--dx-accent, #2563eb);
+  color: var(--dx-accent-contrast, #ffffff);
+  border-radius: 6px;
+  text-decoration: none;
+  transition: top 0.15s ease;
+}
+.dx-skip-link:focus,
+.dx-skip-link:focus-visible { top: 8px; }
+@media (prefers-reduced-motion: reduce) {
+  .dx-skip-link { transition: none; }
+}
+
 /* ---- Tabs ---- */
 .dx-tablist {
   display: flex;
@@ -107,6 +127,27 @@
   font-size: 18px;
   line-height: 1;
 }
+.dx-sortable-controls { display: inline-flex; gap: 2px; margin-left: auto; }
+/* No-drag reorder buttons, kept at the 24x24 CSS-px minimum (WCAG 2.5.8). */
+.dx-sortable-move,
+.dx-tile-move {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dx-text-muted, #64748b);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+}
+.dx-sortable-move:hover,
+.dx-tile-move:hover { background: var(--dx-surface-alt, #f1f5f9); color: var(--dx-text, #0f172a); }
+.dx-sortable-move:disabled,
+.dx-tile-move:disabled { opacity: 0.3; cursor: default; }
 
 /* ---- TransferList ---- */
 .dx-transfer {
@@ -452,7 +493,13 @@
 .dx-alert-title { font-weight: 600; }
 .dx-alert-body { flex: 1; }
 .dx-alert-close {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
   border: 0;
+  border-radius: 6px;
   background: transparent;
   cursor: pointer;
   color: inherit;
@@ -597,4 +644,5 @@
 .dx-tile-header:active { cursor: grabbing; }
 .dx-tile-grip { color: var(--dx-text-muted, #94a3b8); }
 .dx-tile-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dx-tile-controls { display: inline-flex; gap: 2px; margin-left: auto; }
 .dx-tile-body { padding: 14px; color: var(--dx-text, #0f172a); }

@@ -43,21 +43,24 @@ public sealed class DxAccordion : AccordionPrimitive
 
             builder.OpenElement(12, "span");
             builder.AddAttribute(13, "class", "dx-accordion-icon");
-            builder.AddContent(14, open ? "▾" : "▸");
+            // Decorative: the button is already named by its title, so the chevron is
+            // hidden from assistive tech (the state is conveyed by aria-expanded).
+            builder.AddAttribute(14, "aria-hidden", "true");
+            builder.AddContent(15, open ? "▾" : "▸");
             builder.CloseElement();
 
-            builder.AddContent(15, item.Title);
+            builder.AddContent(16, item.Title);
             builder.CloseElement();
 
             // Region (rendered only when open)
             if (open)
             {
-                builder.OpenElement(16, "div");
-                builder.AddAttribute(17, "id", RegionId(index));
-                builder.AddAttribute(18, "class", "dx-accordion-region");
-                builder.AddAttribute(19, "role", "region");
-                builder.AddAttribute(20, "aria-labelledby", HeaderId(index));
-                builder.AddContent(21, item.Content);
+                builder.OpenElement(17, "div");
+                builder.AddAttribute(18, "id", RegionId(index));
+                builder.AddAttribute(19, "class", "dx-accordion-region");
+                builder.AddAttribute(20, "role", "region");
+                builder.AddAttribute(21, "aria-labelledby", HeaderId(index));
+                builder.AddContent(22, item.Content);
                 builder.CloseElement();
             }
 

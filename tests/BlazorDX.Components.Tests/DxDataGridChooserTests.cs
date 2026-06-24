@@ -71,6 +71,34 @@ public sealed class DxDataGridChooserTests : TestContext
     }
 
     [Fact]
+    public void Move_buttons_reorder_columns_with_a_single_click()
+    {
+        // WCAG 2.5.7: a no-drag, single-pointer alternative to header drag-and-drop.
+        IRenderedComponent<DxDataGrid<WidgetRow>> grid = Render();
+        var before = grid.FindAll(".dx-grid-th");
+        Assert.Equal("Name", before[0].TextContent.Trim());
+        Assert.Equal("Quantity", before[1].TextContent.Trim());
+
+        grid.Find(".dx-grid-chooser-toggle").Click();
+        grid.Find(".dx-grid-chooser-move[aria-label='Move Name right']").Click();
+
+        var after = grid.FindAll(".dx-grid-th");
+        Assert.Equal("Quantity", after[0].TextContent.Trim());
+        Assert.Equal("Name", after[1].TextContent.Trim());
+    }
+
+    [Fact]
+    public void Move_buttons_are_disabled_at_the_row_edges()
+    {
+        IRenderedComponent<DxDataGrid<WidgetRow>> grid = Render();
+        grid.Find(".dx-grid-chooser-toggle").Click();
+
+        // Leftmost column cannot move left; rightmost cannot move right.
+        Assert.True(grid.Find(".dx-grid-chooser-move[aria-label='Move Name left']").HasAttribute("disabled"));
+        Assert.True(grid.Find(".dx-grid-chooser-move[aria-label='Move Quantity right']").HasAttribute("disabled"));
+    }
+
+    [Fact]
     public void Hidden_columns_are_excluded_from_csv_export()
     {
         string? csv = null;
