@@ -76,4 +76,17 @@ public sealed class DxCommandPaletteTests : TestContext
         Assert.Equal("Toggle dark mode", ran);
         Assert.False(open); // closed after running
     }
+
+    [Fact]
+    public void Clicking_a_command_runs_it_on_the_up_event()
+    {
+        IRenderedComponent<DxCommandPalette> palette = RenderComponent<DxCommandPalette>(parameters => parameters
+            .Add(p => p.Commands, BuildCommands())
+            .Add(p => p.Open, true));
+
+        palette.Find(".dx-cmdk-input").Input("set");
+        palette.Find("[role=option]").Click();   // runs on click (WCAG 2.5.2), not mousedown
+
+        Assert.Equal("Open settings", ran);
+    }
 }

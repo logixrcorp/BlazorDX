@@ -59,7 +59,7 @@ public sealed class DxComboBoxTests : TestContext
             .Add(c => c.ValueChanged, value => bound = value));
 
         combo.Find("input[role=combobox]").Input("den");
-        combo.FindAll("[role=option]")[0].MouseDown();
+        combo.FindAll("[role=option]")[0].Click();   // select on the up-event (WCAG 2.5.2)
 
         Assert.Equal("DEN", bound);
     }

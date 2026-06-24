@@ -92,13 +92,15 @@ public sealed class DxComboBox<TValue> : ComboBoxPrimitive<TValue>
             builder.AddAttribute(10, "class", css);
             if (!option.Disabled)
             {
-                // mousedown (not click) so selection runs before the input blurs;
-                // preventDefault keeps focus in the input.
-                builder.AddAttribute(11, "onmousedown", EventCallback.Factory.Create(this, () => SelectAsync(captured)));
+                // preventDefault on mousedown keeps focus in the input (no blur, panel stays
+                // open); selection itself runs on click — the up-event — so a press that moves
+                // off the option before release is cancelled (WCAG 2.5.2 Pointer Cancellation).
+                builder.AddAttribute(11, "onmousedown", EventCallback.Factory.Create(this, () => { }));
                 builder.AddEventPreventDefaultAttribute(12, "onmousedown", true);
+                builder.AddAttribute(13, "onclick", EventCallback.Factory.Create(this, () => SelectAsync(captured)));
             }
 
-            builder.AddContent(13, option.Text);
+            builder.AddContent(14, option.Text);
             builder.CloseElement();
         }
 

@@ -79,19 +79,21 @@ public sealed class DxCommandPalette : CommandPalettePrimitive
             builder.AddAttribute(28, "role", "option");
             builder.AddAttribute(29, "class", IsActive(index) ? "dx-cmdk-item dx-cmdk-active" : "dx-cmdk-item");
             builder.AddAttribute(30, "aria-selected", IsActive(index) ? "true" : "false");
-            // mousedown (not click) so the command runs before the input blurs.
-            builder.AddAttribute(31, "onmousedown", EventCallback.Factory.Create(this, () => RunAsync(captured)));
+            // preventDefault on mousedown keeps focus in the input; the command runs on
+            // click (the up-event) so releasing off the item cancels it (WCAG 2.5.2).
+            builder.AddAttribute(31, "onmousedown", EventCallback.Factory.Create(this, () => { }));
             builder.AddEventPreventDefaultAttribute(32, "onmousedown", true);
+            builder.AddAttribute(33, "onclick", EventCallback.Factory.Create(this, () => RunAsync(captured)));
 
             if (command.Group is { Length: > 0 } group)
             {
-                builder.OpenElement(33, "span");
-                builder.AddAttribute(34, "class", "dx-cmdk-group");
-                builder.AddContent(35, group);
+                builder.OpenElement(34, "span");
+                builder.AddAttribute(35, "class", "dx-cmdk-group");
+                builder.AddContent(36, group);
                 builder.CloseElement();
             }
 
-            builder.AddContent(36, command.Title);
+            builder.AddContent(37, command.Title);
             builder.CloseElement();
         }
 
