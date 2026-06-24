@@ -19,26 +19,32 @@ public sealed class DxToastHost : ComponentBase, IDisposable
     {
         builder.OpenElement(0, "div");
         builder.AddAttribute(1, "class", "dx-toast-host");
+        // Pause auto-dismiss while the user hovers or keyboard-focuses the region, so a
+        // timed toast cannot vanish mid-read; resume when they leave (WCAG 2.2.1).
+        builder.AddAttribute(2, "onmouseenter", EventCallback.Factory.Create(this, Toasts.PauseAll));
+        builder.AddAttribute(3, "onmouseleave", EventCallback.Factory.Create(this, Toasts.ResumeAll));
+        builder.AddAttribute(4, "onfocusin", EventCallback.Factory.Create(this, Toasts.PauseAll));
+        builder.AddAttribute(5, "onfocusout", EventCallback.Factory.Create(this, Toasts.ResumeAll));
 
         foreach (Toast toast in Toasts.Toasts)
         {
-            builder.OpenElement(2, "div");
+            builder.OpenElement(6, "div");
             builder.SetKey(toast.Id);
-            builder.AddAttribute(3, "class", $"dx-toast dx-toast-{toast.Severity}");
-            builder.AddAttribute(4, "role", "status");
+            builder.AddAttribute(7, "class", $"dx-toast dx-toast-{toast.Severity}");
+            builder.AddAttribute(8, "role", "status");
 
-            builder.OpenElement(5, "span");
-            builder.AddAttribute(6, "class", "dx-toast-message");
-            builder.AddContent(7, toast.Message);
+            builder.OpenElement(9, "span");
+            builder.AddAttribute(10, "class", "dx-toast-message");
+            builder.AddContent(11, toast.Message);
             builder.CloseElement();
 
             string capturedId = toast.Id;
-            builder.OpenElement(8, "button");
-            builder.AddAttribute(9, "type", "button");
-            builder.AddAttribute(10, "class", "dx-toast-close");
-            builder.AddAttribute(11, "aria-label", "Dismiss");
-            builder.AddAttribute(12, "onclick", EventCallback.Factory.Create(this, () => Toasts.Remove(capturedId)));
-            builder.AddContent(13, "✕");
+            builder.OpenElement(12, "button");
+            builder.AddAttribute(13, "type", "button");
+            builder.AddAttribute(14, "class", "dx-toast-close");
+            builder.AddAttribute(15, "aria-label", "Dismiss");
+            builder.AddAttribute(16, "onclick", EventCallback.Factory.Create(this, () => Toasts.Remove(capturedId)));
+            builder.AddContent(17, "✕");
             builder.CloseElement();
 
             builder.CloseElement();

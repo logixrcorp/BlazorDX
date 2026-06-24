@@ -19,6 +19,10 @@ namespace BlazorDX.Components;
 public sealed class DxForm<TModel> : ComponentBase
 {
     private readonly List<FormValidationError> errors = new();
+
+    // Per-form id prefix so each field's error region has a unique, stable id to
+    // wire `aria-describedby` against (WCAG 3.3.1 Error Identification).
+    private readonly string idPrefix = $"dx-form-{Guid.NewGuid():N}";
     private FormContext? context;
 
     /// <summary>The model instance the form edits.</summary>
@@ -63,6 +67,7 @@ public sealed class DxForm<TModel> : ComponentBase
         context ??= new FormContext
         {
             Receiver = this,
+            IdPrefix = idPrefix,
             Fields = Descriptor.Fields,
             Get = name => Descriptor.GetString(Model, name),
             SetAsync = SetFieldAsync,

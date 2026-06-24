@@ -66,6 +66,37 @@ public sealed class DxFormTests : TestContext
     }
 
     [Fact]
+    public void Invalid_field_is_marked_and_linked_to_its_error_message()
+    {
+        // WCAG 3.3.1: the input is aria-invalid and points, via aria-describedby, at the
+        // text error region — so a screen reader announces it when focus returns.
+        IRenderedComponent<DxForm<MeetingRequest>> form = RenderForm(new MeetingRequest());
+        form.Find("form").Submit();   // empty model -> required fields fail
+
+        var title = form.FindAll("input[type=text]")[0];   // Title is required
+        Assert.Equal("true", title.GetAttribute("aria-invalid"));
+
+        string? describedBy = title.GetAttribute("aria-describedby");
+        Assert.False(string.IsNullOrEmpty(describedBy));
+
+        var errorRegion = form.Find($"#{describedBy}");
+        Assert.Equal("alert", errorRegion.GetAttribute("role"));
+        Assert.NotEmpty(errorRegion.TextContent.Trim());
+    }
+
+    [Fact]
+    public void Valid_field_carries_no_invalid_or_describedby_attributes()
+    {
+        MeetingRequest model = new() { Title = "Sync", Email = "a@b.co", Attendees = 3 };
+        IRenderedComponent<DxForm<MeetingRequest>> form = RenderForm(model);
+        form.Find("form").Submit();
+
+        var title = form.FindAll("input[type=text]")[0];
+        Assert.False(title.HasAttribute("aria-invalid"));
+        Assert.False(title.HasAttribute("aria-describedby"));
+    }
+
+    [Fact]
     public void Submitting_valid_calls_the_valid_callback_with_the_model()
     {
         MeetingRequest model = new() { Title = "Sync", Email = "a@b.co", Attendees = 3 };

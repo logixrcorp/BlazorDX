@@ -2,6 +2,26 @@
   Layout / content-organization components (Tabs, Accordion). CSS-variable driven.
 */
 
+/* ---- Skip link (WCAG 2.4.1 Bypass Blocks) ---- */
+/* Offscreen until focused; the 24px+ tap target and visible focus appear on focus. */
+.dx-skip-link {
+  position: absolute;
+  left: 8px;
+  top: -48px;
+  z-index: 2000;
+  padding: 8px 14px;
+  background: var(--dx-accent, #2563eb);
+  color: var(--dx-accent-contrast, #ffffff);
+  border-radius: 6px;
+  text-decoration: none;
+  transition: top 0.15s ease;
+}
+.dx-skip-link:focus,
+.dx-skip-link:focus-visible { top: 8px; }
+@media (prefers-reduced-motion: reduce) {
+  .dx-skip-link { transition: none; }
+}
+
 /* ---- Tabs ---- */
 .dx-tablist {
   display: flex;
