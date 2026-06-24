@@ -51,6 +51,30 @@ public sealed class DxSortableListTests : TestContext
     }
 
     [Fact]
+    public void Move_down_button_reorders_with_a_single_click()
+    {
+        // WCAG 2.5.7: a no-drag, single-pointer alternative to the drag gesture.
+        IReadOnlyList<string> bound = Tasks();
+        IRenderedComponent<DxSortableList> list = RenderComponent<DxSortableList>(parameters => parameters
+            .Add(s => s.Items, bound)
+            .Add(s => s.ItemsChanged, items => bound = items));
+
+        list.Find(".dx-sortable-move[aria-label='Move A down']").Click();
+
+        Assert.Equal(["B", "A", "C"], bound);
+    }
+
+    [Fact]
+    public void Move_buttons_are_disabled_at_the_list_ends()
+    {
+        IRenderedComponent<DxSortableList> list = RenderComponent<DxSortableList>(parameters => parameters
+            .Add(s => s.Items, Tasks()));
+
+        Assert.True(list.Find(".dx-sortable-move[aria-label='Move A up']").HasAttribute("disabled"));
+        Assert.True(list.Find(".dx-sortable-move[aria-label='Move C down']").HasAttribute("disabled"));
+    }
+
+    [Fact]
     public void Alt_arrow_down_moves_the_focused_item_down()
     {
         IReadOnlyList<string> bound = Tasks();

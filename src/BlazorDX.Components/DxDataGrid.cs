@@ -50,22 +50,51 @@ public sealed class DxDataGrid<TRow> : DataGridPrimitive<TRow>
             for (int display = 0; display < Columns.Count; display++)
             {
                 int actual = ColumnOrder[display];
+                int capturedDisplay = display;
                 bool visible = !IsColumnHidden(actual);
                 bool lastVisible = visible && VisibleColumnCount == 1;   // keep at least one column
+                string header = Columns[actual].Header;
 
-                builder.OpenElement(151, "label");
+                builder.OpenElement(151, "div");
                 builder.SetKey(actual);
                 builder.AddAttribute(152, "class", "dx-grid-chooser-item");
 
-                builder.OpenElement(153, "input");
-                builder.AddAttribute(154, "type", "checkbox");
-                builder.AddAttribute(155, "checked", visible);
-                builder.AddAttribute(156, "disabled", lastVisible);
-                builder.AddAttribute(157, "onchange", EventCallback.Factory.Create(this, () => ToggleColumnVisibility(actual)));
+                builder.OpenElement(153, "label");
+                builder.AddAttribute(154, "class", "dx-grid-chooser-label");
+
+                builder.OpenElement(155, "input");
+                builder.AddAttribute(156, "type", "checkbox");
+                builder.AddAttribute(157, "checked", visible);
+                builder.AddAttribute(158, "disabled", lastVisible);
+                builder.AddAttribute(159, "onchange", EventCallback.Factory.Create(this, () => ToggleColumnVisibility(actual)));
                 builder.CloseElement();
 
-                builder.AddContent(158, Columns[actual].Header);
+                builder.AddContent(160, header);
+                builder.CloseElement();   // label
+
+                // Single-pointer (no-drag) column reorder: the WCAG 2.5.7 alternative
+                // to header drag-and-drop, for pointer users who cannot drag. Each tap
+                // moves the column one display position; the keyboard path is Ctrl+Arrow
+                // on the header (OnHeaderKeyDown).
+                builder.OpenElement(161, "button");
+                builder.AddAttribute(162, "type", "button");
+                builder.AddAttribute(163, "class", "dx-grid-chooser-move");
+                builder.AddAttribute(164, "aria-label", $"Move {header} left");
+                builder.AddAttribute(165, "disabled", capturedDisplay == 0);
+                builder.AddAttribute(166, "onclick", EventCallback.Factory.Create(this, () => MoveColumn(capturedDisplay, capturedDisplay - 1)));
+                builder.AddContent(167, "◀");
                 builder.CloseElement();
+
+                builder.OpenElement(168, "button");
+                builder.AddAttribute(169, "type", "button");
+                builder.AddAttribute(170, "class", "dx-grid-chooser-move");
+                builder.AddAttribute(171, "aria-label", $"Move {header} right");
+                builder.AddAttribute(172, "disabled", capturedDisplay == Columns.Count - 1);
+                builder.AddAttribute(173, "onclick", EventCallback.Factory.Create(this, () => MoveColumn(capturedDisplay, capturedDisplay + 1)));
+                builder.AddContent(174, "▶");
+                builder.CloseElement();
+
+                builder.CloseElement();   // item
             }
 
             builder.CloseElement();

@@ -71,6 +71,34 @@ public sealed class DxTileLayout : TileLayoutPrimitive
         builder.AddContent(26, tile.Title);
         builder.CloseElement();
 
+        // Single-pointer (no-drag) reorder controls — the WCAG 2.5.7 alternative to
+        // dragging the header. tabindex=-1 preserves the roving model (one tab stop);
+        // keyboard users reorder with Alt+Arrow on the header.
+        builder.OpenElement(30, "span");
+        builder.AddAttribute(31, "class", "dx-tile-controls");
+
+        builder.OpenElement(32, "button");
+        builder.AddAttribute(33, "type", "button");
+        builder.AddAttribute(34, "class", "dx-tile-move");
+        builder.AddAttribute(35, "tabindex", "-1");
+        builder.AddAttribute(36, "aria-label", $"Move {tile.Title} earlier");
+        builder.AddAttribute(37, "disabled", captured == 0);
+        builder.AddAttribute(38, "onclick", EventCallback.Factory.Create(this, () => MoveByAsync(captured, -1)));
+        builder.AddContent(39, "◀");
+        builder.CloseElement();
+
+        builder.OpenElement(40, "button");
+        builder.AddAttribute(41, "type", "button");
+        builder.AddAttribute(42, "class", "dx-tile-move");
+        builder.AddAttribute(43, "tabindex", "-1");
+        builder.AddAttribute(44, "aria-label", $"Move {tile.Title} later");
+        builder.AddAttribute(45, "disabled", captured == TileCount - 1);
+        builder.AddAttribute(46, "onclick", EventCallback.Factory.Create(this, () => MoveByAsync(captured, 1)));
+        builder.AddContent(47, "▶");
+        builder.CloseElement();
+
+        builder.CloseElement();   // controls
+
         builder.CloseElement();   // header
 
         builder.OpenElement(27, "div");

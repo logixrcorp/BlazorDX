@@ -46,7 +46,36 @@ public sealed class DxSortableList : SortablePrimitive
             builder.CloseElement();
 
             builder.AddContent(19, Items[index]);
+
+            // Single-pointer (no-drag) reorder controls — the WCAG 2.5.7 alternative
+            // to the drag gesture. tabindex=-1 keeps the roving model (one tab stop per
+            // list); keyboard users reorder with Alt+Arrow on the row itself.
+            builder.OpenElement(20, "span");
+            builder.AddAttribute(21, "class", "dx-sortable-controls");
+
+            builder.OpenElement(22, "button");
+            builder.AddAttribute(23, "type", "button");
+            builder.AddAttribute(24, "class", "dx-sortable-move");
+            builder.AddAttribute(25, "tabindex", "-1");
+            builder.AddAttribute(26, "aria-label", $"Move {Items[index]} up");
+            builder.AddAttribute(27, "disabled", captured == 0);
+            builder.AddAttribute(28, "onclick", EventCallback.Factory.Create(this, () => MoveByAsync(captured, -1)));
+            builder.AddContent(29, "▲");
             builder.CloseElement();
+
+            builder.OpenElement(30, "button");
+            builder.AddAttribute(31, "type", "button");
+            builder.AddAttribute(32, "class", "dx-sortable-move");
+            builder.AddAttribute(33, "tabindex", "-1");
+            builder.AddAttribute(34, "aria-label", $"Move {Items[index]} down");
+            builder.AddAttribute(35, "disabled", captured == Items.Count - 1);
+            builder.AddAttribute(36, "onclick", EventCallback.Factory.Create(this, () => MoveByAsync(captured, 1)));
+            builder.AddContent(37, "▼");
+            builder.CloseElement();
+
+            builder.CloseElement();   // controls
+
+            builder.CloseElement();   // item
         }
 
         builder.CloseElement();

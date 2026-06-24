@@ -72,6 +72,14 @@ public class SortablePrimitive : ComponentBase
         }
     }
 
+    /// <summary>
+    /// Single-pointer (no-drag) reorder: moves the item at <paramref name="index"/>
+    /// by <paramref name="delta"/> slots. This is the WCAG 2.5.7 alternative to the
+    /// drag gesture, for pointer users who cannot press-hold-and-drag. Clamped by
+    /// <see cref="ReorderAsync"/>, so a no-op at the list edges.
+    /// </summary>
+    protected Task MoveByAsync(int index, int delta) => ReorderAsync(index, index + delta);
+
     private async Task ReorderAsync(int from, int to)
     {
         if (to < 0 || to >= Items.Count || from == to)

@@ -45,9 +45,9 @@
 .dx-chip-remove {
   display: inline-grid;
   place-items: center;
-  width: 18px;
-  height: 18px;
-  margin-right: -4px;
+  width: 24px;
+  height: 24px;
+  margin-right: -6px;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -158,15 +158,18 @@
 .dx-tree-selected { background: color-mix(in srgb, var(--dx-accent, #2563eb) 14%, transparent); }
 .dx-tree-active { outline: 1px solid color-mix(in srgb, var(--dx-accent, #2563eb) 50%, transparent); outline-offset: -1px; }
 .dx-tree-twisty {
+  display: inline-grid;
+  place-items: center;
   border: 0;
   background: transparent;
   cursor: pointer;
-  width: 18px;
+  width: 24px;
+  min-height: 24px;
   color: var(--dx-muted, #64748b);
   font-size: 11px;
   padding: 0;
 }
-.dx-tree-spacer { display: inline-block; width: 18px; }
+.dx-tree-spacer { display: inline-block; width: 24px; }
 
 /* ---- Splitter ---- */
 .dx-splitter {
@@ -358,7 +361,7 @@
   -webkit-appearance: none;
   appearance: none;
   pointer-events: auto;
-  width: 16px; height: 16px;
+  width: 24px; height: 24px;
   border-radius: 50%;
   background: var(--dx-accent, #2563eb);
   border: 2px solid #ffffff;
@@ -367,7 +370,7 @@
 }
 .dx-range-area input[type="range"]::-moz-range-thumb {
   pointer-events: auto;
-  width: 16px; height: 16px;
+  width: 24px; height: 24px;
   border-radius: 50%;
   background: var(--dx-accent, #2563eb);
   border: 2px solid #ffffff;

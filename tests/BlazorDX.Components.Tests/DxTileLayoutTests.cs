@@ -70,6 +70,31 @@ public sealed class DxTileLayoutTests : TestContext
     }
 
     [Fact]
+    public void Move_later_button_reorders_with_a_single_click()
+    {
+        // WCAG 2.5.7: a no-drag, single-pointer alternative to dragging the header.
+        IReadOnlyList<int>? order = null;
+        IRenderedComponent<DxTileLayout> tiles = RenderComponent<DxTileLayout>(parameters => parameters
+            .Add(t => t.Tiles, Tiles())
+            .Add(t => t.OrderChanged, o => order = o));
+
+        tiles.Find(".dx-tile-move[aria-label='Move Alpha later']").Click();
+
+        Assert.Equal(["Beta", "Alpha", "Gamma"], Titles(tiles));
+        Assert.Equal([1, 0, 2], order!);
+    }
+
+    [Fact]
+    public void Move_buttons_are_disabled_at_the_ends()
+    {
+        IRenderedComponent<DxTileLayout> tiles = RenderComponent<DxTileLayout>(parameters => parameters
+            .Add(t => t.Tiles, Tiles()));
+
+        Assert.True(tiles.Find(".dx-tile-move[aria-label='Move Alpha earlier']").HasAttribute("disabled"));
+        Assert.True(tiles.Find(".dx-tile-move[aria-label='Move Gamma later']").HasAttribute("disabled"));
+    }
+
+    [Fact]
     public void Arrow_alone_moves_focus_not_order()
     {
         IRenderedComponent<DxTileLayout> tiles = RenderComponent<DxTileLayout>(parameters => parameters

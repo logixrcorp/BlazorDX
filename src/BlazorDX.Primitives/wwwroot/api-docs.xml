@@ -1581,6 +1581,14 @@
         <member name="F:BlazorDX.Primitives.Interaction.SortablePrimitive.Roving">
             <summary>Roving state shared with the styled layer for focus/tabindex.</summary>
         </member>
+        <member name="M:BlazorDX.Primitives.Interaction.SortablePrimitive.MoveByAsync(System.Int32,System.Int32)">
+            <summary>
+            Single-pointer (no-drag) reorder: moves the item at <paramref name="index"/>
+            by <paramref name="delta"/> slots. This is the WCAG 2.5.7 alternative to the
+            drag gesture, for pointer users who cannot press-hold-and-drag. Clamped by
+            <see cref="M:BlazorDX.Primitives.Interaction.SortablePrimitive.ReorderAsync(System.Int32,System.Int32)"/>, so a no-op at the list edges.
+            </summary>
+        </member>
         <member name="T:BlazorDX.Primitives.Interaction.TileItem">
             <summary>A dashboard tile: a titled card whose body is arbitrary content.</summary>
             <param name="Title">Header text (also the drag handle label).</param>
@@ -1622,6 +1630,14 @@
         </member>
         <member name="P:BlazorDX.Primitives.Interaction.TileLayoutPrimitive.Order">
             <summary>Display order: each position holds the index of the tile shown there.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Interaction.TileLayoutPrimitive.MoveByAsync(System.Int32,System.Int32)">
+            <summary>
+            Single-pointer (no-drag) reorder: moves the tile at <paramref name="displayPosition"/>
+            by <paramref name="delta"/> positions. This is the WCAG 2.5.7 alternative to the
+            drag gesture, for pointer users who cannot press-hold-and-drag. Clamped by
+            <see cref="M:BlazorDX.Primitives.Interaction.TileLayoutPrimitive.ReorderAsync(System.Int32,System.Int32)"/>, so a no-op at the ends.
+            </summary>
         </member>
         <member name="T:BlazorDX.Primitives.Motion.PresenceBoundary">
             <summary>

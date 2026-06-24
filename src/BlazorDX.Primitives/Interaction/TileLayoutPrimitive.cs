@@ -105,6 +105,15 @@ public class TileLayoutPrimitive : ComponentBase
         }
     }
 
+    /// <summary>
+    /// Single-pointer (no-drag) reorder: moves the tile at <paramref name="displayPosition"/>
+    /// by <paramref name="delta"/> positions. This is the WCAG 2.5.7 alternative to the
+    /// drag gesture, for pointer users who cannot press-hold-and-drag. Clamped by
+    /// <see cref="ReorderAsync"/>, so a no-op at the ends.
+    /// </summary>
+    protected Task MoveByAsync(int displayPosition, int delta) =>
+        ReorderAsync(displayPosition, displayPosition + delta);
+
     private async Task ReorderAsync(int from, int to)
     {
         if (to < 0 || to >= order.Length || from == to)
