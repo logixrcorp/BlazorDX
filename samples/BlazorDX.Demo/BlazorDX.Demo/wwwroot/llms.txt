@@ -5,17 +5,25 @@
 > thin TypeScript DOM bridge. ~95 components built on one headless engine. Currently a beta
 > preview, built with substantial AI assistance — not intended for production use.
 
+## Full AI context guide
+- [blazordx-llms.md](https://blazordx.com/blazordx-llms.md): single-file guide for assistants —
+  the analyzer-enforced rules, the source-generator patterns ([GridRow], [DxFormModel]), component
+  usage with code snippets, the full catalog, and a minimal end-to-end example. Start here to
+  generate correct BlazorDX code.
+
 ## Docs
-- [Documentation](https://blazordx.com/docs): Component catalog, guides, and architecture.
-- [DataGrid](https://blazordx.com/grid): Flagship grid — 100k rows, Rust-backed sort/filter/aggregate.
-- [Forms + AI](https://blazordx.com/forms): One model renders a form and a Model Context Protocol tool.
-- [Charts](https://blazordx.com/charts): SVG charts, gauges, and sparklines.
+- [Documentation](https://blazordx.com/docs): component catalog with API reference + live demos.
+- [FAQ](https://blazordx.com/faq): what it is, license, AOT/trimming, accessibility, install, comparisons.
+- [DataGrid](https://blazordx.com/grid): flagship grid — 100k rows, Rust-backed sort/filter/aggregate.
+- [Forms + AI](https://blazordx.com/forms): one model renders a form and a Model Context Protocol tool.
+- [TicketDesk app](https://blazordx.com/app): a full ITIL service desk built on BlazorDX (real LOB example).
 
 ## Project
-- [Support](https://blazordx.com/support): Community, priority, enterprise/SLA, and consulting.
-- [Privacy](https://blazordx.com/privacy): What the site collects (essentially nothing) and your rights.
-- [Source on GitHub](https://github.com/logixrcorp/BlazorDX): MIT-licensed source, issues, releases.
+- [Support](https://blazordx.com/support): community help and commercial support tiers.
+- [Privacy](https://blazordx.com/privacy): what the site collects (essentially nothing) and your rights.
+- [Source on GitHub](https://github.com/logixrcorp/BlazorDX): MIT-licensed source, issues, discussions, releases.
 
 ## Notes
 - License: MIT (owned by Logixr Corp).
 - Status: beta / AI-generated / not for production use.
+- Requires .NET 10.

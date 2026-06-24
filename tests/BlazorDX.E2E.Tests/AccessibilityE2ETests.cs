@@ -16,6 +16,7 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
 {
     [SkippableTheory]
     [InlineData("/")]
+    [InlineData("/faq")]
     [InlineData("/app")]
     [InlineData("/app/records")]
     [InlineData("/app/changes")]

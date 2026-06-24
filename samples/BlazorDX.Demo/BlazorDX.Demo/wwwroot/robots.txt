@@ -1,4 +1,36 @@
+# BlazorDX — crawl freely. Answer/generative engines are welcome here.
+# AI context guide (single Markdown file): https://blazordx.com/blazordx-llms.md
+# See also: https://blazordx.com/llms.txt
+
 User-agent: *
+Allow: /
+
+# Generative / answer engines — explicitly allowed (GEO).
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: CCBot
 Allow: /
 
 Sitemap: https://blazordx.com/sitemap.xml

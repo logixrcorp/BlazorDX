@@ -1,0 +1,84 @@
+@page "/faq"
+
+@* AEO/GEO page: visible Q&A that answer engines (Google AI Overviews, Perplexity, ChatGPT)
+   can lift, backed by matching FAQPage + HowTo + BreadcrumbList JSON-LD. Static SSR so the
+   structured data and answers are in the initial HTML for crawlers. *@
+
+<PageTitle>BlazorDX FAQ — what it is, license, AOT, accessibility</PageTitle>
+
+<HeadContent>
+    <meta name="description" content="Answers about BlazorDX: what it is, the MIT license, beta status, Native AOT / trimming support, accessibility, how it compares to MudBlazor/Radzen/Telerik, and how to install it." />
+    <link rel="canonical" href="https://blazordx.com/faq" />
+    <script type="application/ld+json">
+    {
+      "@@context": "https://schema.org",
+      "@@type": "FAQPage",
+      "mainEntity": [
+        {"@@type":"Question","name":"What is BlazorDX?","acceptedAnswer":{"@@type":"Answer","text":"BlazorDX is a secure-by-default, headless, AOT-safe Blazor component system for .NET 10. It uses C# source generators for zero runtime reflection, a Rust-to-WebAssembly tier for heavy compute, and a thin TypeScript DOM bridge. It is MIT-licensed and currently in beta."}},
+        {"@@type":"Question","name":"Is BlazorDX free? What license does it use?","acceptedAnswer":{"@@type":"Answer","text":"Yes. BlazorDX is free and open source under the MIT license, including the full component library, source generators, Rust compute, and tooling. There are no license keys and no paid tiers gating the code; optional commercial support is available separately."}},
+        {"@@type":"Question","name":"Is BlazorDX production-ready?","acceptedAnswer":{"@@type":"Answer","text":"Not yet. BlazorDX is a beta, built with substantial AI assistance and only lightly tested. It is published for evaluation and feedback and is not recommended for production workloads."}},
+        {"@@type":"Question","name":"Does BlazorDX support Native AOT and IL trimming?","acceptedAnswer":{"@@type":"Answer","text":"Yes. BlazorDX is designed to be AOT-safe and trim-clean: binding and serialization are source-generated rather than reflection-based, and a Release publish trims the WebAssembly client with zero IL trim warnings."}},
+        {"@@type":"Question","name":"Is BlazorDX accessible?","acceptedAnswer":{"@@type":"Answer","text":"Accessibility is built in. Tier-1 primitives own WAI-ARIA roles, keyboard navigation, focus management, and roving tabindex, and automated axe-core checks run in CI across Chromium, Firefox, and WebKit. A formal screen-reader audit and WCAG/VPAT statement are still on the roadmap."}},
+        {"@@type":"Question","name":"How is BlazorDX different from MudBlazor, Radzen, Telerik, or Syncfusion?","acceptedAnswer":{"@@type":"Answer","text":"BlazorDX is headless and two-tier: behavior and accessibility live in unstyled primitives, and styling is layered on through CSS variables. It avoids runtime reflection so it survives Native AOT and full trimming, and it bans cross-user singleton UI state by analyzer. It prioritizes auditability and a small AOT-safe core over raw component count."}},
+        {"@@type":"Question","name":"How do I install BlazorDX?","acceptedAnswer":{"@@type":"Answer","text":"Add the BlazorDX.Components NuGet package, register services with AddBlazorDXCompute in both the server and WebAssembly client Program.cs, and link the component CSS in App.razor. Then mark a row type with the GridRow attribute and the source generator emits a reflection-free grid accessor."}},
+        {"@@type":"Question","name":"Can AI assistants generate BlazorDX code?","acceptedAnswer":{"@@type":"Answer","text":"Yes. BlazorDX ships an LLM context guide, a single Markdown file at /blazordx-llms.md, describing the rules, source-generator patterns, and component usage an assistant needs to generate correct code. Forms also project into Model Context Protocol tools an assistant can call."}}
+      ]
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@@context": "https://schema.org",
+      "@@type": "HowTo",
+      "name": "Add BlazorDX to a Blazor app",
+      "step": [
+        {"@@type":"HowToStep","position":1,"name":"Add the package","text":"dotnet add package BlazorDX.Components"},
+        {"@@type":"HowToStep","position":2,"name":"Register services","text":"Call AddBlazorDXCompute and AddScoped<ToastService> in both the server and WebAssembly client Program.cs so prerendering works."},
+        {"@@type":"HowToStep","position":3,"name":"Link styles","text":"Add the component stylesheets under _content/BlazorDX.Components/ in App.razor head."},
+        {"@@type":"HowToStep","position":4,"name":"Bind data","text":"Mark a row type with [GridRow] and use the generated accessor with DxDataGrid, or annotate a model with [DxFormModel] for DxForm."}
+      ]
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@@context": "https://schema.org",
+      "@@type": "BreadcrumbList",
+      "itemListElement": [
+        {"@@type":"ListItem","position":1,"name":"BlazorDX","item":"https://blazordx.com"},
+        {"@@type":"ListItem","position":2,"name":"FAQ","item":"https://blazordx.com/faq"}
+      ]
+    }
+    </script>
+</HeadContent>
+
+<section class="dx-section" style="max-width:760px; margin:0 auto">
+    <h1>BlazorDX — frequently asked questions</h1>
+    <p class="dx-section-sub">Straight answers about the component system, its license, AOT/trimming, accessibility, and how it compares.</p>
+
+    @foreach (Qa qa in Faqs)
+    {
+        <h2 style="font-size:18px; margin:26px 0 6px">@qa.Q</h2>
+        <p style="margin:0; color:#334155; line-height:1.6">@qa.A</p>
+    }
+
+    <p class="dx-demo-meta" style="margin-top:32px">
+        More: the <a href="/docs">documentation</a>, the live <a href="/app">TicketDesk demo</a>,
+        and the AI context guide at <a href="/blazordx-llms.md" download>/blazordx-llms.md</a>.
+    </p>
+</section>
+
+@code {
+    private record Qa(string Q, string A);
+
+    // Kept identical to the FAQPage JSON-LD above (visible content must match the schema).
+    private static readonly Qa[] Faqs =
+    {
+        new("What is BlazorDX?", "BlazorDX is a secure-by-default, headless, AOT-safe Blazor component system for .NET 10. It uses C# source generators for zero runtime reflection, a Rust-to-WebAssembly tier for heavy compute, and a thin TypeScript DOM bridge. It is MIT-licensed and currently in beta."),
+        new("Is BlazorDX free? What license does it use?", "Yes. BlazorDX is free and open source under the MIT license, including the full component library, source generators, Rust compute, and tooling. There are no license keys and no paid tiers gating the code; optional commercial support is available separately."),
+        new("Is BlazorDX production-ready?", "Not yet. BlazorDX is a beta, built with substantial AI assistance and only lightly tested. It is published for evaluation and feedback and is not recommended for production workloads."),
+        new("Does BlazorDX support Native AOT and IL trimming?", "Yes. BlazorDX is designed to be AOT-safe and trim-clean: binding and serialization are source-generated rather than reflection-based, and a Release publish trims the WebAssembly client with zero IL trim warnings."),
+        new("Is BlazorDX accessible?", "Accessibility is built in. Tier-1 primitives own WAI-ARIA roles, keyboard navigation, focus management, and roving tabindex, and automated axe-core checks run in CI across Chromium, Firefox, and WebKit. A formal screen-reader audit and WCAG/VPAT statement are still on the roadmap."),
+        new("How is BlazorDX different from MudBlazor, Radzen, Telerik, or Syncfusion?", "BlazorDX is headless and two-tier: behavior and accessibility live in unstyled primitives, and styling is layered on through CSS variables. It avoids runtime reflection so it survives Native AOT and full trimming, and it bans cross-user singleton UI state by analyzer. It prioritizes auditability and a small AOT-safe core over raw component count."),
+        new("How do I install BlazorDX?", "Add the BlazorDX.Components NuGet package, register services with AddBlazorDXCompute in both the server and WebAssembly client Program.cs, and link the component CSS in App.razor. Then mark a row type with the GridRow attribute and the source generator emits a reflection-free grid accessor."),
+        new("Can AI assistants generate BlazorDX code?", "Yes. BlazorDX ships an LLM context guide, a single Markdown file at /blazordx-llms.md, describing the rules, source-generator patterns, and component usage an assistant needs to generate correct code. Forms also project into Model Context Protocol tools an assistant can call."),
+    };
+}
