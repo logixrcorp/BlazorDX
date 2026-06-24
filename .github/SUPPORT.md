@@ -9,7 +9,8 @@ provide; they buy *people's time and commitments*, not access to the code.
 
 The default for everyone.
 
-- **Issues & questions:** open an issue on the project repository.
+- **Questions & help:** ask in [GitHub Discussions](https://github.com/logixrcorp/BlazorDX/discussions) (the **Q&A** category). Share ideas in **Ideas**, or what you built in **Show and tell**.
+- **Bugs:** open an [issue](https://github.com/logixrcorp/BlazorDX/issues) with a minimal reproduction.
 - **Docs:** the in-app documentation site (`/docs` in the demo) and the guides in this repo.
 - Best-effort, no response-time guarantee. Bug reports with a minimal reproduction get the
   fastest attention.
