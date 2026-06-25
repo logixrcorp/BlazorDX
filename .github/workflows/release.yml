@@ -1,13 +1,12 @@
-name: Release
+name: Package
 
-# Publishes the BlazorDX NuGet packages to nuget.org.
+# Builds and packs the BlazorDX NuGet packages on a version tag and uploads them
+# as downloadable workflow artifacts.
 #
-# Triggered by pushing a version tag (e.g. `v0.1.0`), or manually via the
-# Actions tab. The push is idempotent (`--skip-duplicate`), so re-running a
-# release that partially succeeded will not fail on already-published packages.
-#
-# Requires a repository secret `NUGET_API_KEY` — a nuget.org API key scoped to
-# "Push new packages and package versions" with a glob like `BlazorDX.*`.
+# It deliberately does NOT publish to nuget.org and requires NO secrets / API key:
+# publishing is a manual step by design (download the `nupkg` artifact from this
+# run, or run `Build-Release.ps1` locally, then `dotnet nuget push` yourself).
+# This keeps any push credential off the CI server.
 
 on:
   push:
@@ -18,8 +17,8 @@ permissions:
   contents: read
 
 jobs:
-  publish:
-    name: Pack + push to nuget.org
+  pack:
+    name: Pack release artifacts (no publish)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -47,14 +46,7 @@ jobs:
       - name: Pack (libraries only; demo/tests are not packable)
         run: dotnet pack BlazorDX.slnx -c Release --no-build -o artifacts
 
-      - name: Push to nuget.org
-        run: >
-          dotnet nuget push "artifacts/*.nupkg"
-          --api-key "${{ secrets.NUGET_API_KEY }}"
-          --source https://api.nuget.org/v3/index.json
-          --skip-duplicate
-
-      - name: Upload packages as a build artifact
+      - name: Upload packages as a build artifact (for manual publishing)
         uses: actions/upload-artifact@v4
         with:
           name: nupkg
