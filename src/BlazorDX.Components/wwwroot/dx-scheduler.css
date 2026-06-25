@@ -131,21 +131,22 @@
   overflow: hidden;
   font: inherit;
   text-align: left;
-  color: #ffffff;
-  background: var(--dx-accent, #2563eb);
-  border: 0;
+  /* Neutral body + dark text clears AA for ANY event colour; the colour is the left
+     accent stripe, not the text background (no fixed darkening passes for light colours). */
+  color: var(--dx-text, #0f172a);
+  background: var(--dx-surface, #ffffff);
+  border: 1px solid var(--dx-border, #e2e8f0);
+  border-left: 4px solid var(--dx-event-accent, var(--dx-accent, #2563eb));
   border-radius: 6px;
   cursor: pointer;
 }
-.dx-sched-event:hover { filter: brightness(1.05); }
+.dx-sched-event:hover { background: var(--dx-surface-alt, #f1f5f9); }
 .dx-sched-event:focus-visible {
-  outline: 2px solid var(--dx-text, #0f172a);
+  outline: 2px solid var(--dx-accent, #2563eb);
   outline-offset: 1px;
 }
-/* Full-opacity white keeps these >= 4.5:1 on the accent event background; the
-   former opacity blend toward the background dropped contrast below AA (axe). */
-.dx-sched-event-time { font-size: 0.7rem; color: #ffffff; }
-.dx-sched-event-cat { font-size: 0.68rem; font-weight: 600; color: #ffffff; }
+.dx-sched-event-time { font-size: 0.7rem; color: var(--dx-text-muted, #475569); }
+.dx-sched-event-cat { font-size: 0.68rem; font-weight: 600; color: var(--dx-text, #0f172a); }
 .dx-sched-event-title {
   font-size: 0.8rem;
   font-weight: 600;
@@ -215,18 +216,20 @@
   font: inherit;
   font-size: 0.72rem;
   text-align: left;
-  color: #ffffff;
-  background: var(--dx-accent, #2563eb);
-  border: 0;
+  color: var(--dx-text, #0f172a);
+  background: var(--dx-surface, #ffffff);
+  border: 1px solid var(--dx-border, #e2e8f0);
+  border-left: 4px solid var(--dx-event-accent, var(--dx-accent, #2563eb));
   border-radius: 4px;
   cursor: pointer;
 }
-.dx-sched-month-event:hover { filter: brightness(1.05); }
+.dx-sched-month-event:hover { background: var(--dx-surface-alt, #f1f5f9); }
 .dx-sched-month-event:focus-visible {
-  outline: 2px solid var(--dx-text, #0f172a);
+  outline: 2px solid var(--dx-accent, #2563eb);
   outline-offset: 1px;
 }
-.dx-sched-month-dot { font-size: 0.6rem; line-height: 1; }
+/* aria-hidden decorative dot — carries the category colour cue (axe skips aria-hidden). */
+.dx-sched-month-dot { font-size: 0.6rem; line-height: 1; color: var(--dx-event-accent, var(--dx-accent, #2563eb)); }
 .dx-sched-month-event-label {
   overflow: hidden;
   text-overflow: ellipsis;

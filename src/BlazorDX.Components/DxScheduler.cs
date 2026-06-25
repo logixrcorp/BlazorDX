@@ -280,7 +280,7 @@ public sealed class DxScheduler : SchedulerPrimitive
         builder.AddAttribute(122, "class", "dx-sched-event");
         builder.AddAttribute(123, "style",
             string.Create(CultureInfo.InvariantCulture,
-                $"top:{top:0.#}px;height:{height:0.#}px;{EventBackground(ev.Color)}"));
+                $"top:{top:0.#}px;height:{height:0.#}px;{EventAccent(ev.Color)}"));
         builder.AddAttribute(124, "aria-label", EventLabel(ev));
         builder.AddAttribute(125, "onclick", EventCallback.Factory.Create(this, () => SelectAsync(ev)));
 
@@ -423,7 +423,7 @@ public sealed class DxScheduler : SchedulerPrimitive
         builder.SetKey(ev);
         builder.AddAttribute(171, "type", "button");
         builder.AddAttribute(172, "class", "dx-sched-month-event");
-        builder.AddAttribute(173, "style", ev.Color is null ? null : EventBackground(ev.Color));
+        builder.AddAttribute(173, "style", ev.Color is null ? null : EventAccent(ev.Color));
         builder.AddAttribute(174, "aria-label", EventLabel(ev));
         builder.AddAttribute(175, "onclick", EventCallback.Factory.Create(this, () => SelectAsync(ev)));
 
@@ -456,15 +456,16 @@ public sealed class DxScheduler : SchedulerPrimitive
 
     // ---- Styling ----
 
-    // Event blocks render white text (incl. the small category/time labels). A
-    // consumer-supplied colour can be a mid-tone (e.g. #16a34a) on which white drops
-    // below 4.5:1, so darken it toward black via color-mix until the white text clears
-    // AA for all event colours (WCAG 1.4.3 — verified by axe). The default accent
-    // (no Color) already clears AA and is left to the stylesheet.
-    private static string EventBackground(string? color) =>
+    // The consumer colour drives a left ACCENT border, not the text background: there is
+    // no fixed darkening that keeps white text >= 4.5:1 for an arbitrary input colour (a
+    // near-white colour stays light). So events use a neutral body with dark text — which
+    // clears AA for any colour — and surface the category colour as the accent stripe
+    // (and the month dot) via this CSS variable (WCAG 1.4.3, verified by axe). A null
+    // colour falls back to --dx-accent in the stylesheet.
+    private static string EventAccent(string? color) =>
         color is null
             ? string.Empty
-            : $"background:color-mix(in srgb, {color} 72%, #000);";
+            : $"--dx-event-accent:{color};";
 
     // ---- Labels ----
 
