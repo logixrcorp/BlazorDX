@@ -102,16 +102,27 @@ enhancements. None of this should be read as "ready"; it is a beta with work ahe
 
 ---
 
+## Extended document type handling
+
+The **viewer/editor** side of documents and reporting is now a planned track — PDF /
+Excel / Word viewers, a drag-and-drop file manager, scheduler depth, and a **functional
+SSRS report viewer built on Microsoft's own server components**. It is scoped to protect
+the core's identity: heavy parsing runs in **Rust → wasm**, in-browser viewers ship in a
+separate MIT `BlazorDX.Documents` package, and external-service/paid integrations (SSRS,
+Power BI) live in **server-side `BlazorDX.Integrations.*` packages** so the trim-clean
+WASM core is never weighed down. **WCAG 2.2 AA is a per-component done-gate** for the whole
+track (axe in CI + target-size/drag-alternative E2E + manual screen-reader pass), with a
+documented accessibility statement for the embedded report/PDF integrations. Full plan,
+phases, per-component language allocation, and the accessibility gate:
+**[roadmap-documents-and-reporting.md](roadmap-documents-and-reporting.md)**.
+
 ## Out of scope by design
 
-These are separate products (server-side document engines, not UI components), and
-pursuing them would dilute the headless/auditable identity that *is* the
-differentiator. Where it makes sense, we expose clean integration seams instead:
+These remain separate products that would dilute the headless/auditable identity that *is*
+the differentiator. Where it makes sense, we expose clean integration seams instead:
 
-- Document processing (PDF/Word/Excel generation & parsing)
-- Report designer
-- Full in-browser spreadsheet
-- PDF viewer
+- Report **designer** (authoring RDL/RDLC), not just viewing
+- Document **generation engines** beyond the existing export (`.xlsx` / PDF / CSV)
 - Mapping / GIS
 - Outlook-depth recurring scheduler, diagram/flowchart engine
 
