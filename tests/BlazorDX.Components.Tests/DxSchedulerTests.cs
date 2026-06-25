@@ -1,6 +1,7 @@
 using BlazorDX.Components;
 using BlazorDX.Primitives.Scheduling;
 using Bunit;
+using Microsoft.AspNetCore.Components.Web;
 using Xunit;
 
 namespace BlazorDX.Components.Tests;
@@ -90,5 +91,158 @@ public sealed class DxSchedulerTests : TestContext
 
         Assert.NotNull(selected);
         Assert.Equal("Pick me", selected!.Value.Title);
+    }
+
+    // ---- View switch ----
+
+    [Fact]
+    public void Renders_three_view_switch_tabs()
+    {
+        IRenderedComponent<DxScheduler> sched = Render();
+
+        var tabs = sched.FindAll("[role='tab']");
+        Assert.Equal(3, tabs.Count);
+        Assert.Equal("Week", tabs[0].TextContent);
+        Assert.Equal("Month", tabs[1].TextContent);
+        Assert.Equal("Day", tabs[2].TextContent);
+        Assert.Equal("true", tabs[0].GetAttribute("aria-selected"));   // Week default
+    }
+
+    [Fact]
+    public void Clicking_month_tab_switches_to_month_view()
+    {
+        SchedulerView changed = SchedulerView.Week;
+        IRenderedComponent<DxScheduler> sched = RenderComponent<DxScheduler>(parameters => parameters
+            .Add(s => s.WeekStart, Week)
+            .Add(s => s.ViewChanged, v => changed = v));
+
+        sched.Find("[role='tab']:nth-child(2)").Click();   // Month
+
+        Assert.Equal(SchedulerView.Month, changed);
+        Assert.NotEmpty(sched.FindAll(".dx-sched-month-cell"));
+    }
+
+    [Fact]
+    public void Live_region_announces_the_active_view()
+    {
+        IRenderedComponent<DxScheduler> sched = RenderComponent<DxScheduler>(parameters => parameters
+            .Add(s => s.WeekStart, Week)
+            .Add(s => s.View, SchedulerView.Month));
+
+        var live = sched.Find(".dx-sched-sr");
+        Assert.Equal("polite", live.GetAttribute("aria-live"));
+        Assert.Contains("Month", live.TextContent);
+    }
+
+    // ---- Day view ----
+
+    [Fact]
+    public void Day_view_renders_a_single_day_column()
+    {
+        IRenderedComponent<DxScheduler> sched = RenderComponent<DxScheduler>(parameters => parameters
+            .Add(s => s.WeekStart, Week)
+            .Add(s => s.View, SchedulerView.Day)
+            .Add(s => s.StartHour, 8)
+            .Add(s => s.EndHour, 18));
+
+        Assert.Single(sched.FindAll(".dx-sched-dayhead"));
+        Assert.Single(sched.FindAll(".dx-sched-col"));
+        Assert.Equal(10, sched.FindAll(".dx-sched-hour").Count);
+    }
+
+    [Fact]
+    public void Day_view_shows_only_that_days_events()
+    {
+        IRenderedComponent<DxScheduler> sched = RenderComponent<DxScheduler>(parameters => parameters
+            .Add(s => s.WeekStart, Week)
+            .Add(s => s.View, SchedulerView.Day)
+            .Add(s => s.StartHour, 8)
+            .Add(s => s.EndHour, 18)
+            .Add(s => s.Events, new[] { At(0, 9, 10, "Today event"), At(1, 9, 10, "Tomorrow event") }));
+
+        var events = sched.FindAll(".dx-sched-event");
+        Assert.Single(events);
+        Assert.Contains("Today event", events[0].GetAttribute("aria-label"));
+    }
+
+    // ---- Month view ----
+
+    [Fact]
+    public void Month_view_renders_a_full_grid_of_cells()
+    {
+        IRenderedComponent<DxScheduler> sched = RenderComponent<DxScheduler>(parameters => parameters
+            .Add(s => s.WeekStart, Week)   // June 2026
+            .Add(s => s.View, SchedulerView.Month));
+
+        int cells = sched.FindAll(".dx-sched-month-cell").Count;
+        Assert.True(cells % 7 == 0, "month grid is a whole number of weeks");
+        Assert.InRange(cells, 28, 42);
+        Assert.Equal(7, sched.FindAll(".dx-sched-month-head .dx-sched-dayhead").Count);
+    }
+
+    [Fact]
+    public void Month_event_button_has_accessible_name_with_date_time_and_title()
+    {
+        IRenderedComponent<DxScheduler> sched = RenderComponent<DxScheduler>(parameters => parameters
+            .Add(s => s.WeekStart, Week)
+            .Add(s => s.View, SchedulerView.Month)
+            .Add(s => s.Events, new[] { At(0, 9, 10, "Sprint plan") }));
+
+        var ev = sched.Find(".dx-sched-month-event");
+        Assert.Equal("button", ev.TagName.ToLowerInvariant());
+        string label = ev.GetAttribute("aria-label")!;
+        Assert.Contains("Sprint plan", label);
+        Assert.Contains("9:00", label);
+        Assert.Contains("2026", label);   // date present
+    }
+
+    [Fact]
+    public void Event_accessible_name_includes_category_text_not_colour_alone()
+    {
+        SchedulerEvent ev = new("Review",
+            Week.ToDateTime(TimeOnly.MinValue).AddHours(9),
+            Week.ToDateTime(TimeOnly.MinValue).AddHours(10),
+            "#16a34a",
+            "Confirmed");
+
+        IRenderedComponent<DxScheduler> sched = RenderComponent<DxScheduler>(parameters => parameters
+            .Add(s => s.WeekStart, Week)
+            .Add(s => s.StartHour, 8)
+            .Add(s => s.EndHour, 18)
+            .Add(s => s.Events, new[] { ev }));
+
+        var button = sched.Find(".dx-sched-event");
+        Assert.Contains("Confirmed", button.GetAttribute("aria-label"));
+        Assert.Contains("Confirmed", button.TextContent);   // visible text, not colour only
+    }
+
+    // ---- Keyboard navigation ----
+
+    [Fact]
+    public void Arrow_keys_move_the_active_cell_via_aria_activedescendant()
+    {
+        IRenderedComponent<DxScheduler> sched = RenderComponent<DxScheduler>(parameters => parameters
+            .Add(s => s.WeekStart, Week)
+            .Add(s => s.View, SchedulerView.Month));
+
+        var grid = sched.Find("[role='grid']");
+        Assert.Null(grid.GetAttribute("aria-activedescendant"));   // none until first key
+
+        grid.KeyDown(new KeyboardEventArgs { Key = "ArrowDown" });
+        grid = sched.Find("[role='grid']");
+        string? active = grid.GetAttribute("aria-activedescendant");
+        Assert.NotNull(active);
+
+        var cell = sched.Find($"#{active}");
+        Assert.Equal("gridcell", cell.GetAttribute("role"));
+    }
+
+    [Fact]
+    public void Grid_is_a_focusable_tab_stop()
+    {
+        IRenderedComponent<DxScheduler> sched = Render();
+
+        var grid = sched.Find("[role='grid']");
+        Assert.Equal("0", grid.GetAttribute("tabindex"));
     }
 }

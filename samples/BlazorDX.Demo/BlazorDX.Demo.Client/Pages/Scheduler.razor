@@ -8,19 +8,25 @@
 <h1>BlazorDX Scheduler</h1>
 
 <p class="dx-demo-meta">
-    A week view. Events are laid out by start/end time within their day column,
-    clamped to the visible hours. Use ‹ / › to change week, Today to return.
+    Week, Month, and Day views. Switch with the Week / Month / Day control (it is
+    keyboard-accessible — arrow keys move between views). Inside a view, the grid
+    takes focus and arrow keys move a roving active cell (Home/End jump to the row
+    edges, Ctrl+Home/End to the corners). Events are buttons whose names include
+    the date, time, title, and category; the category is shown as text, never colour
+    alone. Use ‹ / › to change period, Today to return.
     Last selected: <strong>@lastSelected</strong>.
 </p>
 
 <DxScheduler Events="events"
              @bind-WeekStart="weekStart"
+             @bind-View="view"
              StartHour="8"
              EndHour="18"
              OnEventSelected="OnSelected" />
 
 @code {
     private DateOnly weekStart = MondayOf(DateOnly.FromDateTime(DateTime.Today));
+    private SchedulerView view = SchedulerView.Week;
     private string lastSelected = "(none)";
 
     private void OnSelected(SchedulerEvent ev) => lastSelected = ev.Title;
@@ -35,11 +41,11 @@
         DateTime monday = week.ToDateTime(TimeOnly.MinValue);
         return
         [
-            new SchedulerEvent("Standup", monday.AddHours(9), monday.AddHours(9.5)),
-            new SchedulerEvent("Design review", monday.AddDays(1).AddHours(11), monday.AddDays(1).AddHours(12.5), "#16a34a"),
-            new SchedulerEvent("1:1", monday.AddDays(2).AddHours(14), monday.AddDays(2).AddHours(15)),
-            new SchedulerEvent("Release", monday.AddDays(3).AddHours(10), monday.AddDays(3).AddHours(13), "#d97706"),
-            new SchedulerEvent("Retro", monday.AddDays(4).AddHours(16), monday.AddDays(4).AddHours(17), "#7c3aed"),
+            new SchedulerEvent("Standup", monday.AddHours(9), monday.AddHours(9.5), Category: "Meeting"),
+            new SchedulerEvent("Design review", monday.AddDays(1).AddHours(11), monday.AddDays(1).AddHours(12.5), "#16a34a", "Confirmed"),
+            new SchedulerEvent("1:1", monday.AddDays(2).AddHours(14), monday.AddDays(2).AddHours(15), Category: "Meeting"),
+            new SchedulerEvent("Release", monday.AddDays(3).AddHours(10), monday.AddDays(3).AddHours(13), "#d97706", "Tentative"),
+            new SchedulerEvent("Retro", monday.AddDays(4).AddHours(16), monday.AddDays(4).AddHours(17), "#7c3aed", "Confirmed"),
         ];
     }
 }

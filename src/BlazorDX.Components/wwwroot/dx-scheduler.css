@@ -16,6 +16,9 @@
   border-bottom: 1px solid var(--dx-border, #e2e8f0);
 }
 .dx-sched-nav {
+  /* 2.5.8: clickable nav targets are at least 24x24 CSS px. */
+  min-width: 24px;
+  min-height: 24px;
   padding: 4px 10px;
   font: inherit;
   color: var(--dx-text, #0f172a);
@@ -25,7 +28,55 @@
   cursor: pointer;
 }
 .dx-sched-nav:hover { background: var(--dx-surface-alt, #f1f5f9); }
+.dx-sched-nav:focus-visible {
+  outline: 2px solid var(--dx-accent, #2563eb);
+  outline-offset: 1px;
+}
 .dx-sched-range { margin-left: 6px; font-weight: 600; }
+
+/* ---- View switch (Week / Month / Day) ---- */
+.dx-sched-views {
+  display: inline-flex;
+  margin-left: auto;
+  border: 1px solid var(--dx-border, #cbd5e1);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.dx-sched-view {
+  min-width: 24px;
+  min-height: 24px;
+  padding: 4px 12px;
+  font: inherit;
+  color: var(--dx-text, #0f172a);
+  background: var(--dx-surface, #ffffff);
+  border: 0;
+  border-left: 1px solid var(--dx-border, #cbd5e1);
+  cursor: pointer;
+}
+.dx-sched-view:first-child { border-left: 0; }
+.dx-sched-view:hover { background: var(--dx-surface-alt, #f1f5f9); }
+.dx-sched-view-on {
+  color: #ffffff;
+  background: var(--dx-accent, #2563eb);
+}
+.dx-sched-view:focus-visible {
+  outline: 2px solid var(--dx-text, #0f172a);
+  outline-offset: -2px;
+}
+
+/* Visually-hidden live region (announced, not shown). */
+.dx-sched-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
 
 .dx-sched-head {
   display: grid;
@@ -92,12 +143,99 @@
   outline-offset: 1px;
 }
 .dx-sched-event-time { font-size: 0.7rem; opacity: 0.9; }
+.dx-sched-event-cat { font-size: 0.68rem; font-weight: 600; opacity: 0.95; }
 .dx-sched-event-title {
   font-size: 0.8rem;
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Active time-slot cell (aria-activedescendant target). */
+.dx-sched-cell-active {
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  outline: 2px solid var(--dx-accent, #2563eb);
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--dx-accent, #2563eb) 10%, transparent);
+}
+.dx-sched-body:focus-visible,
+.dx-sched-month:focus-visible {
+  outline: 2px solid var(--dx-accent, #2563eb);
+  outline-offset: -2px;
+}
+
+/* ---- Month view ---- */
+.dx-sched-month-head {
+  display: grid;
+  border-bottom: 1px solid var(--dx-border, #e2e8f0);
+}
+.dx-sched-month {
+  display: grid;
+  grid-auto-rows: minmax(96px, 1fr);
+}
+.dx-sched-month-cell {
+  min-height: 96px;
+  padding: 4px;
+  border-right: 1px solid var(--dx-border, #e2e8f0);
+  border-bottom: 1px solid var(--dx-border, #e2e8f0);
+  overflow: hidden;
+}
+.dx-sched-month-num {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--dx-text-muted, #475569);
+}
+.dx-sched-outside {
+  background: var(--dx-surface-alt, #f8fafc);
+  color: var(--dx-text-muted, #94a3b8);
+}
+.dx-sched-month-cell.dx-sched-cell-active {
+  position: static;
+  background: color-mix(in srgb, var(--dx-accent, #2563eb) 10%, transparent);
+  outline: 2px solid var(--dx-accent, #2563eb);
+  outline-offset: -2px;
+}
+.dx-sched-month-event {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  margin-top: 3px;
+  padding: 2px 5px;
+  font: inherit;
+  font-size: 0.72rem;
+  text-align: left;
+  color: #ffffff;
+  background: var(--dx-accent, #2563eb);
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.dx-sched-month-event:hover { filter: brightness(1.05); }
+.dx-sched-month-event:focus-visible {
+  outline: 2px solid var(--dx-text, #0f172a);
+  outline-offset: 1px;
+}
+.dx-sched-month-dot { font-size: 0.6rem; line-height: 1; }
+.dx-sched-month-event-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 2.3 / motion: respect reduced-motion for any transitions. */
+@media (prefers-reduced-motion: reduce) {
+  .dx-sched-nav,
+  .dx-sched-view,
+  .dx-sched-event,
+  .dx-sched-month-event {
+    transition: none;
+  }
 }
 
 /* ---- Gantt ---- */
