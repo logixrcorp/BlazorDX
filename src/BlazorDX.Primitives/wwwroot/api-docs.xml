@@ -396,12 +396,22 @@
         <member name="M:BlazorDX.Primitives.Files.FolderRow.#ctor(BlazorDX.Primitives.Files.FileSystemEntry,System.Int32,System.Boolean,System.Boolean,System.Boolean)">
             <summary>One visible folder row in the navigation tree.</summary>
         </member>
+        <member name="T:BlazorDX.Primitives.Files.MoveResult">
+            <summary>The outcome of a move request, for an <c>aria-live</c> announcement.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Files.MoveResult.#ctor(BlazorDX.Primitives.Files.FileSystemEntry,BlazorDX.Primitives.Files.FileSystemEntry,System.Boolean)">
+            <summary>The outcome of a move request, for an <c>aria-live</c> announcement.</summary>
+        </member>
         <member name="T:BlazorDX.Primitives.Files.FileManagerPrimitive">
             <summary>
             Tier 1 headless file manager. Maintains the expanded/selected folder state,
             flattens the folder hierarchy for the navigation pane, exposes the selected
             folder's contents and its breadcrumb path, and routes "open" actions (drill
-            into a folder, or raise a file-open event). Renders nothing itself.
+            into a folder, or raise a file-open event). Also owns a mutable working copy of
+            the tree so items can be <em>moved</em> between folders (drag-and-drop, or the
+            keyboard/single-pointer alternative) without mutating the immutable
+            <see cref="T:BlazorDX.Primitives.Files.FileSystemEntry"/> records supplied via <see cref="P:BlazorDX.Primitives.Files.FileManagerPrimitive.Roots"/>. Renders
+            nothing itself.
             </summary>
         </member>
         <member name="P:BlazorDX.Primitives.Files.FileManagerPrimitive.OnFileOpen">
@@ -410,11 +420,26 @@
         <member name="P:BlazorDX.Primitives.Files.FileManagerPrimitive.SelectedFolderChanged">
             <summary>Raised when the selected folder changes.</summary>
         </member>
+        <member name="P:BlazorDX.Primitives.Files.FileManagerPrimitive.OnItemMove">
+            <summary>Raised after an item is moved into a folder (or to the root when null).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Files.FileManagerPrimitive.StatusMessage">
+            <summary>Human-readable result of the last move/upload/delete, for an <c>aria-live</c> region.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Files.FileManagerPrimitive.MoveCandidate">
+            <summary>The item currently marked to be moved by the keyboard/single-pointer path, if any.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Files.FileManagerPrimitive.IsMoveCandidate(BlazorDX.Primitives.Files.FileSystemEntry)">
+            <summary>True when <paramref name="entry"/> is the item marked for moving.</summary>
+        </member>
         <member name="M:BlazorDX.Primitives.Files.FileManagerPrimitive.FolderRows">
             <summary>The folder hierarchy flattened to the currently-visible rows.</summary>
         </member>
         <member name="M:BlazorDX.Primitives.Files.FileManagerPrimitive.Contents">
             <summary>The children of the selected folder (or the roots when nothing is selected).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Files.FileManagerPrimitive.MoveTargets">
+            <summary>The folders an item could be moved into from the current contents view, in display order.</summary>
         </member>
         <member name="M:BlazorDX.Primitives.Files.FileManagerPrimitive.Breadcrumb">
             <summary>The path from the root to the selected folder, root first.</summary>
@@ -424,6 +449,28 @@
         </member>
         <member name="M:BlazorDX.Primitives.Files.FileManagerPrimitive.OpenEntryAsync(BlazorDX.Primitives.Files.FileSystemEntry)">
             <summary>Opens an entry: drills into folders, raises <see cref="P:BlazorDX.Primitives.Files.FileManagerPrimitive.OnFileOpen"/> for files.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Files.FileManagerPrimitive.ToggleMoveCandidateAsync(BlazorDX.Primitives.Files.FileSystemEntry)">
+            <summary>
+            Moves <paramref name="item"/> into <paramref name="target"/> (or to the root
+            when <paramref name="target"/> is null). This is the single move primitive
+            shared by native drag-and-drop and the keyboard/single-pointer "move" buttons
+            (the WCAG 2.5.7 alternative). A move is rejected — and announced as such — when
+            the target is the item itself, the item's current parent (a no-op), or a
+            descendant of the item (which would orphan the subtree).
+            </summary>
+            <summary>
+            Marks (or unmarks) an item as the one to move via the keyboard/single-pointer
+            path: the first press arms the move, then activating a folder's "Move here"
+            control places it. A second press on the same item cancels. This is the WCAG
+            2.5.7 "mark then place" alternative to the drag gesture — no pointer drag, no JS.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Files.FileManagerPrimitive.PlaceMoveCandidateAsync(BlazorDX.Primitives.Files.FileSystemEntry)">
+            <summary>Places the currently-marked item into <paramref name="target"/> (root when null).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Files.FileManagerPrimitive.AnnounceUpload(System.Int32,BlazorDX.Primitives.Files.FileSystemEntry)">
+            <summary>Records an upload result for the <c>aria-live</c> region (4.1.3).</summary>
         </member>
         <member name="T:BlazorDX.Primitives.Forms.AiToolResult">
             <summary>The outcome of an AI tool invocation: a text payload and whether it is an error.</summary>

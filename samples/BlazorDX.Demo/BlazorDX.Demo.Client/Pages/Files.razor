@@ -2,6 +2,7 @@
 @rendermode InteractiveWebAssembly
 @using BlazorDX.Components
 @using BlazorDX.Primitives.Files
+@using Microsoft.AspNetCore.Components.Forms
 
 <PageTitle>File Manager</PageTitle>
 
@@ -14,12 +15,36 @@
     <strong>@opened</strong>.
 </p>
 
-<DxFileManager Roots="roots" OnFileOpen="OnOpen" />
+<p class="dx-demo-meta">
+    <strong>Hybrid drag-and-drop.</strong> Drag a row onto a folder (in either pane)
+    to move it, or drop OS files onto the contents pane to upload. Every gesture has a
+    non-drag equivalent: the ↔ button on a row arms a keyboard/single-pointer move
+    (then pick a destination's <em>Move here</em>), and <em>Upload files</em> is the
+    always-available upload path. Last action: <strong>@status</strong>.
+</p>
+
+<DxFileManager Roots="roots"
+               OnFileOpen="OnOpen"
+               OnItemMove="OnMove"
+               OnUpload="OnUpload"
+               OnFilesDropped="OnDropped" />
 
 @code {
     private string opened = "(none)";
+    private string status = "(none)";
 
     private void OnOpen(FileSystemEntry file) => opened = file.Name;
+
+    private void OnMove(MoveResult result) =>
+        status = result.Succeeded
+            ? $"moved {result.Item.Name} to {result.Target?.Name ?? "Files"}"
+            : $"move of {result.Item.Name} rejected";
+
+    private void OnUpload(IReadOnlyList<IBrowserFile> files) =>
+        status = $"selected {files.Count} file(s) to upload";
+
+    private void OnDropped(FileDropArgs args) =>
+        status = $"dropped {args.Files.Count} file(s) onto {args.Destination?.Name ?? "Files"}";
 
     private static readonly DateOnly Day = new(2026, 6, 1);
 

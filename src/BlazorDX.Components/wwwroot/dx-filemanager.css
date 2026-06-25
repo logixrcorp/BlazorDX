@@ -89,7 +89,7 @@
 .dx-fm-contents { overflow: auto; }
 .dx-fm-content-head, .dx-fm-content-row {
   display: grid;
-  grid-template-columns: 1fr 90px 120px;
+  grid-template-columns: 1fr 90px 120px 56px;
   align-items: center;
   gap: 8px;
   padding: 6px 14px;
@@ -116,3 +116,106 @@
 .dx-fm-size, .dx-fm-modified { color: var(--dx-text-muted, #64748b); font-size: 0.85rem; }
 .dx-fm-size { text-align: right; font-variant-numeric: tabular-nums; }
 .dx-fm-empty { padding: 24px 14px; color: var(--dx-text-muted, #94a3b8); }
+
+/* ---- Toolbar / upload (always-available path) ---- */
+.dx-fm-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--dx-border, #e2e8f0);
+}
+.dx-fm-upload {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 12px;
+  font-size: 0.85rem;
+  color: var(--dx-accent, #2563eb);
+  background: transparent;
+  border: 1px solid var(--dx-border, #e2e8f0);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.dx-fm-upload:hover { background: var(--dx-surface-alt, #f8fafc); }
+/* Keep the native input clickable across the whole label but visually hidden. */
+.dx-fm-upload-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.dx-fm-upload:focus-within {
+  outline: 2px solid var(--dx-accent, #2563eb);
+  outline-offset: 2px;
+}
+
+/* ---- Row actions: 24x24 hit areas (WCAG 2.5.8) ---- */
+.dx-fm-actions { display: flex; justify-content: flex-end; }
+.dx-fm-action {
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  font-size: 0.95rem;
+  line-height: 1;
+  color: var(--dx-text-muted, #64748b);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.dx-fm-action:hover { color: var(--dx-accent, #2563eb); border-color: var(--dx-border, #e2e8f0); }
+.dx-fm-action[aria-pressed="true"] {
+  color: var(--dx-accent, #2563eb);
+  border-color: var(--dx-accent, #2563eb);
+  background: color-mix(in srgb, var(--dx-accent, #2563eb) 12%, transparent);
+}
+.dx-fm-action:focus-visible {
+  outline: 2px solid var(--dx-accent, #2563eb);
+  outline-offset: 1px;
+}
+
+.dx-fm-row-moving { background: color-mix(in srgb, var(--dx-accent, #2563eb) 8%, transparent); }
+
+/* "Move here" placement targets (keyboard/single-pointer move alternative). */
+.dx-fm-move-here {
+  min-height: 24px;
+  margin-left: 6px;
+  padding: 2px 8px;
+  font-size: 0.78rem;
+  color: var(--dx-accent, #2563eb);
+  background: color-mix(in srgb, var(--dx-accent, #2563eb) 10%, transparent);
+  border: 1px solid var(--dx-accent, #2563eb);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.dx-fm-move-here:focus-visible {
+  outline: 2px solid var(--dx-accent, #2563eb);
+  outline-offset: 1px;
+}
+
+/* DnD drop affordance (applied by file-dnd.ts on dragover). */
+.dx-fm-drop-over {
+  outline: 2px dashed var(--dx-accent, #2563eb);
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--dx-accent, #2563eb) 6%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dx-fm-action, .dx-fm-move-here, .dx-fm-drop-over { transition: none; }
+}
+
+/* Visually contained but screen-reader-available status line (aria-live). */
+.dx-fm-status {
+  padding: 6px 14px;
+  min-height: 1.4em;
+  font-size: 0.82rem;
+  color: var(--dx-text-muted, #64748b);
+  border-top: 1px solid var(--dx-border, #e2e8f0);
+  background: var(--dx-surface-alt, #f8fafc);
+}

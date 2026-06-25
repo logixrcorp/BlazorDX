@@ -20,6 +20,7 @@ public static class InteropServiceCollectionExtensions
             services.AddScoped<IRichTextInterop, RichTextInterop>();
             services.AddScoped<IHotkeyInterop, HotkeyInterop>();
             services.AddScoped<IImageEditorInterop, ImageEditorInterop>();
+            services.AddScoped<IFileDndInterop, FileDndInterop>();
         }
         else
         {
@@ -32,6 +33,7 @@ public static class InteropServiceCollectionExtensions
             services.AddScoped<IRichTextInterop, NullRichTextInterop>();
             services.AddScoped<IHotkeyInterop, NullHotkeyInterop>();
             services.AddScoped<IImageEditorInterop, NullImageEditorInterop>();
+            services.AddScoped<IFileDndInterop, NullFileDndInterop>();
         }
 
         return services;
