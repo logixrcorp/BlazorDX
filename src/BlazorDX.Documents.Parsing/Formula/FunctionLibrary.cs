@@ -532,7 +532,9 @@ public static class FunctionLibrary
 
     /// <summary>
     /// Excel TRIM collapses internal whitespace runs to single spaces and strips the
-    /// ends, unlike <see cref="string.Trim()"/> which only strips the ends.
+    /// ends, unlike <see cref="string.Trim()"/> which only strips the ends. Every
+    /// whitespace character (tabs, newlines, non-breaking spaces, …) is treated as a
+    /// separator, matching Excel — not just the ASCII space.
     /// </summary>
     private static string TrimExcel(string text)
     {
@@ -541,7 +543,7 @@ public static class FunctionLibrary
         bool pendingSpace = false;
         foreach (char c in text)
         {
-            if (c == ' ')
+            if (char.IsWhiteSpace(c))
             {
                 if (inWord)
                 {

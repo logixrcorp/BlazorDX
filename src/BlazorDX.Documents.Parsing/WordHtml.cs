@@ -233,6 +233,13 @@ public static class WordHtml
     // forgiving: anything that does not parse as a clean tag is treated as text.
     private readonly record struct Token(bool IsTag, string Name, bool IsClose, bool SelfClose, string Text);
 
+    // Upper bound on the number of tokens we produce. contentEditable HTML is small;
+    // a pathologically nested or huge hostile input (e.g. <strong> repeated millions of
+    // times) must degrade gracefully instead of growing the token list — and the run
+    // buffer it feeds — without limit. Once the cap is hit the remainder of the input is
+    // appended as a single literal-text token so no content is silently dropped.
+    private const int MaxTokens = 1_000_000;
+
     // Splits HTML into a flat token stream of text and tags. Unterminated '<' is treated
     // as literal text; comments and the like degrade to text harmlessly.
     private static List<Token> Tokenize(string html)
@@ -243,13 +250,23 @@ public static class WordHtml
 
         while (i < n)
         {
+            // Bound pathological input: stop tokenizing past the cap and flush the rest
+            // as one text token so the parser still terminates in linear time.
+            if (tokens.Count >= MaxTokens)
+            {
+                tokens.Add(new Token(false, string.Empty, false, false, DecodeEntities(html.AsSpan(i))));
+                break;
+            }
+
             char c = html[i];
             if (c == '<')
             {
                 int close = html.IndexOf('>', i + 1);
-                if (close < 0)
+                if (close <= i)
                 {
-                    // No closing '>': the rest is literal text.
+                    // No closing '>' (or one that does not advance past the '<'): the
+                    // rest is literal text. Guarding against close <= i keeps the
+                    // Substring length below from ever going negative on input like "<>".
                     tokens.Add(new Token(false, string.Empty, false, false, DecodeEntities(html.AsSpan(i))));
                     break;
                 }

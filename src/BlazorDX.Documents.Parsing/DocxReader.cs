@@ -47,16 +47,40 @@ public static class DocxReader
     private const string WordprocessingMl =
         "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 
+    // Defensive cap on a single decompressed part. A .docx is attacker-controlled
+    // (uploaded by an untrusted user), so a maliciously crafted "zip bomb" entry —
+    // tiny compressed, enormous when inflated — must fail cleanly rather than exhaust
+    // memory. 64 MiB is far above any legitimate single OOXML part.
+    private const long MaxPartBytes = 64L * 1024 * 1024;
+
     private static readonly XmlReaderSettings ReaderSettings = new()
     {
         // Trim-/AOT-safe and untrusting: no DTD processing, no external entity
-        // resolution, no schema validation. Pure streaming reads.
+        // resolution, no schema validation. Pure streaming reads. DtdProcessing.Prohibit
+        // + XmlResolver = null together defeat XXE and the "billion laughs" entity-
+        // expansion attack; MaxCharactersInDocument bounds the streamed character count.
         DtdProcessing = DtdProcessing.Prohibit,
         XmlResolver = null,
+        MaxCharactersInDocument = MaxPartBytes,
         IgnoreComments = true,
         IgnoreProcessingInstructions = true,
         CloseInput = true,
     };
+
+    // Opens a zip entry for reading, first rejecting any entry whose declared
+    // uncompressed length exceeds <see cref="MaxPartBytes"/>. ZipArchiveEntry.Length is
+    // read from the local/central directory header without inflating the data, so this
+    // check is cheap and happens before a single decompressed byte is buffered.
+    private static Stream OpenChecked(ZipArchiveEntry entry)
+    {
+        if (entry.Length > MaxPartBytes)
+        {
+            throw new InvalidDataException(
+                $"docx part '{entry.FullName}' exceeds the {MaxPartBytes}-byte size limit and was rejected.");
+        }
+
+        return entry.Open();
+    }
 
     /// <summary>
     /// Parses a <c>.docx</c> byte stream into a <see cref="WordDocument"/>: the body
@@ -92,7 +116,7 @@ public static class DocxReader
             return new WordDocument([]);
         }
 
-        using Stream content = document.Open();
+        using Stream content = OpenChecked(document);
         using XmlReader reader = XmlReader.Create(content, ReaderSettings);
 
         List<WordBlock> blocks = [];
@@ -548,7 +572,7 @@ public static class DocxReader
         }
 
         Dictionary<string, int> map = [];
-        using Stream content = entry.Open();
+        using Stream content = OpenChecked(entry);
         using XmlReader reader = XmlReader.Create(content, ReaderSettings);
 
         while (reader.Read())

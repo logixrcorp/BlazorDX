@@ -164,6 +164,63 @@ public sealed class XlsxReaderTests
         Assert.Equal(0, blank.ColumnCount);
     }
 
+    [Fact]
+    public void Rejects_a_part_exceeding_the_size_cap_with_a_clear_exception()
+    {
+        // A zip bomb: a single part whose decompressed length is far over the reader's
+        // 64 MiB cap. The bytes are highly compressible (spaces), so the archive stays
+        // tiny on disk — exactly the attack the cap defends against. The reader must
+        // throw a documented InvalidDataException, not OOM or crash.
+        byte[] bytes = BuildWorkbookWithOversizePart("xl/sharedStrings.xml", 64L * 1024 * 1024 + 1);
+
+        InvalidDataException ex = Assert.Throws<InvalidDataException>(() => XlsxReader.Read(bytes));
+        Assert.Contains("size limit", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Normal_files_well_under_the_cap_still_read()
+    {
+        // Guard against the cap being too aggressive: an ordinary workbook reads fine.
+        byte[] bytes = BuildWorkbook(
+            sharedStrings: ["Hello"],
+            sheets: [("S", """<row r="1"><c r="A1" t="s"><v>0</v></c></row>""")]);
+
+        Workbook workbook = XlsxReader.Read(bytes);
+        Assert.Equal("Hello", Assert.Single(workbook.Sheets).Rows[0][0]);
+    }
+
+    // Builds a valid single-sheet package, then overwrites one part with a stream of
+    // `uncompressedLength` space characters so its ZipArchiveEntry.Length exceeds the cap
+    // while the stored (compressed) size stays small.
+    private static byte[] BuildWorkbookWithOversizePart(string partName, long uncompressedLength)
+    {
+        byte[] baseBytes = BuildWorkbook(
+            sharedStrings: ["x"],
+            sheets: [("S", """<row r="1"><c r="A1" t="s"><v>0</v></c></row>""")]);
+
+        using MemoryStream stream = new();
+        stream.Write(baseBytes, 0, baseBytes.Length);
+        stream.Position = 0;
+
+        using (ZipArchive zip = new(stream, ZipArchiveMode.Update, leaveOpen: true))
+        {
+            zip.GetEntry(partName)?.Delete();
+            ZipArchiveEntry entry = zip.CreateEntry(partName, CompressionLevel.Optimal);
+            using Stream content = entry.Open();
+            byte[] chunk = new byte[64 * 1024];
+            Array.Fill(chunk, (byte)' ');
+            long written = 0;
+            while (written < uncompressedLength)
+            {
+                int take = (int)Math.Min(chunk.Length, uncompressedLength - written);
+                content.Write(chunk, 0, take);
+                written += take;
+            }
+        }
+
+        return stream.ToArray();
+    }
+
     // Builds a minimal but valid .xlsx package by hand (same ZIP/OOXML shape the writer
     // uses), so tests can exercise multi-sheet and shared-string paths the single-sheet
     // writer does not produce.

@@ -117,4 +117,44 @@ public sealed class XlsxWorkbookWriterTests
         Assert.Equal("=1+1", reloaded.Sheets[0].Rows[0][0]);
         Assert.Equal("hello", reloaded.Sheets[1].Rows[0][0]);
     }
+
+    [Fact]
+    public void Deduplicates_colliding_sheet_names_so_the_file_opens()
+    {
+        // OOXML requires unique sheet names; two sheets named "Sheet" would otherwise
+        // produce a workbook Excel refuses to open. The writer appends " (2)", " (3)", …
+        Workbook workbook = new(
+        [
+            new Worksheet("Sheet", [["a"]], 1),
+            new Worksheet("Sheet", [["b"]], 1),
+            new Worksheet("Sheet", [["c"]], 1),
+        ]);
+
+        byte[] bytes = XlsxWorkbookWriter.Write(workbook);
+        Workbook reloaded = XlsxReader.Read(bytes);
+
+        string[] names = reloaded.Sheets.Select(s => s.Name).ToArray();
+        Assert.Equal(["Sheet", "Sheet (2)", "Sheet (3)"], names);
+        // Distinct names => the file round-trips and the data stays in order.
+        Assert.Equal(3, names.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        Assert.Equal("a", reloaded.Sheets[0].Rows[0][0]);
+        Assert.Equal("b", reloaded.Sheets[1].Rows[0][0]);
+        Assert.Equal("c", reloaded.Sheets[2].Rows[0][0]);
+    }
+
+    [Fact]
+    public void Sheet_name_dedup_is_case_insensitive_matching_excel()
+    {
+        Workbook workbook = new(
+        [
+            new Worksheet("Data", [["1"]], 1),
+            new Worksheet("data", [["2"]], 1),
+        ]);
+
+        byte[] bytes = XlsxWorkbookWriter.Write(workbook);
+        Workbook reloaded = XlsxReader.Read(bytes);
+
+        Assert.Equal("Data", reloaded.Sheets[0].Name);
+        Assert.Equal("data (2)", reloaded.Sheets[1].Name); // collides case-insensitively
+    }
 }

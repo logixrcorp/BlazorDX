@@ -218,6 +218,8 @@ public sealed class FormulaEngineTests
     [InlineData("=UPPER(\"aBc\")", "ABC")]
     [InlineData("=LOWER(\"aBc\")", "abc")]
     [InlineData("=TRIM(\"  a   b  \")", "a b")]   // collapses internal runs
+    [InlineData("=TRIM(\"a\tb\")", "a b")]         // tabs are whitespace: collapse to one space
+    [InlineData("=TRIM(\"\ta\t\tb\n\")", "a b")]   // mixed tabs/newlines, trimmed + collapsed
     [InlineData("=CONCAT(\"a\", \"b\", \"c\")", "abc")]
     [InlineData("=CONCATENATE(\"x\", 1, \"y\")", "x1y")]
     public void Text_functions(string formula, string expected)

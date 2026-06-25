@@ -189,6 +189,55 @@ public sealed class DocxReaderTests
         return DocxReader.Read(BuildPackage(document, styles));
     }
 
+    [Fact]
+    public void Rejects_a_part_exceeding_the_size_cap_with_a_clear_exception()
+    {
+        // A zip bomb: word/document.xml decompresses to far over the reader's 64 MiB cap
+        // while the stored bytes stay tiny (highly compressible). The reader must throw a
+        // documented InvalidDataException rather than exhausting memory.
+        byte[] bytes = BuildPackageWithOversizePart("word/document.xml", 64L * 1024 * 1024 + 1);
+
+        InvalidDataException ex = Assert.Throws<InvalidDataException>(() => DocxReader.Read(bytes));
+        Assert.Contains("size limit", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Normal_files_well_under_the_cap_still_read()
+    {
+        WordDocument doc = ReadBody("<w:p><w:r><w:t>Hello</w:t></w:r></w:p>");
+        WordParagraph para = Assert.IsType<WordParagraph>(Assert.Single(doc.Blocks));
+        Assert.Equal("Hello", para.Runs[0].Text);
+    }
+
+    // Builds a valid package, then overwrites one part with `uncompressedLength` space
+    // bytes so its ZipArchiveEntry.Length exceeds the cap while staying small on disk.
+    private static byte[] BuildPackageWithOversizePart(string partName, long uncompressedLength)
+    {
+        byte[] baseBytes = BuildPackage("<w:p><w:r><w:t>x</w:t></w:r></w:p>", null);
+
+        using MemoryStream stream = new();
+        stream.Write(baseBytes, 0, baseBytes.Length);
+        stream.Position = 0;
+
+        using (ZipArchive zip = new(stream, ZipArchiveMode.Update, leaveOpen: true))
+        {
+            zip.GetEntry(partName)?.Delete();
+            ZipArchiveEntry entry = zip.CreateEntry(partName, CompressionLevel.Optimal);
+            using Stream content = entry.Open();
+            byte[] chunk = new byte[64 * 1024];
+            Array.Fill(chunk, (byte)' ');
+            long written = 0;
+            while (written < uncompressedLength)
+            {
+                int take = (int)Math.Min(chunk.Length, uncompressedLength - written);
+                content.Write(chunk, 0, take);
+                written += take;
+            }
+        }
+
+        return stream.ToArray();
+    }
+
     // Builds a minimal .docx ZIP package: [Content_Types].xml, the package rels, and
     // the word/document.xml (+ optional word/styles.xml) parts.
     private static byte[] BuildPackage(string? documentXml, string? stylesXml)

@@ -329,6 +329,88 @@ public sealed class WordHtmlTests
     }
 
     // ------------------------------------------------------------------
+    // FromHtml never throws + bounds pathological input (hardening)
+    // ------------------------------------------------------------------
+
+    [Theory]
+    [InlineData("<>")]                       // empty tag: close at/right after open
+    [InlineData("<")]                        // bare unterminated '<'
+    [InlineData("a<>b")]                     // empty tag between text
+    [InlineData("<><><>")]                   // several empty tags
+    [InlineData("<<>>")]                     // nested angle brackets
+    public void FromHtml_malformed_empty_tags_never_throw(string html)
+    {
+        WordDocument doc = WordHtml.FromHtml(html);
+        Assert.NotNull(doc); // the <> case previously threw ArgumentOutOfRangeException
+    }
+
+    [Theory]
+    [InlineData("<p>open")]                  // unclosed paragraph
+    [InlineData("<strong>bold forever")]     // unclosed emphasis
+    [InlineData("<ul><li>item")]             // unclosed list/item
+    [InlineData("<table><tr><td>cell")]      // unclosed table
+    public void FromHtml_unclosed_tags_never_throw(string html)
+    {
+        WordDocument doc = WordHtml.FromHtml(html);
+        Assert.NotNull(doc);
+    }
+
+    [Fact]
+    public void FromHtml_deeply_nested_emphasis_returns_a_document_without_throwing()
+    {
+        // <strong> x N then text then N closes. Pathological nesting must not blow up.
+        const int n = 100_000;
+        StringBuilder sb = new(n * 9);
+        sb.Append("<p>");
+        for (int k = 0; k < n; k++)
+        {
+            sb.Append("<strong>");
+        }
+
+        sb.Append("deep");
+        for (int k = 0; k < n; k++)
+        {
+            sb.Append("</strong>");
+        }
+
+        sb.Append("</p>");
+
+        WordDocument doc = WordHtml.FromHtml(sb.ToString());
+
+        WordParagraph para = Assert.IsType<WordParagraph>(Assert.Single(doc.Blocks));
+        Assert.Equal("deep", PlainText(para.Runs));
+        Assert.True(para.Runs[0].Bold);
+    }
+
+    [Fact]
+    public void FromHtml_very_large_input_returns_a_document_without_throwing()
+    {
+        // A multi-megabyte hostile blob must degrade gracefully, not OOM or hang.
+        string huge = new string('x', 5_000_000);
+        WordDocument doc = WordHtml.FromHtml(huge);
+
+        WordParagraph para = Assert.IsType<WordParagraph>(Assert.Single(doc.Blocks));
+        Assert.Equal(huge.Length, PlainText(para.Runs).Length);
+    }
+
+    [Fact]
+    public void FromHtml_huge_tag_count_is_bounded_and_does_not_throw()
+    {
+        // Millions of tiny tags exceed the token cap; the result is still a valid,
+        // best-effort document produced in linear time.
+        StringBuilder sb = new();
+        for (int k = 0; k < 2_000_000; k++)
+        {
+            sb.Append("<b>");
+        }
+
+        sb.Append("tail");
+
+        WordDocument doc = WordHtml.FromHtml(sb.ToString());
+        Assert.NotNull(doc);
+    }
+
+    // ------------------------------------------------------------------
     // Bonus: full chain HTML-edit -> save .docx round-trips
     // ------------------------------------------------------------------
 

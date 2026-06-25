@@ -66,12 +66,18 @@ public static class XlsxWorkbookWriter
         ArgumentNullException.ThrowIfNull(workbook);
 
         IReadOnlyList<Worksheet> sheets = workbook.Sheets;
+
+        // OOXML requires unique sheet names; two sheets named "Sheet" produce a file
+        // Excel refuses to open. Resolve collisions once, up front, so the workbook
+        // part and any downstream use see the same final names.
+        IReadOnlyList<string> sheetNames = ResolveUniqueSheetNames(sheets);
+
         using MemoryStream stream = new();
         using (ZipArchive zip = new(stream, ZipArchiveMode.Create, leaveOpen: true))
         {
             AddEntry(zip, "[Content_Types].xml", BuildContentTypes(sheets.Count));
             AddEntry(zip, "_rels/.rels", RootRels);
-            AddEntry(zip, "xl/workbook.xml", BuildWorkbookPart(sheets));
+            AddEntry(zip, "xl/workbook.xml", BuildWorkbookPart(sheets, sheetNames));
             AddEntry(zip, "xl/_rels/workbook.xml.rels", BuildWorkbookRels(sheets.Count));
             AddEntry(zip, "xl/styles.xml", Styles);
 
@@ -103,7 +109,7 @@ public static class XlsxWorkbookWriter
         return sb.ToString();
     }
 
-    private static string BuildWorkbookPart(IReadOnlyList<Worksheet> sheets)
+    private static string BuildWorkbookPart(IReadOnlyList<Worksheet> sheets, IReadOnlyList<string> sheetNames)
     {
         StringBuilder sb = new();
         sb.Append("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>");
@@ -112,12 +118,37 @@ public static class XlsxWorkbookWriter
         for (int i = 0; i < sheets.Count; i++)
         {
             sb.Append("<sheet name=\"");
-            AppendAttributeEscaped(sb, SheetName(sheets[i].Name, i));
+            AppendAttributeEscaped(sb, sheetNames[i]);
             sb.Append("\" sheetId=\"").Append(i + 1).Append("\" r:id=\"rId").Append(i + 1).Append("\"/>");
         }
 
         sb.Append("</sheets></workbook>");
         return sb.ToString();
+    }
+
+    // Produces a final display name per sheet that is unique case-insensitively (Excel
+    // compares sheet names case-insensitively). A collision gets a " (2)", " (3)", …
+    // suffix; the suffix itself is re-checked so it cannot collide with another sheet.
+    private static IReadOnlyList<string> ResolveUniqueSheetNames(IReadOnlyList<Worksheet> sheets)
+    {
+        List<string> names = new(sheets.Count);
+        HashSet<string> seen = new(StringComparer.OrdinalIgnoreCase);
+
+        for (int i = 0; i < sheets.Count; i++)
+        {
+            string baseName = SheetName(sheets[i].Name, i);
+            string candidate = baseName;
+            int suffix = 2;
+            while (!seen.Add(candidate))
+            {
+                candidate = baseName + " (" + suffix.ToString(CultureInfo.InvariantCulture) + ")";
+                suffix++;
+            }
+
+            names.Add(candidate);
+        }
+
+        return names;
     }
 
     private static string BuildWorkbookRels(int sheetCount)
