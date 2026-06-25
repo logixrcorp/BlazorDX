@@ -213,6 +213,25 @@ for speed by design — applied to the compute crate and perf-sensitive componen
 **Acceptance:** trim-clean publish; bUnit + Playwright E2E (incl. the DnD no-JS / keyboard
 path); **WCAG 2.2 AA gate** (axe clean + target-size + drag-alternative + manual SR pass).
 
+**Status (Phase 1 — shipped on `feat/extended-document-handling`):**
+
+- ✅ **File manager** — interactive DnD + drop-to-upload + InputFile + 2.5.7 keyboard move
+  + robustness (race guard, name-collision, bounds, focus, dropped-metadata validation).
+  ⏳ *Deferred:* the **HTMX/static-SSR nav-listing half** of the hybrid, and Rust hashing.
+- ✅ **Scheduler** — Week/Month/Day, 2-D keyboard nav (incl. PageUp/Down), multi-day &
+  midnight events, ARIA grid/application roles. ⏳ *Deferred (marked in code):*
+  drag-to-move/create, RRULE recurrence, Rust overlap-lane kernel (layout is C#).
+- ✅ **PDF viewer** — native engine + accessible toolbar + `Source` XSS allowlist + embed
+  `title`/download fallback. Page-nav/zoom delegated to the native viewer.
+- ✅ **Cross-cutting** — axe gate wired to `/files` `/scheduler` `/docviewer` (**12/12 axe
+  routes green**; 5 real violations caught + fixed); CI runs `cargo test` + a `RustSpeed`
+  build smoke; 543 unit tests green; ADRs 0010–0014 written; manual-SR checklist added.
+- ⬜ **Open before Phase 1 is "fully done":** native-DnD / no-JS **Playwright E2E**;
+  **manual screen-reader pass** ([checklist](accessibility-screen-reader-checklist.md));
+  `docs/learn` entries for the 3 components; the
+  [package re-home decision](adr/0010-documents-and-reporting-integration.md)
+  (built into core, not yet `BlazorDX.Documents`).
+
 ### Phase 2 — Document viewers (read-only): interactive + static-SSR
 
 Two delivery tiers over the **same server-side parsers**: an interactive (WASM) viewer for
