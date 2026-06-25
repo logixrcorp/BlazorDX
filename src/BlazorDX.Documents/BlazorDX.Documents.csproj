@@ -26,6 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\BlazorDX.Documents.Parsing\BlazorDX.Documents.Parsing.csproj" />
     <ProjectReference Include="..\BlazorDX.Components\BlazorDX.Components.csproj" />
     <ProjectReference Include="..\BlazorDX.Primitives\BlazorDX.Primitives.csproj" />
     <ProjectReference Include="..\BlazorDX.Security\BlazorDX.Security.csproj" />

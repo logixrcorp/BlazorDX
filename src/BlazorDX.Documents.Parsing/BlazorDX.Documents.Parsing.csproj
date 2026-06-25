@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    UI-free document parsers + models (the `.xlsx`/`.docx` readers and their data
+    records). Split out of BlazorDX.Documents so BOTH the interactive (WASM) viewers
+    AND the static-SSR HTMX viewer can reuse the readers without the thin HTMX tier
+    dragging in the whole component catalog (ADR 0010 boundary: weight/deps, not topic).
+    Pure C#, no Razor, no component references; hand-rolled OOXML over
+    System.IO.Compression + System.Xml — zero reflection, AOT/trim-clean.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- Types keep the BlazorDX.Documents namespace (so consumers are unchanged);
+         the folder differs, so silence the namespace-folder style rule here only. -->
+    <NoWarn>$(NoWarn);IDE0130</NoWarn>
+  </PropertyGroup>
+
+</Project>

@@ -7,6 +7,7 @@
     <Project Path="src/BlazorDX.Security/BlazorDX.Security.csproj" />
     <Project Path="src/BlazorDX.SourceGen/BlazorDX.SourceGen.csproj" />
     <Project Path="src/BlazorDX.Htmx/BlazorDX.Htmx.csproj" />
+    <Project Path="src/BlazorDX.Documents.Parsing/BlazorDX.Documents.Parsing.csproj" />
     <Project Path="src/BlazorDX.Documents/BlazorDX.Documents.csproj" />
   </Folder>
   <Folder Name="/analyzers/">
