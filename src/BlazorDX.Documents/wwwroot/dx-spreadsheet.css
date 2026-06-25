@@ -118,6 +118,51 @@
   color: var(--dx-text-muted, #475569);
 }
 
+/* ---- Editable grid ---- */
+.dx-sheet-grid-editable .dx-sheet-cell,
+.dx-sheet-grid-editable .dx-sheet-colhead {
+  cursor: cell;
+}
+
+/* The active cell carries the roving tabindex; its focus ring marks the cursor
+   position for keyboard users (not color-dependent). */
+.dx-sheet-cell-active {
+  outline: 2px solid var(--dx-accent, #2563eb);
+  outline-offset: -2px;
+  background: var(--dx-accent-soft, #eff6ff);
+}
+
+.dx-sheet-editcell:focus-visible {
+  outline: 2px solid var(--dx-accent, #2563eb);
+  outline-offset: -2px;
+}
+
+/* Error cells: a distinguishable, AA-contrast treatment. The error text itself is
+   shown in the cell and announced via aria-label/title, so meaning never relies on
+   color alone (WCAG 1.4.1). #7f1d1d on #fef2f2 ≈ 9.6:1; the left bar adds a
+   non-color cue. */
+.dx-sheet-cell-error {
+  color: var(--dx-error-text, #7f1d1d);
+  background: var(--dx-error-bg, #fef2f2);
+  font-weight: 600;
+  border-left: 3px solid var(--dx-error-text, #7f1d1d);
+}
+
+.dx-sheet-cell-input {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--dx-text, #1e293b);
+  background: var(--dx-surface, #ffffff);
+  outline: 2px solid var(--dx-accent, #2563eb);
+  outline-offset: -2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dx-sheet-viewer * {
     scroll-behavior: auto;

@@ -23,7 +23,7 @@ namespace BlazorDX.Documents;
 /// <c>aria-colcount</c> for the <em>full</em> sheet so assistive technology reports the
 /// true size even though only the scroll window is in the DOM (WCAG 1.3.1).
 /// </remarks>
-public sealed class DxSpreadsheetViewer : SpreadsheetViewerPrimitive
+public sealed partial class DxSpreadsheetViewer : SpreadsheetViewerPrimitive
 {
     private ElementReference[] tabElements = [];
     private int pendingFocus = -1;
@@ -44,6 +44,8 @@ public sealed class DxSpreadsheetViewer : SpreadsheetViewerPrimitive
         {
             tabElements = new ElementReference[Sheets.Count];
         }
+
+        SyncEditState();
     }
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
@@ -113,7 +115,15 @@ public sealed class DxSpreadsheetViewer : SpreadsheetViewerPrimitive
             return;
         }
 
-        BuildGrid(builder, sheet);
+        if (Editable)
+        {
+            BuildEditableGrid(builder, sheet);
+        }
+        else
+        {
+            BuildGrid(builder, sheet);
+        }
+
         builder.CloseElement(); // tabpanel
     }
 
@@ -275,5 +285,7 @@ public sealed class DxSpreadsheetViewer : SpreadsheetViewerPrimitive
                 // Element not yet rendered; ignore.
             }
         }
+
+        await ApplyPendingEditFocusAsync();
     }
 }

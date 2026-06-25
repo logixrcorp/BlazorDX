@@ -93,7 +93,9 @@ public sealed class XlsxReaderTests
         Workbook workbook = XlsxReader.Read(bytes);
         Worksheet sheet = Assert.Single(workbook.Sheets);
 
-        Assert.Equal(["Inline", "Formula", "3.5"], sheet.Rows[0]);
+        // A formula cell round-trips as its source ("=A1"), not the cached <v>;
+        // the inline string and numeric value cells are unchanged.
+        Assert.Equal(["Inline", "=A1", "3.5"], sheet.Rows[0]);
     }
 
     [Fact]

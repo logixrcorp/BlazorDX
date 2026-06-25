@@ -28,6 +28,7 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
     [InlineData("/scheduler")]   // scheduler month/day/week views
     [InlineData("/docviewer")]   // PDF / document viewer
     [InlineData("/excel")]       // read-only virtualized spreadsheet viewer
+    [InlineData("/excel-edit")]  // editable spreadsheet: cell edit + formula recalc
     [InlineData("/word")]        // read-only semantic Word document viewer
     [InlineData("/htmx/doc")]            // static-SSR + HTMX read-only doc viewer (Excel default)
     [InlineData("/htmx/doc?kind=word")]  // ... Word semantic HTML

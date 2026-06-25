@@ -1,0 +1,69 @@
+@page "/excel-edit"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Documents
+
+<PageTitle>Excel editor</PageTitle>
+
+<h1>BlazorDX Editable Spreadsheet</h1>
+
+<p class="dx-demo-meta">
+    An <strong>editable</strong>, virtualized spreadsheet built on the same
+    <code>DxSpreadsheetViewer</code> grid as the read-only viewer — same ARIA
+    <code>role="grid"</code>, sheet <code>tablist</code>, and
+    <code>DxVirtualize&lt;T&gt;</code> windowing. Each cell holds <em>raw content</em>:
+    a literal, or a formula beginning with <code>=</code>. The grid shows the
+    <em>computed value</em> from the hand-rolled C# <code>FormulaEngine</code>; a cell in
+    edit mode shows its raw formula.
+</p>
+
+<p class="dx-demo-meta">
+    <strong>Keyboard:</strong> arrow keys / Home / End move the active cell;
+    <kbd>Enter</kbd> or <kbd>F2</kbd> edits it; <kbd>Enter</kbd> commits and recalculates,
+    <kbd>Tab</kbd> commits and moves, <kbd>Esc</kbd> cancels. Try editing <code>D2</code>
+    (a <code>=B2*C2</code> formula) or the totals in row&nbsp;6. Error cells (e.g. a
+    <code>=1/0</code>) announce the error in text, not by color alone.
+</p>
+
+<DxSpreadsheetViewer Workbook="workbook"
+                     Editable="true"
+                     WorkbookChanged="OnWorkbookChanged"
+                     ViewportHeight="320" />
+
+<p class="dx-demo-meta" aria-live="polite">
+    @if (edited is not null)
+    {
+        <span>Edited — the workbook can be saved back to <code>.xlsx</code> via
+        <code>XlsxWorkbookWriter.Write</code> (formulas preserved).</span>
+    }
+    else
+    {
+        <span>No edits yet.</span>
+    }
+</p>
+
+@code {
+    // Build the sample by writing a workbook with formulas to .xlsx, then reading it
+    // back — proving the formula round-trip end to end before the user even edits.
+    private readonly Workbook workbook = LoadSample();
+    private Workbook? edited;
+
+    private void OnWorkbookChanged(Workbook updated) => edited = updated;
+
+    private static Workbook LoadSample()
+    {
+        Worksheet orders = new("Orders",
+        [
+            ["Item", "Qty", "Unit price", "Line total"],
+            ["Notebooks", "3", "4.5", "=B2*C2"],
+            ["Pens", "12", "1.25", "=B3*C3"],
+            ["Folders", "5", "2", "=B4*C4"],
+            ["Markers", "8", "3.1", "=B5*C5"],
+            ["Total", "=SUM(B2:B5)", "", "=SUM(D2:D5)"],
+            ["Avg line", "", "", "=AVERAGE(D2:D5)"],
+            ["Bad cell", "", "", "=1/0"],
+        ], 4);
+
+        byte[] bytes = XlsxWorkbookWriter.Write(new Workbook([orders]));
+        return XlsxReader.Read(bytes);
+    }
+}

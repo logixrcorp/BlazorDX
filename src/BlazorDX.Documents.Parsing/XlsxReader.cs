@@ -20,8 +20,10 @@ namespace BlazorDX.Documents;
 /// <c>t="str"</c> formula-result strings, and ragged rows.
 /// </para>
 /// <para>
-/// Deferred (Phase 3+): formulas surface their last cached <c>&lt;v&gt;</c> value,
-/// they are not recomputed; number formats, styles, and merged cells are not yet
+/// Formula cells round-trip as their source: a <c>&lt;f&gt;EXPR&lt;/f&gt;</c> surfaces as
+/// <c>=EXPR</c> (the cached <c>&lt;v&gt;</c> is used only for plain value cells), so an
+/// edited workbook saved by <see cref="XlsxWorkbookWriter"/> reads its formulas back
+/// intact. Deferred (Phase 3+): number formats, styles, and merged cells are not yet
 /// interpreted (cells carry their raw text). Dates therefore appear as their
 /// underlying serial number.
 /// </para>
@@ -350,7 +352,10 @@ public static class XlsxReader
     //   t="str"        -> <v> is a formula-result string (used verbatim)
     //   t="b"          -> <v> is "1"/"0" boolean
     //   (no t / "n")   -> <v> is a number (kept as its invariant text)
-    // Formulas (<f>) are ignored; the cached <v> is what we surface.
+    // A formula cell (<f>EXPR</f>) surfaces as its source text prefixed with "=", so an
+    // edited workbook's formulas round-trip; the cached <v> is kept only when there is
+    // no <f> (a plain value cell). This makes the reader the faithful inverse of
+    // <see cref="XlsxWorkbookWriter"/>.
     private static string ReadCellValue(XmlReader reader, string? cellType, IReadOnlyList<string> sharedStrings)
     {
         if (reader.IsEmptyElement)
@@ -360,6 +365,7 @@ public static class XlsxReader
 
         int cellDepth = reader.Depth;
         string? value = null;
+        string? formula = null;
 
         while (reader.Read())
         {
@@ -377,6 +383,9 @@ public static class XlsxReader
 
             switch (reader.LocalName)
             {
+                case "f":
+                    formula = ReadElementText(reader);
+                    break;
                 case "v":
                     value = ReadElementText(reader);
                     break;
@@ -384,6 +393,12 @@ public static class XlsxReader
                     // Inline string: gather its <t> runs directly.
                     return ReadStringItem(reader);
             }
+        }
+
+        // A formula cell round-trips as its "=EXPR" source, not the cached value.
+        if (formula is not null)
+        {
+            return "=" + formula;
         }
 
         if (value is null)

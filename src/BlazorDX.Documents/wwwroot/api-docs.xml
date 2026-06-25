@@ -22,6 +22,21 @@
             <c>aria-colcount</c> for the <em>full</em> sheet so assistive technology reports the
             true size even though only the scroll window is in the DOM (WCAG 1.3.1).
             </remarks>
+            <summary>
+            The editable layer of <see cref="T:BlazorDX.Documents.DxSpreadsheetViewer"/>: when <see cref="P:BlazorDX.Documents.DxSpreadsheetViewer.Editable"/>
+            is set, the same virtualized <c>role="grid"</c> becomes a keyboard-first spreadsheet.
+            Each cell holds <b>raw content</b> (a literal, or a <c>=</c> formula); the grid shows
+            the <b>computed value</b> from <see cref="T:BlazorDX.Documents.Formula.FormulaEngine"/>, and a cell in edit mode
+            shows its raw content in an <c>&lt;input&gt;</c>. Commit recalculates the sheet.
+            </summary>
+            <remarks>
+            Kept in its own partial so the read-only file stays focused and under the 1000-line
+            cap. No reflection, no JS interop: focus is moved with Blazor's
+            <see cref="!:ElementReference.FocusAsync()"/>, and arrow/Home/End navigation runs in C#.
+            The active cell carries a roving <c>tabindex</c> (the DataGrid/scheduler keyboard
+            model); error cells get an <c>aria-label</c> that announces the error so meaning does
+            not rely on color alone (WCAG 1.4.1).
+            </remarks>
         </member>
         <member name="P:BlazorDX.Documents.DxSpreadsheetViewer.Class">
             <summary>Optional extra CSS class on the viewer root.</summary>
@@ -31,6 +46,28 @@
         </member>
         <member name="P:BlazorDX.Documents.DxSpreadsheetViewer.ViewportHeight">
             <summary>Pixel height of the scrollable grid viewport.</summary>
+        </member>
+        <member name="P:BlazorDX.Documents.DxSpreadsheetViewer.Editable">
+            <summary>
+            When true the viewer is an editable spreadsheet: cells accept literals and
+            <c>=</c> formulas, commit triggers a recalculation, and the edited
+            <see cref="T:BlazorDX.Documents.Workbook"/> is surfaced via <see cref="P:BlazorDX.Documents.DxSpreadsheetViewer.WorkbookChanged"/>.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Documents.DxSpreadsheetViewer.WorkbookChanged">
+            <summary>
+            Raised after every committed edit with a freshly built <see cref="T:BlazorDX.Documents.Workbook"/> of
+            raw content (formulas as <c>=…</c>), so the host can persist or save it.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Documents.DxSpreadsheetViewer.IsDirty">
+            <summary>Whether any cell has been edited since the workbook was loaded.</summary>
+        </member>
+        <member name="M:BlazorDX.Documents.DxSpreadsheetViewer.BuildEditedWorkbook">
+            <summary>
+            Builds a <see cref="T:BlazorDX.Documents.Workbook"/> of the current raw content (formulas preserved as
+            <c>=…</c>). The active sheet reflects in-flight edits; other sheets pass through.
+            </summary>
         </member>
         <member name="T:BlazorDX.Documents.DxWordViewer">
             <summary>
