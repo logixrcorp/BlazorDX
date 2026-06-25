@@ -266,8 +266,13 @@ semantic HTML (headings/lists/table headers/reading order) out of OOXML (Word); 
   ⏳ *Deferred (noted in code):* formulas show their cached value (no recompute), number
   formats / styling / merged cells not interpreted, and the **Rust `calamine` reader**
   (drops in behind the same model when scale demands).
-- ⬜ **Remaining in Phase 2:** the **Word viewer** (OOXML → sanitized semantic HTML) and the
-  **static-SSR `DxHtmxDocumentViewer`** (no-WASM read-only PDF/Excel/Word over HTMX).
+- ✅ **Word viewer** — `DocxReader` (hand-rolled WordprocessingML parse, no external deps)
+  → `DxWordViewer`, which renders **directly to semantic elements** (`<h1>`–`<h6>`, lists,
+  `<table>` with `<th scope>`) via the render tree — no `MarkupString`, auto-encoded, so
+  heading hierarchy/reading order are real (1.3.1/1.3.2/2.4.6). axe `/word` clean; 16 tests.
+  ⏳ *Deferred:* images, footnotes, hyperlinks (text only), nested-list levels, merged cells.
+- ⬜ **Remaining in Phase 2:** the **static-SSR `DxHtmxDocumentViewer`** (no-WASM read-only
+  PDF/Excel/Word over HTMX) — pending the parser-location decision (see ADR 0010 follow-up).
 
 ### Phase 3 — Office editors (larger; may land post-1.0)
 
