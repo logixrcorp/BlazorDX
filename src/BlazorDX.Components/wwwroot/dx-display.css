@@ -595,7 +595,29 @@
   color: var(--dx-text, #0f172a);
 }
 .dx-docview-zoom-value { font-size: 12px; min-width: 3em; text-align: center; color: var(--dx-muted, #64748b); }
-.dx-docview-download { margin-left: auto; font-size: 13px; color: var(--dx-accent, #2563eb); text-decoration: none; }
+.dx-docview-actions { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; }
+.dx-docview-action {
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  /* >=24x24 hit target (WCAG 2.5.8); roomy enough for a text label. */
+  min-height: 28px; min-width: 28px; padding: 4px 10px;
+  font-size: 13px; line-height: 1.2; white-space: nowrap;
+  border: 1px solid var(--dx-border, #e2e8f0); border-radius: 6px;
+  background: var(--dx-surface-alt, #f8fafc); color: var(--dx-accent, #2563eb);
+  text-decoration: none; cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.dx-docview-action:hover { background: var(--dx-surface, #ffffff); border-color: var(--dx-accent, #2563eb); }
+.dx-docview-action:focus-visible {
+  outline: 2px solid var(--dx-accent, #2563eb); outline-offset: 2px;
+}
+.dx-docview-zoom-btn:focus-visible {
+  outline: 2px solid var(--dx-accent, #2563eb); outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dx-docview-action { transition: none; }
+}
+.dx-docview-pdf-fallback { margin: 10px 0 0; font-size: 13px; color: var(--dx-muted, #64748b); }
+.dx-docview-pdf-fallback a { color: var(--dx-accent, #2563eb); }
 .dx-docview-body { flex: 1; overflow: auto; padding: 14px; background: var(--dx-surface-alt, #f1f5f9); }
 .dx-docview-img { display: block; margin: 0 auto; border-radius: 4px; box-shadow: 0 1px 6px rgba(15, 23, 42, 0.15); }
 .dx-docview-pdf { width: 100%; height: 60vh; border: 0; }

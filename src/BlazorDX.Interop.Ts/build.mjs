@@ -19,6 +19,7 @@ const entryPoints = [
   resolve(here, "src", "hotkeys.ts"),
   resolve(here, "src", "image-editor.ts"),
   resolve(here, "src", "file-dnd.ts"),
+  resolve(here, "src", "docviewer.ts"),
 ];
 
 await build({

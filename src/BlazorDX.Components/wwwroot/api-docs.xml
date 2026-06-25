@@ -470,6 +470,23 @@
         <member name="P:BlazorDX.Components.DxDocumentViewer.Class">
             <summary>Extra CSS classes appended to the viewer root.</summary>
         </member>
+        <member name="P:BlazorDX.Components.DxDocumentViewer.ShowToolbar">
+            <summary>
+            Shows the action toolbar (title, kind badge, and — per kind — zoom, download,
+            print, open-in-new-tab). On by default. The accessible download fallback link
+            below an embedded PDF is shown regardless, so turning the toolbar off never
+            strips the only way to obtain the file.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxDocumentViewer.ShowDownload">
+            <summary>Shows the Download control in the toolbar (where the kind supports it). On by default.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxDocumentViewer.ShowPrint">
+            <summary>Shows the Print control in the toolbar (PDF/image). On by default.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxDocumentViewer.ShowOpenInNewTab">
+            <summary>Shows the Open-in-new-tab control in the toolbar (PDF/image). On by default.</summary>
+        </member>
         <member name="T:BlazorDX.Components.DxDrawer">
             <summary>
             A persistent, collapsible side panel that pushes content rather than overlaying
