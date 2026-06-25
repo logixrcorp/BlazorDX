@@ -12,7 +12,26 @@ license = "MIT"
 crate-type = ["cdylib"]
 
 [profile.release]
-opt-level = "z"   # optimize for size; this ships to the browser
+opt-level = "z"   # optimize for size; this ships to the browser by default
 lto = true
 panic = "abort"
 codegen-units = 1
+
+# Opt-in SPEED profile, selected from MSBuild via -p:RustSpeed=true (see
+# build/Rust.targets) with `cargo build --profile release-speed`. It trades wasm
+# binary size for runtime throughput: opt-level=3 plus, when targeting wasm,
+# the +simd128 target-feature is supplied via RUSTFLAGS by the MSBuild target.
+# Leaving the default `release` profile untouched keeps the shipped size build
+# byte-for-byte identical when the property is unset.
+[profile.release-speed]
+inherits = "release"
+opt-level = 3
+
+[dev-dependencies]
+# Host-native microbenchmarks for the five kernels. Criterion runs on the host
+# target, so it measures the opt-level/algorithm delta only -- NOT wasm SIMD.
+criterion = { version = "0.5", default-features = false, features = ["cargo_bench_support"] }
+
+[[bench]]
+name = "kernels"
+harness = false

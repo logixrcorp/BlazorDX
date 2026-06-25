@@ -14,18 +14,53 @@
       RustWasmDest       - destination path for the copied .wasm
   -->
 
+  <!--
+    RustSpeed (opt-in, default unset/false) selects an opt-level=3 + wasm SIMD
+    build instead of the default size-tuned one. Enable with:
+
+      dotnet build ... -p:RustSpeed=true
+
+    When unset, the cargo invocation, profile, and RUSTFLAGS are exactly what
+    they were before this property existed, so the shipped .wasm is byte-for-byte
+    the size-tuned build. The speed build uses the `release-speed` cargo profile
+    (see Cargo.toml) and adds `-C target-feature=+simd128` via RUSTFLAGS.
+  -->
   <PropertyGroup>
     <RustTarget>wasm32-unknown-unknown</RustTarget>
     <RustManifest>$(RustCrateDir)\Cargo.toml</RustManifest>
-    <RustWasmBuilt>$(RustCrateDir)\target\$(RustTarget)\release\$(RustCrateName).wasm</RustWasmBuilt>
+
+    <!-- Default (size) build. -->
+    <RustCargoProfile>release</RustCargoProfile>
+    <RustProfileArg>--release</RustProfileArg>
+    <RustExtraRustFlags></RustExtraRustFlags>
+
+    <!-- Speed build override. -->
+    <RustCargoProfile Condition="'$(RustSpeed)' == 'true'">release-speed</RustCargoProfile>
+    <RustProfileArg Condition="'$(RustSpeed)' == 'true'">--profile release-speed</RustProfileArg>
+    <RustExtraRustFlags Condition="'$(RustSpeed)' == 'true'">-C target-feature=+simd128</RustExtraRustFlags>
+
+    <RustWasmBuilt>$(RustCrateDir)\target\$(RustTarget)\$(RustCargoProfile)\$(RustCrateName).wasm</RustWasmBuilt>
   </PropertyGroup>
 
   <Target Name="DxBuildRustWasm" BeforeTargets="BeforeBuild"
           Condition="'$(SkipRustBuild)' != 'true'">
 
-    <Message Importance="high" Text="BlazorDX: compiling Rust crate '$(RustCrateName)' to $(RustTarget)..." />
+    <Message Importance="high" Text="BlazorDX: compiling Rust crate '$(RustCrateName)' to $(RustTarget) (profile '$(RustCargoProfile)')..." />
 
-    <Exec Command="cargo build --release --target $(RustTarget) --manifest-path &quot;$(RustManifest)&quot;"
+    <!--
+      RUSTFLAGS is only set when RustSpeed is on; otherwise the env var is left
+      untouched so the default build is unaffected. The trailing && chains the
+      cargo call within the same (cmd) process so the SET sticks.
+    -->
+    <Exec Condition="'$(RustSpeed)' == 'true'"
+          Command="set RUSTFLAGS=$(RustExtraRustFlags)&amp;&amp; cargo build $(RustProfileArg) --target $(RustTarget) --manifest-path &quot;$(RustManifest)&quot;"
+          WorkingDirectory="$(RustCrateDir)"
+          ContinueOnError="true">
+      <Output TaskParameter="ExitCode" PropertyName="_DxCargoExit" />
+    </Exec>
+
+    <Exec Condition="'$(RustSpeed)' != 'true'"
+          Command="cargo build $(RustProfileArg) --target $(RustTarget) --manifest-path &quot;$(RustManifest)&quot;"
           WorkingDirectory="$(RustCrateDir)"
           ContinueOnError="true">
       <Output TaskParameter="ExitCode" PropertyName="_DxCargoExit" />
