@@ -1,0 +1,102 @@
+/*
+ * dx-word.css — read-only word-processing document viewer.
+ * CSS-variable driven so it inherits the host theme; falls back to accessible
+ * defaults. Text/background pairs clear WCAG 1.4.3 (4.5:1): #1e293b on #ffffff
+ * ≈ 14.7:1, #475569 on #f8fafc ≈ 7.5:1.
+ */
+
+.dx-word-viewer {
+  border: 1px solid var(--dx-border, #e2e8f0);
+  border-radius: 8px;
+  background: var(--dx-surface, #ffffff);
+  color: var(--dx-text, #1e293b);
+  padding: 2.5rem 3rem;
+  max-width: 52rem;
+  line-height: 1.65;
+  font-size: 1rem;
+  /* A long document scrolls within its own region; the region is focusable so
+     keyboard users can scroll it (WCAG 2.1.1). */
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.dx-word-viewer:focus-visible {
+  outline: 2px solid var(--dx-accent, #2563eb);
+  outline-offset: 2px;
+}
+
+/* Headings: a real, ordered outline. Sizes step down with level. */
+.dx-word-heading {
+  color: var(--dx-text, #1e293b);
+  line-height: 1.25;
+  font-weight: 600;
+  margin: 1.6em 0 0.6em;
+}
+
+.dx-word-viewer > .dx-word-heading:first-child {
+  margin-top: 0;
+}
+
+.dx-word-viewer h1.dx-word-heading { font-size: 2rem; }
+.dx-word-viewer h2.dx-word-heading { font-size: 1.6rem; }
+.dx-word-viewer h3.dx-word-heading { font-size: 1.3rem; }
+.dx-word-viewer h4.dx-word-heading { font-size: 1.1rem; }
+.dx-word-viewer h5.dx-word-heading { font-size: 1rem; }
+.dx-word-viewer h6.dx-word-heading {
+  font-size: 0.9rem;
+  color: var(--dx-text-muted, #475569);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dx-word-para {
+  margin: 0 0 1em;
+  white-space: pre-wrap; /* preserve <w:br>/<w:tab> the reader maps to \n / \t */
+}
+
+.dx-word-list {
+  margin: 0 0 1em;
+  padding-left: 1.5rem;
+}
+
+.dx-word-item {
+  margin: 0.25em 0;
+}
+
+.dx-word-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0 0 1.25em;
+  font-size: 0.9375rem;
+}
+
+.dx-word-table th,
+.dx-word-table td {
+  border: 1px solid var(--dx-border, #e2e8f0);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+  white-space: pre-wrap;
+}
+
+.dx-word-table th {
+  background: var(--dx-surface-alt, #f8fafc);
+  color: var(--dx-text, #1e293b);
+  font-weight: 600;
+}
+
+.dx-word-empty {
+  color: var(--dx-text-muted, #475569);
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dx-word-viewer {
+    scroll-behavior: auto;
+  }
+
+  .dx-word-viewer * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

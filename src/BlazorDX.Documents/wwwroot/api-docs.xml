@@ -4,6 +4,62 @@
         <name>BlazorDX.Documents</name>
     </assembly>
     <members>
+        <member name="T:BlazorDX.Documents.DocxReader">
+            <summary>
+            A tiny, dependency-free reader for the Office Open XML word-processing (.docx)
+            format — the sibling of <see cref="T:BlazorDX.Documents.XlsxReader"/>. It opens the ZIP package by
+            hand with <see cref="T:System.IO.Compression.ZipArchive"/> and parses <c>word/document.xml</c> (and, when
+            needed, <c>word/styles.xml</c>) with a streaming <see cref="T:System.Xml.XmlReader"/> — no
+            third-party library, no reflection, AOT- and trim-safe, so it runs unchanged in
+            the browser WebAssembly runtime.
+            </summary>
+            <remarks>
+            <para>
+            The reader produces the immutable <see cref="T:BlazorDX.Documents.WordDocument"/> model the Word viewer
+            consumes, in document (reading) order. It maps the common WordprocessingML body
+            constructs:
+            </para>
+            <list type="bullet">
+              <item><description><c>&lt;w:p&gt;</c> paragraphs, with <c>&lt;w:r&gt;&lt;w:t&gt;</c>
+              runs capturing <c>&lt;w:b&gt;</c>/<c>&lt;w:i&gt;</c> emphasis.</description></item>
+              <item><description>Headings from <c>&lt;w:pStyle w:val="Heading1..6"&gt;</c> (or
+              <c>Title</c> → level 1). Non-standard style ids are resolved through
+              <c>word/styles.xml</c> via the style's <c>&lt;w:name&gt;</c> or
+              <c>&lt;w:outlineLvl&gt;</c>.</description></item>
+              <item><description>Lists from <c>&lt;w:numPr&gt;</c>: a paragraph carrying a numbering
+              reference becomes a list item. Numbered vs. bulleted is a best-effort guess (see
+              below).</description></item>
+              <item><description>Tables <c>&lt;w:tbl&gt;</c>/<c>&lt;w:tr&gt;</c>/<c>&lt;w:tc&gt;</c>;
+              the first row is treated as the header row.</description></item>
+            </list>
+            <para>
+            <b>Deferred / not interpreted (best-effort, degrade gracefully):</b> images and
+            drawings; footnotes/endnotes, comments, and fields; hyperlinks render as their
+            plain text; list <em>nesting</em> is flattened to a single level; the
+            numbered-vs-bulleted decision reads <c>w:numId</c> heuristically (a <c>numId</c>
+            of <c>0</c>/absent is treated as bulleted) rather than resolving
+            <c>word/numbering.xml</c>; run-level color/size/underline beyond bold/italic is
+            dropped; merged table cells are read as individual cells. Anything unrecognized
+            degrades to a plain paragraph.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:BlazorDX.Documents.DocxReader.Read(System.Byte[])">
+            <summary>
+            Parses a <c>.docx</c> byte stream into a <see cref="T:BlazorDX.Documents.WordDocument"/>: the body
+            blocks in document (reading) order.
+            </summary>
+            <param name="bytes">The raw bytes of a <c>.docx</c> file.</param>
+            <returns>The parsed document.</returns>
+        </member>
+        <member name="M:BlazorDX.Documents.DocxReader.Read(System.IO.Stream)">
+            <summary>
+            Parses a <c>.docx</c> stream into a <see cref="T:BlazorDX.Documents.WordDocument"/>. The stream is
+            read as a ZIP package; the caller owns its lifetime.
+            </summary>
+            <param name="stream">A seekable stream positioned at the start of a <c>.docx</c> file.</param>
+            <returns>The parsed document.</returns>
+        </member>
         <member name="T:BlazorDX.Documents.DxSpreadsheetViewer">
             <summary>
             Tier 2 styled, read-only, multi-sheet spreadsheet viewer over a parsed
@@ -31,6 +87,48 @@
         </member>
         <member name="P:BlazorDX.Documents.DxSpreadsheetViewer.ViewportHeight">
             <summary>Pixel height of the scrollable grid viewport.</summary>
+        </member>
+        <member name="T:BlazorDX.Documents.DxWordViewer">
+            <summary>
+            Tier 2 styled, read-only word-processing document viewer over a parsed
+            <see cref="T:BlazorDX.Documents.WordDocument"/>. Renders each block as a <b>real semantic element</b> —
+            <c>&lt;h1&gt;</c>–<c>&lt;h6&gt;</c>, <c>&lt;p&gt;</c>, <c>&lt;strong&gt;</c>/
+            <c>&lt;em&gt;</c>, <c>&lt;ul&gt;</c>/<c>&lt;ol&gt;</c>/<c>&lt;li&gt;</c>, and a
+            <c>&lt;table&gt;</c> with <c>&lt;th scope&gt;</c>/<c>&lt;td&gt;</c> — straight to the
+            Blazor render tree. Styling is CSS-variable driven (see dx-word.css).
+            </summary>
+            <remarks>
+            <para>
+            The rendering rule is the whole accessibility point of this component: every block
+            becomes a true semantic element and all text flows through
+            <see cref="M:Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder.AddContent(System.Int32,System.String)"/> (HTML-encoded). There is
+            no <c>MarkupString</c> and no hand-built HTML string anywhere — output is therefore
+            both XSS-safe and the most accessible form for assistive technology: a genuine
+            heading outline (WCAG 1.3.1 / 2.4.6), lists exposed as lists, table headers carrying
+            <c>scope</c>, and DOM order equal to the document's reading order (WCAG 1.3.2).
+            </para>
+            <para>
+            Unlike <see cref="T:BlazorDX.Documents.DxSpreadsheetViewer"/>, the document is rendered <em>in full</em>
+            rather than virtualized: windowing top-level blocks would put a scroll container
+            between the document landmark and its headings/lists/tables, breaking the heading
+            outline and reading order that are this viewer's reason to exist. Correctness over
+            windowing for v1 (the prompt sanctions this). There is likewise no separate Tier 1
+            primitive — the content is static, so there is no headless state worth splitting
+            out; this single styled component is the whole surface.
+            </para>
+            </remarks>
+        </member>
+        <member name="P:BlazorDX.Documents.DxWordViewer.Document">
+            <summary>The parsed document to display. Blocks render in document order.</summary>
+        </member>
+        <member name="P:BlazorDX.Documents.DxWordViewer.Class">
+            <summary>Optional extra CSS class on the viewer root.</summary>
+        </member>
+        <member name="P:BlazorDX.Documents.DxWordViewer.Label">
+            <summary>
+            Accessible name for the document region (the <c>aria-label</c> on the
+            focusable <c>role="document"</c> container). Defaults to "Document".
+            </summary>
         </member>
         <member name="T:BlazorDX.Documents.Workbook">
             <summary>
@@ -112,6 +210,176 @@
         </member>
         <member name="M:BlazorDX.Documents.SpreadsheetViewerPrimitive.OnTabStripKeyDownAsync(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs)">
             <summary>Arrow/Home/End navigation across the tab strip (automatic activation).</summary>
+        </member>
+        <member name="T:BlazorDX.Documents.WordDocument">
+            <summary>
+            A parsed word-processing document: the ordered top-level blocks read from a
+            <c>.docx</c> file. This is <see cref="T:BlazorDX.Documents.DocxReader"/>'s output and
+            <c>DxWordViewer</c>'s input — a plain, immutable semantic model with no
+            reflection and no live file handle. The block order is the document's reading
+            order (WCAG 1.3.2).
+            </summary>
+            <param name="Blocks">The body blocks, top to bottom, in document order.</param>
+        </member>
+        <member name="M:BlazorDX.Documents.WordDocument.#ctor(System.Collections.Generic.IReadOnlyList{BlazorDX.Documents.WordBlock})">
+            <summary>
+            A parsed word-processing document: the ordered top-level blocks read from a
+            <c>.docx</c> file. This is <see cref="T:BlazorDX.Documents.DocxReader"/>'s output and
+            <c>DxWordViewer</c>'s input — a plain, immutable semantic model with no
+            reflection and no live file handle. The block order is the document's reading
+            order (WCAG 1.3.2).
+            </summary>
+            <param name="Blocks">The body blocks, top to bottom, in document order.</param>
+        </member>
+        <member name="P:BlazorDX.Documents.WordDocument.Blocks">
+            <summary>The body blocks, top to bottom, in document order.</summary>
+        </member>
+        <member name="T:BlazorDX.Documents.WordBlock">
+            <summary>
+            One top-level block of a <see cref="T:BlazorDX.Documents.WordDocument"/>. The hierarchy is closed and
+            pattern-matched by the viewer (no reflection): <see cref="T:BlazorDX.Documents.WordHeading"/>,
+            <see cref="T:BlazorDX.Documents.WordParagraph"/>, <see cref="T:BlazorDX.Documents.WordList"/>, and <see cref="T:BlazorDX.Documents.WordTable"/>.
+            Unknown constructs degrade to a <see cref="T:BlazorDX.Documents.WordParagraph"/> of their plain text.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Documents.WordHeading">
+            <summary>
+            A heading paragraph (mapped from a <c>Heading1</c>–<c>Heading6</c> or <c>Title</c>
+            paragraph style). <see cref="P:BlazorDX.Documents.WordHeading.Level"/> is clamped to 1–6 and drives the rendered
+            <c>&lt;h1&gt;</c>–<c>&lt;h6&gt;</c> element so the document has a real, ordered
+            heading outline (WCAG 1.3.1 / 2.4.6). A <c>Title</c> maps to level 1.
+            </summary>
+            <param name="Level">The heading level, 1 (most prominent) through 6.</param>
+            <param name="Runs">The inline runs making up the heading text.</param>
+        </member>
+        <member name="M:BlazorDX.Documents.WordHeading.#ctor(System.Int32,System.Collections.Generic.IReadOnlyList{BlazorDX.Documents.WordRun})">
+            <summary>
+            A heading paragraph (mapped from a <c>Heading1</c>–<c>Heading6</c> or <c>Title</c>
+            paragraph style). <see cref="P:BlazorDX.Documents.WordHeading.Level"/> is clamped to 1–6 and drives the rendered
+            <c>&lt;h1&gt;</c>–<c>&lt;h6&gt;</c> element so the document has a real, ordered
+            heading outline (WCAG 1.3.1 / 2.4.6). A <c>Title</c> maps to level 1.
+            </summary>
+            <param name="Level">The heading level, 1 (most prominent) through 6.</param>
+            <param name="Runs">The inline runs making up the heading text.</param>
+        </member>
+        <member name="P:BlazorDX.Documents.WordHeading.Level">
+            <summary>The heading level, 1 (most prominent) through 6.</summary>
+        </member>
+        <member name="P:BlazorDX.Documents.WordHeading.Runs">
+            <summary>The inline runs making up the heading text.</summary>
+        </member>
+        <member name="T:BlazorDX.Documents.WordParagraph">
+            <summary>
+            A body paragraph: a sequence of inline <see cref="T:BlazorDX.Documents.WordRun"/>s rendered as a
+            <c>&lt;p&gt;</c>. An empty run list is a blank paragraph.
+            </summary>
+            <param name="Runs">The inline runs making up the paragraph text, in order.</param>
+        </member>
+        <member name="M:BlazorDX.Documents.WordParagraph.#ctor(System.Collections.Generic.IReadOnlyList{BlazorDX.Documents.WordRun})">
+            <summary>
+            A body paragraph: a sequence of inline <see cref="T:BlazorDX.Documents.WordRun"/>s rendered as a
+            <c>&lt;p&gt;</c>. An empty run list is a blank paragraph.
+            </summary>
+            <param name="Runs">The inline runs making up the paragraph text, in order.</param>
+        </member>
+        <member name="P:BlazorDX.Documents.WordParagraph.Runs">
+            <summary>The inline runs making up the paragraph text, in order.</summary>
+        </member>
+        <member name="T:BlazorDX.Documents.WordList">
+            <summary>
+            A list: either bulleted (<c>&lt;ul&gt;</c>) or numbered (<c>&lt;ol&gt;</c>), with
+            each item a sequence of inline runs. Nesting is flattened in v1 — every item is a
+            top-level <c>&lt;li&gt;</c> (see <see cref="T:BlazorDX.Documents.DocxReader"/> remarks).
+            </summary>
+            <param name="Ordered"><see langword="true"/> for a numbered list; otherwise bulleted.</param>
+            <param name="Items">The list items, in order; each is its own run sequence.</param>
+        </member>
+        <member name="M:BlazorDX.Documents.WordList.#ctor(System.Boolean,System.Collections.Generic.IReadOnlyList{System.Collections.Generic.IReadOnlyList{BlazorDX.Documents.WordRun}})">
+            <summary>
+            A list: either bulleted (<c>&lt;ul&gt;</c>) or numbered (<c>&lt;ol&gt;</c>), with
+            each item a sequence of inline runs. Nesting is flattened in v1 — every item is a
+            top-level <c>&lt;li&gt;</c> (see <see cref="T:BlazorDX.Documents.DocxReader"/> remarks).
+            </summary>
+            <param name="Ordered"><see langword="true"/> for a numbered list; otherwise bulleted.</param>
+            <param name="Items">The list items, in order; each is its own run sequence.</param>
+        </member>
+        <member name="P:BlazorDX.Documents.WordList.Ordered">
+            <summary><see langword="true"/> for a numbered list; otherwise bulleted.</summary>
+        </member>
+        <member name="P:BlazorDX.Documents.WordList.Items">
+            <summary>The list items, in order; each is its own run sequence.</summary>
+        </member>
+        <member name="T:BlazorDX.Documents.WordTable">
+            <summary>
+            A table of rows of cells. The first row is treated as a header row: its cells
+            render as <c>&lt;th scope="col"&gt;</c>, the rest as <c>&lt;td&gt;</c> (WCAG 1.3.1).
+            Each cell carries its own inline runs.
+            </summary>
+            <param name="Rows">The rows, top to bottom; the first is the header row.</param>
+        </member>
+        <member name="M:BlazorDX.Documents.WordTable.#ctor(System.Collections.Generic.IReadOnlyList{BlazorDX.Documents.WordTableRow})">
+            <summary>
+            A table of rows of cells. The first row is treated as a header row: its cells
+            render as <c>&lt;th scope="col"&gt;</c>, the rest as <c>&lt;td&gt;</c> (WCAG 1.3.1).
+            Each cell carries its own inline runs.
+            </summary>
+            <param name="Rows">The rows, top to bottom; the first is the header row.</param>
+        </member>
+        <member name="P:BlazorDX.Documents.WordTable.Rows">
+            <summary>The rows, top to bottom; the first is the header row.</summary>
+        </member>
+        <member name="T:BlazorDX.Documents.WordTableRow">
+            <summary>One table row: its ordered cells.</summary>
+            <param name="Cells">The cells, left to right.</param>
+        </member>
+        <member name="M:BlazorDX.Documents.WordTableRow.#ctor(System.Collections.Generic.IReadOnlyList{BlazorDX.Documents.WordTableCell})">
+            <summary>One table row: its ordered cells.</summary>
+            <param name="Cells">The cells, left to right.</param>
+        </member>
+        <member name="P:BlazorDX.Documents.WordTableRow.Cells">
+            <summary>The cells, left to right.</summary>
+        </member>
+        <member name="T:BlazorDX.Documents.WordTableCell">
+            <summary>One table cell: the inline runs of its (first) paragraph's text.</summary>
+            <param name="Runs">The inline runs making up the cell text.</param>
+        </member>
+        <member name="M:BlazorDX.Documents.WordTableCell.#ctor(System.Collections.Generic.IReadOnlyList{BlazorDX.Documents.WordRun})">
+            <summary>One table cell: the inline runs of its (first) paragraph's text.</summary>
+            <param name="Runs">The inline runs making up the cell text.</param>
+        </member>
+        <member name="P:BlazorDX.Documents.WordTableCell.Runs">
+            <summary>The inline runs making up the cell text.</summary>
+        </member>
+        <member name="T:BlazorDX.Documents.WordRun">
+            <summary>
+            An inline run of text carrying best-effort character formatting. A run with no
+            emphasis (<see cref="P:BlazorDX.Documents.WordRun.Bold"/> and <see cref="P:BlazorDX.Documents.WordRun.Italic"/> both <see langword="false"/>)
+            renders as bare text — the viewer never fakes a semantic element for an unstyled
+            run.
+            </summary>
+            <param name="Text">The run's literal text.</param>
+            <param name="Bold">Whether the run is bold (<c>&lt;w:b&gt;</c>).</param>
+            <param name="Italic">Whether the run is italic (<c>&lt;w:i&gt;</c>).</param>
+        </member>
+        <member name="M:BlazorDX.Documents.WordRun.#ctor(System.String,System.Boolean,System.Boolean)">
+            <summary>
+            An inline run of text carrying best-effort character formatting. A run with no
+            emphasis (<see cref="P:BlazorDX.Documents.WordRun.Bold"/> and <see cref="P:BlazorDX.Documents.WordRun.Italic"/> both <see langword="false"/>)
+            renders as bare text — the viewer never fakes a semantic element for an unstyled
+            run.
+            </summary>
+            <param name="Text">The run's literal text.</param>
+            <param name="Bold">Whether the run is bold (<c>&lt;w:b&gt;</c>).</param>
+            <param name="Italic">Whether the run is italic (<c>&lt;w:i&gt;</c>).</param>
+        </member>
+        <member name="P:BlazorDX.Documents.WordRun.Text">
+            <summary>The run's literal text.</summary>
+        </member>
+        <member name="P:BlazorDX.Documents.WordRun.Bold">
+            <summary>Whether the run is bold (<c>&lt;w:b&gt;</c>).</summary>
+        </member>
+        <member name="P:BlazorDX.Documents.WordRun.Italic">
+            <summary>Whether the run is italic (<c>&lt;w:i&gt;</c>).</summary>
         </member>
         <member name="T:BlazorDX.Documents.XlsxReader">
             <summary>

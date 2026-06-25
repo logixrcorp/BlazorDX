@@ -1,0 +1,88 @@
+@page "/word"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Documents
+
+<PageTitle>Word viewer</PageTitle>
+
+<h1>BlazorDX Word Viewer</h1>
+
+<p class="dx-demo-meta">
+    A read-only, accessible word-processing document viewer. A <code>.docx</code> is
+    parsed by a hand-rolled, dependency-free <code>DocxReader</code> (the sibling of
+    the spreadsheet's <code>XlsxReader</code> — <code>System.IO.Compression</code> +
+    <code>XmlReader</code>, no third-party library, no reflection) into an immutable
+    <code>WordDocument</code> model. <code>DxWordViewer</code> then renders that model
+    <strong>directly to the render tree as real semantic elements</strong>:
+    <code>&lt;h1&gt;</code>–<code>&lt;h6&gt;</code>, <code>&lt;p&gt;</code>,
+    <code>&lt;strong&gt;</code>/<code>&lt;em&gt;</code>, <code>&lt;ul&gt;</code>/<code>&lt;ol&gt;</code>,
+    and <code>&lt;table&gt;</code> with <code>&lt;th scope&gt;</code>. There is no
+    <code>MarkupString</code>; every run of text is HTML-encoded, so output is both
+    XSS-safe and the most accessible form for assistive technology.
+</p>
+
+<p class="dx-demo-meta">
+    The result is a genuine heading outline (WCAG 1.3.1 / 2.4.6), lists exposed as
+    lists, and a reading order that matches the document (WCAG 1.3.2).
+    <strong>Deferred</strong> (later phases): images and drawings, footnotes,
+    hyperlink targets, nested list levels (flattened), and run color/size beyond
+    bold/italic.
+</p>
+
+<DxWordViewer Document="document" Label="Quarterly cognitive-load report" />
+
+@code {
+    private readonly WordDocument document = BuildSample();
+
+    private static WordDocument BuildSample() =>
+        new(
+        [
+            new WordHeading(1, [new WordRun("Quarterly Report")]),
+            new WordParagraph(
+            [
+                new WordRun("Prepared for the editorial review. This document is rendered "),
+                new WordRun("entirely", Italic: true),
+                new WordRun(" from a parsed semantic model — no raw HTML strings."),
+            ]),
+
+            new WordHeading(2, [new WordRun("Highlights")]),
+            new WordParagraph([new WordRun("The headline outcomes for the period were as follows.")]),
+            new WordList(false,
+            [
+                [new WordRun("Engagement held "), new WordRun("steady", Bold: true), new WordRun(" across all surfaces.")],
+                [new WordRun("Support volume fell by a fifth quarter over quarter.")],
+                [new WordRun("Two accessibility audits passed with zero serious findings.")],
+            ]),
+
+            new WordHeading(2, [new WordRun("Next steps")]),
+            new WordParagraph([new WordRun("The team agreed on the following ordered plan.")]),
+            new WordList(true,
+            [
+                [new WordRun("Ship the read-only document viewers.")],
+                [new WordRun("Begin the editing surface in the next phase.")],
+                [new WordRun("Run a full screen-reader pass before release.")],
+            ]),
+
+            new WordHeading(2, [new WordRun("Team roster")]),
+            new WordTable(
+            [
+                new WordTableRow(
+                [
+                    new WordTableCell([new WordRun("Name")]),
+                    new WordTableCell([new WordRun("Role")]),
+                    new WordTableCell([new WordRun("Focus")]),
+                ]),
+                new WordTableRow(
+                [
+                    new WordTableCell([new WordRun("Ada")]),
+                    new WordTableCell([new WordRun("Engineer")]),
+                    new WordTableCell([new WordRun("Parser")]),
+                ]),
+                new WordTableRow(
+                [
+                    new WordTableCell([new WordRun("Grace")]),
+                    new WordTableCell([new WordRun("Designer")]),
+                    new WordTableCell([new WordRun("Accessibility")]),
+                ]),
+            ]),
+        ]);
+}

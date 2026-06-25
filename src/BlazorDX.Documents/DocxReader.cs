@@ -1,0 +1,748 @@
+using System.Globalization;
+using System.IO.Compression;
+using System.Xml;
+
+namespace BlazorDX.Documents;
+
+/// <summary>
+/// A tiny, dependency-free reader for the Office Open XML word-processing (.docx)
+/// format — the sibling of <see cref="XlsxReader"/>. It opens the ZIP package by
+/// hand with <see cref="ZipArchive"/> and parses <c>word/document.xml</c> (and, when
+/// needed, <c>word/styles.xml</c>) with a streaming <see cref="XmlReader"/> — no
+/// third-party library, no reflection, AOT- and trim-safe, so it runs unchanged in
+/// the browser WebAssembly runtime.
+/// </summary>
+/// <remarks>
+/// <para>
+/// The reader produces the immutable <see cref="WordDocument"/> model the Word viewer
+/// consumes, in document (reading) order. It maps the common WordprocessingML body
+/// constructs:
+/// </para>
+/// <list type="bullet">
+///   <item><description><c>&lt;w:p&gt;</c> paragraphs, with <c>&lt;w:r&gt;&lt;w:t&gt;</c>
+///   runs capturing <c>&lt;w:b&gt;</c>/<c>&lt;w:i&gt;</c> emphasis.</description></item>
+///   <item><description>Headings from <c>&lt;w:pStyle w:val="Heading1..6"&gt;</c> (or
+///   <c>Title</c> → level 1). Non-standard style ids are resolved through
+///   <c>word/styles.xml</c> via the style's <c>&lt;w:name&gt;</c> or
+///   <c>&lt;w:outlineLvl&gt;</c>.</description></item>
+///   <item><description>Lists from <c>&lt;w:numPr&gt;</c>: a paragraph carrying a numbering
+///   reference becomes a list item. Numbered vs. bulleted is a best-effort guess (see
+///   below).</description></item>
+///   <item><description>Tables <c>&lt;w:tbl&gt;</c>/<c>&lt;w:tr&gt;</c>/<c>&lt;w:tc&gt;</c>;
+///   the first row is treated as the header row.</description></item>
+/// </list>
+/// <para>
+/// <b>Deferred / not interpreted (best-effort, degrade gracefully):</b> images and
+/// drawings; footnotes/endnotes, comments, and fields; hyperlinks render as their
+/// plain text; list <em>nesting</em> is flattened to a single level; the
+/// numbered-vs-bulleted decision reads <c>w:numId</c> heuristically (a <c>numId</c>
+/// of <c>0</c>/absent is treated as bulleted) rather than resolving
+/// <c>word/numbering.xml</c>; run-level color/size/underline beyond bold/italic is
+/// dropped; merged table cells are read as individual cells. Anything unrecognized
+/// degrades to a plain paragraph.
+/// </para>
+/// </remarks>
+public static class DocxReader
+{
+    private const string WordprocessingMl =
+        "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+
+    private static readonly XmlReaderSettings ReaderSettings = new()
+    {
+        // Trim-/AOT-safe and untrusting: no DTD processing, no external entity
+        // resolution, no schema validation. Pure streaming reads.
+        DtdProcessing = DtdProcessing.Prohibit,
+        XmlResolver = null,
+        IgnoreComments = true,
+        IgnoreProcessingInstructions = true,
+        CloseInput = true,
+    };
+
+    /// <summary>
+    /// Parses a <c>.docx</c> byte stream into a <see cref="WordDocument"/>: the body
+    /// blocks in document (reading) order.
+    /// </summary>
+    /// <param name="bytes">The raw bytes of a <c>.docx</c> file.</param>
+    /// <returns>The parsed document.</returns>
+    public static WordDocument Read(byte[] bytes)
+    {
+        ArgumentNullException.ThrowIfNull(bytes);
+        using MemoryStream stream = new(bytes, writable: false);
+        return Read(stream);
+    }
+
+    /// <summary>
+    /// Parses a <c>.docx</c> stream into a <see cref="WordDocument"/>. The stream is
+    /// read as a ZIP package; the caller owns its lifetime.
+    /// </summary>
+    /// <param name="stream">A seekable stream positioned at the start of a <c>.docx</c> file.</param>
+    /// <returns>The parsed document.</returns>
+    public static WordDocument Read(Stream stream)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+        using ZipArchive zip = new(stream, ZipArchiveMode.Read, leaveOpen: true);
+
+        // styleId -> heading level (1-6), resolved from word/styles.xml. Lets us map
+        // non-standard heading style ids (e.g. "Ttulo1") via name/outlineLvl.
+        IReadOnlyDictionary<string, int> headingStyles = ReadHeadingStyles(zip);
+
+        ZipArchiveEntry? document = zip.GetEntry("word/document.xml");
+        if (document is null)
+        {
+            return new WordDocument([]);
+        }
+
+        using Stream content = document.Open();
+        using XmlReader reader = XmlReader.Create(content, ReaderSettings);
+
+        List<WordBlock> blocks = [];
+        // Pending list run: consecutive list-item paragraphs of the same kind are
+        // coalesced into one WordList so they render as a single <ul>/<ol>.
+        bool listOrdered = false;
+        List<IReadOnlyList<WordRun>>? listItems = null;
+
+        void FlushList()
+        {
+            if (listItems is { Count: > 0 })
+            {
+                blocks.Add(new WordList(listOrdered, listItems));
+            }
+
+            listItems = null;
+        }
+
+        while (reader.Read())
+        {
+            if (reader.NodeType != XmlNodeType.Element || reader.NamespaceURI != WordprocessingMl)
+            {
+                continue;
+            }
+
+            if (reader.LocalName == "p")
+            {
+                ParagraphContent para = ReadParagraph(reader, headingStyles);
+
+                if (para.ListKind is { } kind)
+                {
+                    // Same-kind run continues; a kind switch closes the previous list.
+                    if (listItems is not null && listOrdered != kind.Ordered)
+                    {
+                        FlushList();
+                    }
+
+                    listOrdered = kind.Ordered;
+                    listItems ??= [];
+                    listItems.Add(para.Runs);
+                    continue;
+                }
+
+                FlushList();
+
+                if (para.HeadingLevel is { } level)
+                {
+                    blocks.Add(new WordHeading(level, para.Runs));
+                }
+                else
+                {
+                    blocks.Add(new WordParagraph(para.Runs));
+                }
+            }
+            else if (reader.LocalName == "tbl")
+            {
+                FlushList();
+                blocks.Add(ReadTable(reader));
+            }
+        }
+
+        FlushList();
+        return new WordDocument(blocks);
+    }
+
+    private readonly record struct ListKind(bool Ordered);
+
+    private sealed record ParagraphContent(
+        IReadOnlyList<WordRun> Runs,
+        int? HeadingLevel,
+        ListKind? ListKind);
+
+    // Reads one <w:p>: its paragraph properties (<w:pPr>: style, numbering) then its
+    // runs. The reader is positioned on the <w:p> start element; on return it sits on
+    // the matching </w:p> end element.
+    private static ParagraphContent ReadParagraph(
+        XmlReader reader, IReadOnlyDictionary<string, int> headingStyles)
+    {
+        if (reader.IsEmptyElement)
+        {
+            return new ParagraphContent([], null, null);
+        }
+
+        int paraDepth = reader.Depth;
+        List<WordRun> runs = [];
+        int? headingLevel = null;
+        ListKind? listKind = null;
+
+        while (reader.Read())
+        {
+            if (reader.NodeType == XmlNodeType.EndElement
+                && reader.Depth == paraDepth
+                && reader.LocalName == "p")
+            {
+                break;
+            }
+
+            if (reader.NodeType != XmlNodeType.Element || reader.NamespaceURI != WordprocessingMl)
+            {
+                continue;
+            }
+
+            switch (reader.LocalName)
+            {
+                case "pPr":
+                    (headingLevel, listKind) = ReadParagraphProperties(reader, headingStyles);
+                    break;
+                case "r":
+                    AppendRun(reader, runs);
+                    break;
+                case "hyperlink":
+                    // A hyperlink wraps runs; flatten to its text (URL is not surfaced in v1).
+                    ReadRunsWithin(reader, "hyperlink", runs);
+                    break;
+            }
+        }
+
+        return new ParagraphContent(CoalesceRuns(runs), headingLevel, listKind);
+    }
+
+    // Reads <w:pPr>: resolves a heading level from <w:pStyle w:val="..."> and detects
+    // a list item from <w:numPr>. Returns (headingLevel?, listKind?).
+    private static (int? HeadingLevel, ListKind? ListKind) ReadParagraphProperties(
+        XmlReader reader, IReadOnlyDictionary<string, int> headingStyles)
+    {
+        if (reader.IsEmptyElement)
+        {
+            return (null, null);
+        }
+
+        int pprDepth = reader.Depth;
+        int? headingLevel = null;
+        bool isList = false;
+        int numId = -1;
+
+        while (reader.Read())
+        {
+            if (reader.NodeType == XmlNodeType.EndElement
+                && reader.Depth == pprDepth
+                && reader.LocalName == "pPr")
+            {
+                break;
+            }
+
+            if (reader.NodeType != XmlNodeType.Element || reader.NamespaceURI != WordprocessingMl)
+            {
+                continue;
+            }
+
+            switch (reader.LocalName)
+            {
+                case "pStyle":
+                    string? styleId = reader.GetAttribute("val", WordprocessingMl);
+                    headingLevel = HeadingLevelForStyle(styleId, headingStyles);
+                    break;
+                case "numPr":
+                    isList = true;
+                    break;
+                case "numId" when isList:
+                    // <w:numId w:val="N"> inside <w:numPr>; best-effort ordered guess.
+                    if (int.TryParse(reader.GetAttribute("val", WordprocessingMl),
+                        NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsed))
+                    {
+                        numId = parsed;
+                    }
+
+                    break;
+            }
+        }
+
+        if (isList)
+        {
+            // Heuristic without resolving numbering.xml: numId 0 (or absent) is the
+            // "no numbering" sentinel Word uses for bullets in many documents; any
+            // positive id is treated as ordered. Headings never coexist with lists here.
+            bool ordered = numId > 0;
+            return (null, new ListKind(ordered));
+        }
+
+        return (headingLevel, null);
+    }
+
+    // Maps a paragraph style id to a heading level (1-6), or null if it is not a
+    // heading. Recognizes the conventional "Heading1".."Heading6" / "Title" ids first,
+    // then falls back to the styles.xml-derived map for localized/custom ids.
+    private static int? HeadingLevelForStyle(string? styleId, IReadOnlyDictionary<string, int> headingStyles)
+    {
+        if (string.IsNullOrEmpty(styleId))
+        {
+            return null;
+        }
+
+        if (styleId.Equals("Title", StringComparison.OrdinalIgnoreCase))
+        {
+            return 1;
+        }
+
+        if (styleId.StartsWith("Heading", StringComparison.OrdinalIgnoreCase)
+            && int.TryParse(styleId.AsSpan("Heading".Length), NumberStyles.Integer,
+                CultureInfo.InvariantCulture, out int level)
+            && level is >= 1 and <= 6)
+        {
+            return level;
+        }
+
+        return headingStyles.TryGetValue(styleId, out int mapped) ? mapped : null;
+    }
+
+    // Reads one <w:r>: appends a WordRun carrying its concatenated <w:t> text plus
+    // bold/italic flags from <w:rPr>. The reader is on the <w:r> start element.
+    private static void AppendRun(XmlReader reader, List<WordRun> runs)
+    {
+        if (reader.IsEmptyElement)
+        {
+            return;
+        }
+
+        int runDepth = reader.Depth;
+        bool bold = false;
+        bool italic = false;
+        System.Text.StringBuilder? text = null;
+
+        while (reader.Read())
+        {
+            if (reader.NodeType == XmlNodeType.EndElement
+                && reader.Depth == runDepth
+                && reader.LocalName == "r")
+            {
+                break;
+            }
+
+            if (reader.NodeType != XmlNodeType.Element || reader.NamespaceURI != WordprocessingMl)
+            {
+                continue;
+            }
+
+            switch (reader.LocalName)
+            {
+                case "rPr":
+                    (bold, italic) = ReadRunProperties(reader);
+                    break;
+                case "t":
+                    (text ??= new System.Text.StringBuilder()).Append(ReadElementText(reader));
+                    break;
+                case "tab":
+                    (text ??= new System.Text.StringBuilder()).Append('\t');
+                    break;
+                case "br":
+                case "cr":
+                    (text ??= new System.Text.StringBuilder()).Append('\n');
+                    break;
+            }
+        }
+
+        if (text is { Length: > 0 })
+        {
+            runs.Add(new WordRun(text.ToString(), bold, italic));
+        }
+    }
+
+    // Reads <w:rPr> for bold/italic. A toggle element with w:val="false"/"0"/"off"
+    // turns the property off; its mere presence (or "true"/"1"/"on") turns it on.
+    private static (bool Bold, bool Italic) ReadRunProperties(XmlReader reader)
+    {
+        if (reader.IsEmptyElement)
+        {
+            return (false, false);
+        }
+
+        int rprDepth = reader.Depth;
+        bool bold = false;
+        bool italic = false;
+
+        while (reader.Read())
+        {
+            if (reader.NodeType == XmlNodeType.EndElement
+                && reader.Depth == rprDepth
+                && reader.LocalName == "rPr")
+            {
+                break;
+            }
+
+            if (reader.NodeType != XmlNodeType.Element || reader.NamespaceURI != WordprocessingMl)
+            {
+                continue;
+            }
+
+            switch (reader.LocalName)
+            {
+                case "b":
+                    bold = IsToggleOn(reader.GetAttribute("val", WordprocessingMl));
+                    break;
+                case "i":
+                    italic = IsToggleOn(reader.GetAttribute("val", WordprocessingMl));
+                    break;
+            }
+        }
+
+        return (bold, italic);
+    }
+
+    // An OOXML on/off toggle: absent attribute means "on"; explicit false/0/off mean off.
+    private static bool IsToggleOn(string? val) =>
+        val is null
+        || !(val.Equals("false", StringComparison.OrdinalIgnoreCase)
+             || val == "0"
+             || val.Equals("off", StringComparison.OrdinalIgnoreCase));
+
+    // Reads runs nested directly inside a container (e.g. <w:hyperlink>) into the
+    // supplied list. The reader is positioned on the container start element.
+    private static void ReadRunsWithin(XmlReader reader, string containerName, List<WordRun> runs)
+    {
+        if (reader.IsEmptyElement)
+        {
+            return;
+        }
+
+        int depth = reader.Depth;
+
+        while (reader.Read())
+        {
+            if (reader.NodeType == XmlNodeType.EndElement
+                && reader.Depth == depth
+                && reader.LocalName == containerName)
+            {
+                break;
+            }
+
+            if (reader.NodeType == XmlNodeType.Element
+                && reader.LocalName == "r"
+                && reader.NamespaceURI == WordprocessingMl)
+            {
+                AppendRun(reader, runs);
+            }
+        }
+    }
+
+    // Reads one <w:tbl> into a WordTable of rows of cells. The reader is on the <w:tbl>
+    // start element; on return it sits on the matching </w:tbl>.
+    private static WordTable ReadTable(XmlReader reader)
+    {
+        if (reader.IsEmptyElement)
+        {
+            return new WordTable([]);
+        }
+
+        int tableDepth = reader.Depth;
+        List<WordTableRow> rows = [];
+
+        while (reader.Read())
+        {
+            if (reader.NodeType == XmlNodeType.EndElement
+                && reader.Depth == tableDepth
+                && reader.LocalName == "tbl")
+            {
+                break;
+            }
+
+            if (reader.NodeType == XmlNodeType.Element
+                && reader.LocalName == "tr"
+                && reader.NamespaceURI == WordprocessingMl)
+            {
+                rows.Add(ReadTableRow(reader));
+            }
+        }
+
+        return new WordTable(rows);
+    }
+
+    // Reads one <w:tr> into a row of cells.
+    private static WordTableRow ReadTableRow(XmlReader reader)
+    {
+        if (reader.IsEmptyElement)
+        {
+            return new WordTableRow([]);
+        }
+
+        int rowDepth = reader.Depth;
+        List<WordTableCell> cells = [];
+
+        while (reader.Read())
+        {
+            if (reader.NodeType == XmlNodeType.EndElement
+                && reader.Depth == rowDepth
+                && reader.LocalName == "tr")
+            {
+                break;
+            }
+
+            if (reader.NodeType == XmlNodeType.Element
+                && reader.LocalName == "tc"
+                && reader.NamespaceURI == WordprocessingMl)
+            {
+                cells.Add(ReadTableCell(reader));
+            }
+        }
+
+        return new WordTableRow(cells);
+    }
+
+    // Reads one <w:tc>: gathers the runs of every paragraph it contains, joining
+    // paragraph boundaries with a newline so multi-paragraph cells keep their breaks.
+    private static WordTableCell ReadTableCell(XmlReader reader)
+    {
+        if (reader.IsEmptyElement)
+        {
+            return new WordTableCell([]);
+        }
+
+        int cellDepth = reader.Depth;
+        List<WordRun> runs = [];
+
+        while (reader.Read())
+        {
+            if (reader.NodeType == XmlNodeType.EndElement
+                && reader.Depth == cellDepth
+                && reader.LocalName == "tc")
+            {
+                break;
+            }
+
+            if (reader.NodeType == XmlNodeType.Element
+                && reader.LocalName == "p"
+                && reader.NamespaceURI == WordprocessingMl)
+            {
+                if (runs.Count > 0)
+                {
+                    runs.Add(new WordRun("\n"));
+                }
+
+                // Nested tables inside cells are not interpreted in v1; only paragraph
+                // runs are gathered (headings/lists inside cells degrade to text).
+                ParagraphContent para = ReadParagraph(reader, EmptyHeadingStyles);
+                runs.AddRange(para.Runs);
+            }
+        }
+
+        return new WordTableCell(CoalesceRuns(runs));
+    }
+
+    private static readonly IReadOnlyDictionary<string, int> EmptyHeadingStyles =
+        new Dictionary<string, int>(0);
+
+    // word/styles.xml: builds styleId -> heading level for paragraph styles whose name
+    // is "heading N" / "Title" or that declare an <w:outlineLvl w:val="0..5">. This
+    // resolves localized or custom heading style ids the conventional name check misses.
+    private static IReadOnlyDictionary<string, int> ReadHeadingStyles(ZipArchive zip)
+    {
+        ZipArchiveEntry? entry = zip.GetEntry("word/styles.xml");
+        if (entry is null)
+        {
+            return EmptyHeadingStyles;
+        }
+
+        Dictionary<string, int> map = [];
+        using Stream content = entry.Open();
+        using XmlReader reader = XmlReader.Create(content, ReaderSettings);
+
+        while (reader.Read())
+        {
+            if (reader.NodeType != XmlNodeType.Element
+                || reader.LocalName != "style"
+                || reader.NamespaceURI != WordprocessingMl)
+            {
+                continue;
+            }
+
+            string? type = reader.GetAttribute("type", WordprocessingMl);
+            if (type is not null && type != "paragraph")
+            {
+                SkipElement(reader, "style");
+                continue;
+            }
+
+            string? styleId = reader.GetAttribute("styleId", WordprocessingMl);
+            int? level = ReadStyleHeadingLevel(reader);
+            if (styleId is not null && level is { } lvl)
+            {
+                map[styleId] = lvl;
+            }
+        }
+
+        return map.Count == 0 ? EmptyHeadingStyles : map;
+    }
+
+    // Reads one <w:style> body, returning a heading level inferred from its <w:name>
+    // ("heading 1".."heading 6" / "Title") or <w:outlineLvl> (0-based → level 1-6).
+    private static int? ReadStyleHeadingLevel(XmlReader reader)
+    {
+        if (reader.IsEmptyElement)
+        {
+            return null;
+        }
+
+        int styleDepth = reader.Depth;
+        int? level = null;
+
+        while (reader.Read())
+        {
+            if (reader.NodeType == XmlNodeType.EndElement
+                && reader.Depth == styleDepth
+                && reader.LocalName == "style")
+            {
+                break;
+            }
+
+            if (reader.NodeType != XmlNodeType.Element || reader.NamespaceURI != WordprocessingMl)
+            {
+                continue;
+            }
+
+            switch (reader.LocalName)
+            {
+                case "name":
+                    string? name = reader.GetAttribute("val", WordprocessingMl);
+                    level ??= HeadingLevelFromName(name);
+                    break;
+                case "outlineLvl":
+                    if (int.TryParse(reader.GetAttribute("val", WordprocessingMl),
+                        NumberStyles.Integer, CultureInfo.InvariantCulture, out int outline)
+                        && outline is >= 0 and <= 5)
+                    {
+                        // outlineLvl is authoritative for the level when present.
+                        level = outline + 1;
+                    }
+
+                    break;
+            }
+        }
+
+        return level;
+    }
+
+    private static int? HeadingLevelFromName(string? name)
+    {
+        if (string.IsNullOrEmpty(name))
+        {
+            return null;
+        }
+
+        if (name.Equals("Title", StringComparison.OrdinalIgnoreCase))
+        {
+            return 1;
+        }
+
+        const string prefix = "heading ";
+        if (name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+            && int.TryParse(name.AsSpan(prefix.Length).Trim(), NumberStyles.Integer,
+                CultureInfo.InvariantCulture, out int level)
+            && level is >= 1 and <= 6)
+        {
+            return level;
+        }
+
+        return null;
+    }
+
+    // Merges adjacent runs that share the same bold/italic formatting so the model is
+    // compact (Word splits runs on proofing/rsid boundaries we don't care about).
+    private static IReadOnlyList<WordRun> CoalesceRuns(List<WordRun> runs)
+    {
+        if (runs.Count <= 1)
+        {
+            return runs;
+        }
+
+        List<WordRun> merged = new(runs.Count);
+        WordRun current = runs[0];
+        for (int i = 1; i < runs.Count; i++)
+        {
+            WordRun next = runs[i];
+            if (next.Bold == current.Bold && next.Italic == current.Italic)
+            {
+                current = current with { Text = current.Text + next.Text };
+            }
+            else
+            {
+                merged.Add(current);
+                current = next;
+            }
+        }
+
+        merged.Add(current);
+        return merged;
+    }
+
+    // Skips to the matching end element of the named container the reader is currently on.
+    private static void SkipElement(XmlReader reader, string name)
+    {
+        if (reader.IsEmptyElement)
+        {
+            return;
+        }
+
+        int depth = reader.Depth;
+        while (reader.Read())
+        {
+            if (reader.NodeType == XmlNodeType.EndElement
+                && reader.Depth == depth
+                && reader.LocalName == name)
+            {
+                break;
+            }
+        }
+    }
+
+    // Reads the concatenated text content of the current element and leaves the reader
+    // on its EndElement (or on the element itself if it is empty).
+    private static string ReadElementText(XmlReader reader)
+    {
+        if (reader.IsEmptyElement)
+        {
+            return string.Empty;
+        }
+
+        string elementName = reader.LocalName;
+        int elementDepth = reader.Depth;
+        string? single = null;
+        System.Text.StringBuilder? many = null;
+
+        while (reader.Read())
+        {
+            if (reader.NodeType == XmlNodeType.EndElement
+                && reader.Depth == elementDepth
+                && reader.LocalName == elementName)
+            {
+                break;
+            }
+
+            if (reader.NodeType is XmlNodeType.Text
+                or XmlNodeType.CDATA
+                or XmlNodeType.SignificantWhitespace
+                or XmlNodeType.Whitespace)
+            {
+                if (many is not null)
+                {
+                    many.Append(reader.Value);
+                }
+                else if (single is null)
+                {
+                    single = reader.Value;
+                }
+                else
+                {
+                    many = new System.Text.StringBuilder(single);
+                    many.Append(reader.Value);
+                }
+            }
+        }
+
+        return many?.ToString() ?? single ?? string.Empty;
+    }
+}
