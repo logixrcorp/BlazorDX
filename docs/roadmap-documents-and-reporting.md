@@ -23,9 +23,13 @@
 ## Identity guardrails (non-negotiable)
 
 - **Separate packages keep the blast radius contained:**
-  - `BlazorDX.Documents` — MIT, **interactive (WASM)** in-browser viewers/editors
-    (PDF/Excel/Word/file manager). Same rules as core: zero reflection, AOT/trim-clean,
-    `[JSImport]` only, 1000-line cap.
+  - **Core `BlazorDX.Components`** holds the **lightweight, dependency-free** doc
+    components (file manager, scheduler, native-embed PDF viewer) — pure C# + thin TS, no
+    heavy engine, so not "bloat."
+  - `BlazorDX.Documents` — MIT, **interactive (WASM)** viewers/editors that **carry a heavy
+    engine** (Excel/Word: Rust `.xlsx`/OOXML parse + formula graph). Same rules as core.
+    The boundary is **weight/deps, not topic** — see
+    [ADR 0010](adr/0010-documents-and-reporting-integration.md).
   - `BlazorDX.Htmx` (the existing static-SSR tier) — the **server-rendered, read-only**
     document viewer and the report viewer's parameter forms + fragment swaps. No WASM
     payload, no SignalR circuit; progressive-enhancement-friendly.
@@ -226,11 +230,13 @@ path); **WCAG 2.2 AA gate** (axe clean + target-size + drag-alternative + manual
 - ✅ **Cross-cutting** — axe gate wired to `/files` `/scheduler` `/docviewer` (**12/12 axe
   routes green**; 5 real violations caught + fixed); CI runs `cargo test` + a `RustSpeed`
   build smoke; 543 unit tests green; ADRs 0010–0014 written; manual-SR checklist added.
-- ⬜ **Open before Phase 1 is "fully done":** native-DnD / no-JS **Playwright E2E**;
-  **manual screen-reader pass** ([checklist](accessibility-screen-reader-checklist.md));
-  `docs/learn` entries for the 3 components; the
-  [package re-home decision](adr/0010-documents-and-reporting-integration.md)
-  (built into core, not yet `BlazorDX.Documents`).
+- ✅ **Closed this pass:** native-DnD / keyboard-move **Playwright E2E** (3 tests, green in
+  Chromium); `docs/learn` entries for the 3 components; **ADRs 0010–0014**; the
+  **package-home decision** — [ADR 0010](adr/0010-documents-and-reporting-integration.md)
+  resolves that the lightweight Phase-1 components correctly live in core
+  (`BlazorDX.Documents` is created when the heavy Excel viewer needs it, Phase 2).
+- ⬜ **Only remaining for 100%:** the **manual screen-reader pass** (a human task; checklist
+  at [docs/accessibility-screen-reader-checklist.md](accessibility-screen-reader-checklist.md)).
 
 ### Phase 2 — Document viewers (read-only): interactive + static-SSR
 
