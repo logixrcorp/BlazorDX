@@ -23,12 +23,20 @@ var catalog = new ReportCatalog();
 app.MapMockReportServer("/ReportServer", catalog, auth);
 app.MapMockReportsRestApi("/reports", catalog, auth);
 
+// Mock Power BI REST slice (embed-token flow). Emulates only the REST contract;
+// the embed token it returns is a deterministic FAKE, NOT usable against the real
+// Power BI service. Requires an Authorization: Bearer header (401 without one).
+app.MapMockPowerBiApi("/v1.0/myorg");
+
 app.MapGet("/", () => Results.Text(
-    "Mock SSRS Report Server\n" +
+    "Mock SSRS Report Server + Power BI REST\n" +
     "  Render:       GET /ReportServer?/Sales/Monthly&rs:Command=Render&rs:Format=HTML5&Region=West\n" +
     "  ListChildren: GET /ReportServer?/Sales&rs:Command=ListChildren\n" +
     "  Parameters:   GET /reports/api/v2.0/reports(/Sales/Monthly)/parameterdefinitions\n" +
-    "                GET /mock/parameters?report=/Sales/Monthly\n",
+    "                GET /mock/parameters?report=/Sales/Monthly\n" +
+    "  Power BI:     GET  /v1.0/myorg/groups/{groupId}/reports/{reportId}            (Bearer required)\n" +
+    "                POST /v1.0/myorg/groups/{groupId}/reports/{reportId}/GenerateToken (Bearer required)\n" +
+    "  NOTE: the Power BI embed token returned is a FAKE; only the REST contract is emulated.\n",
     "text/plain"));
 
 app.Run();
