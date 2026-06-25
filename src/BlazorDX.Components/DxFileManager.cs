@@ -244,6 +244,7 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
 
         builder.OpenElement(72, "div");
         builder.AddAttribute(73, "class", "dx-fm-content-head");
+        builder.AddAttribute(721, "role", "row");
         Header(builder, 74, "Name");
         Header(builder, 78, "Size");
         Header(builder, 82, "Modified");
@@ -255,9 +256,15 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
 
         if (contents.Count == 0)
         {
+            // Keep the empty-state inside the role="table" without breaking the
+            // required grid/row/cell structure: it is a row holding a single cell.
             builder.OpenElement(90, "div");
             builder.AddAttribute(91, "class", "dx-fm-empty");
+            builder.AddAttribute(911, "role", "row");
+            builder.OpenElement(912, "div");
+            builder.AddAttribute(913, "role", "cell");
             builder.AddContent(92, "This folder is empty. Drop files here or use Upload files.");
+            builder.CloseElement();
             builder.CloseElement();
         }
 
@@ -277,17 +284,20 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
 
             builder.OpenElement(99, "span");
             builder.AddAttribute(100, "class", "dx-fm-cell dx-fm-name");
+            builder.AddAttribute(1001, "role", "cell");
             builder.AddContent(101, entry.IsDirectory ? "📁" : "📄");
             builder.AddContent(102, entry.Name);
             builder.CloseElement();
 
             builder.OpenElement(103, "span");
             builder.AddAttribute(104, "class", "dx-fm-cell dx-fm-size");
+            builder.AddAttribute(1041, "role", "cell");
             builder.AddContent(105, entry.IsDirectory ? "—" : FormatSize(entry.Size));
             builder.CloseElement();
 
             builder.OpenElement(106, "span");
             builder.AddAttribute(107, "class", "dx-fm-cell dx-fm-modified");
+            builder.AddAttribute(1071, "role", "cell");
             builder.AddContent(108, entry.Modified.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
             builder.CloseElement();
 
@@ -295,6 +305,7 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
             // The button is the 24×24 action target; toggling it sets aria-pressed.
             builder.OpenElement(109, "span");
             builder.AddAttribute(110, "class", "dx-fm-cell dx-fm-actions");
+            builder.AddAttribute(1101, "role", "cell");
 
             builder.OpenElement(111, "button");
             builder.AddAttribute(112, "type", "button");

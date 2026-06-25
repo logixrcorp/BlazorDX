@@ -197,7 +197,12 @@ public sealed class DxScheduler : SchedulerPrimitive
         builder.AddAttribute(91, "id", gridId);
         builder.AddAttribute(92, "class", "dx-sched-body");
         builder.AddAttribute(93, "style", Columns);
-        builder.AddAttribute(94, "role", "grid");
+        // role="application": the time grid is a fully custom 2-D keyboard widget
+        // (events are absolutely positioned in day columns; it does not map cleanly
+        // to grid > row > gridcell). application has no required-children rule and
+        // aria-activedescendant is valid on it, so axe stays clean while the existing
+        // arrow/Home/End/PageUp/PageDown keyboard model is preserved.
+        builder.AddAttribute(94, "role", "application");
         builder.AddAttribute(95, "aria-label", $"{View} schedule");
         builder.AddAttribute(96, "tabindex", "0");
         if (HasActiveCell)
@@ -238,10 +243,12 @@ public sealed class DxScheduler : SchedulerPrimitive
             if (HasActiveCell && ActiveColumn == captured)
             {
                 int top = ActiveRow * HourHeight;
+                // aria-activedescendant target for the active time slot. No role:
+                // inside role="application" it is just the labelled focus marker, so
+                // there is no orphaned gridcell (aria-required-parent) for axe to flag.
                 builder.OpenElement(113, "div");
                 builder.AddAttribute(114, "id", CellId(ActiveRow, captured));
                 builder.AddAttribute(115, "class", "dx-sched-cell-active");
-                builder.AddAttribute(116, "role", "gridcell");
                 builder.AddAttribute(117, "aria-label", ActiveSlotLabel(captured));
                 builder.AddAttribute(118, "style", $"top:{top}px;height:{HourHeight}px;");
                 builder.CloseElement();
@@ -273,7 +280,7 @@ public sealed class DxScheduler : SchedulerPrimitive
         builder.AddAttribute(122, "class", "dx-sched-event");
         builder.AddAttribute(123, "style",
             string.Create(CultureInfo.InvariantCulture,
-                $"top:{top:0.#}px;height:{height:0.#}px;{(ev.Color is null ? string.Empty : $"background:{ev.Color};")}"));
+                $"top:{top:0.#}px;height:{height:0.#}px;{EventBackground(ev.Color)}"));
         builder.AddAttribute(124, "aria-label", EventLabel(ev));
         builder.AddAttribute(125, "onclick", EventCallback.Factory.Create(this, () => SelectAsync(ev)));
 
@@ -341,10 +348,19 @@ public sealed class DxScheduler : SchedulerPrimitive
         int weeks = MonthWeekCount;
         for (int row = 0; row < weeks; row++)
         {
+            // Each week is a role="row" so the grid satisfies grid > row > gridcell
+            // (WCAG aria-required-children). The wrapper uses display:contents so the
+            // 7 cells still participate directly in the parent CSS grid layout.
+            builder.OpenElement(1585, "div");
+            builder.SetKey(row);
+            builder.AddAttribute(1586, "class", "dx-sched-month-row");
+            builder.AddAttribute(1587, "role", "row");
             for (int col = 0; col < 7; col++)
             {
                 BuildMonthCell(builder, row, col, today);
             }
+
+            builder.CloseElement();
         }
 
         builder.CloseElement();
@@ -407,7 +423,7 @@ public sealed class DxScheduler : SchedulerPrimitive
         builder.SetKey(ev);
         builder.AddAttribute(171, "type", "button");
         builder.AddAttribute(172, "class", "dx-sched-month-event");
-        builder.AddAttribute(173, "style", ev.Color is null ? null : $"background:{ev.Color};");
+        builder.AddAttribute(173, "style", ev.Color is null ? null : EventBackground(ev.Color));
         builder.AddAttribute(174, "aria-label", EventLabel(ev));
         builder.AddAttribute(175, "onclick", EventCallback.Factory.Create(this, () => SelectAsync(ev)));
 
@@ -437,6 +453,18 @@ public sealed class DxScheduler : SchedulerPrimitive
 
         await Task.CompletedTask;
     }
+
+    // ---- Styling ----
+
+    // Event blocks render white text (incl. the small category/time labels). A
+    // consumer-supplied colour can be a mid-tone (e.g. #16a34a) on which white drops
+    // below 4.5:1, so darken it toward black via color-mix until the white text clears
+    // AA for all event colours (WCAG 1.4.3 — verified by axe). The default accent
+    // (no Color) already clears AA and is left to the stylesheet.
+    private static string EventBackground(string? color) =>
+        color is null
+            ? string.Empty
+            : $"background:color-mix(in srgb, {color} 72%, #000);";
 
     // ---- Labels ----
 

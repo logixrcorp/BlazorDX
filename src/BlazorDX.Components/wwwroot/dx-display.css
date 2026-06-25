@@ -572,7 +572,10 @@
 }
 .dx-docview-active { background: var(--dx-accent, #2563eb); color: #ffffff; }
 .dx-docview-item-name { font-size: 13px; font-weight: 600; }
-.dx-docview-kind { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7; }
+/* Inherit the item's full text colour (currentColor) instead of opacity: the
+   former 0.7 blend dropped this label below 4.5:1 on both the default and the
+   active-item backgrounds (axe color-contrast). */
+.dx-docview-kind { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: currentColor; }
 .dx-docview-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .dx-docview-toolbar {
   display: flex;
@@ -588,8 +591,10 @@
   letter-spacing: 0.05em;
   padding: 2px 7px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--dx-accent, #2563eb) 14%, transparent);
-  color: var(--dx-accent, #2563eb);
+  background: color-mix(in srgb, var(--dx-accent, #2563eb) 16%, transparent);
+  /* Darkened toward the foreground so the badge text clears 4.5:1 on its own tint
+     (accent-on-tint-of-accent is otherwise too low-contrast — caught by axe). */
+  color: color-mix(in srgb, var(--dx-accent, #2563eb) 68%, #0f172a);
 }
 .dx-docview-zoom { display: inline-flex; align-items: center; gap: 4px; }
 .dx-docview-zoom-btn {

@@ -243,7 +243,9 @@ public sealed class DxSchedulerTests : TestContext
     {
         IRenderedComponent<DxScheduler> sched = Render();
 
-        var grid = sched.Find("[role='grid']");
+        // Time views (Week/Day) are a custom keyboard widget: role="application"
+        // (no aria-required-children rule), still a single tab stop.
+        var grid = sched.Find("[role='application']");
         Assert.Equal("0", grid.GetAttribute("tabindex"));
     }
 
@@ -387,16 +389,17 @@ public sealed class DxSchedulerTests : TestContext
     {
         IRenderedComponent<DxScheduler> sched = Render();   // Week, hours 8..18 => 10 rows
 
-        var grid = sched.Find("[role='grid']");
+        // Time view is role="application"; aria-activedescendant drives the active slot.
+        var grid = sched.Find("[role='application']");
         grid.KeyDown(new KeyboardEventArgs { Key = "ArrowDown" });   // r0c0
-        grid = sched.Find("[role='grid']");
+        grid = sched.Find("[role='application']");
 
         grid.KeyDown(new KeyboardEventArgs { Key = "PageDown" });
-        grid = sched.Find("[role='grid']");
+        grid = sched.Find("[role='application']");
         Assert.EndsWith("-r9c0", CellId(grid));   // last visible hour (row 9)
 
         grid.KeyDown(new KeyboardEventArgs { Key = "PageUp" });
-        grid = sched.Find("[role='grid']");
+        grid = sched.Find("[role='application']");
         Assert.EndsWith("-r0c0", CellId(grid));   // first visible hour
     }
 
@@ -446,7 +449,9 @@ public sealed class DxSchedulerTests : TestContext
             .Add(s => s.View, view)
             .Add(s => s.Events, Array.Empty<SchedulerEvent>()));
 
-        Assert.NotEmpty(sched.FindAll("[role='grid']"));
+        // Month is a true calendar grid; Week/Day are a custom role="application" widget.
+        string containerRole = view == SchedulerView.Month ? "grid" : "application";
+        Assert.NotEmpty(sched.FindAll($"[role='{containerRole}']"));
         Assert.Empty(sched.FindAll(".dx-sched-event"));
         Assert.Empty(sched.FindAll(".dx-sched-month-event"));
     }

@@ -142,8 +142,10 @@
   outline: 2px solid var(--dx-text, #0f172a);
   outline-offset: 1px;
 }
-.dx-sched-event-time { font-size: 0.7rem; opacity: 0.9; }
-.dx-sched-event-cat { font-size: 0.68rem; font-weight: 600; opacity: 0.95; }
+/* Full-opacity white keeps these >= 4.5:1 on the accent event background; the
+   former opacity blend toward the background dropped contrast below AA (axe). */
+.dx-sched-event-time { font-size: 0.7rem; color: #ffffff; }
+.dx-sched-event-cat { font-size: 0.68rem; font-weight: 600; color: #ffffff; }
 .dx-sched-event-title {
   font-size: 0.8rem;
   font-weight: 600;
@@ -177,6 +179,9 @@
   display: grid;
   grid-auto-rows: minmax(96px, 1fr);
 }
+/* role="row" week wrapper: display:contents so the 7 day cells still flow into
+   the parent CSS grid (the wrapper is structural ARIA only, not a layout box). */
+.dx-sched-month-row { display: contents; }
 .dx-sched-month-cell {
   min-height: 96px;
   padding: 4px;
