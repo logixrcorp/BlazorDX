@@ -271,8 +271,18 @@ semantic HTML (headings/lists/table headers/reading order) out of OOXML (Word); 
   `<table>` with `<th scope>`) via the render tree — no `MarkupString`, auto-encoded, so
   heading hierarchy/reading order are real (1.3.1/1.3.2/2.4.6). axe `/word` clean; 16 tests.
   ⏳ *Deferred:* images, footnotes, hyperlinks (text only), nested-list levels, merged cells.
-- ⬜ **Remaining in Phase 2:** the **static-SSR `DxHtmxDocumentViewer`** (no-WASM read-only
-  PDF/Excel/Word over HTMX) — pending the parser-location decision (see ADR 0010 follow-up).
+- ✅ **Static-SSR `DxHtmxDocumentViewer`** — in `BlazorDX.Htmx`, no WASM/circuit. The
+  parsers were first extracted into a UI-free **`BlazorDX.Documents.Parsing`** package
+  (resolving the ADR-0010 boundary) so the thin HTMX tier reuses them without dragging in
+  the catalog. Renders Word/Excel as semantic HTML + PDF embed shell; sheet/page nav uses
+  **dual `href` + `hx-get`** so it works fully **with JavaScript disabled** (verified by
+  curl). axe `/htmx/doc` (+ word/pdf variants) clean.
+- ✅ **Bug fixed:** scheduler time-grid events failed color-contrast for some event colours
+  (white-on-colour) — now color-independent (neutral body + accent stripe). **17/17 axe
+  routes green.**
+
+**Phase 2 is complete.** ⏳ Only the standing track-wide item remains: the **manual
+screen-reader pass** ([checklist](accessibility-screen-reader-checklist.md)).
 
 ### Phase 3 — Office editors (larger; may land post-1.0)
 
