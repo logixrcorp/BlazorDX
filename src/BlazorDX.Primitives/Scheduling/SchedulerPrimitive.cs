@@ -18,12 +18,22 @@ public enum SchedulerView
 /// <summary>A scheduled event placed on the calendar.</summary>
 /// <param name="Title">Event label.</param>
 /// <param name="Start">Start timestamp.</param>
-/// <param name="End">End timestamp (same day as <paramref name="Start"/> for this view).</param>
+/// <param name="End">
+/// End timestamp. May fall on a later day than <paramref name="Start"/>; the event
+/// then renders on every day in its [Start..End] date range (a multi-day month span
+/// or a midnight-crossing block on each touched day column).
+/// </param>
 /// <param name="Color">Optional CSS color override for the event block.</param>
 /// <param name="Category">
 /// Optional category/status label. Conveyed as text (never color alone) so the
 /// distinction survives for colour-blind and high-contrast users (WCAG 1.4.1).
 /// </param>
+/// <remarks>
+/// DEFERRED: RRULE-style recurrence is not yet modelled — every event is a single
+/// concrete interval. Drag-to-move / drag-to-create editing is not implemented, and
+/// the overlap-lane layout is computed in pure C# (the planned Rust overlap-lane
+/// kernel is not wired up).
+/// </remarks>
 public readonly record struct SchedulerEvent(
     string Title,
     DateTime Start,
@@ -147,44 +157,63 @@ public class SchedulerPrimitive : ComponentBase
     /// <summary>Whether <paramref name="day"/> falls inside the displayed month.</summary>
     protected bool IsInDisplayedMonth(DateOnly day) => day.Month == WeekStart.Month && day.Year == WeekStart.Year;
 
-    /// <summary>Lays every event that falls within the visible day range and hour range into a block (Week/Day).</summary>
+    /// <summary>
+    /// Lays every event into one block per visible day it touches (Week/Day). A
+    /// multi-day or midnight-crossing event yields a separate block on each day
+    /// column it overlaps, with start/end clamped to that day's visible hour range.
+    /// </summary>
     protected IEnumerable<ScheduledBlock> Blocks()
     {
         DateOnly first = ViewStart;
         int dayCount = ViewDayCount;
         foreach (SchedulerEvent ev in Events)
         {
-            int dayIndex = DateOnly.FromDateTime(ev.Start).DayNumber - first.DayNumber;
-            if (dayIndex < 0 || dayIndex >= dayCount)
+            if (ev.End <= ev.Start)
             {
                 continue;
             }
 
-            double startH = ev.Start.Hour + (ev.Start.Minute / 60.0);
-            double endH = ev.End.Hour + (ev.End.Minute / 60.0);
-            if (endH <= startH)
-            {
-                continue;
-            }
+            DateOnly evStartDay = DateOnly.FromDateTime(ev.Start);
+            DateOnly evEndDay = DateOnly.FromDateTime(ev.End);
 
-            double top = Math.Max(StartHour, startH);
-            double bottom = Math.Min(EndHour, endH);
-            if (bottom <= top)
-            {
-                continue;   // entirely outside the visible hours
-            }
+            // The event occupies columns for every date in [evStartDay..evEndDay].
+            int firstIndex = Math.Max(0, evStartDay.DayNumber - first.DayNumber);
+            int lastIndex = Math.Min(dayCount - 1, evEndDay.DayNumber - first.DayNumber);
 
-            yield return new ScheduledBlock(ev, dayIndex, top - StartHour, bottom - top);
+            for (int dayIndex = firstIndex; dayIndex <= lastIndex; dayIndex++)
+            {
+                DateOnly day = first.AddDays(dayIndex);
+
+                // Portion of the event that falls on this calendar day, as hours
+                // from midnight: clamped to [0,24) at each day boundary it crosses.
+                double startH = day == evStartDay ? ev.Start.Hour + (ev.Start.Minute / 60.0) : 0.0;
+                double endH = day == evEndDay ? ev.End.Hour + (ev.End.Minute / 60.0) : 24.0;
+
+                double top = Math.Max(StartHour, startH);
+                double bottom = Math.Min(EndHour, endH);
+                if (bottom <= top)
+                {
+                    continue;   // this day's portion is entirely outside the visible hours
+                }
+
+                yield return new ScheduledBlock(ev, dayIndex, top - StartHour, bottom - top);
+            }
         }
     }
 
-    /// <summary>Events whose start date is <paramref name="day"/>, ordered by start time (Month cells).</summary>
+    /// <summary>
+    /// Events that touch <paramref name="day"/> — i.e. whose [Start..End] date range
+    /// includes it — ordered by start time (Month cells). A multi-day event therefore
+    /// appears in every spanned cell.
+    /// </summary>
     protected IEnumerable<SchedulerEvent> EventsOn(DateOnly day)
     {
         List<SchedulerEvent> matches = new();
         foreach (SchedulerEvent ev in Events)
         {
-            if (DateOnly.FromDateTime(ev.Start) == day)
+            DateOnly start = DateOnly.FromDateTime(ev.Start);
+            DateOnly end = DateOnly.FromDateTime(ev.End);
+            if (start <= day && day <= end)
             {
                 matches.Add(ev);
             }
@@ -300,8 +329,9 @@ public class SchedulerPrimitive : ComponentBase
     }
 
     /// <summary>
-    /// Applies an arrow / Home / End key to the active cell. Returns true when the
-    /// key was a navigation key (so the caller can re-render and prevent default).
+    /// Applies an arrow / Home / End / PageUp / PageDown key to the active cell.
+    /// Returns true when the key was a navigation key (so the caller can re-render
+    /// and prevent default). Cells clamp at the grid edges (no wrap).
     /// </summary>
     protected bool MoveActiveCell(string key, bool ctrl)
     {
@@ -324,6 +354,19 @@ public class SchedulerPrimitive : ComponentBase
             case "ArrowUp": ActiveRow = Math.Max(0, ActiveRow - 1); break;
             case "ArrowRight": ActiveColumn = Math.Min(GridColumns - 1, ActiveColumn + 1); break;
             case "ArrowLeft": ActiveColumn = Math.Max(0, ActiveColumn - 1); break;
+            case "PageDown":
+                // Month: down one week row (ActiveRow is a week index, so +1 row =
+                // +7 cells); time views: jump to the last visible hour of the day.
+                ActiveRow = View == SchedulerView.Month
+                    ? Math.Min(GridRows - 1, ActiveRow + 1)
+                    : GridRows - 1;
+                break;
+            case "PageUp":
+                // Month: up one week row; time views: first visible hour of the day.
+                ActiveRow = View == SchedulerView.Month
+                    ? Math.Max(0, ActiveRow - 1)
+                    : 0;
+                break;
             case "Home":
                 ActiveColumn = 0;
                 if (ctrl)

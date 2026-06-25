@@ -11,7 +11,8 @@
     Week, Month, and Day views. Switch with the Week / Month / Day control (it is
     keyboard-accessible — arrow keys move between views). Inside a view, the grid
     takes focus and arrow keys move a roving active cell (Home/End jump to the row
-    edges, Ctrl+Home/End to the corners). Events are buttons whose names include
+    edges, Ctrl+Home/End to the corners; PageUp/PageDown move by a week in Month
+    view or to the first/last hour in a time view). Events are buttons whose names include
     the date, time, title, and category; the category is shown as text, never colour
     alone. Use ‹ / › to change period, Today to return.
     Last selected: <strong>@lastSelected</strong>.
@@ -46,6 +47,10 @@
             new SchedulerEvent("1:1", monday.AddDays(2).AddHours(14), monday.AddDays(2).AddHours(15), Category: "Meeting"),
             new SchedulerEvent("Release", monday.AddDays(3).AddHours(10), monday.AddDays(3).AddHours(13), "#d97706", "Tentative"),
             new SchedulerEvent("Retro", monday.AddDays(4).AddHours(16), monday.AddDays(4).AddHours(17), "#7c3aed", "Confirmed"),
+            // Multi-day span (shows in every Month cell it touches; Tue–Thu).
+            new SchedulerEvent("Offsite", monday.AddDays(1).AddHours(9), monday.AddDays(3).AddHours(17), "#0891b2", "Travel"),
+            // Crosses midnight (renders a block on both the Wed and Thu columns).
+            new SchedulerEvent("On-call", monday.AddDays(2).AddHours(22), monday.AddDays(3).AddHours(2), "#be123c", "Coverage"),
         ];
     }
 }

@@ -16,6 +16,11 @@ namespace BlazorDX.Components;
 /// and a polite aria-live region announcing view/date changes. Styling is
 /// token-driven (see dx-scheduler.css).
 /// </summary>
+/// <remarks>
+/// DEFERRED: RRULE-style recurring events, drag-to-move / drag-to-create editing,
+/// and the planned Rust overlap-lane layout kernel are not yet implemented. The
+/// current overlap layout is computed in pure C#.
+/// </remarks>
 public sealed class DxScheduler : SchedulerPrimitive
 {
     /// <summary>Pixel height of one hour row (Week/Day time grid).</summary>
@@ -321,6 +326,8 @@ public sealed class DxScheduler : SchedulerPrimitive
         builder.AddAttribute(154, "role", "grid");
         builder.AddAttribute(155, "aria-label", "Month schedule");
         builder.AddAttribute(156, "tabindex", "0");
+        builder.AddAttribute(1561, "aria-colcount", "7");
+        builder.AddAttribute(1562, "aria-rowcount", MonthWeekCount);
         if (HasActiveCell)
         {
             builder.AddAttribute(157, "aria-activedescendant", CellId(ActiveRow, ActiveColumn));
@@ -478,7 +485,11 @@ public sealed class DxScheduler : SchedulerPrimitive
             }
 
             DateOnly last = WeekStart.AddDays(Math.Max(0, ViewDayCount - 1));
-            return $"{WeekStart.ToString("MMM d", CultureInfo.InvariantCulture)} – {last.ToString("MMM d", CultureInfo.InvariantCulture)}";
+
+            // Include the year on both ends when the range straddles a year boundary
+            // (e.g. "Dec 28, 2026 – Jan 3, 2027").
+            string format = WeekStart.Year == last.Year ? "MMM d" : "MMM d, yyyy";
+            return $"{WeekStart.ToString(format, CultureInfo.InvariantCulture)} – {last.ToString(format, CultureInfo.InvariantCulture)}";
         }
     }
 }
