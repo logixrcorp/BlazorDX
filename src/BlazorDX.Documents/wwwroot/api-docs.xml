@@ -69,6 +69,96 @@
             <c>=…</c>). The active sheet reflects in-flight edits; other sheets pass through.
             </summary>
         </member>
+        <member name="T:BlazorDX.Documents.DxWordEditor">
+            <summary>
+            A round-trip <c>.docx</c> editor: the editable sibling of <see cref="T:BlazorDX.Documents.DxWordViewer"/>.
+            It loads a <see cref="T:BlazorDX.Documents.WordDocument"/> (or raw <c>.docx</c> bytes), bridges the model
+            to clean semantic HTML with <see cref="M:BlazorDX.Documents.WordHtml.ToHtml(BlazorDX.Documents.WordDocument)"/>, seeds the
+            shared <see cref="T:BlazorDX.Components.DxRichTextEditor"/> as the editing surface, and converts the edited
+            HTML back to a model with <see cref="M:BlazorDX.Documents.WordHtml.FromHtml(System.String)"/> so it can be written
+            out via <see cref="M:BlazorDX.Documents.DocxWriter.Write(BlazorDX.Documents.WordDocument)"/>.
+            </summary>
+            <remarks>
+            <para>
+            The editing surface is <em>entirely</em> the existing <see cref="T:BlazorDX.Components.DxRichTextEditor"/> —
+            its labeled toolbar, formatting commands, keyboard handling, <c>[JSImport]</c> interop,
+            and the injected <see cref="T:BlazorDX.Security.HtmlSanitizer"/> are all reused, not re-implemented. This
+            component is the thin model↔editor bridge layered on top: there is no new
+            <c>contentEditable</c>, no new interop, and no <c>MarkupString</c>. The two safety nets
+            for editor HTML are the sanitizer the host injects into <see cref="T:BlazorDX.Components.DxRichTextEditor"/>
+            and <see cref="M:BlazorDX.Documents.WordHtml.FromHtml(System.String)"/>'s allow-listed tag subset, which together
+            decide what survives into the saved model.
+            </para>
+            <para>
+            On every edit the component re-derives the <see cref="T:BlazorDX.Documents.WordDocument"/> from the editor's
+            HTML and raises <see cref="P:BlazorDX.Documents.DxWordEditor.DocumentChanged"/> (so <c>@bind-Document</c> works) plus
+            <see cref="P:BlazorDX.Documents.DxWordEditor.OnSave"/> with freshly serialized <c>.docx</c> bytes. A <see cref="P:BlazorDX.Documents.DxWordEditor.IsDirty"/>
+            flag and an optional visible dirty indicator track unsaved edits; <see cref="M:BlazorDX.Documents.DxWordEditor.MarkSaved"/>
+            clears it once the host has persisted the bytes.
+            </para>
+            <para>
+            As with the rest of the document stack this is zero-reflection, AOT-/trim-safe, and uses
+            constant <see cref="T:Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder"/> sequence numbers throughout.
+            </para>
+            </remarks>
+        </member>
+        <member name="P:BlazorDX.Documents.DxWordEditor.Document">
+            <summary>
+            The document being edited. Bind with <c>@bind-Document</c>: the editor seeds from
+            this on load, and re-emits it (via <see cref="P:BlazorDX.Documents.DxWordEditor.DocumentChanged"/>) on every edit.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Documents.DxWordEditor.DocumentChanged">
+            <summary>Raised with the re-parsed <see cref="T:BlazorDX.Documents.WordDocument"/> after each edit.</summary>
+        </member>
+        <member name="P:BlazorDX.Documents.DxWordEditor.DocxBytes">
+            <summary>
+            Optional raw <c>.docx</c> bytes to load instead of <see cref="P:BlazorDX.Documents.DxWordEditor.Document"/>. When set,
+            the bytes are read with <see cref="T:BlazorDX.Documents.DocxReader"/> on first render and take precedence
+            over <see cref="P:BlazorDX.Documents.DxWordEditor.Document"/> for seeding the surface.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Documents.DxWordEditor.OnSave">
+            <summary>
+            Raised after each edit with the current document serialized to <c>.docx</c> bytes
+            (via <see cref="M:BlazorDX.Documents.DocxWriter.Write(BlazorDX.Documents.WordDocument)"/>) — ready to download or persist.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Documents.DxWordEditor.Sanitizer">
+            <summary>
+            The sanitizer applied to edited HTML by the underlying <see cref="T:BlazorDX.Components.DxRichTextEditor"/>.
+            Defaults to the editor's inert (encode-all) policy; inject a vetted policy for real
+            rich editing. Required for any markup to survive editing.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Documents.DxWordEditor.Label">
+            <summary>Accessible name for the editing surface. Defaults to "Document".</summary>
+        </member>
+        <member name="P:BlazorDX.Documents.DxWordEditor.ShowStatus">
+            <summary>
+            When <see langword="true"/> (the default), a small status line shows whether there
+            are unsaved edits. Driven by <see cref="P:BlazorDX.Documents.DxWordEditor.IsDirty"/> and announced via <c>aria-live</c>.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Documents.DxWordEditor.Class">
+            <summary>Optional extra CSS class on the editor root.</summary>
+        </member>
+        <member name="P:BlazorDX.Documents.DxWordEditor.IsDirty">
+            <summary>Whether there are edits not yet acknowledged via <see cref="M:BlazorDX.Documents.DxWordEditor.MarkSaved"/>.</summary>
+        </member>
+        <member name="M:BlazorDX.Documents.DxWordEditor.GetDocxBytes">
+            <summary>
+            Returns the current edited document serialized to <c>.docx</c> bytes — the same bytes
+            passed to <see cref="P:BlazorDX.Documents.DxWordEditor.OnSave"/>. Lets a host fetch the file on demand (e.g. a Save
+            button) without subscribing to the callback.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Documents.DxWordEditor.MarkSaved">
+            <summary>
+            Clears the dirty flag. Call this once the host has persisted/downloaded the bytes so
+            the status indicator reflects a saved state.
+            </summary>
+        </member>
         <member name="T:BlazorDX.Documents.DxWordViewer">
             <summary>
             Tier 2 styled, read-only word-processing document viewer over a parsed
