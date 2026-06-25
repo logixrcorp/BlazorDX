@@ -1,3 +1,4 @@
+using BlazorDX.Interop;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
 
@@ -63,8 +64,30 @@ public sealed class DxDocumentViewer : ComponentBase
     /// <summary>Extra CSS classes appended to the viewer root.</summary>
     [Parameter] public string? Class { get; set; }
 
+    /// <summary>
+    /// Shows the action toolbar (title, kind badge, and — per kind — zoom, download,
+    /// print, open-in-new-tab). On by default. The accessible download fallback link
+    /// below an embedded PDF is shown regardless, so turning the toolbar off never
+    /// strips the only way to obtain the file.
+    /// </summary>
+    [Parameter] public bool ShowToolbar { get; set; } = true;
+
+    /// <summary>Shows the Download control in the toolbar (where the kind supports it). On by default.</summary>
+    [Parameter] public bool ShowDownload { get; set; } = true;
+
+    /// <summary>Shows the Print control in the toolbar (PDF/image). On by default.</summary>
+    [Parameter] public bool ShowPrint { get; set; } = true;
+
+    /// <summary>Shows the Open-in-new-tab control in the toolbar (PDF/image). On by default.</summary>
+    [Parameter] public bool ShowOpenInNewTab { get; set; } = true;
+
+    [Inject] private IDocumentViewerInterop Interop { get; set; } = default!;
+
     private int current;
     private int zoom = 100;
+
+    // Stable DOM id for the active PDF frame, so the print bridge can target it.
+    private readonly string pdfFrameId = $"dx-docview-pdf-{Guid.NewGuid():N}";
 
     private ViewerDocument? Active =>
         current >= 0 && current < Documents.Count ? Documents[current] : null;
@@ -105,7 +128,11 @@ public sealed class DxDocumentViewer : ComponentBase
         }
         else
         {
-            BuildToolbar(builder, Active);
+            if (ShowToolbar)
+            {
+                BuildToolbar(builder, Active);
+            }
+
             BuildBody(builder, Active);
         }
 
@@ -177,16 +204,67 @@ public sealed class DxDocumentViewer : ComponentBase
 
         if (doc.Kind is DocumentKind.Image or DocumentKind.Pdf)
         {
-            builder.OpenElement(145, "a");
-            builder.AddAttribute(146, "class", "dx-docview-download");
-            builder.AddAttribute(147, "href", doc.Source);
-            builder.AddAttribute(148, "download", doc.Name);
-            builder.AddContent(149, "⭳ Download");
-            builder.CloseElement();
+            // Right-aligned actions group: keyboard-operable, labeled controls that
+            // meet the 24x24 target size (WCAG 2.5.8) with a visible focus ring.
+            builder.OpenElement(140, "div");
+            builder.AddAttribute(141, "class", "dx-docview-actions");
+            builder.AddAttribute(142, "role", "group");
+            builder.AddAttribute(143, "aria-label", "Document actions");
+
+            if (ShowDownload)
+            {
+                builder.OpenElement(145, "a");
+                builder.AddAttribute(146, "class", "dx-docview-action dx-docview-download");
+                builder.AddAttribute(147, "href", doc.Source);
+                builder.AddAttribute(148, "download", doc.Name);
+                builder.AddAttribute(149, "aria-label", $"Download {doc.Name}");
+                builder.AddContent(150, "⭳ Download");
+                builder.CloseElement();
+            }
+
+            // Print: PDFs print best via the native dialog; an image prints the page.
+            if (ShowPrint)
+            {
+                builder.OpenElement(155, "button");
+                builder.AddAttribute(156, "type", "button");
+                builder.AddAttribute(157, "class", "dx-docview-action");
+                builder.AddAttribute(158, "aria-label", $"Print {doc.Name}");
+                builder.AddAttribute(159, "onclick",
+                    EventCallback.Factory.Create(this, () => PrintAsync(doc.Kind)));
+                builder.AddContent(160, "⎙ Print");
+                builder.CloseElement();
+            }
+
+            // Open in a new browser tab — a standard anchor; native, no script.
+            if (ShowOpenInNewTab)
+            {
+                builder.OpenElement(165, "a");
+                builder.AddAttribute(166, "class", "dx-docview-action");
+                builder.AddAttribute(167, "href", doc.Source);
+                builder.AddAttribute(168, "target", "_blank");
+                builder.AddAttribute(169, "rel", "noopener noreferrer");
+                builder.AddAttribute(170, "aria-label", $"Open {doc.Name} in a new tab");
+                builder.AddContent(171, "↗ Open");
+                builder.CloseElement();
+            }
+
+            builder.CloseElement();   // actions group
         }
 
         builder.CloseElement();
     }
+
+    private async Task PrintAsync(DocumentKind kind)
+    {
+        // For a PDF we ask the bridge to print the embedded frame (falling back to
+        // the host window); for an image there is no separate frame, so print the
+        // host window directly. Off-browser both are no-ops.
+        await Interop.PrintAsync(kind == DocumentKind.Pdf ? pdfFrameId : string.Empty);
+    }
+
+    // The embedded frame must always carry a non-empty accessible name (WCAG 4.1.2).
+    private static string FrameTitle(string name) =>
+        string.IsNullOrWhiteSpace(name) ? "PDF document" : name;
 
     private void ZoomButton(RenderTreeBuilder builder, int seq, string label, string ariaLabel, System.Action onClick)
     {
@@ -216,11 +294,27 @@ public sealed class DxDocumentViewer : ComponentBase
                 break;
 
             case DocumentKind.Pdf:
+                // Native browser PDF viewer. The `title` gives the embedded frame an
+                // accessible name (WCAG 4.1.2); it is never empty.
                 builder.OpenElement(220, "embed");
-                builder.AddAttribute(221, "class", "dx-docview-pdf");
-                builder.AddAttribute(222, "type", "application/pdf");
-                builder.AddAttribute(223, "src", doc.Source);
-                builder.AddAttribute(224, "title", doc.Name);
+                builder.AddAttribute(221, "id", pdfFrameId);
+                builder.AddAttribute(222, "class", "dx-docview-pdf");
+                builder.AddAttribute(223, "type", "application/pdf");
+                builder.AddAttribute(224, "src", doc.Source);
+                builder.AddAttribute(225, "title", FrameTitle(doc.Name));
+                builder.CloseElement();
+
+                // Accessible fallback: a real link so assistive-tech users and
+                // browsers without an inline PDF plugin can still get the file.
+                builder.OpenElement(226, "p");
+                builder.AddAttribute(227, "class", "dx-docview-pdf-fallback");
+                builder.AddContent(228, "Can't see the PDF above? ");
+                builder.OpenElement(229, "a");
+                builder.AddAttribute(230, "href", doc.Source);
+                builder.AddAttribute(231, "download", doc.Name);
+                builder.AddContent(232, "Download the PDF");
+                builder.CloseElement();
+                builder.AddContent(233, ".");
                 builder.CloseElement();
                 break;
 

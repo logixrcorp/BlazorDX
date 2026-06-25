@@ -14,7 +14,27 @@
     from the sidebar.
 </p>
 
+<p class="dx-demo-meta">
+    The PDF and image kinds get a keyboard-accessible action toolbar — Download,
+    Print, and Open-in-new-tab — with labeled controls that meet the 24&times;24
+    target size and show a visible focus ring. The embedded frame carries a
+    <code>title</code> (its accessible name), and an explicit download link sits
+    below the viewer so assistive-technology users — and browsers with no inline
+    PDF plugin — can always get the file.
+</p>
+
 <DxDocumentViewer Documents="docs" />
+
+<h2>Toolbar parameters</h2>
+
+<p class="dx-demo-meta">
+    The toolbar and each action are individually toggleable
+    (<code>ShowToolbar</code>, <code>ShowDownload</code>, <code>ShowPrint</code>,
+    <code>ShowOpenInNewTab</code>); all default on. Turning the toolbar off never
+    removes the accessible download fallback below the PDF.
+</p>
+
+<DxDocumentViewer Documents="pdfOnly" ShowPrint="false" ShowOpenInNewTab="false" />
 
 @code {
     private readonly IReadOnlyList<ViewerDocument> docs =
@@ -31,5 +51,23 @@
             "# BlazorDX\n\nA **headless, AOT-safe** Blazor component system.\n\n- Zero reflection\n- Rust-powered compute\n- 1000-line file cap\n\n[Learn more](/docs)"),
         new("Program.cs", DocumentKind.Text,
             "var builder = WebApplication.CreateBuilder(args);\nbuilder.Services.AddBlazorDXCompute();\n\nvar app = builder.Build();\napp.MapRazorComponents<App>();\napp.Run();"),
+        new("sample.pdf", DocumentKind.Pdf, SamplePdf),
     ];
+
+    private readonly IReadOnlyList<ViewerDocument> pdfOnly =
+    [
+        new("sample.pdf", DocumentKind.Pdf, SamplePdf),
+    ];
+
+    // A tiny, self-contained one-page PDF (data URL) so the demo needs no network.
+    private const string SamplePdf =
+        "data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+P" +
+        "gplbmRvYmoKMiAwIG9iago8PC9UeXBlL1BhZ2VzL0tpZHNbMyAwIFJdL0NvdW50IDE+PgplbmRvYmoKMyAwIG9iag" +
+        "o8PC9UeXBlL1BhZ2UvUGFyZW50IDIgMCBSL01lZGlhQm94WzAgMCAyMDAgMjAwXS9SZXNvdXJjZXM8PC9Gb250PD" +
+        "wvRjEgNCAwIFI+Pj4+L0NvbnRlbnRzIDUgMCBSPj4KZW5kb2JqCjQgMCBvYmoKPDwvVHlwZS9Gb250L1N1YnR5cG" +
+        "UvVHlwZTEvQmFzZUZvbnQvSGVsdmV0aWNhPj4KZW5kb2JqCjUgMCBvYmoKPDwvTGVuZ3RoIDQ0Pj4Kc3RyZWFtCk" +
+        "JUCi9GMSAyNCBUZgozMCAxMDAgVGQKKEJsYXpvckRYIFBERikgVGoKRVQKZW5kc3RyZWFtCmVuZG9iagp4cmVmCj" +
+        "AgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMD" +
+        "AwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAyNDEgMDAwMDAgbiAKMDAwMDAwMDMxMCAwMDAwMCBuIAp0cmFpbGVyCj" +
+        "w8L1NpemUgNi9Sb290IDEgMCBSPj4Kc3RhcnR4cmVmCjQwNAolJUVPRgo=";
 }
