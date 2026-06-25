@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    A standalone mock of Microsoft SSRS URL Access (the documented
+    `/ReportServer?...&rs:Command=Render` protocol) plus a slice of the SSRS
+    REST API for parameter metadata. It exists so DxReportViewer and its tests
+    can validate against a faithful, deterministic stand-in instead of a real
+    report server. Runnable as its own Exe; the endpoint wiring is factored into
+    MapMockReportServer / MapMockReportsRestApi so the demo app can mount the
+    same mock in-process. Not a NuGet package.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>BlazorDX.MockReportServer</RootNamespace>
+    <!-- WebApplicationFactory<Program> in the test project needs the implicit
+         Program class to be visible. -->
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+</Project>

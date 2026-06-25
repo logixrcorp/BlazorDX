@@ -17,11 +17,13 @@
     <Project Path="samples/BlazorDX.Demo/BlazorDX.Demo/BlazorDX.Demo.csproj" />
     <Project Path="samples/BlazorDX.Demo/BlazorDX.Demo.Client/BlazorDX.Demo.Client.csproj" />
     <Project Path="samples/BlazorDX.McpServer/BlazorDX.McpServer.csproj" />
+    <Project Path="samples/BlazorDX.MockReportServer/BlazorDX.MockReportServer.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/BlazorDX.Compute.Tests/BlazorDX.Compute.Tests.csproj" />
     <Project Path="tests/BlazorDX.Analyzers.Tests/BlazorDX.Analyzers.Tests.csproj" />
     <Project Path="tests/BlazorDX.Components.Tests/BlazorDX.Components.Tests.csproj" />
     <Project Path="tests/BlazorDX.E2E.Tests/BlazorDX.E2E.Tests.csproj" />
+    <Project Path="tests/BlazorDX.MockReportServer.Tests/BlazorDX.MockReportServer.Tests.csproj" />
   </Folder>
 </Solution>

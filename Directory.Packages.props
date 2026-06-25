@@ -35,6 +35,9 @@
     <!-- Transitive pin: bunit 1.31.3 otherwise drags in a vulnerable preview of
          this package (NU1903). Central transitive pinning forces the patched one. -->
     <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="10.0.8" />
+    <!-- WebApplicationFactory<Program> for in-memory integration tests of the
+         mock SSRS report server sample. -->
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.8" />
   </ItemGroup>
   <ItemGroup Label="End-to-end (real browser)">
     <!-- Playwright drives a real Chromium/Firefox/WebKit against the running demo,
