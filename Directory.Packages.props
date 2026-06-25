@@ -22,6 +22,9 @@
     <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="10.0.8" />
     <!-- ILogger abstraction for the optional diagnostics→logging adapter. -->
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.8" />
+    <!-- IHttpClientFactory for the SSRS reporting integration: a typed/named
+         HttpClient is the supported way to reach the report server. -->
+    <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.8" />
   </ItemGroup>
   <ItemGroup Label="Blazor Web App (demo)">
     <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.8" />

@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <!--
+    Server-side SSRS report integration (ADR 0010): the URL-Access render client
+    and REST parameter-metadata source that the HTMX report viewer drives. An
+    integration package, not core — but explicitly trim/AOT-clean and
+    zero-reflection like the rest of the catalog: JSON is parsed only through a
+    System.Text.Json source-generated context (ADR 0002). Razor SDK so the
+    DxReportViewer component can land here next turn; this turn is client + DI.
+    Credentials are server-side only and never reach the browser (ADR 0010).
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The tests assert the exact URL-Access query shape against the internal
+         builder, and reach internal client types over real HTTP. -->
+    <InternalsVisibleTo Include="BlazorDX.Integrations.Reporting.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Http" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+</Project>

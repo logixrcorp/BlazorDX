@@ -9,6 +9,7 @@
     <Project Path="src/BlazorDX.Htmx/BlazorDX.Htmx.csproj" />
     <Project Path="src/BlazorDX.Documents.Parsing/BlazorDX.Documents.Parsing.csproj" />
     <Project Path="src/BlazorDX.Documents/BlazorDX.Documents.csproj" />
+    <Project Path="src/BlazorDX.Integrations.Reporting/BlazorDX.Integrations.Reporting.csproj" />
   </Folder>
   <Folder Name="/analyzers/">
     <Project Path="analyzers/BlazorDX.Analyzers/BlazorDX.Analyzers.csproj" />
@@ -25,5 +26,6 @@
     <Project Path="tests/BlazorDX.Components.Tests/BlazorDX.Components.Tests.csproj" />
     <Project Path="tests/BlazorDX.E2E.Tests/BlazorDX.E2E.Tests.csproj" />
     <Project Path="tests/BlazorDX.MockReportServer.Tests/BlazorDX.MockReportServer.Tests.csproj" />
+    <Project Path="tests/BlazorDX.Integrations.Reporting.Tests/BlazorDX.Integrations.Reporting.Tests.csproj" />
   </Folder>
 </Solution>
