@@ -212,4 +212,143 @@ public sealed class DxDocumentViewerTests : TestContext
         // Download stays.
         Assert.Single(v.FindAll("a[aria-label='Download doc.pdf']"));
     }
+
+    // ---- Source scheme validation (XSS hardening) ----
+
+    [Theory]
+    [InlineData("/files/x.pdf", true)]
+    [InlineData("./x.pdf", true)]
+    [InlineData("../x.pdf", true)]
+    [InlineData("x.pdf", true)]
+    [InlineData("#frag", true)]
+    [InlineData("?q=1", true)]
+    [InlineData("http://example.com/x.pdf", true)]
+    [InlineData("https://example.com/x.pdf", true)]
+    [InlineData("HTTPS://example.com/x.pdf", true)]
+    [InlineData("blob:https://example.com/abc", true)]
+    [InlineData("data:image/png;base64,AAA", true)]
+    [InlineData("data:application/pdf;base64,AAA", true)]
+    [InlineData("javascript:alert(1)", false)]
+    [InlineData("JavaScript:alert(1)", false)]
+    [InlineData(" javascript:alert(1)", false)]
+    [InlineData("vbscript:msgbox(1)", false)]
+    [InlineData("file:///etc/passwd", false)]
+    [InlineData("data:text/html,<script>alert(1)</script>", false)]
+    [InlineData("data:application/xhtml+xml,<x/>", false)]
+    [InlineData("mailto:a@b.com", false)]
+    [InlineData("", false)]
+    [InlineData("   ", false)]
+    [InlineData(null, false)]
+    public void IsSafeSource_applies_the_scheme_allowlist(string? source, bool expected)
+    {
+        Assert.Equal(expected, DxDocumentViewer.IsSafeSource(source));
+    }
+
+    [Fact]
+    public void Javascript_pdf_source_renders_no_embed_or_link_and_shows_a_placeholder()
+    {
+        IRenderedComponent<DxDocumentViewer> v = Render(
+            new ViewerDocument("doc.pdf", DocumentKind.Pdf, "javascript:alert(1)"));
+
+        Assert.Empty(v.FindAll("embed.dx-docview-pdf"));
+        Assert.Empty(v.FindAll(".dx-docview-pdf-fallback"));
+        // No href anywhere carries the malicious value.
+        Assert.DoesNotContain("javascript:alert(1)", v.Markup);
+        // Placeholder is shown instead.
+        Assert.Single(v.FindAll(".dx-docview-unavailable"));
+    }
+
+    [Fact]
+    public void Javascript_image_source_renders_no_img_and_shows_a_placeholder()
+    {
+        IRenderedComponent<DxDocumentViewer> v = Render(
+            new ViewerDocument("p.png", DocumentKind.Image, "javascript:alert(1)"));
+
+        Assert.Empty(v.FindAll("img.dx-docview-img"));
+        Assert.DoesNotContain("javascript:alert(1)", v.Markup);
+        Assert.Single(v.FindAll(".dx-docview-unavailable"));
+    }
+
+    [Theory]
+    [InlineData("data:image/png;base64,AAA")]
+    [InlineData("/files/x.png")]
+    [InlineData("https://example.com/x.png")]
+    public void Accepted_image_sources_render_the_img(string source)
+    {
+        IRenderedComponent<DxDocumentViewer> v = Render(
+            new ViewerDocument("p.png", DocumentKind.Image, source));
+
+        Assert.Equal(source, v.Find("img.dx-docview-img").GetAttribute("src"));
+        Assert.Empty(v.FindAll(".dx-docview-unavailable"));
+    }
+
+    [Theory]
+    [InlineData("/files/x.pdf")]
+    [InlineData("https://example.com/x.pdf")]
+    [InlineData("data:application/pdf;base64,AAA")]
+    public void Accepted_pdf_sources_render_the_embed(string source)
+    {
+        IRenderedComponent<DxDocumentViewer> v = Render(
+            new ViewerDocument("doc.pdf", DocumentKind.Pdf, source));
+
+        Assert.Equal(source, v.Find("embed.dx-docview-pdf").GetAttribute("src"));
+    }
+
+    [Fact]
+    public void Data_text_html_pdf_source_is_rejected_and_shows_a_placeholder()
+    {
+        IRenderedComponent<DxDocumentViewer> v = Render(
+            new ViewerDocument("doc.pdf", DocumentKind.Pdf, "data:text/html,<script>alert(1)</script>"));
+
+        Assert.Empty(v.FindAll("embed.dx-docview-pdf"));
+        Assert.Single(v.FindAll(".dx-docview-unavailable"));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Empty_pdf_source_shows_a_placeholder_and_no_broken_embed_or_link(string source)
+    {
+        IRenderedComponent<DxDocumentViewer> v = Render(
+            new ViewerDocument("doc.pdf", DocumentKind.Pdf, source));
+
+        Assert.Empty(v.FindAll("embed.dx-docview-pdf"));
+        Assert.Empty(v.FindAll("a[href='']"));
+        Assert.Single(v.FindAll(".dx-docview-unavailable"));
+    }
+
+    [Fact]
+    public void Unsafe_source_omits_toolbar_download_and_open_links()
+    {
+        IRenderedComponent<DxDocumentViewer> v = Render(
+            new ViewerDocument("doc.pdf", DocumentKind.Pdf, "javascript:alert(1)"));
+
+        Assert.Empty(v.FindAll("a[aria-label='Download doc.pdf']"));
+        Assert.Empty(v.FindAll("a[aria-label='Open doc.pdf in a new tab']"));
+        // The print button stays — it routes through interop, not the source URL.
+        Assert.Single(v.FindAll("button[aria-label='Print doc.pdf']"));
+    }
+
+    [Fact]
+    public void Download_link_carries_rel_noopener_noreferrer()
+    {
+        IRenderedComponent<DxDocumentViewer> v = Render(
+            new ViewerDocument("doc.pdf", DocumentKind.Pdf, "/files/doc.pdf"));
+
+        string? rel = v.Find("a[aria-label='Download doc.pdf']").GetAttribute("rel");
+        Assert.Contains("noopener", rel);
+        Assert.Contains("noreferrer", rel);
+    }
+
+    [Fact]
+    public void Sidebar_item_exposes_a_focus_visible_style_hook()
+    {
+        IRenderedComponent<DxDocumentViewer> v = Render(
+            new ViewerDocument("a.png", DocumentKind.Image, "/a.png"),
+            new ViewerDocument("b.md", DocumentKind.Markdown, "# B"));
+
+        // The CSS targets .dx-docview-item:focus-visible; the buttons carry that class.
+        Assert.All(v.FindAll(".dx-docview-item"),
+            el => Assert.Contains("dx-docview-item", el.GetAttribute("class")));
+    }
 }

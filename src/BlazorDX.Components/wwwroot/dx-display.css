@@ -567,6 +567,9 @@
   color: var(--dx-text, #0f172a);
 }
 .dx-docview-item:hover { background: var(--dx-surface, #ffffff); }
+.dx-docview-item:focus-visible {
+  outline: 2px solid var(--dx-accent, #2563eb); outline-offset: 2px;
+}
 .dx-docview-active { background: var(--dx-accent, #2563eb); color: #ffffff; }
 .dx-docview-item-name { font-size: 13px; font-weight: 600; }
 .dx-docview-kind { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7; }
@@ -627,7 +630,7 @@
   font-size: 13px; white-space: pre-wrap; word-break: break-word; color: var(--dx-text, #0f172a);
 }
 .dx-docview-markdown { background: var(--dx-surface, #ffffff); padding: 14px; border-radius: 6px; }
-.dx-docview-empty, .dx-docview-unsupported { margin: auto; color: var(--dx-muted, #94a3b8); padding: 24px; }
+.dx-docview-empty, .dx-docview-unsupported, .dx-docview-unavailable { margin: auto; color: var(--dx-muted, #94a3b8); padding: 24px; }
 
 /* ---- Error boundary fallback ---- */
 .dx-errorboundary {

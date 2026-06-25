@@ -204,6 +204,8 @@ public sealed class DxDocumentViewer : ComponentBase
 
         if (doc.Kind is DocumentKind.Image or DocumentKind.Pdf)
         {
+            bool safe = IsSafeSource(doc.Source);
+
             // Right-aligned actions group: keyboard-operable, labeled controls that
             // meet the 24x24 target size (WCAG 2.5.8) with a visible focus ring.
             builder.OpenElement(140, "div");
@@ -211,14 +213,17 @@ public sealed class DxDocumentViewer : ComponentBase
             builder.AddAttribute(142, "role", "group");
             builder.AddAttribute(143, "aria-label", "Document actions");
 
-            if (ShowDownload)
+            // Source-bound links (download, open) are only emitted for a safe source;
+            // a rejected/empty source never becomes a clickable href.
+            if (ShowDownload && safe)
             {
                 builder.OpenElement(145, "a");
                 builder.AddAttribute(146, "class", "dx-docview-action dx-docview-download");
                 builder.AddAttribute(147, "href", doc.Source);
                 builder.AddAttribute(148, "download", doc.Name);
-                builder.AddAttribute(149, "aria-label", $"Download {doc.Name}");
-                builder.AddContent(150, "⭳ Download");
+                builder.AddAttribute(149, "rel", "noopener noreferrer");
+                builder.AddAttribute(150, "aria-label", $"Download {doc.Name}");
+                builder.AddContent(151, "⭳ Download");
                 builder.CloseElement();
             }
 
@@ -236,7 +241,7 @@ public sealed class DxDocumentViewer : ComponentBase
             }
 
             // Open in a new browser tab — a standard anchor; native, no script.
-            if (ShowOpenInNewTab)
+            if (ShowOpenInNewTab && safe)
             {
                 builder.OpenElement(165, "a");
                 builder.AddAttribute(166, "class", "dx-docview-action");
@@ -266,6 +271,78 @@ public sealed class DxDocumentViewer : ComponentBase
     private static string FrameTitle(string name) =>
         string.IsNullOrWhiteSpace(name) ? "PDF document" : name;
 
+    /// <summary>
+    /// Decides whether a document <see cref="ViewerDocument.Source"/> is safe to place
+    /// in an <c>&lt;embed src&gt;</c>, <c>&lt;img src&gt;</c>, or <c>&lt;a href&gt;</c>.
+    /// Allows relative URLs and a scheme allowlist (http, https, blob, plus
+    /// <c>data:image/*</c> and <c>data:application/pdf</c>); rejects everything else —
+    /// notably <c>javascript:</c>, <c>vbscript:</c>, <c>file:</c>, and HTML data URLs —
+    /// to prevent script injection through the source value.
+    /// </summary>
+    public static bool IsSafeSource(string? source)
+    {
+        if (string.IsNullOrWhiteSpace(source))
+        {
+            return false;
+        }
+
+        string value = source.Trim();
+
+        // Find the scheme: characters up to the first ':' that form a valid URI scheme
+        // (letter followed by letters/digits/+/-/.). No such prefix => relative URL.
+        int colon = value.IndexOf(':');
+        if (colon <= 0)
+        {
+            // No colon at all, or leading colon: treat as a relative reference (safe).
+            // A leading '/', './', '../', '#', '?', or bare path are all relative.
+            return colon != 0;
+        }
+
+        // A path segment containing ':' before any '/' '?' '#' is still relative
+        // (e.g. "a:b" is not a scheme if a slash/query/fragment came first). But here
+        // colon is the first such char, so verify the prefix is a real scheme.
+        string scheme = value[..colon];
+        if (!IsSchemeToken(scheme))
+        {
+            // Not a valid scheme token => the colon is part of a relative path. Safe.
+            return true;
+        }
+
+        scheme = scheme.ToLowerInvariant();
+        switch (scheme)
+        {
+            case "http":
+            case "https":
+            case "blob":
+                return true;
+            case "data":
+                string rest = value[(colon + 1)..].TrimStart();
+                return rest.StartsWith("image/", StringComparison.OrdinalIgnoreCase)
+                    || rest.StartsWith("application/pdf", StringComparison.OrdinalIgnoreCase);
+            default:
+                // javascript:, vbscript:, file:, mailto:, data:text/html, etc.
+                return false;
+        }
+    }
+
+    private static bool IsSchemeToken(string s)
+    {
+        if (s.Length == 0 || !char.IsLetter(s[0]))
+        {
+            return false;
+        }
+
+        foreach (char c in s)
+        {
+            if (!char.IsLetterOrDigit(c) && c is not ('+' or '-' or '.'))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private void ZoomButton(RenderTreeBuilder builder, int seq, string label, string ariaLabel, System.Action onClick)
     {
         builder.OpenElement(seq, "button");
@@ -285,37 +362,51 @@ public sealed class DxDocumentViewer : ComponentBase
         switch (doc.Kind)
         {
             case DocumentKind.Image:
-                builder.OpenElement(210, "img");
-                builder.AddAttribute(211, "class", "dx-docview-img");
-                builder.AddAttribute(212, "src", doc.Source);
-                builder.AddAttribute(213, "alt", doc.Name);
-                builder.AddAttribute(214, "style", $"width:{zoom}%");
-                builder.CloseElement();
+                if (IsSafeSource(doc.Source))
+                {
+                    builder.OpenElement(210, "img");
+                    builder.AddAttribute(211, "class", "dx-docview-img");
+                    builder.AddAttribute(212, "src", doc.Source);
+                    builder.AddAttribute(213, "alt", doc.Name);
+                    builder.AddAttribute(214, "style", $"width:{zoom}%");
+                    builder.CloseElement();
+                }
+                else
+                {
+                    BuildUnavailable(builder);
+                }
                 break;
 
             case DocumentKind.Pdf:
-                // Native browser PDF viewer. The `title` gives the embedded frame an
-                // accessible name (WCAG 4.1.2); it is never empty.
-                builder.OpenElement(220, "embed");
-                builder.AddAttribute(221, "id", pdfFrameId);
-                builder.AddAttribute(222, "class", "dx-docview-pdf");
-                builder.AddAttribute(223, "type", "application/pdf");
-                builder.AddAttribute(224, "src", doc.Source);
-                builder.AddAttribute(225, "title", FrameTitle(doc.Name));
-                builder.CloseElement();
+                if (IsSafeSource(doc.Source))
+                {
+                    // Native browser PDF viewer. The `title` gives the embedded frame an
+                    // accessible name (WCAG 4.1.2); it is never empty.
+                    builder.OpenElement(220, "embed");
+                    builder.AddAttribute(221, "id", pdfFrameId);
+                    builder.AddAttribute(222, "class", "dx-docview-pdf");
+                    builder.AddAttribute(223, "type", "application/pdf");
+                    builder.AddAttribute(224, "src", doc.Source);
+                    builder.AddAttribute(225, "title", FrameTitle(doc.Name));
+                    builder.CloseElement();
 
-                // Accessible fallback: a real link so assistive-tech users and
-                // browsers without an inline PDF plugin can still get the file.
-                builder.OpenElement(226, "p");
-                builder.AddAttribute(227, "class", "dx-docview-pdf-fallback");
-                builder.AddContent(228, "Can't see the PDF above? ");
-                builder.OpenElement(229, "a");
-                builder.AddAttribute(230, "href", doc.Source);
-                builder.AddAttribute(231, "download", doc.Name);
-                builder.AddContent(232, "Download the PDF");
-                builder.CloseElement();
-                builder.AddContent(233, ".");
-                builder.CloseElement();
+                    // Accessible fallback: a real link so assistive-tech users and
+                    // browsers without an inline PDF plugin can still get the file.
+                    builder.OpenElement(226, "p");
+                    builder.AddAttribute(227, "class", "dx-docview-pdf-fallback");
+                    builder.AddContent(228, "Can't see the PDF above? ");
+                    builder.OpenElement(229, "a");
+                    builder.AddAttribute(230, "href", doc.Source);
+                    builder.AddAttribute(231, "download", doc.Name);
+                    builder.AddContent(232, "Download the PDF");
+                    builder.CloseElement();
+                    builder.AddContent(233, ".");
+                    builder.CloseElement();
+                }
+                else
+                {
+                    BuildUnavailable(builder);
+                }
                 break;
 
             case DocumentKind.Markdown:
@@ -337,15 +428,28 @@ public sealed class DxDocumentViewer : ComponentBase
                 builder.OpenElement(250, "div");
                 builder.AddAttribute(251, "class", "dx-docview-unsupported");
                 builder.AddContent(252, "Preview not available for this file type. ");
-                builder.OpenElement(253, "a");
-                builder.AddAttribute(254, "href", doc.Source);
-                builder.AddAttribute(255, "download", doc.Name);
-                builder.AddContent(256, "Download");
-                builder.CloseElement();
+                if (IsSafeSource(doc.Source))
+                {
+                    builder.OpenElement(253, "a");
+                    builder.AddAttribute(254, "href", doc.Source);
+                    builder.AddAttribute(255, "download", doc.Name);
+                    builder.AddContent(256, "Download");
+                    builder.CloseElement();
+                }
                 builder.CloseElement();
                 break;
         }
 
+        builder.CloseElement();
+    }
+
+    // Safe placeholder shown when a source is missing or fails the scheme allowlist:
+    // nothing clickable, no embed/img with an unsafe URL.
+    private static void BuildUnavailable(RenderTreeBuilder builder)
+    {
+        builder.OpenElement(260, "div");
+        builder.AddAttribute(261, "class", "dx-docview-unavailable");
+        builder.AddContent(262, "Document source unavailable");
         builder.CloseElement();
     }
 }
