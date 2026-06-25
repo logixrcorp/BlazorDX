@@ -1,0 +1,34 @@
+/*
+ * dx-wordeditor.css — round-trip .docx editor wrapper.
+ *
+ * The editing surface itself is the shared DxRichTextEditor (styled by dx-richtext.css:
+ * focus-visible ring, token-driven colors). This file only styles the thin wrapper and
+ * the dirty/status line. CSS-variable driven so it inherits the host theme; the fallback
+ * #475569 on #ffffff ≈ 7.5:1 clears WCAG 1.4.3.
+ */
+
+.dx-word-editor {
+  max-width: 52rem;
+}
+
+/* Give the editing surface document-like proportions to match DxWordViewer. */
+.dx-word-editor .dx-word-editor-surface .dx-rte-surface {
+  min-height: 16rem;
+  max-height: 70vh;
+  line-height: 1.65;
+}
+
+.dx-word-editor-status {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  /* Use the primary text color (not the muted token) so the status line clears WCAG
+     1.4.3 against any host surface — #334155 on #ffffff ≈ 10.4:1. */
+  color: var(--dx-text, #334155);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dx-word-editor * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

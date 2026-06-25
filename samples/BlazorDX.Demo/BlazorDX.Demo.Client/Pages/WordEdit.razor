@@ -1,0 +1,118 @@
+@page "/word-edit"
+@rendermode InteractiveWebAssembly
+@using System.Text.RegularExpressions
+@using BlazorDX.Documents
+@using BlazorDX.Security
+
+<PageTitle>Word editor</PageTitle>
+
+<h1>BlazorDX Word Editor</h1>
+
+<p class="dx-demo-meta">
+    A <strong>round-trip <code>.docx</code> editor</strong>: the editable sibling of
+    <code>DxWordViewer</code>. A <code>WordDocument</code> is bridged to clean semantic
+    HTML by <code>WordHtml.ToHtml</code> and seeded into the <em>same</em>
+    <code>DxRichTextEditor</code> surface used on the Rich Text page — its labeled
+    toolbar, formatting commands, keyboard handling, and injected sanitizer are reused,
+    not rebuilt. On every edit the HTML is read back, routed through the
+    <strong>injected allow-list sanitizer</strong>, parsed by <code>WordHtml.FromHtml</code>
+    into a model, and serialized to <code>.docx</code> bytes via <code>DocxWriter.Write</code>.
+</p>
+
+<p class="dx-demo-meta">
+    There is no new <code>contentEditable</code> and no <code>MarkupString</code>: the
+    sanitizer plus <code>FromHtml</code>'s allow-listed tag subset are the safety net.
+    Edit the heading or list below — the status line tracks unsaved changes, and the byte
+    count proves a real <code>.docx</code> is produced on each edit.
+</p>
+
+<DxWordEditor @bind-Document="document"
+              Sanitizer="sanitizer"
+              Label="Quarterly report body"
+              OnSave="OnSave" />
+
+<p class="dx-demo-meta" aria-live="polite">
+    @if (savedSize is { } size)
+    {
+        <span>Saved to <code>.docx</code>: <strong>@size bytes</strong>. The bytes read
+        back to an equivalent <code>WordDocument</code> (heading outline, lists, and table
+        preserved).</span>
+    }
+    else
+    {
+        <span>No edits yet — the seeded document is shown above.</span>
+    }
+</p>
+
+@code {
+    private WordDocument document = BuildSample();
+    private int? savedSize;
+
+    private void OnSave(byte[] docx) => savedSize = docx.Length;
+
+    // Demo-grade allow-list sanitizer (same shape as the Rich Text page). Illustrative
+    // only: production apps inject a vetted library. It strips script/style blocks,
+    // event-handler attributes, javascript: URLs, and any non-allow-listed tag — leaving
+    // exactly the semantic subset WordHtml.FromHtml understands.
+    private readonly HtmlSanitizer sanitizer = new(Clean);
+
+    private static readonly HashSet<string> Allowed =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            "b", "strong", "i", "em", "h1", "h2", "h3", "h4", "h5", "h6",
+            "ul", "ol", "li", "p", "br", "div", "table", "thead", "tbody", "tr", "th", "td",
+        };
+
+    private static string Clean(string input)
+    {
+        string html = Regex.Replace(input, "(?is)<(script|style)\\b.*?</\\1>", string.Empty);
+        html = Regex.Replace(html, "(?i)\\son\\w+\\s*=\\s*\"[^\"]*\"", string.Empty);
+        html = Regex.Replace(html, "(?i)\\son\\w+\\s*=\\s*'[^']*'", string.Empty);
+        html = Regex.Replace(html, "(?i)(href|src)\\s*=\\s*([\"'])\\s*javascript:[^\"']*\\2", "$1=$2#$2");
+        html = Regex.Replace(html, "(?i)</?([a-z0-9]+)[^>]*>",
+            m => Allowed.Contains(m.Groups[1].Value) ? m.Value : string.Empty);
+        return html;
+    }
+
+    private static WordDocument BuildSample() =>
+        new(
+        [
+            new WordHeading(1, [new WordRun("Quarterly Report")]),
+            new WordParagraph(
+            [
+                new WordRun("Prepared for the editorial review. Edit this document — it is "),
+                new WordRun("fully editable", Bold: true),
+                new WordRun(" and saves back to a real .docx file."),
+            ]),
+
+            new WordHeading(2, [new WordRun("Highlights")]),
+            new WordList(false,
+            [
+                [new WordRun("Engagement held "), new WordRun("steady", Bold: true), new WordRun(" across all surfaces.")],
+                [new WordRun("Support volume fell by a fifth quarter over quarter.")],
+                [new WordRun("Two accessibility audits passed with zero serious findings.")],
+            ]),
+
+            new WordHeading(2, [new WordRun("Next steps")]),
+            new WordList(true,
+            [
+                [new WordRun("Ship the editable document surface.")],
+                [new WordRun("Run a full screen-reader pass before release.")],
+            ]),
+
+            new WordHeading(2, [new WordRun("Team roster")]),
+            new WordTable(
+            [
+                new WordTableRow(
+                [
+                    new WordTableCell([new WordRun("Name")]),
+                    new WordTableCell([new WordRun("Role")]),
+                ]),
+                new WordTableRow(
+                [
+                    new WordTableCell([new WordRun("Ada")]),
+                    new WordTableCell([new WordRun("Engineer")]),
+                ]),
+            ]),
+        ]);
+}
