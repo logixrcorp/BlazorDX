@@ -102,6 +102,22 @@ public sealed class DxHtmxDocumentViewer : ComponentBase
     /// </summary>
     [Parameter] public string ElementId { get; set; } = "dx-htmxdoc";
 
+    protected override void OnParametersSet()
+    {
+        // Defense-in-depth: the navigation endpoint becomes an href / hx-get on every
+        // tab and pager link. A non-empty value must clear the same scheme allowlist
+        // the PDF Source uses, so Endpoint cannot be javascript:/data:/file: and inject
+        // script through a link. Empty is allowed — links then fall back to the current
+        // path (see Endpoint's docs).
+        if (!string.IsNullOrEmpty(Endpoint) && !IsSafeSource(Endpoint))
+        {
+            throw new ArgumentException(
+                "'Endpoint' must be a relative path or an http/https/blob URL; a " +
+                $"scheme such as javascript:, data:, or file: is not allowed. Got: '{Endpoint}'.",
+                nameof(Endpoint));
+        }
+    }
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "div");

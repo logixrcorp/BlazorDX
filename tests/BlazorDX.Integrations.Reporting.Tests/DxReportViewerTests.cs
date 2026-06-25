@@ -252,4 +252,76 @@ public sealed class DxReportViewerTests : TestContext
         Assert.Single(v.FindAll("p.dx-report-empty"));
         Assert.Empty(v.FindAll("div.dx-report-html"));
     }
+
+    // ---- Fix 2: relative-URL / scheme guards (defense-in-depth) ----
+
+    [Theory]
+    [InlineData("http://evil.example.com/ReportServer")]
+    [InlineData("https://evil.example.com/ReportServer")]
+    [InlineData("//evil.example.com/ReportServer")]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("data:text/html,<script>alert(1)</script>")]
+    public void RenderBasePath_must_be_relative_else_throws(string hostile)
+    {
+        // A non-relative RenderBasePath would let the iframe/export links point off-origin.
+        var ex = Assert.Throws<ArgumentException>(() =>
+            RenderComponent<DxReportViewer>(p => p
+                .Add(c => c.Report, "/Sales/Monthly")
+                .Add(c => c.Mode, ReportViewMode.Embed)
+                .Add(c => c.RenderBasePath, hostile)));
+
+        Assert.Equal("RenderBasePath", ex.ParamName);
+    }
+
+    [Theory]
+    [InlineData("http://evil.example.com/reports")]
+    [InlineData("//evil.example.com/reports")]
+    [InlineData("javascript:alert(1)")]
+    public void RenderEndpoint_must_be_relative_else_throws(string hostile)
+    {
+        // A non-relative RenderEndpoint would aim the form's action/hx-get off-origin.
+        var ex = Assert.Throws<ArgumentException>(() =>
+            RenderComponent<DxReportViewer>(p => p
+                .Add(c => c.Report, "/Sales/Monthly")
+                .Add(c => c.Mode, ReportViewMode.Render)
+                .Add(c => c.RenderEndpoint, hostile)));
+
+        Assert.Equal("RenderEndpoint", ex.ParamName);
+    }
+
+    [Fact]
+    public void Relative_paths_are_accepted_and_stay_same_origin()
+    {
+        // The demo's own values: relative base + endpoint. No throw; the form posts to
+        // the relative endpoint (same-origin: no scheme, no //host authority).
+        var v = RenderForm();
+
+        string action = v.Find("form.dx-report-form").GetAttribute("action")!;
+        Assert.Equal("/reports", action);
+        Assert.DoesNotContain("://", action);
+        Assert.False(action.StartsWith("//", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Embed_with_relative_base_keeps_iframe_src_same_origin()
+    {
+        var v = RenderEmbed();
+
+        string src = v.Find("iframe.dx-report-frame").GetAttribute("src")!;
+        Assert.StartsWith("/ReportServer?", src);
+        Assert.DoesNotContain("://", src);
+        Assert.False(src.StartsWith("//", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Empty_render_urls_are_allowed()
+    {
+        // Empty base/endpoint mean "use the configured server URL" / "post to this page".
+        var ex = Record.Exception(() =>
+            RenderComponent<DxReportViewer>(p => p
+                .Add(c => c.Report, "/Sales/Monthly")
+                .Add(c => c.Mode, ReportViewMode.Render)));
+
+        Assert.Null(ex);
+    }
 }

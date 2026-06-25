@@ -200,6 +200,67 @@ public sealed class DxHtmxDocumentViewerTests : TestContext
     public void IsSafeSource_enforces_the_scheme_allowlist(string source, bool expected) =>
         Assert.Equal(expected, DxHtmxDocumentViewer.IsSafeSource(source));
 
+    // ---- Endpoint scheme guard (defense-in-depth, Fix 2) ----
+
+    [Theory]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("data:text/html,<script>alert(1)</script>")]
+    [InlineData("file:///etc/passwd")]
+    [InlineData("vbscript:msgbox(1)")]
+    public void Endpoint_rejects_a_dangerous_scheme(string hostile)
+    {
+        // Endpoint becomes the href / hx-get on every tab and pager link; a dangerous
+        // scheme there is a script-injection vector, so it must be rejected at set-time.
+        ArgumentException ex = Assert.Throws<ArgumentException>(() =>
+            RenderComponent<DxHtmxDocumentViewer>(p => p
+                .Add(v => v.Kind, HtmxDocumentKind.Excel)
+                .Add(v => v.Endpoint, hostile)
+                .Add(v => v.Bytes, Xlsx(
+                    ("A", [["x"], ["1"]]),
+                    ("B", [["y"], ["2"]])))));
+
+        Assert.Equal("Endpoint", ex.ParamName);
+    }
+
+    [Theory]
+    [InlineData("/htmx/doc?kind=excel")]
+    [InlineData("htmx/doc")]
+    [InlineData("https://reports.example.com/doc")]
+    [InlineData("")]
+    public void Endpoint_accepts_relative_and_http_values(string ok)
+    {
+        // The demo's own relative value, a bare relative path, an http URL, and the
+        // empty fall-back-to-current-path all pass — links stay same-origin where given.
+        Exception? ex = Record.Exception(() =>
+            RenderComponent<DxHtmxDocumentViewer>(p => p
+                .Add(v => v.Kind, HtmxDocumentKind.Excel)
+                .Add(v => v.Endpoint, ok)
+                .Add(v => v.Bytes, Xlsx(
+                    ("A", [["x"], ["1"]]),
+                    ("B", [["y"], ["2"]])))));
+
+        Assert.Null(ex);
+    }
+
+    [Fact]
+    public void Tab_and_form_links_stay_same_origin_for_a_relative_endpoint()
+    {
+        IRenderedComponent<DxHtmxDocumentViewer> viewer = RenderComponent<DxHtmxDocumentViewer>(p => p
+            .Add(v => v.Kind, HtmxDocumentKind.Excel)
+            .Add(v => v.Endpoint, "/htmx/doc?kind=excel")
+            .Add(v => v.Bytes, Xlsx(
+                ("A", [["x"], ["1"]]),
+                ("B", [["y"], ["2"]]))));
+
+        foreach (IElement tab in viewer.FindAll("nav.dx-htmxdoc-tabs a"))
+        {
+            string href = tab.GetAttribute("href")!;
+            Assert.DoesNotContain("://", href);
+            Assert.False(href.StartsWith("//", StringComparison.Ordinal));
+            Assert.Equal(href, tab.GetAttribute("hx-get"));
+        }
+    }
+
     // ---- Minimal OOXML byte builders (kept tiny; exercise the real parsers) ----
 
     private const string SpreadsheetMl =

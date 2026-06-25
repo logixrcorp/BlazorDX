@@ -152,6 +152,15 @@ public sealed class DxReportViewer : ComponentBase
 
     protected override async Task OnParametersSetAsync()
     {
+        // Defense-in-depth: the browser-facing base and form endpoint must stay
+        // same-origin. Reject anything carrying a scheme (http:, https:, javascript:,
+        // …) or a protocol-relative //host authority, so a misconfiguration cannot
+        // point the iframe/form at a cross-origin or hostile target. Validated on
+        // every parameter set, before any mode-specific work, so both Embed and
+        // Render are covered.
+        EnsureRelative(RenderBasePath, nameof(RenderBasePath));
+        EnsureRelative(RenderEndpoint, nameof(RenderEndpoint));
+
         if (Mode != ReportViewMode.Render || ParametersTemplate is not null)
         {
             return;
@@ -620,6 +629,92 @@ public sealed class DxReportViewer : ComponentBase
         }
 
         return map;
+    }
+
+    /// <summary>
+    /// Throws an <see cref="ArgumentException"/> if <paramref name="value"/> is a
+    /// non-relative URL (carries a scheme like <c>http:</c>/<c>javascript:</c> or a
+    /// protocol-relative <c>//host</c> authority). An empty value is allowed (it means
+    /// "use the configured server URL" / "post to the current page").
+    /// </summary>
+    private static void EnsureRelative(string value, string parameterName)
+    {
+        if (!IsRelativeUrl(value))
+        {
+            throw new ArgumentException(
+                $"'{parameterName}' must be a relative URL so the report viewer stays " +
+                "same-origin; a scheme (http:, https:, javascript:, …) or a " +
+                $"protocol-relative '//host' value is not allowed. Got: '{value}'.",
+                parameterName);
+        }
+    }
+
+    /// <summary>
+    /// True when <paramref name="value"/> is safe to use as a same-origin URL: empty,
+    /// or a relative reference with no scheme and no <c>//</c> authority. Rejects
+    /// absolute URLs (<c>http:</c>, <c>https:</c>, <c>javascript:</c>, <c>data:</c>, …)
+    /// and protocol-relative <c>//host</c> values.
+    /// </summary>
+    internal static bool IsRelativeUrl(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return true;
+        }
+
+        string trimmed = value.Trim();
+        if (trimmed.Length == 0)
+        {
+            return true;
+        }
+
+        // Protocol-relative ("//host/…") borrows the page scheme but a foreign host.
+        if (trimmed.StartsWith("//", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        // A leading-colon control char (e.g. ":evil") or a "scheme:" prefix is absolute.
+        int colon = trimmed.IndexOf(':');
+        if (colon < 0)
+        {
+            return true;
+        }
+
+        if (colon == 0)
+        {
+            return false;
+        }
+
+        // A colon that appears only after a path separator (e.g. "/a/b:c") is part of
+        // the path, not a scheme; a scheme cannot contain a slash before its colon.
+        int slash = trimmed.IndexOfAny(new[] { '/', '?', '#' });
+        if (slash >= 0 && slash < colon)
+        {
+            return true;
+        }
+
+        // Otherwise the leading "token:" is a scheme — reject it.
+        string scheme = trimmed[..colon];
+        return !IsSchemeToken(scheme);
+    }
+
+    private static bool IsSchemeToken(string s)
+    {
+        if (s.Length == 0 || !char.IsLetter(s[0]))
+        {
+            return false;
+        }
+
+        foreach (char c in s)
+        {
+            if (!char.IsLetterOrDigit(c) && c is not ('+' or '-' or '.'))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     // The embedded frame must always carry a non-empty accessible name (WCAG 4.1.2).

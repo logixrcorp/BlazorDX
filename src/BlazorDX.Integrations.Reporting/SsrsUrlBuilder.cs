@@ -82,9 +82,13 @@ internal static class SsrsUrlBuilder
 
     /// <summary>
     /// Builds the SSRS REST relative URL for parameter definitions:
-    /// <c>/api/v2.0/reports({path})/parameterdefinitions</c>. The path keeps its
-    /// literal slashes (the mock and SSRS parse the parenthesised raw path), with
-    /// only a leading slash normalized in.
+    /// <c>/api/v2.0/reports({path})/parameterdefinitions</c>. The path is
+    /// percent-encoded with <see cref="Uri.EscapeDataString(string)"/> — exactly the
+    /// per-segment encoding the URL-Access builder uses (slashes become <c>%2F</c>)
+    /// — so a path containing <c>)</c>, <c>(</c>, <c>'</c>, <c>;</c>, spaces, or
+    /// other delimiters cannot break out of the parenthesised path token and malform
+    /// the REST request. SSRS (and the mock) percent-decode the token back to the
+    /// real catalog path. A leading slash is normalized in before encoding.
     /// </summary>
     public static string BuildParameterDefinitionsPath(string reportPath)
     {
@@ -99,8 +103,10 @@ internal static class SsrsUrlBuilder
             normalized = "/" + normalized;
         }
 
+        var encoded = Uri.EscapeDataString(normalized);
+
         return string.Create(
             CultureInfo.InvariantCulture,
-            $"api/v2.0/reports({normalized})/parameterdefinitions");
+            $"api/v2.0/reports({encoded})/parameterdefinitions");
     }
 }
