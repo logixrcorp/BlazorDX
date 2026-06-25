@@ -1,0 +1,121 @@
+@page "/reports"
+@using BlazorDX.Integrations.Reporting
+@inject IReportRenderer Renderer
+
+<PageTitle>SSRS report viewer</PageTitle>
+
+<h1>Static-SSR + HTMX report viewer</h1>
+
+<p>
+    This page is statically server-rendered — no SignalR circuit, no WebAssembly
+    download. <code>DxReportViewer</code> talks to a <strong>mock SSRS server mounted
+    in-process</strong> (at <code>/ReportServer</code> for URL-Access render and
+    <code>/reports</code> for the REST parameter API). Credentials, when a real server
+    needs them, stay server-side and never reach the browser.
+</p>
+
+<h2>Embed mode</h2>
+<p>
+    The default mode drops an <code>&lt;iframe&gt;</code> on the server's own URL-Access
+    render URL (<code>rs:Command=Render</code>, <code>rc:Toolbar=true</code>). Microsoft's
+    renderer supplies the toolbar and paging; BlazorDX guarantees the wrapper, the frame's
+    accessible <code>title</code>, and the accessible export links below it.
+</p>
+
+<DxReportViewer Report="/Sales/Monthly"
+                Mode="ReportViewMode.Embed"
+                RenderBasePath="/ReportServer"
+                Values="EmbedValues"
+                ElementId="dx-report-embed" />
+
+<h2>Render mode (parameter form)</h2>
+<p>
+    Render mode builds a parameter form from the report's declared parameters — labeled
+    inputs, required markers, <strong>defaults prefilled</strong>, and a
+    <code>&lt;select&gt;</code> for closed valid-value lists. The form is a real
+    <code>GET</code> to this page (works with JavaScript disabled) <em>and</em> carries
+    <code>hx-get</code> so HTMX swaps just the viewer fragment in place. On submit the
+    host calls <code>IReportRenderer.RenderAsync</code> and the HTML5 output is
+    <strong>sanitized</strong> into the output region.
+</p>
+
+<DxReportViewer Report="/Sales/Monthly"
+                Mode="ReportViewMode.Render"
+                RenderEndpoint="/reports"
+                RenderBasePath="/ReportServer"
+                ElementId="dx-report"
+                Values="SubmittedValues"
+                Result="RenderResult"
+                ErrorMessage="@RenderError" />
+
+@code {
+    // Static SSR exposes the current HttpContext as a cascading value; no
+    // IHttpContextAccessor registration is needed. Null under interactive render.
+    [CascadingParameter] private HttpContext? Http { get; set; }
+
+    // The embed iframe needs the required Region so the server actually renders a
+    // report rather than returning an rsParameterError prompt page.
+    private static readonly KeyValuePair<string, string>[] EmbedValues =
+    {
+        new("Region", "West"),
+        new("Year", "2026"),
+    };
+
+    private IReadOnlyList<KeyValuePair<string, string>>? SubmittedValues;
+    private RenderedReport? RenderResult;
+    private string? RenderError;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var http = Http;
+        if (http is null)
+        {
+            return;
+        }
+
+        var query = http.Request.Query;
+
+        // A submission is any request that carries the render form's hidden `report`
+        // key. (The embed instance never submits, so this is unambiguous.)
+        if (!query.TryGetValue("report", out var reportValues) || reportValues.Count == 0)
+        {
+            return;
+        }
+
+        string report = reportValues[0] ?? "/Sales/Monthly";
+
+        // Collect every query key except the marker as ordered parameter values.
+        // Repeated keys (multi-value parameters like Region) keep every occurrence.
+        var values = new List<KeyValuePair<string, string>>();
+        foreach (var pair in query)
+        {
+            if (string.Equals(pair.Key, "report", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            foreach (var v in pair.Value)
+            {
+                if (!string.IsNullOrEmpty(v))
+                {
+                    values.Add(new KeyValuePair<string, string>(pair.Key, v));
+                }
+            }
+        }
+
+        SubmittedValues = values;
+
+        try
+        {
+            RenderResult = await Renderer.RenderAsync(
+                new ReportRequest(report, ReportFormat.Html5, values, ShowToolbar: false),
+                http.RequestAborted);
+            RenderError = null;
+        }
+        catch (ReportRenderException ex)
+        {
+            RenderResult = null;
+            RenderError = ex.Message;
+        }
+    }
+}

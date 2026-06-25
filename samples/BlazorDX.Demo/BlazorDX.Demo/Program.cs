@@ -2,6 +2,8 @@ using System.Text.Encodings.Web;
 using BlazorDX.Compute;
 using BlazorDX.Demo.Client;
 using BlazorDX.Demo.Components;
+using BlazorDX.Integrations.Reporting;
+using BlazorDX.MockReportServer;
 using BlazorDX.Primitives.Forms;
 using Microsoft.AspNetCore.HttpOverrides;
 
@@ -42,6 +44,22 @@ builder.Services.AddScoped<BlazorDX.Demo.Client.DemoDiagnosticsLog>();
 builder.Services.AddScoped<BlazorDX.Primitives.Diagnostics.IDxDiagnostics>(
     sp => sp.GetRequiredService<BlazorDX.Demo.Client.DemoDiagnosticsLog>());
 
+// SSRS reporting (ADR 0010): wire the URL-Access render client + REST parameter
+// source against the mock SSRS server mounted in-process below. The server-side
+// HttpClient base address is absolute (loopback); the DxReportViewer's browser-
+// facing iframe/export URLs are relative (/ReportServer), so they load same-origin
+// regardless of host/scheme. Credentials would live here, server-side only — the
+// mock is open, so none are set.
+string reportServerBase =
+    builder.Configuration["Reporting:ServerUrl"] ?? "http://localhost:5296/ReportServer";
+string reportRestBase =
+    builder.Configuration["Reporting:RestUrl"] ?? "http://localhost:5296/reports";
+builder.Services.AddBlazorDXReporting(o =>
+{
+    o.ServerUrl = reportServerBase;
+    o.RestUrl = reportRestBase;
+});
+
 var app = builder.Build();
 
 // Must run before UseHttpsRedirection so the forwarded https scheme is applied first.
@@ -77,6 +95,13 @@ app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages:
 app.UseHttpsRedirection();
 
 app.UseAntiforgery();
+
+// Mount the mock SSRS server in-process so the report viewer's render loop is real:
+// the URL-Access render endpoint and a slice of the REST parameter API, both backed
+// by the canned, deterministic catalog (/Sales/Monthly, /HR/Headcount).
+var reportCatalog = new ReportCatalog();
+app.MapMockReportServer("/ReportServer", reportCatalog);
+app.MapMockReportsRestApi("/reports", reportCatalog);
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()

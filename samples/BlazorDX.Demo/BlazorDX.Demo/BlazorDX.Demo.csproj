@@ -5,6 +5,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    <!-- The referenced BlazorDX.MockReportServer (an Sdk.Web app, mounted in-process)
+         also exports a top-level `Program`. The compiler correctly resolves to this
+         project's own `Program`; silence the benign CS0436 collision warning. -->
+    <NoWarn>$(NoWarn);CS0436</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,6 +18,8 @@
 
   <ItemGroup Label="BlazorDX (server-side: static SSR, HTMX tier)">
     <ProjectReference Include="..\..\..\src\BlazorDX.Htmx\BlazorDX.Htmx.csproj" />
+    <ProjectReference Include="..\..\..\src\BlazorDX.Integrations.Reporting\BlazorDX.Integrations.Reporting.csproj" />
+    <ProjectReference Include="..\..\BlazorDX.MockReportServer\BlazorDX.MockReportServer.csproj" />
   </ItemGroup>
 
 </Project>

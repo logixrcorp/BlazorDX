@@ -6,8 +6,9 @@
     integration package, not core — but explicitly trim/AOT-clean and
     zero-reflection like the rest of the catalog: JSON is parsed only through a
     System.Text.Json source-generated context (ADR 0002). Razor SDK so the
-    DxReportViewer component can land here next turn; this turn is client + DI.
-    Credentials are server-side only and never reach the browser (ADR 0010).
+    DxReportViewer static-SSR + HTMX viewer plus the URL-Access render client and
+    REST parameter-metadata source. Credentials are server-side only and never
+    reach the browser (ADR 0010).
   -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -15,8 +16,15 @@
 
   <ItemGroup>
     <!-- The tests assert the exact URL-Access query shape against the internal
-         builder, and reach internal client types over real HTTP. -->
+         builder, reach internal client types over real HTTP, and bUnit-render the
+         DxReportViewer (which uses the internal SsrsUrlBuilder). -->
     <InternalsVisibleTo Include="BlazorDX.Integrations.Reporting.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The DxReportViewer renders SSRS HTML5 only through the sanctioned sanitizer
+         boundary (ADR 0007). -->
+    <ProjectReference Include="..\BlazorDX.Security\BlazorDX.Security.csproj" />
   </ItemGroup>
 
   <ItemGroup>
