@@ -1,0 +1,38 @@
+@page "/powerbi"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Integrations.PowerBI
+
+<PageTitle>Power BI report embed</PageTitle>
+
+<h1>BlazorDX Power BI embed</h1>
+
+<p class="dx-demo-meta">
+    <code>DxPowerBiReport</code> embeds a Power BI report through a hand-written ESM
+    wrapper (<code>dx-powerbi.js</code>) over <code>[JSImport]</code> — never
+    <code>IJSRuntime</code>, and we do <em>not</em> bundle the heavy SDK. The
+    component fetches a short-lived <strong>embed config</strong> (embed URL + embed
+    token) from a server endpoint that minted it with the Azure AD token held
+    <strong>server-side</strong>; only the embed token + URL cross to the browser,
+    which is exactly how Power BI "app owns data" embedding works.
+</p>
+
+<p class="dx-demo-meta">
+    In production the wrapper lazy-loads the real <code>powerbi-client</code> SDK from
+    a CDN and calls the genuine <code>powerbi.embed(...)</code> (which needs a live
+    Azure tenant). This demo instead loads a tiny <strong>stub</strong>
+    (<code>powerbi-stub.js</code>) that records the embed config and renders a
+    placeholder — so the full loop is provable with no tenant and no console errors.
+</p>
+
+<DxPowerBiReport ConfigEndpoint="/powerbi/embedconfig"
+                 ReportId="11111111-1111-1111-1111-111111111111"
+                 Label="Quarterly Revenue Power BI report" />
+
+<h2>Accessibility</h2>
+<p class="dx-demo-meta">
+    BlazorDX guarantees the labeled container (<code>role="application"</code> with an
+    accessible name), the accessible loading and error states
+    (<code>aria-live</code>), and the secure token handling above. The embedded
+    report's own keyboard navigation and "Show as a table" view are provided by
+    Microsoft inside the iframe — see <code>docs/powerbi-accessibility.md</code>.
+</p>

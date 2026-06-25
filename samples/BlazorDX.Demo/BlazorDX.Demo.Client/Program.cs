@@ -10,6 +10,17 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 // Registers IGridCompute; in the browser this resolves to the Rust/wasm backend.
 builder.Services.AddBlazorDXCompute();
 
+// DxPowerBiReport's browser bridge (the [JSImport] wrapper over dx-powerbi.js).
+// The embed token + embedUrl come from the server's /powerbi/embedconfig endpoint;
+// only the interop is needed client-side — the AAD token never reaches WASM. Scoped,
+// never Singleton, per the state-isolation rule. Guarded by IsBrowser so the
+// browser-only [JSImport] type is registered only where it is supported (CA1416).
+if (OperatingSystem.IsBrowser())
+{
+    builder.Services.AddScoped<BlazorDX.Integrations.PowerBI.IPowerBiInterop,
+        BlazorDX.Integrations.PowerBI.PowerBiInterop>();
+}
+
 // Scoped toast service (never Singleton — per the state-isolation rule).
 builder.Services.AddScoped<BlazorDX.Components.ToastService>();
 

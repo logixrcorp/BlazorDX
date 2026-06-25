@@ -56,6 +56,19 @@ public static class PowerBiServiceCollectionExtensions
                 sp.GetRequiredService<IPowerBiTokenProvider>(),
                 sp.GetRequiredService<PowerBiOptions>()));
 
+        // Browser bridge for DxPowerBiReport: the real [JSImport] wrapper under
+        // WebAssembly, a no-op off browser (static SSR / Interactive Server
+        // prerender). Scoped, never Singleton, mirroring the Interop package's
+        // per-platform registration.
+        if (OperatingSystem.IsBrowser())
+        {
+            services.TryAddScoped<IPowerBiInterop, PowerBiInterop>();
+        }
+        else
+        {
+            services.TryAddScoped<IPowerBiInterop, NullPowerBiInterop>();
+        }
+
         return new PowerBiBuilder(services);
     }
 

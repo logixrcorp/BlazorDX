@@ -19,6 +19,7 @@
   <ItemGroup Label="BlazorDX (server-side: static SSR, HTMX tier)">
     <ProjectReference Include="..\..\..\src\BlazorDX.Htmx\BlazorDX.Htmx.csproj" />
     <ProjectReference Include="..\..\..\src\BlazorDX.Integrations.Reporting\BlazorDX.Integrations.Reporting.csproj" />
+    <ProjectReference Include="..\..\..\src\BlazorDX.Integrations.PowerBI\BlazorDX.Integrations.PowerBI.csproj" />
     <ProjectReference Include="..\..\BlazorDX.MockReportServer\BlazorDX.MockReportServer.csproj" />
   </ItemGroup>
 

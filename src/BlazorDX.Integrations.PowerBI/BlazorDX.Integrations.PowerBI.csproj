@@ -6,8 +6,10 @@
     through the Power BI JavaScript SDK — WITHOUT the browser ever seeing the
     Azure AD bearer token. This package builds the verifiable server core: the
     REST flow against the documented Power BI contract, mapped through a swap
-    seam (ADR 0014) for the AAD token. The DxPowerBiReport component + JS SDK
-    wrapper land in a later turn; Razor SDK so this project can hold them then.
+    seam (ADR 0014) for the AAD token. It also ships the DxPowerBiReport
+    component + the hand-written dx-powerbi.js SDK wrapper (loaded over [JSImport],
+    never IJSRuntime) — the embed token + embedUrl cross to the browser (as Power
+    BI embedding requires), the AAD token never does.
 
     Like the rest of the catalog this is trim/AOT-clean and zero-reflection:
     JSON is parsed only through a System.Text.Json source-generated context
@@ -16,6 +18,8 @@
   -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <!-- The [JSImport] source generator emits unsafe marshalling stubs. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,6 +30,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- DxPowerBiReport is a real Blazor component (ComponentBase, RenderTreeBuilder,
+         RenderFragment). This package reference is browser-wasm-compatible (a
+         FrameworkReference to Microsoft.AspNetCore.App is NOT — there is no
+         AspNetCore runtime pack for browser-wasm, and the demo's WASM client
+         references this project). [JSImport] itself needs no package; it is part of
+         the base runtime. -->
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+    <!-- The server-side embed service uses the typed HttpClient factory + DI. -->
     <PackageReference Include="Microsoft.Extensions.Http" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
   </ItemGroup>

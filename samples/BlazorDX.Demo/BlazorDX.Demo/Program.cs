@@ -2,6 +2,7 @@ using System.Text.Encodings.Web;
 using BlazorDX.Compute;
 using BlazorDX.Demo.Client;
 using BlazorDX.Demo.Components;
+using BlazorDX.Integrations.PowerBI;
 using BlazorDX.Integrations.Reporting;
 using BlazorDX.MockReportServer;
 using BlazorDX.Primitives.Forms;
@@ -60,6 +61,21 @@ builder.Services.AddBlazorDXReporting(o =>
     o.RestUrl = reportRestBase;
 });
 
+// Power BI embedding (ADR 0010): the embed-token service mints a short-lived embed
+// config server-side against the mock Power BI REST API mounted in-process below.
+// The Azure AD token is held server-side by the StaticPowerBiTokenProvider (a real
+// host swaps in MSAL); only the minted embed token + embedUrl ever cross to the
+// browser via the /powerbi/embedconfig endpoint. ApiBaseUrl points at this same
+// origin so the service's /v1.0/myorg/... REST calls hit the in-process mock.
+const string PowerBiWorkspaceId = "ws-demo-0001";
+string powerBiApiBase =
+    builder.Configuration["PowerBI:ApiBaseUrl"] ?? "http://localhost:5296";
+builder.Services.AddBlazorDXPowerBi(o =>
+{
+    o.ApiBaseUrl = powerBiApiBase;
+    o.WorkspaceId = PowerBiWorkspaceId;
+}).UseTokenProvider(new StaticPowerBiTokenProvider("demo-aad-token"));
+
 var app = builder.Build();
 
 // Must run before UseHttpsRedirection so the forwarded https scheme is applied first.
@@ -102,6 +118,40 @@ app.UseAntiforgery();
 var reportCatalog = new ReportCatalog();
 app.MapMockReportServer("/ReportServer", reportCatalog);
 app.MapMockReportsRestApi("/reports", reportCatalog);
+
+// Mount the mock Power BI REST API in-process (under /v1.0/myorg, the documented
+// prefix the embed service expects) so the embed-token flow is real: the service's
+// GET report + POST GenerateToken calls hit this deterministic stand-in instead of
+// a live Azure tenant. The returned embed token is a clearly-fake stand-in.
+app.MapMockPowerBiApi("/v1.0/myorg");
+
+// The embed-config endpoint DxPowerBiReport fetches from. It runs SERVER-SIDE: it
+// calls IPowerBiEmbedService (which uses the AAD token, held server-side, against
+// the mock) and returns ONLY the browser-bound config — embedUrl + embedToken +
+// reportId. The AAD token never appears in this response. The default report id is
+// one the mock recognises so the demo works zero-config.
+const string DemoReportId = "11111111-1111-1111-1111-111111111111";
+app.MapGet("/powerbi/embedconfig", async (HttpContext http, IPowerBiEmbedService embed) =>
+{
+    string reportId = http.Request.Query.TryGetValue("reportId", out var v) && v.Count > 0
+        ? v[0]!
+        : DemoReportId;
+    try
+    {
+        PowerBiEmbedConfig config = await embed.CreateEmbedConfigAsync(reportId, http.RequestAborted);
+        return Results.Json(new
+        {
+            embedUrl = config.EmbedUrl,
+            embedToken = config.EmbedToken,
+            reportId = config.ReportId,
+            expiration = config.Expiration,
+        });
+    }
+    catch (PowerBiEmbedException ex)
+    {
+        return Results.Json(new { error = ex.Message }, statusCode: StatusCodes.Status502BadGateway);
+    }
+});
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()

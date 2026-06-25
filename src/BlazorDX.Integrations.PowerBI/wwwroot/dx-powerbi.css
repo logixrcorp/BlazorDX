@@ -1,0 +1,56 @@
+/*
+ * dx-powerbi.css — the interactive Power BI embed (DxPowerBiReport). BlazorDX owns
+ * only the wrapper: the labeled container, the loading indicator, and the error
+ * panel. The report itself (and its iframe) is Microsoft's, rendered inside
+ * .dx-powerbi-frame. CSS-variable driven so it inherits the host theme; the
+ * fallback colours clear WCAG 1.4.3 (4.5:1): #1e293b on #ffffff, #475569 on
+ * #f8fafc, #b91c1c on #fef2f2.
+ */
+
+.dx-powerbi {
+  border: 1px solid var(--dx-border, #e2e8f0);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--dx-surface, #ffffff);
+  color: var(--dx-text, #1e293b);
+  font-size: 0.9375rem;
+}
+
+/* The container the Power BI SDK renders its own <iframe> into. */
+.dx-powerbi-frame {
+  display: block;
+  width: 100%;
+  height: 75vh;
+}
+
+/* The SDK injects an iframe; make it fill the container with no extra chrome. */
+.dx-powerbi-frame iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.dx-powerbi-loading {
+  padding: 16px;
+  color: var(--dx-text-muted, #475569);
+  background: var(--dx-surface-muted, #f8fafc);
+  border-bottom: 1px solid var(--dx-border, #e2e8f0);
+}
+
+.dx-powerbi-error {
+  margin: 0;
+  padding: 12px 16px;
+  color: var(--dx-danger, #b91c1c);
+  background: var(--dx-danger-surface, #fef2f2);
+  border-radius: 4px;
+}
+
+/* Honor the user's reduced-motion preference: no spinner animation. The loading
+   text alone conveys state, so nothing is lost. */
+@media (prefers-reduced-motion: reduce) {
+  .dx-powerbi-loading,
+  .dx-powerbi-frame * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
