@@ -33,7 +33,7 @@
   - `BlazorDX.Htmx` (the existing static-SSR tier) — the **server-rendered, read-only**
     document viewer and the report viewer's parameter forms + fragment swaps. No WASM
     payload, no SignalR circuit; progressive-enhancement-friendly.
-  - `BlazorDX.Integrations.Reporting` — **server-side** SSRS/RDLC rendering, delivered to
+  - `BlazorDX.Integrations.Reporting` — **server-side** SSRS rendering, delivered to
     the browser over the **HTMX/static-SSR tier**. Clearly labeled as integrations; not WASM.
   - `BlazorDX.Integrations.PowerBI` — thin wrapper over Microsoft's `powerbi-client` SDK.
 - **Credentials and large JS never reach the browser core.** Report-server creds live in
@@ -323,10 +323,15 @@ client runtime entirely. Needs server access to the report server.
 - **Auth:** pass-through (Windows/Negotiate/Basic or a service account) handled in the
   host; **no credentials in the browser**. Caching of rendered output for repeat views.
 
-**`DxLocalReportViewer` (RDLC, optional):** for local reports with no report server, via a
-community .NET Core port (e.g. `ReportViewerCore.NETCore` / `AspNetCore.Reporting`) →
-render RDLC to PDF → display. **Flagged non-official** — Microsoft ships no .NET Core RDLC
-viewer; adopt only with the licensing caveat understood.
+**`DxLocalReportViewer` (RDLC) — DECLINED / out of scope.** RDLC ("local report") rendering
+on .NET 10 has **no official Microsoft renderer** (the ReportViewer control was never ported
+past .NET Framework); the only options are **unofficial community ports** that redistribute
+Microsoft's rendering assemblies. Taking such a dependency would undercut the project's
+managed/auditable identity (an unmanaged, third-party-repackaged vendor library) and, unlike
+SSRS's documented URL-Access HTTP protocol, the in-process RDLC engine **can't be
+contract-mocked/verified** the clean way the rest of this track was. **Decision: not
+implemented.** Teams needing local reports should use the SSRS viewer against a report
+server, or render to PDF out-of-band and show it with `DxDocumentViewer`.
 
 **Power BI viewer** — `BlazorDX.Integrations.PowerBI`: TS wrapper over Microsoft's
 `powerbi-client` SDK (**lazy-loaded**) + C# **MSAL** token acquisition. Requires Azure AD +
@@ -339,6 +344,23 @@ conform (3.3.1 / 3.3.2, prefill for 3.3.7), the HTML5 renderer is preferred, an 
 export is offered, and an **accessibility statement** delineates wrapper vs renderer
 responsibility.
 
+**Status (Phase 4 — complete to the verifiable boundary):**
+
+- ✅ **SSRS report viewer** (`BlazorDX.Integrations.Reporting`) — URL-Access client +
+  `DxReportViewer` (embed + render modes, parameter form, no-JS), **validated end-to-end
+  against a mock SSRS server** that faithfully emulates the URL-Access HTTP protocol
+  (`samples/BlazorDX.MockReportServer`); hardened against URL/path injection. axe `/reports`
+  clean. ⏳ *Unverified by design:* against a live production SSRS instance.
+- ✅ **Power BI viewer** (`BlazorDX.Integrations.PowerBI`) — embed-token service (the
+  documented `GET report` → `POST GenerateToken` REST flow, AAD token server-side only) +
+  `DxPowerBiReport`, **validated against a mock Power BI REST + a stub SDK** proving the full
+  embed loop (mock → embed token → client → `powerbi.embed`). axe `/powerbi` clean.
+  ⏳ *Unverified by design:* the real `powerbi-client` render against a live Azure tenant.
+- ❌ **RDLC** — **declined** (no official .NET renderer; only unmanaged third-party ports —
+  see the `DxLocalReportViewer` note above).
+
+**Phase 4 is complete** (SSRS + Power BI shipped and contract-verified; RDLC declined).
+
 ---
 
 ## Sequencing & dependencies
@@ -347,7 +369,7 @@ responsibility.
 Phase 0 (perf foundation)  ─┬─►  Phase 1 (file mgr, scheduler, PDF)      [quick wins]
                             ├─►  Phase 2 (Excel/Word viewers)           [Rust readers]
                             │        └─►  Phase 3 (editors)             [larger]
-                            └─►  Phase 4 (SSRS/RDLC/Power BI)           [server integrations]
+                            └─►  Phase 4 (SSRS + Power BI)             [server integrations]
 ```
 
 - **Phase 0** lands first (or alongside Phase 1) — it's the lever for the runtime goal and

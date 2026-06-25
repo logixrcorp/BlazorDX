@@ -31,7 +31,7 @@ the DataGrid, Dialog, etc.
 - **`BlazorDX.Htmx`** (existing static-SSR tier) — the server-rendered, read-only
   document viewer and the report viewer's parameter forms + fragment swaps. No WASM
   payload, no circuit.
-- **`BlazorDX.Integrations.Reporting`** — server-side SSRS/RDLC rendering via
+- **`BlazorDX.Integrations.Reporting`** — server-side SSRS rendering via
   Microsoft's own components, delivered over HTMX. Explicitly an integration, not core.
 - **`BlazorDX.Integrations.PowerBI`** — thin, lazy-loaded wrapper over Microsoft's
   `powerbi-client` SDK + MSAL.
