@@ -34,6 +34,12 @@ jobs:
       - name: Build (warnings are errors)
         run: dotnet build BlazorDX.slnx -c Release
 
+      - name: Rust kernel unit tests (native host)
+        run: cargo test --manifest-path src/BlazorDX.Compute.Rust/Cargo.toml
+
+      - name: Speed wasm build smoke (opt-level 3 + simd128)
+        run: dotnet build src/BlazorDX.Interop/BlazorDX.Interop.csproj -c Release -p:RustSpeed=true
+
       - name: Unit tests (bUnit + compute + analyzers)
         run: |
           dotnet test tests/BlazorDX.Components.Tests/BlazorDX.Components.Tests.csproj -c Release --no-build

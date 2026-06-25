@@ -49,11 +49,19 @@
 
     <!--
       RUSTFLAGS is only set when RustSpeed is on; otherwise the env var is left
-      untouched so the default build is unaffected. The trailing && chains the
-      cargo call within the same (cmd) process so the SET sticks.
+      untouched so the default build is unaffected. It must be set in the SAME shell
+      process as the cargo call: Windows cmd uses `set VAR=...&&`, POSIX shells use
+      the `VAR=... cmd` prefix. (Linux/macOS CI runs the POSIX branch.)
     -->
-    <Exec Condition="'$(RustSpeed)' == 'true'"
+    <Exec Condition="'$(RustSpeed)' == 'true' And '$(OS)' == 'Windows_NT'"
           Command="set RUSTFLAGS=$(RustExtraRustFlags)&amp;&amp; cargo build $(RustProfileArg) --target $(RustTarget) --manifest-path &quot;$(RustManifest)&quot;"
+          WorkingDirectory="$(RustCrateDir)"
+          ContinueOnError="true">
+      <Output TaskParameter="ExitCode" PropertyName="_DxCargoExit" />
+    </Exec>
+
+    <Exec Condition="'$(RustSpeed)' == 'true' And '$(OS)' != 'Windows_NT'"
+          Command="RUSTFLAGS=&quot;$(RustExtraRustFlags)&quot; cargo build $(RustProfileArg) --target $(RustTarget) --manifest-path &quot;$(RustManifest)&quot;"
           WorkingDirectory="$(RustCrateDir)"
           ContinueOnError="true">
       <Output TaskParameter="ExitCode" PropertyName="_DxCargoExit" />
