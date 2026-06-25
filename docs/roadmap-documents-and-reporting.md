@@ -256,6 +256,19 @@ semantics with correct `aria-rowcount`/`colcount` under virtualization (Excel), 
 semantic HTML (headings/lists/table headers/reading order) out of OOXML (Word); the
 **static-SSR viewer works with JavaScript disabled** (no-JS fallback).
 
+**Status (Phase 2 — in progress):**
+
+- ✅ **Excel viewer** — the new **`BlazorDX.Documents`** package (per [ADR 0010](adr/0010-documents-and-reporting-integration.md));
+  a hand-rolled C# `.xlsx` reader (`XlsxReader`, round-trip-verified against `XlsxWriter`,
+  no external deps) feeding `DxSpreadsheetViewer` — multi-sheet `tablist`, virtualized via
+  `DxVirtualize<T>` (not `DxDataGrid`, since columns are runtime-dynamic — ADR-0009),
+  `role="grid"` with full `aria-rowcount`/`colcount`. axe `/excel` clean; 13 tests.
+  ⏳ *Deferred (noted in code):* formulas show their cached value (no recompute), number
+  formats / styling / merged cells not interpreted, and the **Rust `calamine` reader**
+  (drops in behind the same model when scale demands).
+- ⬜ **Remaining in Phase 2:** the **Word viewer** (OOXML → sanitized semantic HTML) and the
+  **static-SSR `DxHtmxDocumentViewer`** (no-WASM read-only PDF/Excel/Word over HTMX).
+
 ### Phase 3 — Office editors (larger; may land post-1.0)
 
 | Item | Build | Effort |
