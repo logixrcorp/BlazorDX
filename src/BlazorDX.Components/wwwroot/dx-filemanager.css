@@ -200,14 +200,27 @@
   outline-offset: 1px;
 }
 
-/* DnD drop affordance (applied by file-dnd.ts on dragover). */
+/* DnD drop affordance (applied by file-dnd.ts on dragover). The animated variant
+   may pulse; the static variant is used when the user prefers reduced motion. */
 .dx-fm-drop-over {
   outline: 2px dashed var(--dx-accent, #2563eb);
   outline-offset: -2px;
   background: color-mix(in srgb, var(--dx-accent, #2563eb) 6%, transparent);
+  animation: dx-fm-drop-pulse 1.2s ease-in-out infinite;
+}
+@keyframes dx-fm-drop-pulse {
+  50% { background: color-mix(in srgb, var(--dx-accent, #2563eb) 14%, transparent); }
+}
+/* Static, non-animated drop indicator for prefers-reduced-motion users. */
+.dx-fm-drop-over-static {
+  outline: 2px solid var(--dx-accent, #2563eb);
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--dx-accent, #2563eb) 8%, transparent);
 }
 @media (prefers-reduced-motion: reduce) {
   .dx-fm-action, .dx-fm-move-here, .dx-fm-drop-over { transition: none; }
+  /* Belt-and-braces: even if the animated class is somehow applied, kill motion. */
+  .dx-fm-drop-over { animation: none; }
 }
 
 /* Visually contained but screen-reader-available status line (aria-live). */

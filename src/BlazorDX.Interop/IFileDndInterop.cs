@@ -6,6 +6,13 @@ namespace BlazorDX.Interop;
 /// actually streaming a dropped file is done through the framework's
 /// <c>InputFile</c>/<c>IBrowserFile</c> path, which the file manager always offers
 /// alongside drop. Native DnD is an enhancement, never the only upload route.
+/// <para><strong>Security:</strong> <see cref="Name"/> and <see cref="ContentType"/>
+/// are <em>browser-reported</em> values taken from the dropped <c>File</c> objects and
+/// must not be trusted by the host. Do not use <see cref="Name"/> as a path component
+/// without re-validating it, and do not rely on <see cref="ContentType"/> for any
+/// security decision (sniff the bytes instead). Names with path separators, null
+/// bytes, or empty names are stripped at the interop boundary before they reach a
+/// callback, but the surviving values are still untrusted.</para>
 /// </remarks>
 public readonly record struct DroppedFile(string Name, long Size, string ContentType);
 
@@ -36,4 +43,11 @@ public interface IFileDndInterop : IAsyncDisposable
 
     /// <summary>Tears down whatever was registered for the element id.</summary>
     ValueTask UnregisterAsync(string elementId);
+
+    /// <summary>
+    /// Moves keyboard focus to the element with the given id (no-op if it is not in
+    /// the DOM). Used to re-home focus after a move or upload so keyboard and
+    /// screen-reader users are not stranded (WCAG 2.4.3).
+    /// </summary>
+    ValueTask FocusElementAsync(string elementId);
 }

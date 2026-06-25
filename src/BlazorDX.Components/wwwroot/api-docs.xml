@@ -487,6 +487,16 @@
         <member name="P:BlazorDX.Components.DxDocumentViewer.ShowOpenInNewTab">
             <summary>Shows the Open-in-new-tab control in the toolbar (PDF/image). On by default.</summary>
         </member>
+        <member name="M:BlazorDX.Components.DxDocumentViewer.IsSafeSource(System.String)">
+            <summary>
+            Decides whether a document <see cref="P:BlazorDX.Components.ViewerDocument.Source"/> is safe to place
+            in an <c>&lt;embed src&gt;</c>, <c>&lt;img src&gt;</c>, or <c>&lt;a href&gt;</c>.
+            Allows relative URLs and a scheme allowlist (http, https, blob, plus
+            <c>data:image/*</c> and <c>data:application/pdf</c>); rejects everything else —
+            notably <c>javascript:</c>, <c>vbscript:</c>, <c>file:</c>, and HTML data URLs —
+            to prevent script injection through the source value.
+            </summary>
+        </member>
         <member name="T:BlazorDX.Components.DxDrawer">
             <summary>
             A persistent, collapsible side panel that pushes content rather than overlaying
@@ -1214,14 +1224,23 @@
         </member>
         <member name="T:BlazorDX.Components.DxScheduler">
             <summary>
-            Tier 2 styled week scheduler built on <see cref="T:BlazorDX.Primitives.Scheduling.SchedulerPrimitive"/>. Renders
-            a toolbar, day-column headers, an hour grid, and each event as an absolutely
-            positioned block within its day column. Styling is token-driven (see
-            dx-scheduler.css).
+            Tier 2 styled scheduler built on <see cref="T:BlazorDX.Primitives.Scheduling.SchedulerPrimitive"/>. Renders a
+            toolbar with a keyboard-accessible Week / Month / Day view switch, then the
+            active view: a time grid (Week/Day) with absolutely positioned event blocks,
+            or a month date grid with per-day event buttons. All views share one ARIA
+            "grid" with 2-D arrow-key navigation (mirroring the DataGrid), focus-visible
+            cells, accessible event buttons, text category labels (never colour alone),
+            and a polite aria-live region announcing view/date changes. Styling is
+            token-driven (see dx-scheduler.css).
             </summary>
+            <remarks>
+            DEFERRED: RRULE-style recurring events, drag-to-move / drag-to-create editing,
+            and the planned Rust overlap-lane layout kernel are not yet implemented. The
+            current overlap layout is computed in pure C#.
+            </remarks>
         </member>
         <member name="P:BlazorDX.Components.DxScheduler.HourHeight">
-            <summary>Pixel height of one hour row.</summary>
+            <summary>Pixel height of one hour row (Week/Day time grid).</summary>
         </member>
         <member name="T:BlazorDX.Components.DxSelect`1">
             <summary>

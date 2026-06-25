@@ -283,13 +283,25 @@ public class FileManagerPrimitive : ComponentBase
         await MoveAsync(item, target);
     }
 
-    protected async Task MoveAsync(FileSystemEntry item, FileSystemEntry? target)
+    protected virtual async Task MoveAsync(FileSystemEntry item, FileSystemEntry? target)
     {
-        bool ok = TryMove(item, target);
-        StatusMessage = ok
-            ? $"Moved {item.Name} to {target?.Name ?? "Files"}."
-            : $"Could not move {item.Name}.";
+        MoveOutcome outcome = TryMove(item, target);
+        bool ok = outcome == MoveOutcome.Moved;
+        StatusMessage = outcome switch
+        {
+            MoveOutcome.Moved => $"Moved {item.Name} to {target?.Name ?? "Files"}.",
+            MoveOutcome.NameCollision => $"An item named {item.Name} already exists here.",
+            _ => $"Could not move {item.Name}.",
+        };
         StateHasChanged();
+
+        // After a successful move, send focus to a sensible target (the moved item's
+        // row if it is visible in the current contents view, else the status region)
+        // so keyboard/SR users are not stranded (WCAG 2.4.3). No-op off-browser.
+        if (ok)
+        {
+            await FocusAfterMoveAsync(item);
+        }
 
         if (OnItemMove.HasDelegate)
         {
@@ -297,7 +309,22 @@ public class FileManagerPrimitive : ComponentBase
         }
     }
 
-    private bool TryMove(FileSystemEntry item, FileSystemEntry? target)
+    /// <summary>
+    /// Hook for the styled tier to move keyboard focus after a successful move. The
+    /// headless primitive renders nothing, so this is a no-op here; the DOM-aware
+    /// subclass overrides it.
+    /// </summary>
+    protected virtual Task FocusAfterMoveAsync(FileSystemEntry moved) => Task.CompletedTask;
+
+    /// <summary>Why a move was (or was not) performed.</summary>
+    private enum MoveOutcome
+    {
+        Moved,
+        Rejected,
+        NameCollision,
+    }
+
+    private MoveOutcome TryMove(FileSystemEntry item, FileSystemEntry? target)
     {
         FileSystemEntry? currentParent = parents.TryGetValue(item, out FileSystemEntry? p) ? p : null;
 
@@ -305,7 +332,7 @@ public class FileManagerPrimitive : ComponentBase
             ReferenceEquals(currentParent, target) ||
             (target is not null && (!target.IsDirectory || IsDescendant(target, item))))
         {
-            return false;
+            return MoveOutcome.Rejected;
         }
 
         List<FileSystemEntry> from = ChildrenOf(currentParent);
@@ -314,7 +341,18 @@ public class FileManagerPrimitive : ComponentBase
         int index = from.FindIndex(e => ReferenceEquals(e, item));
         if (index < 0)
         {
-            return false;
+            return MoveOutcome.Rejected;
+        }
+
+        // Reject a move that would create two siblings with the same name in the
+        // destination (case-insensitive, as most file systems treat names).
+        foreach (FileSystemEntry sibling in to)
+        {
+            if (!ReferenceEquals(sibling, item) &&
+                string.Equals(sibling.Name, item.Name, StringComparison.OrdinalIgnoreCase))
+            {
+                return MoveOutcome.NameCollision;
+            }
         }
 
         from.RemoveAt(index);
@@ -325,7 +363,7 @@ public class FileManagerPrimitive : ComponentBase
             expanded.Add(target);
         }
 
-        return true;
+        return MoveOutcome.Moved;
     }
 
     // True when candidate is item itself or sits anywhere beneath item in the tree.
@@ -351,6 +389,13 @@ public class FileManagerPrimitive : ComponentBase
             : $"Uploaded {count} files to {where}.";
         StateHasChanged();
     }
+
+    /// <summary>
+    /// Hook for the styled tier to move keyboard focus to the status region after an
+    /// upload (the uploaded files are not yet visible rows — streaming is the host's
+    /// job), so keyboard/SR users land on the announcement (WCAG 2.4.3). No-op here.
+    /// </summary>
+    protected virtual Task FocusStatusAsync() => Task.CompletedTask;
 
     private FileSystemEntry? Ancestor(FileSystemEntry node) =>
         parents.TryGetValue(node, out FileSystemEntry? parent) ? parent : null;

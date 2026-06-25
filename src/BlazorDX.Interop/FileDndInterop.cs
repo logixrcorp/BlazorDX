@@ -48,8 +48,38 @@ public sealed partial class FileDndInterop : IFileDndInterop
         // reflection-based JSON enters the trimmed/AOT path.
         void OnFilesRaw(string filesJson)
         {
-            DroppedFile[]? files = JsonSerializer.Deserialize(filesJson, FileDndJson.Default.DroppedFileArray);
-            onFiles(files ?? []);
+            DroppedFile[]? files;
+            try
+            {
+                files = JsonSerializer.Deserialize(filesJson, FileDndJson.Default.DroppedFileArray);
+            }
+            catch (JsonException)
+            {
+                // A malformed payload from the browser must never crash the host; an
+                // empty list is the safe equivalent of "nothing usable was dropped".
+                onFiles([]);
+                return;
+            }
+
+            if (files is null || files.Length == 0)
+            {
+                onFiles([]);
+                return;
+            }
+
+            // Defensively filter the browser-reported names: an empty name, a name
+            // carrying a path separator (a path-traversal vector if a host ever joins
+            // it to a directory), or one with a null byte is dropped, not forwarded.
+            List<DroppedFile> safe = new(files.Length);
+            foreach (DroppedFile file in files)
+            {
+                if (IsSafeName(file.Name))
+                {
+                    safe.Add(file);
+                }
+            }
+
+            onFiles(safe);
         }
 
         RegisterDropTarget(elementId, onMove, OnFilesRaw);
@@ -65,7 +95,35 @@ public sealed partial class FileDndInterop : IFileDndInterop
         await ValueTask.CompletedTask;
     }
 
+    public async ValueTask FocusElementAsync(string elementId)
+    {
+        await EnsureLoadedAsync();
+        FocusElement(elementId);
+    }
+
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+
+    // A browser-reported file name is usable only if it is non-empty and free of
+    // path separators and null bytes. The name is untrusted host-side input (see the
+    // remarks on DroppedFile), so this is the boundary that keeps a crafted name from
+    // ever reaching code that might treat it as a path component.
+    private static bool IsSafeName(string name)
+    {
+        if (string.IsNullOrEmpty(name))
+        {
+            return false;
+        }
+
+        foreach (char c in name)
+        {
+            if (c is '/' or '\\' or '\0')
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     [JSImport("registerDraggable", ModuleName)]
     private static partial void RegisterDraggable(string elementId);
@@ -78,6 +136,9 @@ public sealed partial class FileDndInterop : IFileDndInterop
 
     [JSImport("unregister", ModuleName)]
     private static partial void Unregister(string elementId);
+
+    [JSImport("focusElement", ModuleName)]
+    private static partial void FocusElement(string elementId);
 }
 
 [JsonSerializable(typeof(DroppedFile[]))]

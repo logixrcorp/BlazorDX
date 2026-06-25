@@ -1,6 +1,7 @@
 using System.Globalization;
 using BlazorDX.Interop;
 using BlazorDX.Primitives.Files;
+using BlazorDX.Security;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.Rendering;
@@ -48,6 +49,16 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
     private IReadOnlyList<FileSystemEntry> renderedRows = [];
     private IReadOnlyList<FolderRow> renderedNodes = [];
     private readonly HashSet<string> registered = new(StringComparer.Ordinal);
+
+    // Serializes moves: each native-DnD drop cancels any still-in-flight prior move
+    // before starting its own, so rapid drops can never interleave and corrupt the
+    // model (the fire-and-forget race). Owned per-component, disposed below.
+    private readonly SafeActionDispatcher moveGuard = new();
+
+    // The item to send focus to on the next render after a successful move, if it is
+    // still visible in the contents view; consumed in OnAfterRenderAsync.
+    private FileSystemEntry? focusAfterRender;
+    private bool focusStatusAfterRender;
     private bool disposed;
 
     private string RowId(int index) => $"{baseId}-row-{index}";
@@ -55,6 +66,8 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
     private string NodeId(int index) => $"{baseId}-node-{index}";
 
     private string DropZoneId => $"{baseId}-drop";
+
+    private string StatusId => $"{baseId}-status";
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
@@ -302,11 +315,15 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
     private void BuildStatus(RenderTreeBuilder builder)
     {
         // aria-live region: announces move/upload results asynchronously (WCAG 4.1.3).
+        // tabindex="-1" so it can receive programmatic focus as the fallback target
+        // when a move/upload leaves no visible row to land on (WCAG 2.4.3).
         builder.OpenElement(118, "div");
-        builder.AddAttribute(119, "class", "dx-fm-status");
-        builder.AddAttribute(120, "role", "status");
-        builder.AddAttribute(121, "aria-live", "polite");
-        builder.AddContent(122, StatusMessage);
+        builder.AddAttribute(119, "id", StatusId);
+        builder.AddAttribute(120, "class", "dx-fm-status");
+        builder.AddAttribute(121, "role", "status");
+        builder.AddAttribute(122, "aria-live", "polite");
+        builder.AddAttribute(123, "tabindex", "-1");
+        builder.AddContent(124, StatusMessage);
         builder.CloseElement();
     }
 
@@ -323,6 +340,7 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
     {
         IReadOnlyList<IBrowserFile> files = args.GetMultipleFiles();
         AnnounceUpload(files.Count, SelectedFolder);
+        await FocusStatusAsync();
         if (OnUpload.HasDelegate)
         {
             await OnUpload.InvokeAsync(files);
@@ -376,24 +394,29 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
         {
             registered.Add(id);
         }
+
+        // Re-home focus after a move/upload, now that the rows for this pass are in
+        // the DOM (no-op off-browser via NullFileDndInterop).
+        await ApplyPendingFocusAsync();
     }
 
     // Resolves a dragged row id back to its entry and moves it into the target folder.
+    // The index arrives parsed from a DOM id, so it is bounds-checked both ends.
     private void OnDomMove(string sourceId, int targetRowIndex)
     {
         FileSystemEntry? source = ResolveRow(sourceId);
-        if (source is not null && targetRowIndex < renderedRows.Count)
+        if (source is not null && targetRowIndex >= 0 && targetRowIndex < renderedRows.Count)
         {
-            _ = MoveAsync(source, renderedRows[targetRowIndex]);
+            QueueMove(source, renderedRows[targetRowIndex]);
         }
     }
 
     private void OnDomMoveToNode(string sourceId, int nodeIndex)
     {
         FileSystemEntry? source = ResolveRow(sourceId);
-        if (source is not null && nodeIndex < renderedNodes.Count)
+        if (source is not null && nodeIndex >= 0 && nodeIndex < renderedNodes.Count)
         {
-            _ = MoveAsync(source, renderedNodes[nodeIndex].Entry);
+            QueueMove(source, renderedNodes[nodeIndex].Entry);
         }
     }
 
@@ -402,15 +425,22 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
         FileSystemEntry? source = ResolveRow(sourceId);
         if (source is not null)
         {
-            _ = MoveAsync(source, SelectedFolder);
+            QueueMove(source, SelectedFolder);
         }
     }
+
+    // Runs a native-DnD move through the per-component guard so a still-in-flight
+    // prior move is cancelled before this one starts: rapid successive drops are
+    // serialized rather than racing (replaces the bare fire-and-forget).
+    private void QueueMove(FileSystemEntry source, FileSystemEntry? target) =>
+        _ = moveGuard.DispatchAsync(_ => MoveAsync(source, target));
 
     private FileSystemEntry? ResolveRow(string elementId)
     {
         string prefix = $"{baseId}-row-";
         if (!elementId.StartsWith(prefix, StringComparison.Ordinal) ||
             !int.TryParse(elementId.AsSpan(prefix.Length), NumberStyles.Integer, CultureInfo.InvariantCulture, out int index) ||
+            index < 0 ||
             index >= renderedRows.Count)
         {
             return null;
@@ -421,7 +451,9 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
 
     private Action<IReadOnlyList<DroppedFile>> OnDomFilesRow(int targetRowIndex) => files =>
     {
-        FileSystemEntry? target = targetRowIndex < renderedRows.Count ? renderedRows[targetRowIndex] : null;
+        FileSystemEntry? target = targetRowIndex >= 0 && targetRowIndex < renderedRows.Count
+            ? renderedRows[targetRowIndex]
+            : null;
         RaiseDrop(files, target?.IsDirectory == true ? target : SelectedFolder);
     };
 
@@ -435,6 +467,7 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
         }
 
         AnnounceUpload(files.Count, destination);
+        _ = FocusStatusAsync();
         if (OnFilesDropped.HasDelegate)
         {
             _ = OnFilesDropped.InvokeAsync(new FileDropArgs(files, destination));
@@ -446,6 +479,56 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
         // Tree nodes accept item moves only, not OS-file uploads.
     }
 
+    // After a successful move, remember the moved item so the next render can send
+    // keyboard focus to its row (if still visible) or the status region (WCAG 2.4.3).
+    // The actual focus call runs in OnAfterRenderAsync, once the row id is in the DOM.
+    protected override Task FocusAfterMoveAsync(FileSystemEntry moved)
+    {
+        focusAfterRender = moved;
+        return Task.CompletedTask;
+    }
+
+    // After an upload, focus lands on the status region: the uploaded files are not
+    // yet visible rows (streaming is the host's job), so the announcement is the
+    // sensible focus target.
+    protected override Task FocusStatusAsync()
+    {
+        focusStatusAfterRender = true;
+        return Task.CompletedTask;
+    }
+
+    private async Task ApplyPendingFocusAsync()
+    {
+        FileSystemEntry? moved = focusAfterRender;
+        bool wantStatus = focusStatusAfterRender;
+        focusAfterRender = null;
+        focusStatusAfterRender = false;
+
+        if (moved is not null)
+        {
+            // The moved item is focusable only if it is a row in the current contents
+            // view (ReferenceEquals: rows track instance identity). If it moved out of
+            // view, fall back to the status region so focus is never lost.
+            int index = -1;
+            for (int i = 0; i < renderedRows.Count; i++)
+            {
+                if (ReferenceEquals(renderedRows[i], moved))
+                {
+                    index = i;
+                    break;
+                }
+            }
+
+            await Dnd.FocusElementAsync(index >= 0 ? RowId(index) : StatusId);
+            return;
+        }
+
+        if (wantStatus)
+        {
+            await Dnd.FocusElementAsync(StatusId);
+        }
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (disposed)
@@ -454,6 +537,7 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
         }
 
         disposed = true;
+        moveGuard.Dispose();
         foreach (string id in registered)
         {
             await Dnd.UnregisterAsync(id);

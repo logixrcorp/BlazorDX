@@ -19,5 +19,7 @@ public sealed class NullFileDndInterop : IFileDndInterop
 
     public ValueTask UnregisterAsync(string elementId) => ValueTask.CompletedTask;
 
+    public ValueTask FocusElementAsync(string elementId) => ValueTask.CompletedTask;
+
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }

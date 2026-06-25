@@ -469,8 +469,25 @@
         <member name="M:BlazorDX.Primitives.Files.FileManagerPrimitive.PlaceMoveCandidateAsync(BlazorDX.Primitives.Files.FileSystemEntry)">
             <summary>Places the currently-marked item into <paramref name="target"/> (root when null).</summary>
         </member>
+        <member name="M:BlazorDX.Primitives.Files.FileManagerPrimitive.FocusAfterMoveAsync(BlazorDX.Primitives.Files.FileSystemEntry)">
+            <summary>
+            Hook for the styled tier to move keyboard focus after a successful move. The
+            headless primitive renders nothing, so this is a no-op here; the DOM-aware
+            subclass overrides it.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Files.FileManagerPrimitive.MoveOutcome">
+            <summary>Why a move was (or was not) performed.</summary>
+        </member>
         <member name="M:BlazorDX.Primitives.Files.FileManagerPrimitive.AnnounceUpload(System.Int32,BlazorDX.Primitives.Files.FileSystemEntry)">
             <summary>Records an upload result for the <c>aria-live</c> region (4.1.3).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Files.FileManagerPrimitive.FocusStatusAsync">
+            <summary>
+            Hook for the styled tier to move keyboard focus to the status region after an
+            upload (the uploaded files are not yet visible rows — streaming is the host's
+            job), so keyboard/SR users land on the announcement (WCAG 2.4.3). No-op here.
+            </summary>
         </member>
         <member name="T:BlazorDX.Primitives.Forms.AiToolResult">
             <summary>The outcome of an AI tool invocation: a text payload and whether it is an error.</summary>
@@ -2086,19 +2103,59 @@
         <member name="M:BlazorDX.Primitives.Scheduling.GanttPrimitive.Layout(BlazorDX.Primitives.Scheduling.GanttTask)">
             <summary>The visible placement of a task, or null if it falls outside the window.</summary>
         </member>
+        <member name="T:BlazorDX.Primitives.Scheduling.SchedulerView">
+            <summary>The calendar view rendered by the scheduler.</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Scheduling.SchedulerView.Week">
+            <summary>A multi-day time grid (the default).</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Scheduling.SchedulerView.Month">
+            <summary>A whole-month date grid (weeks as rows, weekdays as columns).</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Scheduling.SchedulerView.Day">
+            <summary>A single-day time grid.</summary>
+        </member>
         <member name="T:BlazorDX.Primitives.Scheduling.SchedulerEvent">
             <summary>A scheduled event placed on the calendar.</summary>
             <param name="Title">Event label.</param>
             <param name="Start">Start timestamp.</param>
-            <param name="End">End timestamp (same day as <paramref name="Start"/> for this view).</param>
+            <param name="End">
+            End timestamp. May fall on a later day than <paramref name="Start"/>; the event
+            then renders on every day in its [Start..End] date range (a multi-day month span
+            or a midnight-crossing block on each touched day column).
+            </param>
             <param name="Color">Optional CSS color override for the event block.</param>
+            <param name="Category">
+            Optional category/status label. Conveyed as text (never color alone) so the
+            distinction survives for colour-blind and high-contrast users (WCAG 1.4.1).
+            </param>
+            <remarks>
+            DEFERRED: RRULE-style recurrence is not yet modelled — every event is a single
+            concrete interval. Drag-to-move / drag-to-create editing is not implemented, and
+            the overlap-lane layout is computed in pure C# (the planned Rust overlap-lane
+            kernel is not wired up).
+            </remarks>
         </member>
-        <member name="M:BlazorDX.Primitives.Scheduling.SchedulerEvent.#ctor(System.String,System.DateTime,System.DateTime,System.String)">
+        <member name="M:BlazorDX.Primitives.Scheduling.SchedulerEvent.#ctor(System.String,System.DateTime,System.DateTime,System.String,System.String)">
             <summary>A scheduled event placed on the calendar.</summary>
             <param name="Title">Event label.</param>
             <param name="Start">Start timestamp.</param>
-            <param name="End">End timestamp (same day as <paramref name="Start"/> for this view).</param>
+            <param name="End">
+            End timestamp. May fall on a later day than <paramref name="Start"/>; the event
+            then renders on every day in its [Start..End] date range (a multi-day month span
+            or a midnight-crossing block on each touched day column).
+            </param>
             <param name="Color">Optional CSS color override for the event block.</param>
+            <param name="Category">
+            Optional category/status label. Conveyed as text (never color alone) so the
+            distinction survives for colour-blind and high-contrast users (WCAG 1.4.1).
+            </param>
+            <remarks>
+            DEFERRED: RRULE-style recurrence is not yet modelled — every event is a single
+            concrete interval. Drag-to-move / drag-to-create editing is not implemented, and
+            the overlap-lane layout is computed in pure C# (the planned Rust overlap-lane
+            kernel is not wired up).
+            </remarks>
         </member>
         <member name="P:BlazorDX.Primitives.Scheduling.SchedulerEvent.Title">
             <summary>Event label.</summary>
@@ -2107,10 +2164,20 @@
             <summary>Start timestamp.</summary>
         </member>
         <member name="P:BlazorDX.Primitives.Scheduling.SchedulerEvent.End">
-            <summary>End timestamp (same day as <paramref name="Start"/> for this view).</summary>
+            <summary>
+            End timestamp. May fall on a later day than <paramref name="Start"/>; the event
+            then renders on every day in its [Start..End] date range (a multi-day month span
+            or a midnight-crossing block on each touched day column).
+            </summary>
         </member>
         <member name="P:BlazorDX.Primitives.Scheduling.SchedulerEvent.Color">
             <summary>Optional CSS color override for the event block.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerEvent.Category">
+            <summary>
+            Optional category/status label. Conveyed as text (never color alone) so the
+            distinction survives for colour-blind and high-contrast users (WCAG 1.4.1).
+            </summary>
         </member>
         <member name="T:BlazorDX.Primitives.Scheduling.ScheduledBlock">
             <summary>One event laid out within a day column.</summary>
@@ -2140,10 +2207,11 @@
         </member>
         <member name="T:BlazorDX.Primitives.Scheduling.SchedulerPrimitive">
             <summary>
-            Tier 1 headless week scheduler. Computes the visible day columns and lays each
-            event out as a <see cref="T:BlazorDX.Primitives.Scheduling.ScheduledBlock"/> (day column + vertical offset and
-            height in hours, clamped to the visible hour range). Owns week navigation but
-            renders nothing; the styled layer turns blocks into positioned markup.
+            Tier 1 headless scheduler. Computes the visible cells for the Week, Month, and
+            Day views and lays each event out (time-positioned blocks for Week/Day, day
+            buckets for Month). Owns view selection, navigation, and a 2-D roving
+            active-cell model (the ARIA "grid" keyboard pattern, mirroring the DataGrid);
+            renders nothing — the styled layer turns the model into markup.
             </summary>
         </member>
         <member name="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.WeekStart">
@@ -2155,14 +2223,89 @@
         <member name="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.EndHour">
             <summary>Last hour shown (exclusive upper bound, 24h).</summary>
         </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.View">
+            <summary>The active calendar view.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.ActiveRow">
+            <summary>The active cell's row (time-grid row or month week), or -1 when none.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.ActiveColumn">
+            <summary>The active cell's column (day column or month weekday), or -1 when none.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.ViewDayCount">
+            <summary>Number of day columns visible in the current view.</summary>
+        </member>
         <member name="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.Days">
-            <summary>The day columns, left to right.</summary>
+            <summary>The day columns, left to right, for the active view.</summary>
         </member>
         <member name="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.Hours">
-            <summary>Hour labels down the time axis (start..end, inclusive of the start of each hour).</summary>
+            <summary>Hour labels down the time axis (Week/Day views).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.ViewStart">
+            <summary>First day of the active view (Day = WeekStart; Week = WeekStart; Month = first grid cell).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.MonthFirst">
+            <summary>First day of the month containing <see cref="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.WeekStart"/>.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.MonthGridStart">
+            <summary>The Monday on or before the first of the month (top-left month grid cell).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.MonthWeekCount">
+            <summary>Number of week rows needed to show the whole month (4–6).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.IsInDisplayedMonth(System.DateOnly)">
+            <summary>Whether <paramref name="day"/> falls inside the displayed month.</summary>
         </member>
         <member name="M:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.Blocks">
-            <summary>Lays every event that falls within the visible week and hour range into a block.</summary>
+            <summary>
+            Lays every event into one block per visible day it touches (Week/Day). A
+            multi-day or midnight-crossing event yields a separate block on each day
+            column it overlaps, with start/end clamped to that day's visible hour range.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.EventsOn(System.DateOnly)">
+            <summary>
+            Events that touch <paramref name="day"/> — i.e. whose [Start..End] date range
+            includes it — ordered by start time (Month cells). A multi-day event therefore
+            appears in every spanned cell.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.SetViewAsync(BlazorDX.Primitives.Scheduling.SchedulerView)">
+            <summary>Switches the active view, resetting the active cell to the origin.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.PreviousAsync">
+            <summary>Moves to the previous period for the active view (week/month/day).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.NextAsync">
+            <summary>Moves to the next period for the active view (week/month/day).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.GridRows">
+            <summary>Rows in the active grid: time-slot rows (Week/Day) or week rows (Month).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.GridColumns">
+            <summary>Columns in the active grid: day columns (Week/Day) or weekdays (Month).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.ActiveDate">
+            <summary>The date addressed by the active cell, or null when there is none.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.CellDate(System.Int32,System.Int32)">
+            <summary>The date addressed by a (row, column) cell in the current view.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.CellHour(System.Int32)">
+            <summary>The hour addressed by the active cell in a time view, or null in Month view.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.ClampActiveCell">
+            <summary>Re-anchors the active cell into range after a view or date change.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.SetActiveCell(System.Int32,System.Int32)">
+            <summary>Makes (row, column) the active cell (e.g. on click/focus).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.MoveActiveCell(System.String,System.Boolean)">
+            <summary>
+            Applies an arrow / Home / End / PageUp / PageDown key to the active cell.
+            Returns true when the key was a navigation key (so the caller can re-render
+            and prevent default). Cells clamp at the grid edges (no wrap).
+            </summary>
         </member>
         <member name="T:BlazorDX.Primitives.Selection.SelectionState`1">
             <summary>

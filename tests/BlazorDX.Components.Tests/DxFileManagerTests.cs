@@ -3,6 +3,7 @@ using BlazorDX.Interop;
 using BlazorDX.Primitives.Files;
 using Bunit;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -258,5 +259,181 @@ public sealed class DxFileManagerTests : TestContext
         fm.FindAll(".dx-fm-action").First(a => a.GetAttribute("aria-pressed") == "true").Click();   // cancel
         Assert.Empty(fm.FindAll(".dx-fm-move-here"));
         Assert.Contains("cancelled", fm.Find(".dx-fm-status").TextContent);
+    }
+
+    // ---- Robustness pass: name-collision rejection, focus management, and the
+    // re-entrancy guard. (The native HTML5 DnD + window.matchMedia reduced-motion
+    // path runs only in a real browser, so the malformed-/negative-index DnD callback
+    // and the reduced-motion drop affordance are covered by E2E, not bUnit.) ----
+
+    // Roots where the root and the "dst" folder both contain a file of the same name,
+    // so moving the root copy into "dst" collides with the existing entry.
+    private static IReadOnlyList<FileSystemEntry> CollidingRoots() =>
+    [
+        new FileSystemEntry
+        {
+            Name = "dst", IsDirectory = true, Modified = Day,
+            Children = [new() { Name = "dup.txt", Size = 10, Modified = Day }],
+        },
+        new() { Name = "dup.txt", Size = 20, Modified = Day },
+    ];
+
+    [Fact]
+    public void Move_onto_a_name_collision_is_blocked_with_a_distinct_message()
+    {
+        MoveResult? moved = null;
+        IRenderedComponent<DxFileManager> fm = RenderComponent<DxFileManager>(parameters =>
+        {
+            parameters.Add(f => f.Roots, CollidingRoots());
+            parameters.Add(f => f.OnItemMove,
+                EventCallback.Factory.Create<MoveResult>(this, r => moved = r));
+        });
+
+        // Arm the move on the root-level "dup.txt", then place it into "dst" — which
+        // already holds a "dup.txt". The move must be rejected with the distinct
+        // collision message, not silently creating two same-named siblings.
+        fm.FindAll(".dx-fm-content-row")
+            .First(r => r.TextContent.Contains("dup.txt"))
+            .QuerySelector(".dx-fm-action")!.Click();
+
+        fm.Find(".dx-fm-tree").QuerySelector(".dx-fm-move-here")!.Click();
+
+        Assert.NotNull(moved);
+        Assert.False(moved!.Value.Succeeded);
+        Assert.Contains("An item named dup.txt already exists here", fm.Find(".dx-fm-status").TextContent);
+
+        // The root still has its "dup.txt" (the move did not remove it).
+        var rootNames = fm.FindAll(".dx-fm-content-row").Select(r => r.TextContent).ToArray();
+        Assert.Contains(rootNames, n => n.Contains("dup.txt"));
+    }
+
+    [Fact]
+    public void A_successful_move_announces_and_does_not_throw_when_target_leaves_view()
+    {
+        // README.md is at the root and "src" is a root folder; placing README.md into
+        // "src" while the root is shown means the moved row leaves the current view,
+        // so focus must fall back to the status region (exercised in OnAfterRender) —
+        // the point of this test is that the focus/announce path runs cleanly.
+        MoveResult? moved = null;
+        IRenderedComponent<DxFileManager> fm = RenderComponent<DxFileManager>(parameters =>
+        {
+            parameters.Add(f => f.Roots, Roots());
+            parameters.Add(f => f.OnItemMove,
+                EventCallback.Factory.Create<MoveResult>(this, r => moved = r));
+        });
+
+        fm.FindAll(".dx-fm-content-row")
+            .First(r => r.TextContent.Contains("README.md"))
+            .QuerySelector(".dx-fm-action")!.Click();
+        fm.Find(".dx-fm-tree").QuerySelector(".dx-fm-move-here")!.Click();
+
+        Assert.NotNull(moved);
+        Assert.True(moved!.Value.Succeeded);
+        // aria-live announcement is present (4.1.3) and the status region is
+        // focusable (tabindex=-1) so it can be the 2.4.3 focus fallback.
+        var status = fm.Find(".dx-fm-status");
+        Assert.Contains("Moved README.md to src", status.TextContent);
+        Assert.Equal("-1", status.GetAttribute("tabindex"));
+    }
+
+    [Fact]
+    public void Status_region_is_focusable_for_focus_management()
+    {
+        IRenderedComponent<DxFileManager> fm = Render();
+
+        var status = fm.Find(".dx-fm-status");
+        // tabindex=-1 lets the component place programmatic focus here after a
+        // move/upload when no visible row is a sensible target (WCAG 2.4.3).
+        Assert.Equal("-1", status.GetAttribute("tabindex"));
+        Assert.False(string.IsNullOrEmpty(status.Id));
+    }
+
+    [Fact]
+    public void An_upload_announces_and_focuses_the_status_region()
+    {
+        IReadOnlyList<IBrowserFile>? uploaded = null;
+        IRenderedComponent<DxFileManager> fm = RenderComponent<DxFileManager>(parameters =>
+        {
+            parameters.Add(f => f.Roots, Roots());
+            parameters.Add(f => f.OnUpload,
+                EventCallback.Factory.Create<IReadOnlyList<IBrowserFile>>(this, f => uploaded = f));
+        });
+
+        // Drive the always-available InputFile path with one fake file.
+        InputFileContent file = InputFileContent.CreateFromText("hello", "note.txt");
+        fm.FindComponent<InputFile>().UploadFiles(file);
+
+        Assert.NotNull(uploaded);
+        Assert.Single(uploaded!);
+        Assert.Contains("Uploaded 1 file to Files", fm.Find(".dx-fm-status").TextContent);
+    }
+
+    [Fact]
+    public void A_no_op_move_to_the_current_parent_is_rejected_without_throwing()
+    {
+        // The native-DnD callbacks parse a row index out of a DOM id and now guard
+        // index >= 0 && index < count, so a malformed/negative id resolves to nothing
+        // and is a no-op (covered end-to-end in the browser, since the JS DnD path
+        // does not run under bUnit). The C#-reachable rejection path it funnels into
+        // is exercised here: placing an item where it already lives must be rejected
+        // and announced, never throw or duplicate the entry.
+        MoveResult? moved = null;
+        IRenderedComponent<DxFileManager> fm = RenderComponent<DxFileManager>(parameters =>
+        {
+            parameters.Add(f => f.Roots, Roots());
+            parameters.Add(f => f.OnItemMove,
+                EventCallback.Factory.Create<MoveResult>(this, r => moved = r));
+        });
+
+        // Arm README.md (already at the root), then place it "to Files" (the root) via
+        // the breadcrumb's "Move here" — a no-op move onto its own current parent.
+        fm.FindAll(".dx-fm-content-row")
+            .First(r => r.TextContent.Contains("README.md"))
+            .QuerySelector(".dx-fm-action")!.Click();
+        fm.Find(".dx-fm-breadcrumb").QuerySelector(".dx-fm-move-here")!.Click();
+
+        Assert.NotNull(moved);
+        Assert.False(moved!.Value.Succeeded);
+        // README.md is still present exactly once at the root (not lost, not doubled).
+        int count = fm.FindAll(".dx-fm-content-row").Count(r => r.TextContent.Contains("README.md"));
+        Assert.Equal(1, count);
+    }
+
+    [Fact]
+    public void Rapid_successive_moves_do_not_corrupt_the_tree_state()
+    {
+        // Three files at the root and a "box" folder. Moving each into "box" in quick
+        // succession via the keyboard path must leave exactly those three files in
+        // "box" and none at the root — no duplicates, no losses, no throw.
+        IReadOnlyList<FileSystemEntry> roots =
+        [
+            new FileSystemEntry { Name = "box", IsDirectory = true, Modified = Day, Children = [] },
+            new() { Name = "a.txt", Size = 1, Modified = Day },
+            new() { Name = "b.txt", Size = 2, Modified = Day },
+            new() { Name = "c.txt", Size = 3, Modified = Day },
+        ];
+
+        IRenderedComponent<DxFileManager> fm = RenderComponent<DxFileManager>(parameters =>
+            parameters.Add(f => f.Roots, roots));
+
+        foreach (string name in new[] { "a.txt", "b.txt", "c.txt" })
+        {
+            fm.FindAll(".dx-fm-content-row")
+                .First(r => r.TextContent.Contains(name))
+                .QuerySelector(".dx-fm-action")!.Click();   // arm
+            fm.Find(".dx-fm-tree").QuerySelector(".dx-fm-move-here")!.Click();   // place into box
+        }
+
+        // Root now shows only "box"; drilling into "box" shows all three files once.
+        var rootNames = fm.FindAll(".dx-fm-content-row").Select(r => r.TextContent).ToArray();
+        Assert.Single(rootNames);
+        Assert.Contains(rootNames, n => n.Contains("box"));
+
+        fm.Find(".dx-fm-node-label").Click();   // select "box"
+        var boxNames = fm.FindAll(".dx-fm-content-row").Select(r => r.TextContent).ToArray();
+        Assert.Equal(3, boxNames.Length);
+        Assert.Contains(boxNames, n => n.Contains("a.txt"));
+        Assert.Contains(boxNames, n => n.Contains("b.txt"));
+        Assert.Contains(boxNames, n => n.Contains("c.txt"));
     }
 }

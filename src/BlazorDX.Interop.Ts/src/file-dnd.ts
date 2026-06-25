@@ -72,12 +72,14 @@ export function registerDropTarget(
       const hasFiles = Array.from(event.dataTransfer.types).includes("Files");
       event.dataTransfer.dropEffect = hasFiles ? "copy" : "move";
     }
-    element.classList.add("dx-fm-drop-over");
+    // Respect prefers-reduced-motion: users who opt out of motion get a static,
+    // non-animated drop indicator instead of the animated hover affordance.
+    element.classList.add(prefersReducedMotion() ? "dx-fm-drop-over-static" : "dx-fm-drop-over");
   };
-  const onDragLeave = () => element.classList.remove("dx-fm-drop-over");
+  const onDragLeave = () => clearDropOver(element);
   const onDrop = (event: DragEvent) => {
     event.preventDefault();
-    element.classList.remove("dx-fm-drop-over");
+    clearDropOver(element);
     const data = event.dataTransfer;
     if (data === null) {
       return;
@@ -106,8 +108,30 @@ export function registerDropTarget(
     element.removeEventListener("dragover", onDragOver);
     element.removeEventListener("dragleave", onDragLeave);
     element.removeEventListener("drop", onDrop);
-    element.classList.remove("dx-fm-drop-over");
+    clearDropOver(element);
   });
+}
+
+// True when the user has asked the OS/browser to minimize non-essential motion.
+// Guarded for environments where matchMedia is unavailable.
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+// Removes whichever drop affordance was applied (animated or static).
+function clearDropOver(element: HTMLElement): void {
+  element.classList.remove("dx-fm-drop-over");
+  element.classList.remove("dx-fm-drop-over-static");
+}
+
+// Moves keyboard focus to an element by id, if it exists. Used by the .NET side to
+// place focus after a move/upload so keyboard and screen-reader users are not
+// stranded (WCAG 2.4.3). No-op when the id is not in the DOM.
+export function focusElement(elementId: string): void {
+  document.getElementById(elementId)?.focus();
 }
 
 // Tears down whatever was registered for the id (draggable or drop target).
