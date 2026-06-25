@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\BlazorDX.Components\BlazorDX.Components.csproj" />
+    <ProjectReference Include="..\..\src\BlazorDX.Documents\BlazorDX.Documents.csproj" />
     <ProjectReference Include="..\..\src\BlazorDX.SourceGen\BlazorDX.SourceGen.csproj"
                       OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>

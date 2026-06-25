@@ -1,0 +1,157 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>BlazorDX.Documents</name>
+    </assembly>
+    <members>
+        <member name="T:BlazorDX.Documents.DxSpreadsheetViewer">
+            <summary>
+            Tier 2 styled, read-only, multi-sheet spreadsheet viewer over a parsed
+            <see cref="T:BlazorDX.Documents.Workbook"/>. Sheet tabs form a WAI-ARIA <c>role="tablist"</c>; the
+            active sheet renders as a virtualized <c>role="grid"</c> whose row window comes
+            from the reused <c>DxVirtualize&lt;T&gt;</c> primitive. Styling is CSS-variable
+            driven (see dx-spreadsheet.css). Inherits its sheet/keyboard state from
+            <see cref="T:BlazorDX.Documents.SpreadsheetViewerPrimitive"/>.
+            </summary>
+            <remarks>
+            We deliberately do <b>not</b> use <c>DxDataGrid&lt;TRow&gt;</c> here. That grid's
+            binding is source-generated for compile-time-known column types, but a spreadsheet's
+            columns are a runtime-defined schema (ADR-0009). So we window the rows with the
+            general-purpose <c>DxVirtualize&lt;T&gt;</c> primitive and render cells straight from
+            the workbook's <c>string</c> grid. The grid declares <c>aria-rowcount</c>/
+            <c>aria-colcount</c> for the <em>full</em> sheet so assistive technology reports the
+            true size even though only the scroll window is in the DOM (WCAG 1.3.1).
+            </remarks>
+        </member>
+        <member name="P:BlazorDX.Documents.DxSpreadsheetViewer.Class">
+            <summary>Optional extra CSS class on the viewer root.</summary>
+        </member>
+        <member name="P:BlazorDX.Documents.DxSpreadsheetViewer.RowHeight">
+            <summary>Pixel height of each data row; drives the virtualization math.</summary>
+        </member>
+        <member name="P:BlazorDX.Documents.DxSpreadsheetViewer.ViewportHeight">
+            <summary>Pixel height of the scrollable grid viewport.</summary>
+        </member>
+        <member name="T:BlazorDX.Documents.Workbook">
+            <summary>
+            A parsed workbook: the ordered sheets read from an <c>.xlsx</c> file. This is the
+            reader's output and the spreadsheet viewer's input — a plain, immutable data model
+            with no reflection and no live file handle.
+            </summary>
+            <param name="Sheets">The worksheets, in workbook order.</param>
+        </member>
+        <member name="M:BlazorDX.Documents.Workbook.#ctor(System.Collections.Generic.IReadOnlyList{BlazorDX.Documents.Worksheet})">
+            <summary>
+            A parsed workbook: the ordered sheets read from an <c>.xlsx</c> file. This is the
+            reader's output and the spreadsheet viewer's input — a plain, immutable data model
+            with no reflection and no live file handle.
+            </summary>
+            <param name="Sheets">The worksheets, in workbook order.</param>
+        </member>
+        <member name="P:BlazorDX.Documents.Workbook.Sheets">
+            <summary>The worksheets, in workbook order.</summary>
+        </member>
+        <member name="T:BlazorDX.Documents.Worksheet">
+            <summary>
+            One worksheet: a name plus a dense grid of string cell values. The first row is
+            treated as the header by the viewer. Ragged rows are padded to <see cref="P:BlazorDX.Documents.Worksheet.ColumnCount"/>.
+            </summary>
+            <param name="Name">The sheet's display name (the tab label).</param>
+            <param name="Rows">Rows of cell text, top to bottom; each row has <see cref="P:BlazorDX.Documents.Worksheet.ColumnCount"/> cells.</param>
+            <param name="ColumnCount">The widest row's cell count (columns are uniform across the sheet).</param>
+        </member>
+        <member name="M:BlazorDX.Documents.Worksheet.#ctor(System.String,System.Collections.Generic.IReadOnlyList{System.Collections.Generic.IReadOnlyList{System.String}},System.Int32)">
+            <summary>
+            One worksheet: a name plus a dense grid of string cell values. The first row is
+            treated as the header by the viewer. Ragged rows are padded to <see cref="P:BlazorDX.Documents.Worksheet.ColumnCount"/>.
+            </summary>
+            <param name="Name">The sheet's display name (the tab label).</param>
+            <param name="Rows">Rows of cell text, top to bottom; each row has <see cref="P:BlazorDX.Documents.Worksheet.ColumnCount"/> cells.</param>
+            <param name="ColumnCount">The widest row's cell count (columns are uniform across the sheet).</param>
+        </member>
+        <member name="P:BlazorDX.Documents.Worksheet.Name">
+            <summary>The sheet's display name (the tab label).</summary>
+        </member>
+        <member name="P:BlazorDX.Documents.Worksheet.Rows">
+            <summary>Rows of cell text, top to bottom; each row has <see cref="P:BlazorDX.Documents.Worksheet.ColumnCount"/> cells.</summary>
+        </member>
+        <member name="P:BlazorDX.Documents.Worksheet.ColumnCount">
+            <summary>The widest row's cell count (columns are uniform across the sheet).</summary>
+        </member>
+        <member name="T:BlazorDX.Documents.SpreadsheetViewerPrimitive">
+            <summary>
+            Tier 1 headless state for a read-only spreadsheet viewer: which sheet is active,
+            how to switch sheets, and the keyboard model for the sheet tab strip. It renders
+            no markup — <see cref="T:BlazorDX.Documents.DxSpreadsheetViewer"/> is the styled Tier 2 layer on top.
+            Mirrors the self-contained view-switch pattern used by the scheduler.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Documents.SpreadsheetViewerPrimitive.Workbook">
+            <summary>The workbook to display. Sheets render in workbook order as tabs.</summary>
+        </member>
+        <member name="P:BlazorDX.Documents.SpreadsheetViewerPrimitive.ActiveSheetIndex">
+            <summary>The zero-based index of the initially active sheet.</summary>
+        </member>
+        <member name="P:BlazorDX.Documents.SpreadsheetViewerPrimitive.ActiveSheetIndexChanged">
+            <summary>Raised when the active sheet changes (tab click or arrow keys).</summary>
+        </member>
+        <member name="P:BlazorDX.Documents.SpreadsheetViewerPrimitive.Sheets">
+            <summary>The sheets in workbook order (never null; empty when no workbook).</summary>
+        </member>
+        <member name="P:BlazorDX.Documents.SpreadsheetViewerPrimitive.ActiveSheet">
+            <summary>The currently active sheet, or null when the workbook has no sheets.</summary>
+        </member>
+        <member name="P:BlazorDX.Documents.SpreadsheetViewerPrimitive.ActiveIndex">
+            <summary>The clamped index of the active sheet.</summary>
+        </member>
+        <member name="M:BlazorDX.Documents.SpreadsheetViewerPrimitive.IsActive(System.Int32)">
+            <summary>Whether <paramref name="index"/> is the active sheet.</summary>
+        </member>
+        <member name="M:BlazorDX.Documents.SpreadsheetViewerPrimitive.SetActiveAsync(System.Int32)">
+            <summary>Activates the sheet at <paramref name="index"/> (no-op if unchanged/out of range).</summary>
+        </member>
+        <member name="M:BlazorDX.Documents.SpreadsheetViewerPrimitive.OnTabStripKeyDownAsync(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs)">
+            <summary>Arrow/Home/End navigation across the tab strip (automatic activation).</summary>
+        </member>
+        <member name="T:BlazorDX.Documents.XlsxReader">
+            <summary>
+            A tiny, dependency-free reader for the Office Open XML spreadsheet (.xlsx)
+            format. It is the inverse of <c>BlazorDX.Primitives.Grid.XlsxWriter</c>: it
+            opens the ZIP package by hand with <see cref="T:System.IO.Compression.ZipArchive"/> and parses the
+            OOXML parts with a streaming <see cref="T:System.Xml.XmlReader"/> — no third-party library,
+            no reflection, AOT- and trim-safe, so it runs unchanged in the browser
+            WebAssembly runtime.
+            </summary>
+            <remarks>
+            <para>
+            The reader produces the same <see cref="T:BlazorDX.Documents.Workbook"/> / <see cref="T:BlazorDX.Documents.Worksheet"/>
+            model the spreadsheet viewer consumes. It round-trips what the writer produces
+            and also handles the parts a real-world workbook adds: a shared-string table,
+            <c>t="str"</c> formula-result strings, and ragged rows.
+            </para>
+            <para>
+            Deferred (Phase 3+): formulas surface their last cached <c>&lt;v&gt;</c> value,
+            they are not recomputed; number formats, styles, and merged cells are not yet
+            interpreted (cells carry their raw text). Dates therefore appear as their
+            underlying serial number.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:BlazorDX.Documents.XlsxReader.Read(System.Byte[])">
+            <summary>
+            Parses an <c>.xlsx</c> byte stream into a <see cref="T:BlazorDX.Documents.Workbook"/>: the sheets
+            in workbook order, each as a dense, padded grid of string cell values.
+            </summary>
+            <param name="bytes">The raw bytes of an <c>.xlsx</c> file.</param>
+            <returns>The parsed workbook.</returns>
+        </member>
+        <member name="M:BlazorDX.Documents.XlsxReader.Read(System.IO.Stream)">
+            <summary>
+            Parses an <c>.xlsx</c> stream into a <see cref="T:BlazorDX.Documents.Workbook"/>. The stream is
+            read as a ZIP package; the caller owns its lifetime.
+            </summary>
+            <param name="stream">A seekable stream positioned at the start of an <c>.xlsx</c> file.</param>
+            <returns>The parsed workbook.</returns>
+        </member>
+    </members>
+</doc>

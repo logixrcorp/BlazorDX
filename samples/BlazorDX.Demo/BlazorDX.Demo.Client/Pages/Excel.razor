@@ -1,0 +1,70 @@
+@page "/excel"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Documents
+
+<PageTitle>Excel viewer</PageTitle>
+
+<h1>BlazorDX Excel Viewer</h1>
+
+<p class="dx-demo-meta">
+    A read-only, virtualized, multi-sheet spreadsheet viewer. The
+    <code>.xlsx</code> bytes are parsed by a hand-rolled, dependency-free
+    <code>XlsxReader</code> (the inverse of the grid's <code>XlsxWriter</code> —
+    <code>System.IO.Compression</code> + <code>XmlReader</code>, no third-party
+    library, no reflection). The parsed <code>Workbook</code> drives
+    <code>DxSpreadsheetViewer</code>: sheet tabs as an ARIA
+    <code>role="tablist"</code> (arrow keys switch sheets), and the active sheet as
+    a virtualized <code>role="grid"</code> built on the same
+    <code>DxVirtualize&lt;T&gt;</code> primitive the data grid uses — so a large
+    sheet keeps only its scroll window in the DOM.
+</p>
+
+<p class="dx-demo-meta">
+    The grid reports its <em>full</em> size via <code>aria-rowcount</code> /
+    <code>aria-colcount</code> even though it is virtualized, so assistive technology
+    announces the real dimensions. <strong>Deferred</strong> (later phases): formulas
+    show their last cached value (not recomputed); number formats, styling, and merged
+    cells are not yet interpreted.
+</p>
+
+<DxSpreadsheetViewer Workbook="workbook" />
+
+@code {
+    // A small multi-sheet workbook built in-memory. "Ledger" carries enough rows to
+    // exercise virtualization; "Summary" is short.
+    private readonly Workbook workbook = BuildSample();
+
+    private static Workbook BuildSample()
+    {
+        List<IReadOnlyList<string>> ledger =
+        [
+            ["Date", "Account", "Description", "Debit", "Credit"],
+        ];
+
+        string[] accounts = ["Cash", "Revenue", "Supplies", "Payroll", "Rent"];
+        string[] notes = ["Invoice", "Refund", "Restock", "Salary run", "Monthly lease"];
+        for (int i = 0; i < 250; i++)
+        {
+            ledger.Add(
+            [
+                new DateOnly(2026, 1, 1).AddDays(i).ToString("yyyy-MM-dd"),
+                accounts[i % accounts.Length],
+                $"{notes[i % notes.Length]} #{i + 1}",
+                ((i % 7) * 125).ToString(),
+                ((i % 5) * 90).ToString(),
+            ]);
+        }
+
+        Worksheet ledgerSheet = new("Ledger", ledger, 5);
+
+        Worksheet summary = new("Summary",
+        [
+            ["Metric", "Value"],
+            ["Entries", "250"],
+            ["Accounts", "5"],
+            ["Period", "2026"],
+        ], 2);
+
+        return new Workbook([ledgerSheet, summary]);
+    }
+}

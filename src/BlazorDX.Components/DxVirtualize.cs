@@ -31,6 +31,26 @@ public sealed class DxVirtualize<TItem> : ComponentBase, IAsyncDisposable
 
     [Parameter] public string? Class { get; set; }
 
+    /// <summary>
+    /// Optional ARIA role for the scroll container (e.g. <c>"rowgroup"</c> when the
+    /// virtualizer hosts the body rows of a <c>role="grid"</c>). Defaults to none.
+    /// </summary>
+    [Parameter] public string? Role { get; set; }
+
+    /// <summary>
+    /// Optional ARIA role for each item wrapper. Set to <c>"presentation"</c> so the
+    /// wrapper does not interrupt a grid/row/cell hierarchy supplied by the child
+    /// content; defaults to none (a plain element).
+    /// </summary>
+    [Parameter] public string? ItemRole { get; set; }
+
+    /// <summary>
+    /// Optional <c>tabindex</c> for the scroll container. Because the container is the
+    /// scrollable region, set this to <c>0</c> so it is keyboard-reachable when the
+    /// items themselves are not individually focusable (WCAG 2.1.1).
+    /// </summary>
+    [Parameter] public int? TabIndex { get; set; }
+
     [Inject] private IGridDomInterop Dom { get; set; } = default!;
 
     private string ContainerId { get; } = $"dx-virt-{Guid.NewGuid():N}";
@@ -49,9 +69,25 @@ public sealed class DxVirtualize<TItem> : ComponentBase, IAsyncDisposable
         builder.AddAttribute(1, "id", ContainerId);
         builder.AddAttribute(2, "class", $"dx-virtualize {Class}".TrimEnd());
         builder.AddAttribute(3, "style", $"height:{ViewportHeight}px;overflow-y:auto;");
+        if (Role is not null)
+        {
+            builder.AddAttribute(12, "role", Role);
+        }
 
+        if (TabIndex is int tabIndex)
+        {
+            builder.AddAttribute(16, "tabindex", tabIndex);
+        }
+
+        // Spacer rows preserve scroll geometry. When the container declares an ARIA
+        // role, mark them presentational so they never interrupt a row hierarchy.
         builder.OpenElement(4, "div");
         builder.AddAttribute(5, "style", $"height:{topPadding}px;");
+        if (Role is not null)
+        {
+            builder.AddAttribute(13, "role", "presentation");
+        }
+
         builder.CloseElement();
 
         for (int i = firstVisible; i < LastVisible; i++)
@@ -60,12 +96,22 @@ public sealed class DxVirtualize<TItem> : ComponentBase, IAsyncDisposable
             builder.SetKey(i);
             builder.AddAttribute(7, "class", "dx-virtualize-item");
             builder.AddAttribute(8, "style", $"height:{ItemHeight}px;");
+            if (ItemRole is not null)
+            {
+                builder.AddAttribute(14, "role", ItemRole);
+            }
+
             builder.AddContent(9, ChildContent, Items[i]);
             builder.CloseElement();
         }
 
         builder.OpenElement(10, "div");
         builder.AddAttribute(11, "style", $"height:{bottomPadding}px;");
+        if (Role is not null)
+        {
+            builder.AddAttribute(15, "role", "presentation");
+        }
+
         builder.CloseElement();
 
         builder.CloseElement();

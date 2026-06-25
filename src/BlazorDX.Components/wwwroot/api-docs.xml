@@ -1671,6 +1671,26 @@
         <member name="P:BlazorDX.Components.DxVirtualize`1.ItemHeight">
             <summary>Fixed height of each row in pixels (the windowing math depends on it).</summary>
         </member>
+        <member name="P:BlazorDX.Components.DxVirtualize`1.Role">
+            <summary>
+            Optional ARIA role for the scroll container (e.g. <c>"rowgroup"</c> when the
+            virtualizer hosts the body rows of a <c>role="grid"</c>). Defaults to none.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxVirtualize`1.ItemRole">
+            <summary>
+            Optional ARIA role for each item wrapper. Set to <c>"presentation"</c> so the
+            wrapper does not interrupt a grid/row/cell hierarchy supplied by the child
+            content; defaults to none (a plain element).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxVirtualize`1.TabIndex">
+            <summary>
+            Optional <c>tabindex</c> for the scroll container. Because the container is the
+            scrollable region, set this to <c>0</c> so it is keyboard-reachable when the
+            items themselves are not individually focusable (WCAG 2.1.1).
+            </summary>
+        </member>
         <member name="T:BlazorDX.Components.DxVirtualKeyboard">
             <summary>
             An on-screen QWERTY keyboard for touch, kiosk, and accessibility text entry.

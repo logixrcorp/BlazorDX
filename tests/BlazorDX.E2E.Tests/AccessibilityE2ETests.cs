@@ -27,6 +27,7 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
     [InlineData("/files")]       // hybrid drag-and-drop file manager
     [InlineData("/scheduler")]   // scheduler month/day/week views
     [InlineData("/docviewer")]   // PDF / document viewer
+    [InlineData("/excel")]       // read-only virtualized spreadsheet viewer
     public async Task Page_has_no_serious_axe_violations(string route)
     {
         Skip.IfNot(fx.Ready, fx.SkipReason);

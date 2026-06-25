@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <!--
+    Heavy-engine document components (Excel/Word viewers + editors). Kept out of the
+    core component package per ADR 0010 (the boundary is weight/deps, not topic):
+    these carry document parsers, so they live here rather than bloating
+    BlazorDX.Components. Same rules as core — zero reflection, AOT/trim-clean,
+    [JSImport]-only interop, 1000-line cap. Builds on the Tier-2 catalog (DxDataGrid,
+    DxVirtualize) and the security sanitizer.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS1573;CS1572;CS1574;CS1710;CS1711;CS1712;CS1734</NoWarn>
+  </PropertyGroup>
+
+  <!-- Stage the generated XML doc as a static web asset for the docs app. -->
+  <Target Name="StageApiDocXml" AfterTargets="CoreCompile" Condition="Exists('$(DocumentationFile)')">
+    <Copy SourceFiles="$(DocumentationFile)"
+          DestinationFiles="$(MSBuildProjectDirectory)\wwwroot\api-docs.xml"
+          SkipUnchangedFiles="true" />
+  </Target>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BlazorDX.Components\BlazorDX.Components.csproj" />
+    <ProjectReference Include="..\BlazorDX.Primitives\BlazorDX.Primitives.csproj" />
+    <ProjectReference Include="..\BlazorDX.Security\BlazorDX.Security.csproj" />
+  </ItemGroup>
+
+</Project>
