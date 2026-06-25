@@ -14,4 +14,15 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
   </ItemGroup>
 
+  <!--
+    The UI-free OOXML parsers (XlsxReader / DocxReader + the Workbook / WordDocument
+    models). The static-SSR document viewer parses bytes on the server and renders
+    straight to the render tree. We reference ONLY the parsing package, never
+    BlazorDX.Documents — pulling the WASM viewer catalog into this thin HTMX tier
+    would defeat its no-WASM, no-circuit purpose.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\BlazorDX.Documents.Parsing\BlazorDX.Documents.Parsing.csproj" />
+  </ItemGroup>
+
 </Project>

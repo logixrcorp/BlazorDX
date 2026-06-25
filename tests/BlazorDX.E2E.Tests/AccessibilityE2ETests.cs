@@ -29,6 +29,9 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
     [InlineData("/docviewer")]   // PDF / document viewer
     [InlineData("/excel")]       // read-only virtualized spreadsheet viewer
     [InlineData("/word")]        // read-only semantic Word document viewer
+    [InlineData("/htmx/doc")]            // static-SSR + HTMX read-only doc viewer (Excel default)
+    [InlineData("/htmx/doc?kind=word")]  // ... Word semantic HTML
+    [InlineData("/htmx/doc?kind=pdf")]   // ... PDF embed shell + download fallback
     public async Task Page_has_no_serious_axe_violations(string route)
     {
         Skip.IfNot(fx.Ready, fx.SkipReason);

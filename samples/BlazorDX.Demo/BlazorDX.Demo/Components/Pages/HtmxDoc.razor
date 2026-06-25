@@ -1,0 +1,77 @@
+@page "/htmx/doc"
+@using BlazorDX.Htmx
+@using BlazorDX.Demo
+
+<PageTitle>HTMX document viewer</PageTitle>
+
+<h1>Static-SSR + HTMX document viewer</h1>
+
+<p>
+    This page is statically server-rendered — no SignalR circuit, no WebAssembly
+    download. The <code>.xlsx</code> / <code>.docx</code> bytes are parsed
+    <em>on the server</em> by the dependency-free <code>XlsxReader</code> /
+    <code>DocxReader</code>, and <code>DxHtmxDocumentViewer</code> renders real
+    semantic HTML straight to the render tree (no <code>MarkupString</code>).
+</p>
+<p>
+    <strong>It works with JavaScript disabled.</strong> Sheet tabs and the pager are
+    real links: with JS off they full-page-navigate (and the server re-renders the
+    chosen sheet/page); with htmx present they swap just the viewer fragment in place
+    via <code>hx-get</code> + <code>hx-select</code>. The no-JS path is the
+    accessibility floor.
+</p>
+
+<nav class="dx-htmxdoc-switch" aria-label="Sample documents">
+    <a href="/htmx/doc?kind=excel" data-enhance-nav="false" aria-current="@(Kind == "word" || Kind == "pdf" ? null : "true")">Excel</a>
+    <a href="/htmx/doc?kind=word" data-enhance-nav="false" aria-current="@(Kind == "word" ? "true" : null)">Word</a>
+    <a href="/htmx/doc?kind=pdf" data-enhance-nav="false" aria-current="@(Kind == "pdf" ? "true" : null)">PDF</a>
+</nav>
+
+@if (Kind == "word")
+{
+    <DxHtmxDocumentViewer Kind="HtmxDocumentKind.Word"
+                          Bytes="WordBytes"
+                          Name="Quarterly Report"
+                          Endpoint="/htmx/doc?kind=word"
+                          Page="Page"
+                          PageSize="4" />
+}
+else if (Kind == "pdf")
+{
+    <DxHtmxDocumentViewer Kind="HtmxDocumentKind.Pdf"
+                          Source="@SamplePdf"
+                          Name="sample.pdf" />
+}
+else
+{
+    <DxHtmxDocumentViewer Kind="HtmxDocumentKind.Excel"
+                          Bytes="ExcelBytes"
+                          Name="ledger.xlsx"
+                          Endpoint="/htmx/doc?kind=excel"
+                          SheetIndex="Sheet"
+                          Page="Page"
+                          PageSize="20" />
+}
+
+@code {
+    [SupplyParameterFromQuery] public string? Kind { get; set; }
+    [SupplyParameterFromQuery] public int Sheet { get; set; }
+    [SupplyParameterFromQuery] public int Page { get; set; }
+
+    // Rebuilt deterministically per request — no session state, so the no-JS full-page
+    // navigation and the htmx fragment swap parse the exact same bytes.
+    private byte[] ExcelBytes => SampleDocuments.Workbook();
+    private byte[] WordBytes => SampleDocuments.WordDocument();
+
+    // A tiny, self-contained one-page PDF (data URL) so the demo needs no network.
+    private const string SamplePdf =
+        "data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+P" +
+        "gplbmRvYmoKMiAwIG9iago8PC9UeXBlL1BhZ2VzL0tpZHNbMyAwIFJdL0NvdW50IDE+PgplbmRvYmoKMyAwIG9iag" +
+        "o8PC9UeXBlL1BhZ2UvUGFyZW50IDIgMCBSL01lZGlhQm94WzAgMCAyMDAgMjAwXS9SZXNvdXJjZXM8PC9Gb250PD" +
+        "wvRjEgNCAwIFI+Pj4+L0NvbnRlbnRzIDUgMCBSPj4KZW5kb2JqCjQgMCBvYmoKPDwvVHlwZS9Gb250L1N1YnR5cG" +
+        "UvVHlwZTEvQmFzZUZvbnQvSGVsdmV0aWNhPj4KZW5kb2JqCjUgMCBvYmoKPDwvTGVuZ3RoIDQ0Pj4Kc3RyZWFtCk" +
+        "JUCi9GMSAyNCBUZgozMCAxMDAgVGQKKEJsYXpvckRYIFBERikgVGoKRVQKZW5kc3RyZWFtCmVuZG9iagp4cmVmCj" +
+        "AgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMD" +
+        "AwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAyNDEgMDAwMDAgbiAKMDAwMDAwMDMxMCAwMDAwMCBuIAp0cmFpbGVyCj" +
+        "w8L1NpemUgNi9Sb290IDEgMCBSPj4Kc3RhcnR4cmVmCjQwNAolJUVPRgo=";
+}
