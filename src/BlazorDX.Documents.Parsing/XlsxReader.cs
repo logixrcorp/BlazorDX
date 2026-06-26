@@ -275,10 +275,8 @@ public static class XlsxReader
             return new Worksheet(name, [], 0);
         }
 
-        // Sparse rows keyed by 1-based row number; track the widest column so we can
-        // pad every row to a uniform width afterwards.
+        // Read every <row> as a dense, left-anchored list of cell strings.
         List<List<string>> rows = [];
-        int maxColumns = 0;
 
         using Stream content = OpenChecked(entry);
         using XmlReader reader = XmlReader.Create(content, ReaderSettings);
@@ -292,24 +290,60 @@ public static class XlsxReader
                 continue;
             }
 
-            List<string> row = ReadRow(reader, sharedStrings);
-            rows.Add(row);
-            if (row.Count > maxColumns)
+            rows.Add(ReadRow(reader, sharedStrings));
+        }
+
+        // Trim to the TRUE used range. Excel commonly persists styled-but-empty trailing
+        // cells and rows (the declared dimension over-reports), which would otherwise
+        // render as blank columns/rows after the data visibly stops. We size the sheet to
+        // the last row/column that actually holds a value; interior blanks are preserved.
+        // Out-of-bounds formula references already read as blank (see WorkbookRecalc), so
+        // narrowing the grid cannot change any computed result.
+        int usedColumns = 0;
+        int usedRows = 0;
+        for (int r = 0; r < rows.Count; r++)
+        {
+            List<string> row = rows[r];
+            int lastValue = -1;
+            for (int c = 0; c < row.Count; c++)
             {
-                maxColumns = row.Count;
+                if (!string.IsNullOrEmpty(row[c]))
+                {
+                    lastValue = c;
+                }
+            }
+
+            if (lastValue >= 0)
+            {
+                usedRows = r + 1;
+                if (lastValue + 1 > usedColumns)
+                {
+                    usedColumns = lastValue + 1;
+                }
             }
         }
 
-        // Pad ragged rows to the widest row so the grid is dense and uniform.
+        // Drop trailing all-empty rows, then square every remaining row to the used width
+        // (trim overruns, pad short rows) so the grid stays dense and uniform.
+        if (rows.Count > usedRows)
+        {
+            rows.RemoveRange(usedRows, rows.Count - usedRows);
+        }
+
         foreach (List<string> row in rows)
         {
-            for (int c = row.Count; c < maxColumns; c++)
+            if (row.Count > usedColumns)
+            {
+                row.RemoveRange(usedColumns, row.Count - usedColumns);
+            }
+
+            for (int c = row.Count; c < usedColumns; c++)
             {
                 row.Add(string.Empty);
             }
         }
 
-        return new Worksheet(name, rows, maxColumns);
+        return new Worksheet(name, rows, usedColumns);
     }
 
     // Reads one <row>: places each cell at the column its A1 reference encodes,

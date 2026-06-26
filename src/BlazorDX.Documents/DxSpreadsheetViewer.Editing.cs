@@ -243,10 +243,19 @@ public sealed partial class DxSpreadsheetViewer
                 EventCallback.Factory.Create<MouseEventArgs>(this, () => BeginEdit(capturedRow, capturedCol)));
         }
 
-        if (isActive)
+        // The reference capture MUST be unconditional. Emitting it only for the active
+        // cell means that when the active cell moves, the previously-active cell (which
+        // persists at the same key/sequence) loses its ElementReferenceCapture frame —
+        // and Blazor's differ cannot remove a reference-capture frame in place, throwing
+        // "Unexpected frame type during RemoveOldFrame: ElementReferenceCapture". So every
+        // cell always captures; only the active one stores into the focus target.
+        builder.AddElementReferenceCapture(20, el =>
         {
-            builder.AddElementReferenceCapture(20, el => activeCellElement = el);
-        }
+            if (isActive)
+            {
+                activeCellElement = el;
+            }
+        });
 
         if (isEditing)
         {
