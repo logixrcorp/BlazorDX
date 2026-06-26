@@ -19,6 +19,13 @@ public interface IRichTextInterop
     /// </summary>
     ValueTask CreateLinkAsync();
 
+    /// <summary>
+    /// Applies a color to the last in-editor selection. <paramref name="command"/> is
+    /// <c>foreColor</c> (text) or <c>hiliteColor</c> (highlight); <paramref name="color"/>
+    /// is a CSS color. The bridge restores the remembered selection first.
+    /// </summary>
+    ValueTask ApplyColorAsync(string command, string color);
+
     /// <summary>Returns the current inner HTML of the editor element.</summary>
     ValueTask<string> GetHtmlAsync(string elementId);
 

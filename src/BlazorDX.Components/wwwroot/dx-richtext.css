@@ -31,6 +31,21 @@
 .dx-rte-tool:hover { background: var(--dx-surface-alt, #f1f5f9); color: var(--dx-accent, #2563eb); }
 .dx-rte-tool:active { background: var(--dx-border, #e2e8f0); }
 
+/* Native color swatches (text color / highlight). 2.5.8: at least 24x24 CSS px. */
+.dx-rte-color {
+  width: 30px;
+  height: 30px;
+  padding: 2px;
+  background: var(--dx-surface, #ffffff);
+  border: 1px solid var(--dx-border, #cbd5e1);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.dx-rte-color:focus-visible {
+  outline: 2px solid var(--dx-accent, #2563eb);
+  outline-offset: 1px;
+}
+
 .dx-rte-surface {
   min-height: 9rem;
   max-height: 24rem;

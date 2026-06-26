@@ -39,6 +39,12 @@ public sealed partial class RichTextInterop : IRichTextInterop
         CreateLink();
     }
 
+    public async ValueTask ApplyColorAsync(string command, string color)
+    {
+        await EnsureLoadedAsync();
+        ApplyColor(command, color);
+    }
+
     public async ValueTask<string> GetHtmlAsync(string elementId)
     {
         await EnsureLoadedAsync();
@@ -62,6 +68,9 @@ public sealed partial class RichTextInterop : IRichTextInterop
 
     [JSImport("createLink", ModuleName)]
     private static partial void CreateLink();
+
+    [JSImport("applyColor", ModuleName)]
+    private static partial void ApplyColor(string command, string color);
 
     [JSImport("getHtml", ModuleName)]
     private static partial string GetHtml(string elementId);
