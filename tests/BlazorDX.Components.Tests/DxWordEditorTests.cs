@@ -24,6 +24,8 @@ public sealed class DxWordEditorTests : TestContext
     {
         // No DOM under bUnit: the no-op bridge returns "" for GetHtml/SetHtml.
         Services.AddScoped<IRichTextInterop, NullRichTextInterop>();
+        // The editor's "Download .docx" action resolves the download bridge; null off-browser.
+        Services.AddScoped<IGridDomInterop, NullGridDomInterop>();
     }
 
     private static WordDocument SampleDocument() =>
@@ -161,7 +163,7 @@ public sealed class DxWordEditorTests : TestContext
         IElement status = editor.Find(".dx-word-editor-status");
         Assert.Equal("status", status.GetAttribute("role"));
         Assert.Equal("polite", status.GetAttribute("aria-live"));
-        Assert.Equal("All changes saved", status.TextContent);
+        Assert.StartsWith("All changes saved", status.TextContent); // followed by the doc stats
     }
 
     [Fact]
@@ -214,6 +216,43 @@ public sealed class DxWordEditorTests : TestContext
         // MarkSaved clears the indicator.
         editor.InvokeAsync(editor.Instance.MarkSaved);
         Assert.False(editor.Instance.IsDirty);
+    }
+
+    [Fact]
+    public void Toolbar_shows_a_download_button_by_default()
+    {
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, SampleDocument()));
+
+        Assert.Single(editor.FindAll(".dx-word-toolbar")); // the document toolbar (rte has its own)
+        Assert.Single(editor.FindAll("[aria-label='Download the document as a .docx file']"));
+    }
+
+    [Fact]
+    public void Download_button_serializes_the_document_without_error()
+    {
+        // NullGridDomInterop makes the file save a no-op; this asserts the click path
+        // (DocxWriter.Write -> bridge) doesn't throw.
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, SampleDocument()));
+
+        editor.Find("[aria-label='Download the document as a .docx file']").Click();
+    }
+
+    [Fact]
+    public void Status_line_reports_word_character_and_paragraph_counts()
+    {
+        // SampleDocument: 2 headings + 1 paragraph = 3 "paragraphs"; the paragraph reads
+        // "This quarter was strong and steady." = 6 words. Characters/words also include the
+        // headings, lists, and table cells.
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, SampleDocument()));
+
+        string status = editor.Find(".dx-word-editor-status").TextContent;
+
+        Assert.Contains("words", status);
+        Assert.Contains("characters", status);
+        Assert.Contains("3 paragraphs", status); // 2 headings + 1 paragraph
     }
 
     private static string Text(IReadOnlyList<WordRun> runs) =>

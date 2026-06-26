@@ -11,6 +11,32 @@
   max-width: 52rem;
 }
 
+/* Document toolbar (download, etc.) above the rich-text formatting toolbar. */
+.dx-word-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.dx-word-toolbar-btn {
+  /* 2.5.8: at least 24x24 CSS px. */
+  min-width: 24px;
+  min-height: 28px;
+  padding: 4px 12px;
+  font: inherit;
+  color: var(--dx-text, #1e293b);
+  background: var(--dx-surface, #ffffff);
+  border: 1px solid var(--dx-border, #cbd5e1);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.dx-word-toolbar-btn:hover { background: var(--dx-surface-alt, #f1f5f9); }
+.dx-word-toolbar-btn:focus-visible {
+  outline: 2px solid var(--dx-accent, #2563eb);
+  outline-offset: 1px;
+}
+
 /* Give the editing surface document-like proportions to match DxWordViewer. */
 .dx-word-editor .dx-word-editor-surface .dx-rte-surface {
   min-height: 16rem;
