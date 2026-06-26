@@ -62,7 +62,21 @@ public sealed record WordParagraph(
 /// </summary>
 /// <param name="Ordered"><see langword="true"/> for a numbered list; otherwise bulleted.</param>
 /// <param name="Items">The list items, in order; each is its own run sequence.</param>
-public sealed record WordList(bool Ordered, IReadOnlyList<IReadOnlyList<WordRun>> Items) : WordBlock;
+/// <param name="Levels">
+/// Optional 0-based indent level per item (parallel to <paramref name="Items"/>), so nested
+/// lists round-trip (<c>&lt;w:ilvl&gt;</c> / nested <c>&lt;ul&gt;</c>). <see langword="null"/>
+/// or a missing index means level 0 (flat). The whole list shares one <paramref name="Ordered"/>
+/// kind; per-level ordering is not modeled.
+/// </param>
+public sealed record WordList(
+    bool Ordered,
+    IReadOnlyList<IReadOnlyList<WordRun>> Items,
+    IReadOnlyList<int>? Levels = null) : WordBlock
+{
+    /// <summary>The 0-based indent level of item <paramref name="index"/> (0 when unset).</summary>
+    public int LevelOf(int index) =>
+        Levels is not null && index >= 0 && index < Levels.Count ? Math.Max(0, Levels[index]) : 0;
+}
 
 /// <summary>
 /// A table of rows of cells. The first row is treated as a header row: its cells

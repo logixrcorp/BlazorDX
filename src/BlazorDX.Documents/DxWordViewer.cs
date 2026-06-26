@@ -128,16 +128,73 @@ public sealed class DxWordViewer : ComponentBase
         _ => null,
     };
 
+    private sealed class ListNode
+    {
+        public IReadOnlyList<WordRun> Runs { get; init; } = [];
+
+        public List<ListNode> Children { get; } = [];
+    }
+
     private static void BuildList(RenderTreeBuilder builder, WordList list)
     {
-        builder.OpenElement(30, list.Ordered ? "ol" : "ul");
-        builder.AddAttribute(31, "class", "dx-word-list");
+        RenderListNodes(builder, list.Ordered, BuildListTree(list));
+    }
+
+    // Turns the flat (items + indent levels) into a tree of nodes; a missing/zero level is
+    // a root, and a level can't skip more than one past the current depth (clamped).
+    private static List<ListNode> BuildListTree(WordList list)
+    {
+        List<ListNode> roots = [];
+        List<ListNode> ancestors = []; // ancestors[d] = the open node at depth d
+
         for (int i = 0; i < list.Items.Count; i++)
         {
+            int level = Math.Max(0, list.LevelOf(i));
+            if (level > ancestors.Count)
+            {
+                level = ancestors.Count;
+            }
+
+            ListNode node = new() { Runs = list.Items[i] };
+            if (level == 0)
+            {
+                roots.Add(node);
+            }
+            else
+            {
+                ancestors[level - 1].Children.Add(node);
+            }
+
+            if (ancestors.Count > level)
+            {
+                ancestors.RemoveRange(level, ancestors.Count - level);
+            }
+
+            ancestors.Add(node); // ancestors[level] = node
+        }
+
+        return roots;
+    }
+
+    // Recursively renders a list level; a node's children become a nested <ul>/<ol> inside
+    // its <li>. Each nested level goes in its own region so sequence numbers stay isolated.
+    private static void RenderListNodes(RenderTreeBuilder builder, bool ordered, List<ListNode> nodes)
+    {
+        builder.OpenElement(30, ordered ? "ol" : "ul");
+        builder.AddAttribute(31, "class", "dx-word-list");
+        foreach (ListNode node in nodes)
+        {
             builder.OpenElement(32, "li");
-            builder.SetKey(i);
+            builder.SetKey(node);
             builder.AddAttribute(33, "class", "dx-word-item");
-            BuildRuns(builder, list.Items[i]);
+            BuildRuns(builder, node.Runs);
+            if (node.Children.Count > 0)
+            {
+                builder.OpenRegion(34);
+                RenderListNodes(builder, ordered, node.Children);
+                builder.CloseRegion();
+            }
+
             builder.CloseElement();
         }
 

@@ -137,4 +137,24 @@ public sealed class DxWordViewerTests : TestContext
         Assert.Contains("No document", viewer.Markup, StringComparison.OrdinalIgnoreCase);
         Assert.Empty(viewer.FindAll("h1"));
     }
+
+    [Fact]
+    public void Renders_a_nested_list_as_a_real_nested_ul()
+    {
+        // A (top) > B (nested) > C (back to top) renders <ul>…<ul>…</ul>…</ul>.
+        WordDocument doc = new(
+        [
+            new WordList(false,
+                [[new WordRun("A")], [new WordRun("B")], [new WordRun("C")]],
+                Levels: [0, 1, 0]),
+        ]);
+
+        IRenderedComponent<DxWordViewer> viewer = Render(doc);
+
+        // The nested <ul> lives inside the first <li> (the parent item, A).
+        IElement firstItem = viewer.FindAll("ul > li")[0];
+        Assert.Single(firstItem.QuerySelectorAll("ul"));
+        Assert.Contains("B", firstItem.QuerySelector("ul li")!.TextContent);
+        Assert.Equal(3, viewer.FindAll("li").Count); // three items across both levels
+    }
 }

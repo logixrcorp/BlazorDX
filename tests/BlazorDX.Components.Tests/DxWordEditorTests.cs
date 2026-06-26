@@ -426,6 +426,34 @@ public sealed class DxWordEditorTests : TestContext
         }
     }
 
+    [Fact]
+    public void Nested_lists_round_trip_their_indent_levels()
+    {
+        // A (top) > B (nested) > C (back to top).
+        WordDocument original = new(
+        [
+            new WordList(false,
+            [
+                [new WordRun("A")],
+                [new WordRun("B")],
+                [new WordRun("C")],
+            ],
+            Levels: [0, 1, 0]),
+        ]);
+
+        WordDocument viaHtml = WordHtml.FromHtml(WordHtml.ToHtml(original));
+        WordDocument viaDocx = DocxReader.Read(DocxWriter.Write(viaHtml));
+
+        foreach (WordDocument doc in new[] { viaHtml, viaDocx })
+        {
+            WordList list = doc.Blocks.OfType<WordList>().Single();
+            Assert.Equal(["A", "B", "C"], list.Items.Select(Text));
+            Assert.Equal(0, list.LevelOf(0));
+            Assert.Equal(1, list.LevelOf(1));
+            Assert.Equal(0, list.LevelOf(2));
+        }
+    }
+
     private static string Text(IReadOnlyList<WordRun> runs) =>
         string.Concat(runs.Select(r => r.Text));
 }

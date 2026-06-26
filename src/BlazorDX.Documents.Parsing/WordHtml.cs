@@ -52,223 +52,6 @@ public static partial class WordHtml
     // ToHtml: model -> semantic HTML
     // ---------------------------------------------------------------------
 
-    /// <summary>
-    /// Serializes a <see cref="WordDocument"/> to clean semantic HTML. Every block becomes
-    /// a real element and all text is HTML-escaped, so the result is safe to load directly
-    /// into a <c>contentEditable</c> surface.
-    /// </summary>
-    /// <param name="document">The document model to serialize.</param>
-    /// <returns>The HTML markup; an empty string for a document with no blocks.</returns>
-    public static string ToHtml(WordDocument document)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-
-        StringBuilder sb = new();
-        foreach (WordBlock block in document.Blocks)
-        {
-            switch (block)
-            {
-                case WordHeading heading:
-                    AppendHeading(sb, heading);
-                    break;
-                case WordList list:
-                    AppendList(sb, list);
-                    break;
-                case WordTable table:
-                    AppendTable(sb, table);
-                    break;
-                case WordParagraph paragraph:
-                    AppendParagraph(sb, paragraph);
-                    break;
-            }
-        }
-
-        return sb.ToString();
-    }
-
-    private static void AppendHeading(StringBuilder sb, WordHeading heading)
-    {
-        int level = Math.Clamp(heading.Level, 1, 6);
-        string tag = "h" + level.ToString(CultureInfo.InvariantCulture);
-        sb.Append('<').Append(tag).Append(AlignStyle(heading.Alignment)).Append('>');
-        AppendRuns(sb, heading.Runs);
-        sb.Append("</").Append(tag).Append('>');
-    }
-
-    private static void AppendParagraph(StringBuilder sb, WordParagraph paragraph)
-    {
-        sb.Append("<p").Append(AlignStyle(paragraph.Alignment)).Append('>');
-        AppendRuns(sb, paragraph.Runs);
-        sb.Append("</p>");
-    }
-
-    // A text-align inline style for a non-default alignment, or "" for Start.
-    private static string AlignStyle(WordAlignment alignment) => alignment switch
-    {
-        WordAlignment.Center => " style=\"text-align:center\"",
-        WordAlignment.End => " style=\"text-align:right\"",
-        WordAlignment.Justify => " style=\"text-align:justify\"",
-        _ => string.Empty,
-    };
-
-    private static void AppendList(StringBuilder sb, WordList list)
-    {
-        string tag = list.Ordered ? "ol" : "ul";
-        sb.Append('<').Append(tag).Append('>');
-        foreach (IReadOnlyList<WordRun> item in list.Items)
-        {
-            sb.Append("<li>");
-            AppendRuns(sb, item);
-            sb.Append("</li>");
-        }
-
-        sb.Append("</").Append(tag).Append('>');
-    }
-
-    private static void AppendTable(StringBuilder sb, WordTable table)
-    {
-        sb.Append("<table>");
-        IReadOnlyList<WordTableRow> rows = table.Rows;
-        for (int r = 0; r < rows.Count; r++)
-        {
-            sb.Append("<tr>");
-            // The first row is the header row: its cells are <th scope="col">. This
-            // mirrors DxWordViewer and is what FromHtml keys on to rebuild the row split.
-            string cellTag = r == 0 ? "th" : "td";
-            foreach (WordTableCell cell in rows[r].Cells)
-            {
-                if (r == 0)
-                {
-                    sb.Append("<th scope=\"col\">");
-                }
-                else
-                {
-                    sb.Append("<td>");
-                }
-
-                AppendRuns(sb, cell.Runs);
-                sb.Append("</").Append(cellTag).Append('>');
-            }
-
-            sb.Append("</tr>");
-        }
-
-        sb.Append("</table>");
-    }
-
-    // Renders a run sequence. An unstyled run is bare (escaped) text; bold wraps in
-    // <strong>, italic in <em>, both nest <strong><em>. Matches DxWordViewer.BuildRuns.
-    private static void AppendRuns(StringBuilder sb, IReadOnlyList<WordRun> runs)
-    {
-        foreach (WordRun run in runs)
-        {
-            bool bold = run.Bold;
-            bool italic = run.Italic;
-            bool underline = run.Underline;
-            bool strike = run.Strike;
-            bool link = !string.IsNullOrEmpty(run.Href);
-
-            if (link)
-            {
-                sb.Append("<a href=\"");
-                AppendEscaped(sb, run.Href!);
-                sb.Append("\">");
-            }
-
-            if (bold)
-            {
-                sb.Append("<strong>");
-            }
-
-            if (italic)
-            {
-                sb.Append("<em>");
-            }
-
-            if (underline)
-            {
-                sb.Append("<u>");
-            }
-
-            if (strike)
-            {
-                sb.Append("<s>");
-            }
-
-            bool colored = !string.IsNullOrEmpty(run.Color) || !string.IsNullOrEmpty(run.Highlight);
-            if (colored)
-            {
-                sb.Append("<span style=\"");
-                if (!string.IsNullOrEmpty(run.Color))
-                {
-                    sb.Append("color:").Append(run.Color).Append(';');
-                }
-
-                if (!string.IsNullOrEmpty(run.Highlight))
-                {
-                    sb.Append("background-color:").Append(run.Highlight).Append(';');
-                }
-
-                sb.Append("\">");
-            }
-
-            AppendEscaped(sb, run.Text ?? string.Empty);
-
-            if (colored)
-            {
-                sb.Append("</span>");
-            }
-
-            if (strike)
-            {
-                sb.Append("</s>");
-            }
-
-            if (underline)
-            {
-                sb.Append("</u>");
-            }
-
-            if (italic)
-            {
-                sb.Append("</em>");
-            }
-
-            if (bold)
-            {
-                sb.Append("</strong>");
-            }
-
-            if (link)
-            {
-                sb.Append("</a>");
-            }
-        }
-    }
-
-    // HTML text escaping. & < > are escaped always; " is escaped too so the same routine
-    // is safe in an attribute context if reused. Control chars XML 1.0 forbids are dropped
-    // (tab/newline/return kept), matching DocxWriter's escaper.
-    private static void AppendEscaped(StringBuilder sb, string value)
-    {
-        foreach (char c in value)
-        {
-            switch (c)
-            {
-                case '&': sb.Append("&amp;"); break;
-                case '<': sb.Append("&lt;"); break;
-                case '>': sb.Append("&gt;"); break;
-                case '"': sb.Append("&quot;"); break;
-                default:
-                    if (c >= 0x20 || c is '\t' or '\n' or '\r')
-                    {
-                        sb.Append(c);
-                    }
-
-                    break;
-            }
-        }
-    }
 
     // ---------------------------------------------------------------------
     // FromHtml: lenient HTML -> model
@@ -438,7 +221,9 @@ public static partial class WordHtml
         // Active list, if any.
         private bool _listOrdered;
         private List<IReadOnlyList<WordRun>>? _listItems;
+        private List<int>? _listLevels;
         private bool _inListItem;
+        private int _listDepth; // 0-based nesting level of the current list context
 
         // Active table, if any.
         private List<WordTableRow>? _tableRows;
@@ -657,15 +442,37 @@ public static partial class WordHtml
                 case "ul" or "ol":
                     if (tag.IsClose)
                     {
-                        FlushList();
+                        // Close any open item at this depth; pop a nesting level, or emit the
+                        // whole list once the outermost <ul>/<ol> closes.
+                        CloseListItem();
+                        if (_listDepth == 0)
+                        {
+                            FlushList();
+                        }
+                        else
+                        {
+                            _listDepth--;
+                        }
                     }
-                    else
+                    else if (!tag.SelfClose)
                     {
-                        FlushParagraph();
-                        FlushList();
-                        _listOrdered = tag.Name == "ol";
-                        _listItems = [];
-                        _kind = _listOrdered ? BlockKind.OrderedList : BlockKind.UnorderedList;
+                        if (_listItems is null)
+                        {
+                            // A fresh top-level list. Its kind applies to the whole list.
+                            FlushParagraph();
+                            _listOrdered = tag.Name == "ol";
+                            _listItems = [];
+                            _listLevels = [];
+                            _listDepth = 0;
+                            _kind = _listOrdered ? BlockKind.OrderedList : BlockKind.UnorderedList;
+                        }
+                        else
+                        {
+                            // A nested list inside the current item: commit that item first,
+                            // then descend a level.
+                            CloseListItem();
+                            _listDepth++;
+                        }
                     }
 
                     break;
@@ -801,7 +608,9 @@ public static partial class WordHtml
             }
 
             _listItems ??= [];
+            _listLevels ??= [];
             _listItems.Add(Snapshot());
+            _listLevels.Add(_listDepth);
             _inListItem = false;
             ResetRuns();
         }
@@ -811,10 +620,14 @@ public static partial class WordHtml
             CloseListItem();
             if (_listItems is { Count: > 0 })
             {
-                _blocks.Add(new WordList(_listOrdered, _listItems));
+                // Levels are only meaningful when at least one item is indented.
+                bool nested = _listLevels is not null && _listLevels.Exists(l => l > 0);
+                _blocks.Add(new WordList(_listOrdered, _listItems, nested ? _listLevels : null));
             }
 
             _listItems = null;
+            _listLevels = null;
+            _listDepth = 0;
             _kind = BlockKind.Paragraph;
             ResetRuns();
         }

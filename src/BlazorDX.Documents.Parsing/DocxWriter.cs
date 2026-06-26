@@ -129,21 +129,49 @@ public static class DocxWriter
     // with the conventional "HeadingN" id check. outlineLvl is 0-based (level - 1).
     private static readonly string Styles = BuildStyles();
 
-    // Two abstract numberings + their concrete num bindings: id 0 is bulleted, id 1 is
-    // decimal. Minimal but valid so the package opens in Word; the reader keys only on
-    // the numId, not on this content.
-    private const string Numbering =
-        XmlDeclaration +
-        "<w:numbering xmlns:w=\"" + WordprocessingMl + "\">" +
-        "<w:abstractNum w:abstractNumId=\"0\">" +
-        "<w:lvl w:ilvl=\"0\"><w:numFmt w:val=\"bullet\"/><w:lvlText w:val=\"•\"/></w:lvl>" +
-        "</w:abstractNum>" +
-        "<w:abstractNum w:abstractNumId=\"1\">" +
-        "<w:lvl w:ilvl=\"0\"><w:numFmt w:val=\"decimal\"/><w:lvlText w:val=\"%1.\"/></w:lvl>" +
-        "</w:abstractNum>" +
-        "<w:num w:numId=\"0\"><w:abstractNumId w:val=\"0\"/></w:num>" +
-        "<w:num w:numId=\"1\"><w:abstractNumId w:val=\"1\"/></w:num>" +
-        "</w:numbering>";
+    // Number of nesting levels declared per list (0..MaxListLevels-1). Deeper items clamp
+    // to the last level. Word needs each ilvl defined to render bullets/indents correctly.
+    private const int MaxListLevels = 4;
+
+    // Two abstract numberings (id 0 bulleted, id 1 decimal), each declaring MaxListLevels
+    // indented levels so nested lists render in Word; the reader keys on numId + ilvl.
+    private static readonly string Numbering = BuildNumbering();
+
+    private static string BuildNumbering()
+    {
+        StringBuilder sb = new();
+        sb.Append(XmlDeclaration).Append("<w:numbering xmlns:w=\"").Append(WordprocessingMl).Append("\">");
+
+        string[] bullets = ["•", "◦", "▪", "‣"];
+        sb.Append("<w:abstractNum w:abstractNumId=\"0\">");
+        for (int lvl = 0; lvl < MaxListLevels; lvl++)
+        {
+            AppendListLevel(sb, lvl, "bullet", bullets[lvl % bullets.Length]);
+        }
+
+        sb.Append("</w:abstractNum><w:abstractNum w:abstractNumId=\"1\">");
+        for (int lvl = 0; lvl < MaxListLevels; lvl++)
+        {
+            AppendListLevel(sb, lvl, "decimal",
+                "%" + (lvl + 1).ToString(CultureInfo.InvariantCulture) + ".");
+        }
+
+        sb.Append("</w:abstractNum>");
+        sb.Append("<w:num w:numId=\"0\"><w:abstractNumId w:val=\"0\"/></w:num>");
+        sb.Append("<w:num w:numId=\"1\"><w:abstractNumId w:val=\"1\"/></w:num>");
+        sb.Append("</w:numbering>");
+        return sb.ToString();
+    }
+
+    private static void AppendListLevel(StringBuilder sb, int ilvl, string numFmt, string lvlText)
+    {
+        int indent = (ilvl + 1) * 720; // 0.5" per level
+        sb.Append("<w:lvl w:ilvl=\"").Append(ilvl.ToString(CultureInfo.InvariantCulture))
+          .Append("\"><w:start w:val=\"1\"/><w:numFmt w:val=\"").Append(numFmt)
+          .Append("\"/><w:lvlText w:val=\"").Append(lvlText)
+          .Append("\"/><w:pPr><w:ind w:left=\"").Append(indent.ToString(CultureInfo.InvariantCulture))
+          .Append("\" w:hanging=\"360\"/></w:pPr></w:lvl>");
+    }
 
     /// <summary>
     /// Serializes a <see cref="WordDocument"/> into a valid <c>.docx</c> byte array
@@ -215,13 +243,15 @@ public static class DocxWriter
     private static void AppendList(StringBuilder sb, WordList list, LinkRels links)
     {
         int numId = list.Ordered ? OrderedNumId : BulletNumId;
-        string pPr =
-            "<w:numPr><w:ilvl w:val=\"0\"/><w:numId w:val=\"" +
-            numId.ToString(CultureInfo.InvariantCulture) + "\"/></w:numPr>";
+        string numIdText = numId.ToString(CultureInfo.InvariantCulture);
 
-        foreach (IReadOnlyList<WordRun> item in list.Items)
+        for (int i = 0; i < list.Items.Count; i++)
         {
-            AppendParagraph(sb, item, pPr, links);
+            int level = Math.Clamp(list.LevelOf(i), 0, MaxListLevels - 1);
+            string pPr =
+                "<w:numPr><w:ilvl w:val=\"" + level.ToString(CultureInfo.InvariantCulture) +
+                "\"/><w:numId w:val=\"" + numIdText + "\"/></w:numPr>";
+            AppendParagraph(sb, list.Items[i], pPr, links);
         }
     }
 
