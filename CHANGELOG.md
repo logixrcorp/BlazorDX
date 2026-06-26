@@ -7,6 +7,17 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 > **Beta.** BlazorDX is pre-1.0 and built with substantial AI assistance. Breaking
 > changes can land in any minor release until 1.0.
 
+## [0.3.6] — 2026-06-26
+
+### Added
+
+- **Find-next navigation** in the Word editor's find bar (‹ ›): selects and scrolls to each
+  match in the editor, showing "N of total".
+- **Owned-selection primitive** (`richtext.ts` `findInEditor` + `DxRichTextEditor.FindNextAsync`)
+  — the first step of [ADR 0015](docs/adr/0015-model-driven-editing-core.md)'s model-driven
+  core: the editor selects via the bridge over its live text nodes, no `execCommand`, no
+  model↔DOM coordinate mapping. The foundation that unblocks table-editing and full undo/redo.
+
 ## [0.3.5] — 2026-06-26
 
 ### Added
