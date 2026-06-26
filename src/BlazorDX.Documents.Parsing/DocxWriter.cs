@@ -49,6 +49,14 @@ public static class DocxWriter
     private const string RelationshipsNs =
         "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
 
+    // DrawingML namespaces for embedded images (<w:drawing>).
+    private const string DrawingWpNs =
+        "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing";
+    private const string DrawingMlNs = "http://schemas.openxmlformats.org/drawingml/2006/main";
+    private const string DrawingPicNs = "http://schemas.openxmlformats.org/drawingml/2006/picture";
+
+    private const int EmuPerPixel = 9525; // 914400 EMU per inch / 96 px per inch
+
     // The numId a numbered list references. Any positive value reads back as ordered;
     // 0 is the reader's bullet sentinel. Both are declared in word/numbering.xml.
     private const int OrderedNumId = 1;
@@ -66,6 +74,10 @@ public static class DocxWriter
         "<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\">" +
         "<Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/>" +
         "<Default Extension=\"xml\" ContentType=\"application/xml\"/>" +
+        "<Default Extension=\"png\" ContentType=\"image/png\"/>" +
+        "<Default Extension=\"jpeg\" ContentType=\"image/jpeg\"/>" +
+        "<Default Extension=\"gif\" ContentType=\"image/gif\"/>" +
+        "<Default Extension=\"bmp\" ContentType=\"image/bmp\"/>" +
         "<Override PartName=\"/word/document.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml\"/>" +
         "<Override PartName=\"/word/styles.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml\"/>" +
         "<Override PartName=\"/word/numbering.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml\"/>" +
@@ -83,41 +95,76 @@ public static class DocxWriter
         "<Relationship Id=\"rId1\" Type=\"" + RelationshipsNs + "/styles\" Target=\"styles.xml\"/>" +
         "<Relationship Id=\"rId2\" Type=\"" + RelationshipsNs + "/numbering\" Target=\"numbering.xml\"/>";
 
-    // Collects external hyperlink relationships while the body is written, assigning each
-    // distinct URL a stable r:id (rId3, rId4, …) the body references via <w:hyperlink>.
-    private sealed class LinkRels
+    // Collects document relationships while the body is written, assigning each a stable
+    // r:id (rId3, rId4, …; rId1/2 are styles/numbering): external hyperlinks referenced by
+    // <w:hyperlink>, and embedded image media parts referenced by a:blip r:embed.
+    private sealed class DocRels
     {
         private readonly Dictionary<string, string> _idByUrl = new(StringComparer.Ordinal);
-        private readonly List<(string Id, string Target)> _all = [];
-        private int _next = 3; // rId1 = styles, rId2 = numbering
+        private readonly List<(string Id, string Target)> _links = [];
+        private readonly List<EmbeddedImage> _images = [];
+        private int _next = 3;
+        private int _nextImageFile = 1;
 
-        public string IdFor(string url)
+        public string LinkId(string url)
         {
             if (!_idByUrl.TryGetValue(url, out string? id))
             {
-                id = "rId" + _next++.ToString(CultureInfo.InvariantCulture);
+                id = NextId();
                 _idByUrl[url] = id;
-                _all.Add((id, url));
+                _links.Add((id, url));
             }
 
             return id;
         }
 
-        public IReadOnlyList<(string Id, string Target)> All => _all;
+        public string ImageId(string contentType, byte[] data)
+        {
+            string id = NextId();
+            string file = "image" + _nextImageFile++.ToString(CultureInfo.InvariantCulture)
+                + "." + ExtensionFor(contentType);
+            _images.Add(new EmbeddedImage(id, file, contentType, data));
+            return id;
+        }
+
+        public IReadOnlyList<(string Id, string Target)> Links => _links;
+
+        public IReadOnlyList<EmbeddedImage> Images => _images;
+
+        private string NextId() => "rId" + _next++.ToString(CultureInfo.InvariantCulture);
     }
 
-    private static string BuildDocumentRels(LinkRels links)
+    private readonly record struct EmbeddedImage(string Id, string FileName, string ContentType, byte[] Data);
+
+    // png/jpeg/gif are recognized; anything else is treated as a png extension (the bytes
+    // still embed and read back — the extension only affects how Word sniffs the part).
+    private static string ExtensionFor(string contentType) => contentType.ToLowerInvariant() switch
+    {
+        "image/jpeg" or "image/jpg" => "jpeg",
+        "image/gif" => "gif",
+        "image/bmp" => "bmp",
+        _ => "png",
+    };
+
+    private static string BuildDocumentRels(DocRels rels)
     {
         StringBuilder sb = new();
         sb.Append(XmlDeclaration);
         sb.Append("<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">");
         sb.Append(BaseDocumentRels);
-        foreach ((string id, string target) in links.All)
+        foreach ((string id, string target) in rels.Links)
         {
             sb.Append("<Relationship Id=\"").Append(id)
               .Append("\" Type=\"").Append(RelationshipsNs).Append("/hyperlink\" Target=\"");
             AppendEscaped(sb, target);
             sb.Append("\" TargetMode=\"External\"/>");
+        }
+
+        foreach (EmbeddedImage img in rels.Images)
+        {
+            sb.Append("<Relationship Id=\"").Append(img.Id)
+              .Append("\" Type=\"").Append(RelationshipsNs).Append("/image\" Target=\"media/")
+              .Append(img.FileName).Append("\"/>");
         }
 
         sb.Append("</Relationships>");
@@ -183,7 +230,7 @@ public static class DocxWriter
     {
         ArgumentNullException.ThrowIfNull(document);
 
-        LinkRels links = new();
+        DocRels links = new();
         string documentXml = BuildDocument(document, links);
 
         using MemoryStream stream = new();
@@ -195,18 +242,28 @@ public static class DocxWriter
             AddEntry(zip, "word/document.xml", documentXml);
             AddEntry(zip, "word/styles.xml", Styles);
             AddEntry(zip, "word/numbering.xml", Numbering);
+
+            foreach (EmbeddedImage img in links.Images)
+            {
+                ZipArchiveEntry entry = zip.CreateEntry("word/media/" + img.FileName, CompressionLevel.Optimal);
+                using Stream content = entry.Open();
+                content.Write(img.Data, 0, img.Data.Length);
+            }
         }
 
         return stream.ToArray();
     }
 
-    private static string BuildDocument(WordDocument document, LinkRels links)
+    private static string BuildDocument(WordDocument document, DocRels links)
     {
         StringBuilder sb = new();
         sb.Append(XmlDeclaration);
-        // xmlns:r is needed for the r:id attribute on <w:hyperlink>.
+        // xmlns:r for <w:hyperlink>/a:blip r:id; wp/a/pic for <w:drawing> images.
         sb.Append("<w:document xmlns:w=\"").Append(WordprocessingMl)
-          .Append("\" xmlns:r=\"").Append(RelationshipsNs).Append("\"><w:body>");
+          .Append("\" xmlns:r=\"").Append(RelationshipsNs)
+          .Append("\" xmlns:wp=\"").Append(DrawingWpNs)
+          .Append("\" xmlns:a=\"").Append(DrawingMlNs)
+          .Append("\" xmlns:pic=\"").Append(DrawingPicNs).Append("\"><w:body>");
 
         foreach (WordBlock block in document.Blocks)
         {
@@ -224,6 +281,9 @@ public static class DocxWriter
                 case WordTable table:
                     AppendTable(sb, table, links);
                     break;
+                case WordImage image:
+                    AppendImage(sb, image, links);
+                    break;
             }
         }
 
@@ -231,7 +291,38 @@ public static class DocxWriter
         return sb.ToString();
     }
 
-    private static void AppendHeading(StringBuilder sb, WordHeading heading, LinkRels links)
+    // Emits a block-level image as <w:p><w:r><w:drawing><wp:inline>…<pic:pic>…. The bytes
+    // become a media part; a:blip r:embed points at its relationship.
+    private static void AppendImage(StringBuilder sb, WordImage image, DocRels links)
+    {
+        if (image.Data is not { Length: > 0 })
+        {
+            return;
+        }
+
+        string rid = links.ImageId(image.ContentType, image.Data);
+        long cx = (long)Math.Max(1, image.Width) * EmuPerPixel;
+        long cy = (long)Math.Max(1, image.Height) * EmuPerPixel;
+        string cxs = cx.ToString(CultureInfo.InvariantCulture);
+        string cys = cy.ToString(CultureInfo.InvariantCulture);
+
+        sb.Append("<w:p><w:r><w:drawing><wp:inline distT=\"0\" distB=\"0\" distL=\"0\" distR=\"0\">");
+        sb.Append("<wp:extent cx=\"").Append(cxs).Append("\" cy=\"").Append(cys).Append("\"/>");
+        sb.Append("<wp:docPr id=\"1\" name=\"Picture\" descr=\"");
+        AppendEscaped(sb, image.AltText ?? string.Empty);
+        sb.Append("\"/><a:graphic><a:graphicData uri=\"").Append(DrawingPicNs).Append("\">");
+        sb.Append("<pic:pic><pic:nvPicPr><pic:cNvPr id=\"0\" name=\"Picture\" descr=\"");
+        AppendEscaped(sb, image.AltText ?? string.Empty);
+        sb.Append("\"/><pic:cNvPicPr/></pic:nvPicPr>");
+        sb.Append("<pic:blipFill><a:blip r:embed=\"").Append(rid)
+          .Append("\"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>");
+        sb.Append("<pic:spPr><a:xfrm><a:off x=\"0\" y=\"0\"/><a:ext cx=\"").Append(cxs)
+          .Append("\" cy=\"").Append(cys).Append("\"/></a:xfrm>");
+        sb.Append("<a:prstGeom prst=\"rect\"><a:avLst/></a:prstGeom></pic:spPr></pic:pic>");
+        sb.Append("</a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>");
+    }
+
+    private static void AppendHeading(StringBuilder sb, WordHeading heading, DocRels links)
     {
         // Clamp to the styles we define (1-6). The reader maps "HeadingN" directly.
         int level = Math.Clamp(heading.Level, 1, 6);
@@ -240,7 +331,7 @@ public static class DocxWriter
         AppendParagraph(sb, heading.Runs, pPr, links, heading.Alignment);
     }
 
-    private static void AppendList(StringBuilder sb, WordList list, LinkRels links)
+    private static void AppendList(StringBuilder sb, WordList list, DocRels links)
     {
         int numId = list.Ordered ? OrderedNumId : BulletNumId;
         string numIdText = numId.ToString(CultureInfo.InvariantCulture);
@@ -269,7 +360,7 @@ public static class DocxWriter
     // Emits one <w:p>: optional <w:pPr> (style/numbering + justification) then its runs. A
     // run carrying an Href is wrapped in <w:hyperlink r:id="…"> referencing an external rel.
     private static void AppendParagraph(
-        StringBuilder sb, IReadOnlyList<WordRun> runs, string? pPr, LinkRels links,
+        StringBuilder sb, IReadOnlyList<WordRun> runs, string? pPr, DocRels links,
         WordAlignment alignment = WordAlignment.Start)
     {
         sb.Append("<w:p>");
@@ -294,7 +385,7 @@ public static class DocxWriter
         {
             if (!string.IsNullOrEmpty(run.Href))
             {
-                sb.Append("<w:hyperlink r:id=\"").Append(links.IdFor(run.Href)).Append("\">");
+                sb.Append("<w:hyperlink r:id=\"").Append(links.LinkId(run.Href)).Append("\">");
                 AppendRun(sb, run);
                 sb.Append("</w:hyperlink>");
             }
@@ -357,7 +448,7 @@ public static class DocxWriter
         sb.Append("</w:t></w:r>");
     }
 
-    private static void AppendTable(StringBuilder sb, WordTable table, LinkRels links)
+    private static void AppendTable(StringBuilder sb, WordTable table, DocRels links)
     {
         sb.Append("<w:tbl>");
         foreach (WordTableRow row in table.Rows)

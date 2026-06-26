@@ -42,7 +42,7 @@ namespace BlazorDX.Documents;
 /// degrades to a plain paragraph.
 /// </para>
 /// </remarks>
-public static class DocxReader
+public static partial class DocxReader
 {
     private const string WordprocessingMl =
         "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
@@ -116,6 +116,8 @@ public static class DocxReader
         IReadOnlyDictionary<string, int> headingStyles = ReadHeadingStyles(zip);
         // rId -> external target, so <w:hyperlink r:id> runs can carry their URL.
         IReadOnlyDictionary<string, string> linkRels = ReadHyperlinkRels(zip);
+        // rId -> decoded image bytes, so <w:drawing> blips become WordImage blocks.
+        IReadOnlyDictionary<string, ImagePart> imageParts = ReadImageParts(zip);
 
         ZipArchiveEntry? document = zip.GetEntry("word/document.xml");
         if (document is null)
@@ -154,7 +156,7 @@ public static class DocxReader
 
             if (reader.LocalName == "p")
             {
-                ParagraphContent para = ReadParagraph(reader, headingStyles, linkRels);
+                ParagraphContent para = ReadParagraph(reader, headingStyles, linkRels, imageParts);
 
                 if (para.ListKind is { } kind)
                 {
@@ -174,7 +176,11 @@ public static class DocxReader
 
                 FlushList();
 
-                if (para.HeadingLevel is { } level)
+                if (para.Image is { } image)
+                {
+                    blocks.Add(image); // a paragraph that holds a drawing becomes an image block
+                }
+                else if (para.HeadingLevel is { } level)
                 {
                     blocks.Add(new WordHeading(level, para.Runs, para.Alignment));
                 }
@@ -200,15 +206,17 @@ public static class DocxReader
         IReadOnlyList<WordRun> Runs,
         int? HeadingLevel,
         ListKind? ListKind,
-        WordAlignment Alignment = WordAlignment.Start);
+        WordAlignment Alignment = WordAlignment.Start,
+        WordImage? Image = null);
 
     // Reads one <w:p>: its paragraph properties (<w:pPr>: style, numbering) then its
-    // runs. The reader is positioned on the <w:p> start element; on return it sits on
-    // the matching </w:p> end element.
+    // runs (and any embedded image). The reader is positioned on the <w:p> start element;
+    // on return it sits on the matching </w:p> end element.
     private static ParagraphContent ReadParagraph(
         XmlReader reader,
         IReadOnlyDictionary<string, int> headingStyles,
-        IReadOnlyDictionary<string, string> linkRels)
+        IReadOnlyDictionary<string, string> linkRels,
+        IReadOnlyDictionary<string, ImagePart> imageParts)
     {
         if (reader.IsEmptyElement)
         {
@@ -217,6 +225,7 @@ public static class DocxReader
 
         int paraDepth = reader.Depth;
         List<WordRun> runs = [];
+        List<WordImage> images = [];
         int? headingLevel = null;
         ListKind? listKind = null;
         WordAlignment alignment = WordAlignment.Start;
@@ -241,14 +250,14 @@ public static class DocxReader
                     (headingLevel, listKind, alignment) = ReadParagraphProperties(reader, headingStyles);
                     break;
                 case "r":
-                    AppendRun(reader, runs);
+                    AppendRun(reader, runs, imageParts, images);
                     break;
                 case "hyperlink":
                     // Capture r:id BEFORE descending into the runs, then tag the runs the
                     // hyperlink contained with their resolved external URL.
                     string? rid = reader.GetAttribute("id", RelationshipsNs);
                     int from = runs.Count;
-                    ReadRunsWithin(reader, "hyperlink", runs);
+                    ReadRunsWithin(reader, "hyperlink", runs, imageParts, images);
                     if (rid is not null && linkRels.TryGetValue(rid, out string? url))
                     {
                         for (int k = from; k < runs.Count; k++)
@@ -261,7 +270,8 @@ public static class DocxReader
             }
         }
 
-        return new ParagraphContent(CoalesceRuns(runs), headingLevel, listKind, alignment);
+        return new ParagraphContent(CoalesceRuns(runs), headingLevel, listKind, alignment,
+            images.Count > 0 ? images[0] : null);
     }
 
     // Reads <w:pPr>: heading level (<w:pStyle>), list item (<w:numPr>), and alignment
@@ -375,8 +385,10 @@ public static class DocxReader
     }
 
     // Reads one <w:r>: appends a WordRun carrying its concatenated <w:t> text plus
-    // bold/italic flags from <w:rPr>. The reader is on the <w:r> start element.
-    private static void AppendRun(XmlReader reader, List<WordRun> runs)
+    // run formatting from <w:rPr>, and surfaces any embedded <w:drawing> image.
+    private static void AppendRun(
+        XmlReader reader, List<WordRun> runs,
+        IReadOnlyDictionary<string, ImagePart> imageParts, List<WordImage> images)
     {
         if (reader.IsEmptyElement)
         {
@@ -396,7 +408,24 @@ public static class DocxReader
                 break;
             }
 
-            if (reader.NodeType != XmlNodeType.Element || reader.NamespaceURI != WordprocessingMl)
+            if (reader.NodeType != XmlNodeType.Element)
+            {
+                continue;
+            }
+
+            // <w:drawing> is in the Wordprocessing namespace; its blip/extent children are not.
+            if (reader.LocalName == "drawing" && reader.NamespaceURI == WordprocessingMl)
+            {
+                WordImage? img = ReadDrawing(reader, imageParts);
+                if (img is not null)
+                {
+                    images.Add(img);
+                }
+
+                continue;
+            }
+
+            if (reader.NamespaceURI != WordprocessingMl)
             {
                 continue;
             }
@@ -425,6 +454,67 @@ public static class DocxReader
                 Href: null, fmt.Color, fmt.Highlight));
         }
     }
+
+    private readonly record struct ImagePart(byte[] Data, string ContentType);
+
+    private const int EmuPerPixel = 9525;
+
+    // Scans a <w:drawing> subtree for the blip's r:embed (-> image bytes), the extent
+    // (-> px size), and the docPr description (-> alt text). The reader is on <w:drawing>.
+    private static WordImage? ReadDrawing(XmlReader reader, IReadOnlyDictionary<string, ImagePart> imageParts)
+    {
+        if (reader.IsEmptyElement)
+        {
+            return null;
+        }
+
+        int depth = reader.Depth;
+        string? rid = null;
+        string? alt = null;
+        int width = 0;
+        int height = 0;
+
+        while (reader.Read())
+        {
+            if (reader.NodeType == XmlNodeType.EndElement
+                && reader.Depth == depth && reader.LocalName == "drawing")
+            {
+                break;
+            }
+
+            if (reader.NodeType != XmlNodeType.Element)
+            {
+                continue;
+            }
+
+            switch (reader.LocalName)
+            {
+                case "blip":
+                    rid ??= reader.GetAttribute("embed", RelationshipsNs);
+                    break;
+                case "extent":
+                    width = EmuToPx(reader.GetAttribute("cx"));
+                    height = EmuToPx(reader.GetAttribute("cy"));
+                    break;
+                case "docPr":
+                    alt ??= reader.GetAttribute("descr");
+                    break;
+            }
+        }
+
+        if (rid is not null && imageParts.TryGetValue(rid, out ImagePart part))
+        {
+            return new WordImage(part.Data, part.ContentType,
+                string.IsNullOrEmpty(alt) ? null : alt, width, height);
+        }
+
+        return null;
+    }
+
+    private static int EmuToPx(string? emu) =>
+        long.TryParse(emu, NumberStyles.Integer, CultureInfo.InvariantCulture, out long v) && v > 0
+            ? (int)(v / EmuPerPixel)
+            : 0;
 
     private readonly record struct RunFormat(
         bool Bold, bool Italic, bool Underline, bool Strike, string? Color, string? Highlight);
@@ -543,7 +633,9 @@ public static class DocxReader
 
     // Reads runs nested directly inside a container (e.g. <w:hyperlink>) into the
     // supplied list. The reader is positioned on the container start element.
-    private static void ReadRunsWithin(XmlReader reader, string containerName, List<WordRun> runs)
+    private static void ReadRunsWithin(
+        XmlReader reader, string containerName, List<WordRun> runs,
+        IReadOnlyDictionary<string, ImagePart> imageParts, List<WordImage> images)
     {
         if (reader.IsEmptyElement)
         {
@@ -565,7 +657,7 @@ public static class DocxReader
                 && reader.LocalName == "r"
                 && reader.NamespaceURI == WordprocessingMl)
             {
-                AppendRun(reader, runs);
+                AppendRun(reader, runs, imageParts, images);
             }
         }
     }
@@ -665,7 +757,7 @@ public static class DocxReader
 
                 // Nested tables inside cells are not interpreted in v1; only paragraph
                 // runs are gathered (headings/lists inside cells degrade to text).
-                ParagraphContent para = ReadParagraph(reader, EmptyHeadingStyles, linkRels);
+                ParagraphContent para = ReadParagraph(reader, EmptyHeadingStyles, linkRels, EmptyImageParts);
                 runs.AddRange(para.Runs);
             }
         }
@@ -673,265 +765,4 @@ public static class DocxReader
         return new WordTableCell(CoalesceRuns(runs));
     }
 
-    private static readonly IReadOnlyDictionary<string, int> EmptyHeadingStyles =
-        new Dictionary<string, int>(0);
-
-    private const string PackageRelationshipsNs =
-        "http://schemas.openxmlformats.org/package/2006/relationships";
-
-    private static readonly IReadOnlyDictionary<string, string> EmptyLinkRels =
-        new Dictionary<string, string>(0);
-
-    // word/_rels/document.xml.rels: builds rId -> external target for hyperlink
-    // relationships, so <w:hyperlink r:id> runs can be tagged with their URL.
-    private static IReadOnlyDictionary<string, string> ReadHyperlinkRels(ZipArchive zip)
-    {
-        ZipArchiveEntry? entry = zip.GetEntry("word/_rels/document.xml.rels");
-        if (entry is null)
-        {
-            return EmptyLinkRels;
-        }
-
-        Dictionary<string, string>? map = null;
-        using Stream content = OpenChecked(entry);
-        using XmlReader reader = XmlReader.Create(content, ReaderSettings);
-
-        while (reader.Read())
-        {
-            if (reader.NodeType != XmlNodeType.Element
-                || reader.LocalName != "Relationship"
-                || reader.NamespaceURI != PackageRelationshipsNs)
-            {
-                continue;
-            }
-
-            string? type = reader.GetAttribute("Type");
-            if (type is null || !type.EndsWith("/hyperlink", StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            string? id = reader.GetAttribute("Id");
-            string? target = reader.GetAttribute("Target");
-            if (id is not null && target is not null)
-            {
-                (map ??= new Dictionary<string, string>(StringComparer.Ordinal))[id] = target;
-            }
-        }
-
-        return map ?? EmptyLinkRels;
-    }
-
-    // word/styles.xml: builds styleId -> heading level for paragraph styles whose name
-    // is "heading N" / "Title" or that declare an <w:outlineLvl w:val="0..5">. This
-    // resolves localized or custom heading style ids the conventional name check misses.
-    private static IReadOnlyDictionary<string, int> ReadHeadingStyles(ZipArchive zip)
-    {
-        ZipArchiveEntry? entry = zip.GetEntry("word/styles.xml");
-        if (entry is null)
-        {
-            return EmptyHeadingStyles;
-        }
-
-        Dictionary<string, int> map = [];
-        using Stream content = OpenChecked(entry);
-        using XmlReader reader = XmlReader.Create(content, ReaderSettings);
-
-        while (reader.Read())
-        {
-            if (reader.NodeType != XmlNodeType.Element
-                || reader.LocalName != "style"
-                || reader.NamespaceURI != WordprocessingMl)
-            {
-                continue;
-            }
-
-            string? type = reader.GetAttribute("type", WordprocessingMl);
-            if (type is not null && type != "paragraph")
-            {
-                SkipElement(reader, "style");
-                continue;
-            }
-
-            string? styleId = reader.GetAttribute("styleId", WordprocessingMl);
-            int? level = ReadStyleHeadingLevel(reader);
-            if (styleId is not null && level is { } lvl)
-            {
-                map[styleId] = lvl;
-            }
-        }
-
-        return map.Count == 0 ? EmptyHeadingStyles : map;
-    }
-
-    // Reads one <w:style> body, returning a heading level inferred from its <w:name>
-    // ("heading 1".."heading 6" / "Title") or <w:outlineLvl> (0-based → level 1-6).
-    private static int? ReadStyleHeadingLevel(XmlReader reader)
-    {
-        if (reader.IsEmptyElement)
-        {
-            return null;
-        }
-
-        int styleDepth = reader.Depth;
-        int? level = null;
-
-        while (reader.Read())
-        {
-            if (reader.NodeType == XmlNodeType.EndElement
-                && reader.Depth == styleDepth
-                && reader.LocalName == "style")
-            {
-                break;
-            }
-
-            if (reader.NodeType != XmlNodeType.Element || reader.NamespaceURI != WordprocessingMl)
-            {
-                continue;
-            }
-
-            switch (reader.LocalName)
-            {
-                case "name":
-                    string? name = reader.GetAttribute("val", WordprocessingMl);
-                    level ??= HeadingLevelFromName(name);
-                    break;
-                case "outlineLvl":
-                    if (int.TryParse(reader.GetAttribute("val", WordprocessingMl),
-                        NumberStyles.Integer, CultureInfo.InvariantCulture, out int outline)
-                        && outline is >= 0 and <= 5)
-                    {
-                        // outlineLvl is authoritative for the level when present.
-                        level = outline + 1;
-                    }
-
-                    break;
-            }
-        }
-
-        return level;
-    }
-
-    private static int? HeadingLevelFromName(string? name)
-    {
-        if (string.IsNullOrEmpty(name))
-        {
-            return null;
-        }
-
-        if (name.Equals("Title", StringComparison.OrdinalIgnoreCase))
-        {
-            return 1;
-        }
-
-        const string prefix = "heading ";
-        if (name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
-            && int.TryParse(name.AsSpan(prefix.Length).Trim(), NumberStyles.Integer,
-                CultureInfo.InvariantCulture, out int level)
-            && level is >= 1 and <= 6)
-        {
-            return level;
-        }
-
-        return null;
-    }
-
-    // Merges adjacent runs that share the same formatting so the model is compact
-    // (Word splits runs on proofing/rsid boundaries we don't care about).
-    private static IReadOnlyList<WordRun> CoalesceRuns(List<WordRun> runs)
-    {
-        if (runs.Count <= 1)
-        {
-            return runs;
-        }
-
-        List<WordRun> merged = new(runs.Count);
-        WordRun current = runs[0];
-        for (int i = 1; i < runs.Count; i++)
-        {
-            WordRun next = runs[i];
-            if (next.Bold == current.Bold && next.Italic == current.Italic
-                && next.Underline == current.Underline && next.Strike == current.Strike
-                && next.Href == current.Href
-                && next.Color == current.Color && next.Highlight == current.Highlight)
-            {
-                current = current with { Text = current.Text + next.Text };
-            }
-            else
-            {
-                merged.Add(current);
-                current = next;
-            }
-        }
-
-        merged.Add(current);
-        return merged;
-    }
-
-    // Skips to the matching end element of the named container the reader is currently on.
-    private static void SkipElement(XmlReader reader, string name)
-    {
-        if (reader.IsEmptyElement)
-        {
-            return;
-        }
-
-        int depth = reader.Depth;
-        while (reader.Read())
-        {
-            if (reader.NodeType == XmlNodeType.EndElement
-                && reader.Depth == depth
-                && reader.LocalName == name)
-            {
-                break;
-            }
-        }
-    }
-
-    // Reads the concatenated text content of the current element and leaves the reader
-    // on its EndElement (or on the element itself if it is empty).
-    private static string ReadElementText(XmlReader reader)
-    {
-        if (reader.IsEmptyElement)
-        {
-            return string.Empty;
-        }
-
-        string elementName = reader.LocalName;
-        int elementDepth = reader.Depth;
-        string? single = null;
-        System.Text.StringBuilder? many = null;
-
-        while (reader.Read())
-        {
-            if (reader.NodeType == XmlNodeType.EndElement
-                && reader.Depth == elementDepth
-                && reader.LocalName == elementName)
-            {
-                break;
-            }
-
-            if (reader.NodeType is XmlNodeType.Text
-                or XmlNodeType.CDATA
-                or XmlNodeType.SignificantWhitespace
-                or XmlNodeType.Whitespace)
-            {
-                if (many is not null)
-                {
-                    many.Append(reader.Value);
-                }
-                else if (single is null)
-                {
-                    single = reader.Value;
-                }
-                else
-                {
-                    many = new System.Text.StringBuilder(single);
-                    many.Append(reader.Value);
-                }
-            }
-        }
-
-        return many?.ToString() ?? single ?? string.Empty;
-    }
 }

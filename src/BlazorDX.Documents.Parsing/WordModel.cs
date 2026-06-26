@@ -95,6 +95,20 @@ public sealed record WordTableRow(IReadOnlyList<WordTableCell> Cells);
 public sealed record WordTableCell(IReadOnlyList<WordRun> Runs);
 
 /// <summary>
+/// An embedded image (block-level). Carries the raw bytes and media type so it can be
+/// written as a <c>.docx</c> media part + <c>&lt;w:drawing&gt;</c> and rendered as a
+/// <c>data:</c> URL in HTML. <see cref="Width"/>/<see cref="Height"/> are CSS pixels
+/// (0 = unknown).
+/// </summary>
+/// <param name="Data">The raw image bytes.</param>
+/// <param name="ContentType">The IANA media type, e.g. <c>image/png</c> or <c>image/jpeg</c>.</param>
+/// <param name="AltText">Accessible description (WCAG 1.1.1), or null.</param>
+/// <param name="Width">Display width in CSS pixels, or 0 if unknown.</param>
+/// <param name="Height">Display height in CSS pixels, or 0 if unknown.</param>
+public sealed record WordImage(
+    byte[] Data, string ContentType, string? AltText = null, int Width = 0, int Height = 0) : WordBlock;
+
+/// <summary>
 /// An inline run of text carrying best-effort character formatting. A run with no
 /// emphasis (all flags <see langword="false"/>) renders as bare text — the viewer never
 /// fakes a semantic element for an unstyled run.

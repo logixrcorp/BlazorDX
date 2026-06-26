@@ -87,6 +87,9 @@ public sealed class DxWordViewer : ComponentBase
                 case WordParagraph paragraph:
                     BuildParagraph(builder, paragraph);
                     break;
+                case WordImage image:
+                    BuildImage(builder, image);
+                    break;
             }
         }
 
@@ -127,6 +130,27 @@ public sealed class DxWordViewer : ComponentBase
         WordAlignment.Justify => "text-align:justify",
         _ => null,
     };
+
+    private static void BuildImage(RenderTreeBuilder builder, WordImage image)
+    {
+        builder.OpenElement(40, "img");
+        builder.AddAttribute(41, "class", "dx-word-image");
+        builder.AddAttribute(42, "src",
+            $"data:{image.ContentType};base64,{Convert.ToBase64String(image.Data)}");
+        // alt is always present (empty for decorative) so the <img> has an accessible name.
+        builder.AddAttribute(43, "alt", image.AltText ?? string.Empty);
+        if (image.Width > 0)
+        {
+            builder.AddAttribute(44, "width", image.Width);
+        }
+
+        if (image.Height > 0)
+        {
+            builder.AddAttribute(45, "height", image.Height);
+        }
+
+        builder.CloseElement();
+    }
 
     private sealed class ListNode
     {
