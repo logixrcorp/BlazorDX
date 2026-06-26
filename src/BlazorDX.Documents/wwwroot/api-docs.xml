@@ -122,6 +122,17 @@
             constant <see cref="T:Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder"/> sequence numbers throughout.
             </para>
             </remarks>
+            <summary>
+            Find &amp; replace for <see cref="T:BlazorDX.Documents.DxWordEditor"/>. It operates on the document
+            <em>model</em> (run text), not the contentEditable selection, so it needs no DOM
+            plumbing: replacing rebuilds the <see cref="T:BlazorDX.Documents.WordDocument"/> and re-seeds the editor.
+            </summary>
+            <remarks>
+            Matches are counted and replaced <b>within a single run</b> — a match split across a
+            formatting boundary (e.g. <c>wor</c>+<c>&lt;b&gt;d&lt;/b&gt;</c>) is not found. Replace
+            re-mounts the editor (bumping the key), which resets the caret — acceptable for an
+            explicit replace action.
+            </remarks>
         </member>
         <member name="P:BlazorDX.Documents.DxWordEditor.Document">
             <summary>
@@ -163,6 +174,18 @@
         </member>
         <member name="P:BlazorDX.Documents.DxWordEditor.Class">
             <summary>Optional extra CSS class on the editor root.</summary>
+        </member>
+        <member name="P:BlazorDX.Documents.DxWordEditor.ShowToolbar">
+            <summary>
+            Shows a document toolbar above the editor with a "Download .docx" action. On by
+            default. (The formatting toolbar is the underlying rich-text editor's own.)
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Documents.DxWordEditor.DownloadFileName">
+            <summary>File name used by the toolbar's "Download .docx" action.</summary>
+        </member>
+        <member name="P:BlazorDX.Documents.DxWordEditor.Interop">
+            <summary>The client-side download bridge (browser real / SSR + tests null).</summary>
         </member>
         <member name="P:BlazorDX.Documents.DxWordEditor.IsDirty">
             <summary>Whether there are edits not yet acknowledged via <see cref="M:BlazorDX.Documents.DxWordEditor.MarkSaved"/>.</summary>
