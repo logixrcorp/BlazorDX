@@ -130,4 +130,56 @@ public sealed class DxSpreadsheetViewerTests : TestContext
         Assert.Empty(viewer.FindAll("[role=grid]"));
         Assert.Contains("empty", viewer.Markup, StringComparison.OrdinalIgnoreCase);
     }
+
+    private IRenderedComponent<DxSpreadsheetViewer> RenderEditable(Workbook workbook) =>
+        RenderComponent<DxSpreadsheetViewer>(p => p
+            .Add(v => v.Workbook, workbook)
+            .Add(v => v.Editable, true)
+            .Add(v => v.ViewportHeight, 600)
+            .Add(v => v.RowHeight, 29));
+
+    [Fact]
+    public void Editable_grid_moving_the_active_cell_re_renders_without_corrupting_the_tree()
+    {
+        // Regression: the active cell's ElementReferenceCapture used to be emitted only
+        // when the cell was active. Moving the active cell then removed that frame in
+        // place, and Blazor's differ threw "Unexpected frame type during RemoveOldFrame:
+        // ElementReferenceCapture" (followed by cascade NullReference / missing-event-id
+        // errors). Clicking from one cell to another must re-render cleanly, leaving
+        // exactly one active cell.
+        IRenderedComponent<DxSpreadsheetViewer> viewer = RenderEditable(SampleWorkbook());
+
+        IReadOnlyList<IElement> cells = viewer.FindAll(".dx-sheet-editcell");
+        Assert.NotEmpty(cells);
+
+        cells[0].Click();                                  // (0,0) — already the default active cell
+        viewer.FindAll(".dx-sheet-editcell")[1].Click();   // move active → the diff path that crashed
+
+        Assert.Single(viewer.FindAll(".dx-sheet-cell-active"));
+    }
+
+    [Fact]
+    public void Editable_grid_edits_a_cell_and_raises_workbook_changed()
+    {
+        // Entering/leaving edit mode swaps a cell's content for an <input> subtree (which
+        // carries its own reference capture) and back — the other render path that touches
+        // reference captures. Double-click to edit, type, commit, and confirm the change
+        // surfaces without a render-tree fault.
+        Workbook? changed = null;
+        IRenderedComponent<DxSpreadsheetViewer> viewer = RenderComponent<DxSpreadsheetViewer>(p => p
+            .Add(v => v.Workbook, SampleWorkbook())
+            .Add(v => v.Editable, true)
+            .Add(v => v.ViewportHeight, 600)
+            .Add(v => v.RowHeight, 29)
+            .Add(v => v.WorkbookChanged, wb => changed = wb));
+
+        // Double-click a data cell to open the editor, type a new value, commit with Enter.
+        viewer.FindAll(".dx-sheet-row .dx-sheet-editcell")[0].DoubleClick();
+        IElement input = viewer.Find(".dx-sheet-cell-input");
+        input.Input("Carol");
+        input.KeyDown("Enter");
+
+        Assert.NotNull(changed);
+        Assert.True(viewer.Instance.IsDirty);
+    }
 }
