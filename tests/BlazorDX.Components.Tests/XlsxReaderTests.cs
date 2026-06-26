@@ -124,6 +124,74 @@ public sealed class XlsxReaderTests
     }
 
     [Fact]
+    public void Trims_trailing_empty_columns_and_rows_to_the_used_range()
+    {
+        // A sheet carrying the noisy "used range" Excel commonly persists: styled-but-empty
+        // trailing cells (C1:E1) and two trailing all-empty rows (row 4 even has a far-right
+        // empty cell at J4). The reader must size the sheet to the real data, A1:B2 — not to
+        // the declared extent — so the viewer shows no blank columns/rows after the data.
+        byte[] bytes = BuildWorkbook(
+            sharedStrings: [],
+            sheets:
+            [
+                ("Used",
+                    """
+                    <row r="1"><c r="A1" t="inlineStr"><is><t>h1</t></is></c><c r="B1" t="inlineStr"><is><t>h2</t></is></c><c r="C1" s="1"/><c r="D1" s="1"/><c r="E1" s="1"/></row>
+                    <row r="2"><c r="A2" t="inlineStr"><is><t>v1</t></is></c><c r="B2" t="inlineStr"><is><t>v2</t></is></c></row>
+                    <row r="3"><c r="A3" s="1"/></row>
+                    <row r="4"><c r="J4" s="1"/></row>
+                    """),
+            ]);
+
+        Workbook workbook = XlsxReader.Read(bytes);
+        Worksheet sheet = Assert.Single(workbook.Sheets);
+
+        Assert.Equal(2, sheet.ColumnCount);     // C–E trailing blanks dropped
+        Assert.Equal(2, sheet.Rows.Count);      // rows 3–4 (all blank) dropped
+        Assert.Equal(["h1", "h2"], sheet.Rows[0]);
+        Assert.Equal(["v1", "v2"], sheet.Rows[1]);
+    }
+
+    [Fact]
+    public void Preserves_interior_blank_columns_while_trimming_trailing()
+    {
+        // Only TRAILING blanks are trimmed; an interior gap (column B empty in both rows)
+        // is genuine layout and must be preserved.
+        byte[] bytes = BuildWorkbook(
+            sharedStrings: [],
+            sheets:
+            [
+                ("Gap",
+                    """
+                    <row r="1"><c r="A1" t="inlineStr"><is><t>a</t></is></c><c r="C1" t="inlineStr"><is><t>c</t></is></c><c r="E1" s="1"/></row>
+                    <row r="2"><c r="A2" t="inlineStr"><is><t>d</t></is></c><c r="C2" t="inlineStr"><is><t>f</t></is></c></row>
+                    """),
+            ]);
+
+        Workbook workbook = XlsxReader.Read(bytes);
+        Worksheet sheet = Assert.Single(workbook.Sheets);
+
+        Assert.Equal(3, sheet.ColumnCount);             // A–C kept; trailing E blank dropped
+        Assert.Equal(["a", "", "c"], sheet.Rows[0]);    // interior B blank preserved
+        Assert.Equal(["d", "", "f"], sheet.Rows[1]);
+    }
+
+    [Fact]
+    public void A_sheet_of_only_blank_cells_reads_as_empty()
+    {
+        // Styled-but-valueless cells with no real content collapse to an empty sheet.
+        byte[] bytes = BuildWorkbook(
+            sharedStrings: [],
+            sheets: [("Blanks", """<row r="1"><c r="A1" s="1"/><c r="C1" s="1"/></row><row r="2"><c r="B2" s="1"/></row>""")]);
+
+        Workbook workbook = XlsxReader.Read(bytes);
+        Worksheet sheet = Assert.Single(workbook.Sheets);
+
+        Assert.Empty(sheet.Rows);
+        Assert.Equal(0, sheet.ColumnCount);
+    }
+
+    [Fact]
     public void Reads_multiple_sheets_in_workbook_order()
     {
         byte[] bytes = BuildWorkbook(

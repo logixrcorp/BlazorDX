@@ -96,7 +96,11 @@ public sealed partial class DxSpreadsheetViewer : SpreadsheetViewerPrimitive
     private void BuildActiveSheet(RenderTreeBuilder builder)
     {
         builder.OpenElement(20, "div");
-        builder.AddAttribute(21, "class", "dx-sheet-panel");
+        // NOTE: must NOT be "dx-sheet-panel" — that class belongs to the DxSheet
+        // offcanvas overlay (dx-overlay.css), which styles it `position: fixed`. Since
+        // both stylesheets load globally, reusing the name pulled the worksheet panel
+        // out of flow and dropped the grid on top of the page footer.
+        builder.AddAttribute(21, "class", "dx-sheet-tabpanel");
         builder.AddAttribute(22, "role", "tabpanel");
         if (ActiveSheet is not null)
         {
