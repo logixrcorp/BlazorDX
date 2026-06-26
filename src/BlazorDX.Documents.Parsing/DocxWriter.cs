@@ -202,7 +202,7 @@ public static class DocxWriter
     private static void AppendRun(StringBuilder sb, WordRun run)
     {
         sb.Append("<w:r>");
-        if (run.Bold || run.Italic)
+        if (run.Bold || run.Italic || run.Underline || run.Strike)
         {
             sb.Append("<w:rPr>");
             if (run.Bold)
@@ -213,6 +213,16 @@ public static class DocxWriter
             if (run.Italic)
             {
                 sb.Append("<w:i/>");
+            }
+
+            if (run.Underline)
+            {
+                sb.Append("<w:u w:val=\"single\"/>");
+            }
+
+            if (run.Strike)
+            {
+                sb.Append("<w:strike/>");
             }
 
             sb.Append("</w:rPr>");

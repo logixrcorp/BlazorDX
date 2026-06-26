@@ -337,6 +337,8 @@ public static class DocxReader
         int runDepth = reader.Depth;
         bool bold = false;
         bool italic = false;
+        bool underline = false;
+        bool strike = false;
         System.Text.StringBuilder? text = null;
 
         while (reader.Read())
@@ -356,7 +358,7 @@ public static class DocxReader
             switch (reader.LocalName)
             {
                 case "rPr":
-                    (bold, italic) = ReadRunProperties(reader);
+                    (bold, italic, underline, strike) = ReadRunProperties(reader);
                     break;
                 case "t":
                     (text ??= new System.Text.StringBuilder()).Append(ReadElementText(reader));
@@ -373,22 +375,25 @@ public static class DocxReader
 
         if (text is { Length: > 0 })
         {
-            runs.Add(new WordRun(text.ToString(), bold, italic));
+            runs.Add(new WordRun(text.ToString(), bold, italic, underline, strike));
         }
     }
 
-    // Reads <w:rPr> for bold/italic. A toggle element with w:val="false"/"0"/"off"
-    // turns the property off; its mere presence (or "true"/"1"/"on") turns it on.
-    private static (bool Bold, bool Italic) ReadRunProperties(XmlReader reader)
+    // Reads <w:rPr> for bold/italic/underline/strike. b/i/strike are toggle elements
+    // (w:val="false"/"0"/"off" turns them off; presence or "true"/"1"/"on" turns them on).
+    // w:u carries an underline STYLE: any value other than "none" counts as underlined.
+    private static (bool Bold, bool Italic, bool Underline, bool Strike) ReadRunProperties(XmlReader reader)
     {
         if (reader.IsEmptyElement)
         {
-            return (false, false);
+            return (false, false, false, false);
         }
 
         int rprDepth = reader.Depth;
         bool bold = false;
         bool italic = false;
+        bool underline = false;
+        bool strike = false;
 
         while (reader.Read())
         {
@@ -412,10 +417,18 @@ public static class DocxReader
                 case "i":
                     italic = IsToggleOn(reader.GetAttribute("val", WordprocessingMl));
                     break;
+                case "u":
+                    string? style = reader.GetAttribute("val", WordprocessingMl);
+                    underline = style is not null
+                        && !style.Equals("none", StringComparison.OrdinalIgnoreCase);
+                    break;
+                case "strike":
+                    strike = IsToggleOn(reader.GetAttribute("val", WordprocessingMl));
+                    break;
             }
         }
 
-        return (bold, italic);
+        return (bold, italic, underline, strike);
     }
 
     // An OOXML on/off toggle: absent attribute means "on"; explicit false/0/off mean off.
@@ -674,8 +687,8 @@ public static class DocxReader
         return null;
     }
 
-    // Merges adjacent runs that share the same bold/italic formatting so the model is
-    // compact (Word splits runs on proofing/rsid boundaries we don't care about).
+    // Merges adjacent runs that share the same formatting so the model is compact
+    // (Word splits runs on proofing/rsid boundaries we don't care about).
     private static IReadOnlyList<WordRun> CoalesceRuns(List<WordRun> runs)
     {
         if (runs.Count <= 1)
@@ -688,7 +701,8 @@ public static class DocxReader
         for (int i = 1; i < runs.Count; i++)
         {
             WordRun next = runs[i];
-            if (next.Bold == current.Bold && next.Italic == current.Italic)
+            if (next.Bold == current.Bold && next.Italic == current.Italic
+                && next.Underline == current.Underline && next.Strike == current.Strike)
             {
                 current = current with { Text = current.Text + next.Text };
             }

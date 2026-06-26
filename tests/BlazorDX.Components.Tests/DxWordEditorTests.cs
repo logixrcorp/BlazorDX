@@ -148,9 +148,9 @@ public sealed class DxWordEditorTests : TestContext
         Assert.Equal("toolbar", toolbar.GetAttribute("role"));
         Assert.Equal("Formatting", toolbar.GetAttribute("aria-label"));
 
-        // The reused formatting tools (bold/italic/underline/heading/lists/clear) are all labeled.
+        // The reused formatting tools (bold/italic/underline/strike/heading/lists/clear) are all labeled.
         IRefreshableElementCollection<IElement> tools = editor.FindAll(".dx-rte-tool");
-        Assert.Equal(7, tools.Count);
+        Assert.Equal(8, tools.Count);
         Assert.All(tools, t => Assert.False(string.IsNullOrEmpty(t.GetAttribute("aria-label"))));
     }
 
@@ -253,6 +253,37 @@ public sealed class DxWordEditorTests : TestContext
         Assert.Contains("words", status);
         Assert.Contains("characters", status);
         Assert.Contains("3 paragraphs", status); // 2 headings + 1 paragraph
+    }
+
+    [Fact]
+    public void Underline_and_strikethrough_survive_the_full_round_trip()
+    {
+        WordDocument original = new(
+        [
+            new WordParagraph(
+            [
+                new WordRun("plain "),
+                new WordRun("under", Underline: true),
+                new WordRun(" "),
+                new WordRun("struck", Strike: true),
+                new WordRun(" "),
+                new WordRun("both", Underline: true, Strike: true),
+            ]),
+        ]);
+
+        // model -> editor HTML -> model, then -> .docx -> model. Both legs must preserve
+        // underline and strikethrough (previously underline was silently dropped on save).
+        WordDocument viaHtml = WordHtml.FromHtml(WordHtml.ToHtml(original));
+        WordDocument viaDocx = DocxReader.Read(DocxWriter.Write(viaHtml));
+
+        foreach (WordDocument doc in new[] { viaHtml, viaDocx })
+        {
+            WordParagraph p = doc.Blocks.OfType<WordParagraph>().Single();
+            Assert.Equal("plain under struck both", Text(p.Runs));
+            Assert.Contains(p.Runs, r => r is { Text: "under", Underline: true, Strike: false });
+            Assert.Contains(p.Runs, r => r is { Text: "struck", Underline: false, Strike: true });
+            Assert.Contains(p.Runs, r => r is { Text: "both", Underline: true, Strike: true });
+        }
     }
 
     private static string Text(IReadOnlyList<WordRun> runs) =>

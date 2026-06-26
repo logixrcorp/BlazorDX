@@ -155,6 +155,8 @@ public static class WordHtml
         {
             bool bold = run.Bold;
             bool italic = run.Italic;
+            bool underline = run.Underline;
+            bool strike = run.Strike;
 
             if (bold)
             {
@@ -166,7 +168,27 @@ public static class WordHtml
                 sb.Append("<em>");
             }
 
+            if (underline)
+            {
+                sb.Append("<u>");
+            }
+
+            if (strike)
+            {
+                sb.Append("<s>");
+            }
+
             AppendEscaped(sb, run.Text ?? string.Empty);
+
+            if (strike)
+            {
+                sb.Append("</s>");
+            }
+
+            if (underline)
+            {
+                sb.Append("</u>");
+            }
 
             if (italic)
             {
@@ -356,6 +378,8 @@ public static class WordHtml
         private readonly List<WordRun> _runs = [];
         private int _bold;
         private int _italic;
+        private int _underline;
+        private int _strike;
 
         // Current block context.
         private BlockKind _kind = BlockKind.Paragraph;
@@ -416,20 +440,23 @@ public static class WordHtml
 
             bool bold = _bold > 0;
             bool italic = _italic > 0;
+            bool underline = _underline > 0;
+            bool strike = _strike > 0;
 
             // Coalesce with the previous run when formatting matches (mirrors the .docx
             // reader, keeping the model compact and the round-trip stable).
             if (_runs.Count > 0)
             {
                 WordRun last = _runs[^1];
-                if (last.Bold == bold && last.Italic == italic)
+                if (last.Bold == bold && last.Italic == italic
+                    && last.Underline == underline && last.Strike == strike)
                 {
                     _runs[^1] = last with { Text = last.Text + text };
                     return;
                 }
             }
 
-            _runs.Add(new WordRun(text, bold, italic));
+            _runs.Add(new WordRun(text, bold, italic, underline, strike));
         }
 
         private void HandleTag(Token tag)
@@ -462,6 +489,36 @@ public static class WordHtml
                     else if (!tag.SelfClose)
                     {
                         _italic++;
+                    }
+
+                    break;
+
+                case "u" or "ins":
+                    if (tag.IsClose)
+                    {
+                        if (_underline > 0)
+                        {
+                            _underline--;
+                        }
+                    }
+                    else if (!tag.SelfClose)
+                    {
+                        _underline++;
+                    }
+
+                    break;
+
+                case "s" or "strike" or "del":
+                    if (tag.IsClose)
+                    {
+                        if (_strike > 0)
+                        {
+                            _strike--;
+                        }
+                    }
+                    else if (!tag.SelfClose)
+                    {
+                        _strike++;
                     }
 
                     break;
@@ -610,6 +667,8 @@ public static class WordHtml
             _runs.Clear();
             _bold = 0;
             _italic = 0;
+            _underline = 0;
+            _strike = 0;
         }
 
         private void FlushParagraph()

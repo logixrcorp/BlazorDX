@@ -62,11 +62,13 @@ public sealed record WordTableCell(IReadOnlyList<WordRun> Runs);
 
 /// <summary>
 /// An inline run of text carrying best-effort character formatting. A run with no
-/// emphasis (<see cref="Bold"/> and <see cref="Italic"/> both <see langword="false"/>)
-/// renders as bare text — the viewer never fakes a semantic element for an unstyled
-/// run.
+/// emphasis (all flags <see langword="false"/>) renders as bare text — the viewer never
+/// fakes a semantic element for an unstyled run.
 /// </summary>
 /// <param name="Text">The run's literal text.</param>
-/// <param name="Bold">Whether the run is bold (<c>&lt;w:b&gt;</c>).</param>
-/// <param name="Italic">Whether the run is italic (<c>&lt;w:i&gt;</c>).</param>
-public sealed record WordRun(string Text, bool Bold = false, bool Italic = false);
+/// <param name="Bold">Whether the run is bold (<c>&lt;w:b&gt;</c> / <c>&lt;strong&gt;</c>).</param>
+/// <param name="Italic">Whether the run is italic (<c>&lt;w:i&gt;</c> / <c>&lt;em&gt;</c>).</param>
+/// <param name="Underline">Whether the run is underlined (<c>&lt;w:u&gt;</c> / <c>&lt;u&gt;</c>).</param>
+/// <param name="Strike">Whether the run is struck through (<c>&lt;w:strike&gt;</c> / <c>&lt;s&gt;</c>).</param>
+public sealed record WordRun(
+    string Text, bool Bold = false, bool Italic = false, bool Underline = false, bool Strike = false);

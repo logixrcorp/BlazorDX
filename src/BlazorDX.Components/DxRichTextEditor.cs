@@ -42,6 +42,7 @@ public sealed class DxRichTextEditor : ComponentBase
         ("bold", "", "B", "Bold"),
         ("italic", "", "I", "Italic"),
         ("underline", "", "U", "Underline"),
+        ("strikeThrough", "", "S", "Strikethrough"),
         ("formatBlock", "<h2>", "H", "Heading"),
         ("insertUnorderedList", "", "•", "Bullet list"),
         ("insertOrderedList", "", "1.", "Numbered list"),
