@@ -98,6 +98,11 @@ public sealed class DxWordViewer : ComponentBase
         int level = Math.Clamp(heading.Level, 1, 6);
         builder.OpenElement(10, HeadingTag(level));
         builder.AddAttribute(11, "class", "dx-word-heading");
+        if (AlignStyle(heading.Alignment) is { } style)
+        {
+            builder.AddAttribute(12, "style", style);
+        }
+
         BuildRuns(builder, heading.Runs);
         builder.CloseElement();
     }
@@ -106,9 +111,22 @@ public sealed class DxWordViewer : ComponentBase
     {
         builder.OpenElement(20, "p");
         builder.AddAttribute(21, "class", "dx-word-para");
+        if (AlignStyle(paragraph.Alignment) is { } style)
+        {
+            builder.AddAttribute(22, "style", style);
+        }
+
         BuildRuns(builder, paragraph.Runs);
         builder.CloseElement();
     }
+
+    private static string? AlignStyle(WordAlignment alignment) => alignment switch
+    {
+        WordAlignment.Center => "text-align:center",
+        WordAlignment.End => "text-align:right",
+        WordAlignment.Justify => "text-align:justify",
+        _ => null,
+    };
 
     private static void BuildList(RenderTreeBuilder builder, WordList list)
     {
@@ -176,32 +194,68 @@ public sealed class DxWordViewer : ComponentBase
         builder.CloseElement(); // table
     }
 
-    // Renders a run sequence. An unstyled run is bare text (no fake wrapper element);
-    // bold wraps in <strong>, italic in <em>, both nest <strong><em>. All text goes
-    // through AddContent so it is HTML-encoded.
+    // Renders a run sequence with its formatting: hyperlink (scheme-guarded), bold, italic,
+    // underline, strike, and color/highlight. All text goes through AddContent so it is
+    // HTML-encoded. Sequence numbers are constant per source position (reused each run).
     private static void BuildRuns(RenderTreeBuilder builder, IReadOnlyList<WordRun> runs)
     {
-        for (int i = 0; i < runs.Count; i++)
+        foreach (WordRun run in runs)
         {
-            WordRun run = runs[i];
+            // A .docx hyperlink URL is untrusted (the file is attacker-controlled) and the
+            // viewer has no sanitizer, so only safe schemes become a clickable link.
+            string? href = SafeHref(run.Href);
+            bool link = href is not null;
+            string? colorStyle = ColorStyle(run);
 
-            if (!run.Bold && !run.Italic)
+            if (link)
             {
-                builder.AddContent(60, run.Text);
-                continue;
+                builder.OpenElement(60, "a");
+                builder.AddAttribute(61, "href", href);
+                builder.AddAttribute(62, "rel", "noopener noreferrer");
             }
 
             if (run.Bold)
             {
-                builder.OpenElement(61, "strong");
+                builder.OpenElement(63, "strong");
             }
 
             if (run.Italic)
             {
-                builder.OpenElement(62, "em");
+                builder.OpenElement(64, "em");
             }
 
-            builder.AddContent(63, run.Text);
+            if (run.Underline)
+            {
+                builder.OpenElement(65, "u");
+            }
+
+            if (run.Strike)
+            {
+                builder.OpenElement(66, "s");
+            }
+
+            if (colorStyle is not null)
+            {
+                builder.OpenElement(67, "span");
+                builder.AddAttribute(68, "style", colorStyle);
+            }
+
+            builder.AddContent(69, run.Text);
+
+            if (colorStyle is not null)
+            {
+                builder.CloseElement();
+            }
+
+            if (run.Strike)
+            {
+                builder.CloseElement();
+            }
+
+            if (run.Underline)
+            {
+                builder.CloseElement();
+            }
 
             if (run.Italic)
             {
@@ -209,10 +263,45 @@ public sealed class DxWordViewer : ComponentBase
             }
 
             if (run.Bold)
+            {
+                builder.CloseElement();
+            }
+
+            if (link)
             {
                 builder.CloseElement();
             }
         }
+    }
+
+    private static string? ColorStyle(WordRun run)
+    {
+        bool color = !string.IsNullOrEmpty(run.Color);
+        bool highlight = !string.IsNullOrEmpty(run.Highlight);
+        if (!color && !highlight)
+        {
+            return null;
+        }
+
+        return (color ? $"color:{run.Color};" : string.Empty)
+            + (highlight ? $"background-color:{run.Highlight};" : string.Empty);
+    }
+
+    // Only http/https/mailto URLs are clickable; anything else is dropped (rendered as
+    // plain formatted text by the caller, never a hostile href).
+    private static string? SafeHref(string? href)
+    {
+        if (string.IsNullOrWhiteSpace(href))
+        {
+            return null;
+        }
+
+        string trimmed = href.Trim();
+        return trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase)
+                ? trimmed
+                : null;
     }
 
     private static string HeadingTag(int level) => level switch

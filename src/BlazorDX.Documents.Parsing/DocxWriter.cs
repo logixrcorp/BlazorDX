@@ -77,12 +77,52 @@ public static class DocxWriter
         "<Relationship Id=\"rId1\" Type=\"" + RelationshipsNs + "/officeDocument\" Target=\"word/document.xml\"/>" +
         "</Relationships>";
 
-    private const string DocumentRels =
-        XmlDeclaration +
-        "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">" +
+    // The fixed relationships every document carries. Hyperlink relationships (rId3+) are
+    // appended per-document by BuildDocumentRels.
+    private const string BaseDocumentRels =
         "<Relationship Id=\"rId1\" Type=\"" + RelationshipsNs + "/styles\" Target=\"styles.xml\"/>" +
-        "<Relationship Id=\"rId2\" Type=\"" + RelationshipsNs + "/numbering\" Target=\"numbering.xml\"/>" +
-        "</Relationships>";
+        "<Relationship Id=\"rId2\" Type=\"" + RelationshipsNs + "/numbering\" Target=\"numbering.xml\"/>";
+
+    // Collects external hyperlink relationships while the body is written, assigning each
+    // distinct URL a stable r:id (rId3, rId4, …) the body references via <w:hyperlink>.
+    private sealed class LinkRels
+    {
+        private readonly Dictionary<string, string> _idByUrl = new(StringComparer.Ordinal);
+        private readonly List<(string Id, string Target)> _all = [];
+        private int _next = 3; // rId1 = styles, rId2 = numbering
+
+        public string IdFor(string url)
+        {
+            if (!_idByUrl.TryGetValue(url, out string? id))
+            {
+                id = "rId" + _next++.ToString(CultureInfo.InvariantCulture);
+                _idByUrl[url] = id;
+                _all.Add((id, url));
+            }
+
+            return id;
+        }
+
+        public IReadOnlyList<(string Id, string Target)> All => _all;
+    }
+
+    private static string BuildDocumentRels(LinkRels links)
+    {
+        StringBuilder sb = new();
+        sb.Append(XmlDeclaration);
+        sb.Append("<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">");
+        sb.Append(BaseDocumentRels);
+        foreach ((string id, string target) in links.All)
+        {
+            sb.Append("<Relationship Id=\"").Append(id)
+              .Append("\" Type=\"").Append(RelationshipsNs).Append("/hyperlink\" Target=\"");
+            AppendEscaped(sb, target);
+            sb.Append("\" TargetMode=\"External\"/>");
+        }
+
+        sb.Append("</Relationships>");
+        return sb.ToString();
+    }
 
     // Heading1..6 + Title paragraph styles. Each declares <w:name> ("heading N" /
     // "Title") and <w:outlineLvl> so the reader's styles.xml-based resolution agrees
@@ -115,14 +155,15 @@ public static class DocxWriter
     {
         ArgumentNullException.ThrowIfNull(document);
 
-        string documentXml = BuildDocument(document);
+        LinkRels links = new();
+        string documentXml = BuildDocument(document, links);
 
         using MemoryStream stream = new();
         using (ZipArchive zip = new(stream, ZipArchiveMode.Create, leaveOpen: true))
         {
             AddEntry(zip, "[Content_Types].xml", ContentTypes);
             AddEntry(zip, "_rels/.rels", RootRels);
-            AddEntry(zip, "word/_rels/document.xml.rels", DocumentRels);
+            AddEntry(zip, "word/_rels/document.xml.rels", BuildDocumentRels(links));
             AddEntry(zip, "word/document.xml", documentXml);
             AddEntry(zip, "word/styles.xml", Styles);
             AddEntry(zip, "word/numbering.xml", Numbering);
@@ -131,27 +172,29 @@ public static class DocxWriter
         return stream.ToArray();
     }
 
-    private static string BuildDocument(WordDocument document)
+    private static string BuildDocument(WordDocument document, LinkRels links)
     {
         StringBuilder sb = new();
         sb.Append(XmlDeclaration);
-        sb.Append("<w:document xmlns:w=\"").Append(WordprocessingMl).Append("\"><w:body>");
+        // xmlns:r is needed for the r:id attribute on <w:hyperlink>.
+        sb.Append("<w:document xmlns:w=\"").Append(WordprocessingMl)
+          .Append("\" xmlns:r=\"").Append(RelationshipsNs).Append("\"><w:body>");
 
         foreach (WordBlock block in document.Blocks)
         {
             switch (block)
             {
                 case WordHeading heading:
-                    AppendHeading(sb, heading);
+                    AppendHeading(sb, heading, links);
                     break;
                 case WordParagraph paragraph:
-                    AppendParagraph(sb, paragraph.Runs, pPr: null);
+                    AppendParagraph(sb, paragraph.Runs, pPr: null, links, paragraph.Alignment);
                     break;
                 case WordList list:
-                    AppendList(sb, list);
+                    AppendList(sb, list, links);
                     break;
                 case WordTable table:
-                    AppendTable(sb, table);
+                    AppendTable(sb, table, links);
                     break;
             }
         }
@@ -160,16 +203,16 @@ public static class DocxWriter
         return sb.ToString();
     }
 
-    private static void AppendHeading(StringBuilder sb, WordHeading heading)
+    private static void AppendHeading(StringBuilder sb, WordHeading heading, LinkRels links)
     {
         // Clamp to the styles we define (1-6). The reader maps "HeadingN" directly.
         int level = Math.Clamp(heading.Level, 1, 6);
         string pPr = "<w:pStyle w:val=\"Heading" +
             level.ToString(CultureInfo.InvariantCulture) + "\"/>";
-        AppendParagraph(sb, heading.Runs, pPr);
+        AppendParagraph(sb, heading.Runs, pPr, links, heading.Alignment);
     }
 
-    private static void AppendList(StringBuilder sb, WordList list)
+    private static void AppendList(StringBuilder sb, WordList list, LinkRels links)
     {
         int numId = list.Ordered ? OrderedNumId : BulletNumId;
         string pPr =
@@ -178,22 +221,57 @@ public static class DocxWriter
 
         foreach (IReadOnlyList<WordRun> item in list.Items)
         {
-            AppendParagraph(sb, item, pPr);
+            AppendParagraph(sb, item, pPr, links);
         }
     }
 
-    // Emits one <w:p>: optional <w:pPr> (style or numbering) followed by its runs.
-    private static void AppendParagraph(StringBuilder sb, IReadOnlyList<WordRun> runs, string? pPr)
+    // OOXML colors are 6-hex-digit RRGGBB with no leading '#'.
+    private static string HexValue(string color) => color.TrimStart('#').ToUpperInvariant();
+
+    private static string? JustificationElement(WordAlignment alignment) => alignment switch
+    {
+        WordAlignment.Center => "<w:jc w:val=\"center\"/>",
+        WordAlignment.End => "<w:jc w:val=\"end\"/>",
+        WordAlignment.Justify => "<w:jc w:val=\"both\"/>",
+        _ => null,
+    };
+
+    // Emits one <w:p>: optional <w:pPr> (style/numbering + justification) then its runs. A
+    // run carrying an Href is wrapped in <w:hyperlink r:id="…"> referencing an external rel.
+    private static void AppendParagraph(
+        StringBuilder sb, IReadOnlyList<WordRun> runs, string? pPr, LinkRels links,
+        WordAlignment alignment = WordAlignment.Start)
     {
         sb.Append("<w:p>");
-        if (pPr is not null)
+        string? jc = JustificationElement(alignment);
+        if (pPr is not null || jc is not null)
         {
-            sb.Append("<w:pPr>").Append(pPr).Append("</w:pPr>");
+            sb.Append("<w:pPr>");
+            if (pPr is not null)
+            {
+                sb.Append(pPr);
+            }
+
+            if (jc is not null)
+            {
+                sb.Append(jc);
+            }
+
+            sb.Append("</w:pPr>");
         }
 
         foreach (WordRun run in runs)
         {
-            AppendRun(sb, run);
+            if (!string.IsNullOrEmpty(run.Href))
+            {
+                sb.Append("<w:hyperlink r:id=\"").Append(links.IdFor(run.Href)).Append("\">");
+                AppendRun(sb, run);
+                sb.Append("</w:hyperlink>");
+            }
+            else
+            {
+                AppendRun(sb, run);
+            }
         }
 
         sb.Append("</w:p>");
@@ -202,7 +280,9 @@ public static class DocxWriter
     private static void AppendRun(StringBuilder sb, WordRun run)
     {
         sb.Append("<w:r>");
-        if (run.Bold || run.Italic)
+        bool hasColor = !string.IsNullOrEmpty(run.Color);
+        bool hasHighlight = !string.IsNullOrEmpty(run.Highlight);
+        if (run.Bold || run.Italic || run.Underline || run.Strike || hasColor || hasHighlight)
         {
             sb.Append("<w:rPr>");
             if (run.Bold)
@@ -215,6 +295,28 @@ public static class DocxWriter
                 sb.Append("<w:i/>");
             }
 
+            if (run.Underline)
+            {
+                sb.Append("<w:u w:val=\"single\"/>");
+            }
+
+            if (run.Strike)
+            {
+                sb.Append("<w:strike/>");
+            }
+
+            if (hasColor)
+            {
+                sb.Append("<w:color w:val=\"").Append(HexValue(run.Color!)).Append("\"/>");
+            }
+
+            if (hasHighlight)
+            {
+                // Arbitrary background via shading fill (w:highlight only allows named colors).
+                sb.Append("<w:shd w:val=\"clear\" w:color=\"auto\" w:fill=\"")
+                  .Append(HexValue(run.Highlight!)).Append("\"/>");
+            }
+
             sb.Append("</w:rPr>");
         }
 
@@ -225,7 +327,7 @@ public static class DocxWriter
         sb.Append("</w:t></w:r>");
     }
 
-    private static void AppendTable(StringBuilder sb, WordTable table)
+    private static void AppendTable(StringBuilder sb, WordTable table, LinkRels links)
     {
         sb.Append("<w:tbl>");
         foreach (WordTableRow row in table.Rows)
@@ -235,7 +337,7 @@ public static class DocxWriter
             {
                 sb.Append("<w:tc>");
                 // A cell is a paragraph of runs (the reader gathers paragraph runs).
-                AppendParagraph(sb, cell.Runs, pPr: null);
+                AppendParagraph(sb, cell.Runs, pPr: null, links);
                 sb.Append("</w:tc>");
             }
 

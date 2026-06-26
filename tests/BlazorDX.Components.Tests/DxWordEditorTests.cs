@@ -24,6 +24,8 @@ public sealed class DxWordEditorTests : TestContext
     {
         // No DOM under bUnit: the no-op bridge returns "" for GetHtml/SetHtml.
         Services.AddScoped<IRichTextInterop, NullRichTextInterop>();
+        // The editor's "Download .docx" action resolves the download bridge; null off-browser.
+        Services.AddScoped<IGridDomInterop, NullGridDomInterop>();
     }
 
     private static WordDocument SampleDocument() =>
@@ -146,9 +148,9 @@ public sealed class DxWordEditorTests : TestContext
         Assert.Equal("toolbar", toolbar.GetAttribute("role"));
         Assert.Equal("Formatting", toolbar.GetAttribute("aria-label"));
 
-        // The reused formatting tools (bold/italic/underline/heading/lists/clear) are all labeled.
+        // The reused formatting tools (B/I/U/S, heading, lists, align ×4, link, clear) are labeled.
         IRefreshableElementCollection<IElement> tools = editor.FindAll(".dx-rte-tool");
-        Assert.Equal(7, tools.Count);
+        Assert.Equal(13, tools.Count);
         Assert.All(tools, t => Assert.False(string.IsNullOrEmpty(t.GetAttribute("aria-label"))));
     }
 
@@ -161,7 +163,7 @@ public sealed class DxWordEditorTests : TestContext
         IElement status = editor.Find(".dx-word-editor-status");
         Assert.Equal("status", status.GetAttribute("role"));
         Assert.Equal("polite", status.GetAttribute("aria-live"));
-        Assert.Equal("All changes saved", status.TextContent);
+        Assert.StartsWith("All changes saved", status.TextContent); // followed by the doc stats
     }
 
     [Fact]
@@ -214,6 +216,214 @@ public sealed class DxWordEditorTests : TestContext
         // MarkSaved clears the indicator.
         editor.InvokeAsync(editor.Instance.MarkSaved);
         Assert.False(editor.Instance.IsDirty);
+    }
+
+    [Fact]
+    public void Toolbar_shows_a_download_button_by_default()
+    {
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, SampleDocument()));
+
+        Assert.Single(editor.FindAll(".dx-word-toolbar")); // the document toolbar (rte has its own)
+        Assert.Single(editor.FindAll("[aria-label='Download the document as a .docx file']"));
+    }
+
+    [Fact]
+    public void Download_button_serializes_the_document_without_error()
+    {
+        // NullGridDomInterop makes the file save a no-op; this asserts the click path
+        // (DocxWriter.Write -> bridge) doesn't throw.
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, SampleDocument()));
+
+        editor.Find("[aria-label='Download the document as a .docx file']").Click();
+    }
+
+    [Fact]
+    public void Status_line_reports_word_character_and_paragraph_counts()
+    {
+        // SampleDocument: 2 headings + 1 paragraph = 3 "paragraphs"; the paragraph reads
+        // "This quarter was strong and steady." = 6 words. Characters/words also include the
+        // headings, lists, and table cells.
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, SampleDocument()));
+
+        string status = editor.Find(".dx-word-editor-status").TextContent;
+
+        Assert.Contains("words", status);
+        Assert.Contains("characters", status);
+        Assert.Contains("3 paragraphs", status); // 2 headings + 1 paragraph
+    }
+
+    [Fact]
+    public void Underline_and_strikethrough_survive_the_full_round_trip()
+    {
+        WordDocument original = new(
+        [
+            new WordParagraph(
+            [
+                new WordRun("plain "),
+                new WordRun("under", Underline: true),
+                new WordRun(" "),
+                new WordRun("struck", Strike: true),
+                new WordRun(" "),
+                new WordRun("both", Underline: true, Strike: true),
+            ]),
+        ]);
+
+        // model -> editor HTML -> model, then -> .docx -> model. Both legs must preserve
+        // underline and strikethrough (previously underline was silently dropped on save).
+        WordDocument viaHtml = WordHtml.FromHtml(WordHtml.ToHtml(original));
+        WordDocument viaDocx = DocxReader.Read(DocxWriter.Write(viaHtml));
+
+        foreach (WordDocument doc in new[] { viaHtml, viaDocx })
+        {
+            WordParagraph p = doc.Blocks.OfType<WordParagraph>().Single();
+            Assert.Equal("plain under struck both", Text(p.Runs));
+            Assert.Contains(p.Runs, r => r is { Text: "under", Underline: true, Strike: false });
+            Assert.Contains(p.Runs, r => r is { Text: "struck", Underline: false, Strike: true });
+            Assert.Contains(p.Runs, r => r is { Text: "both", Underline: true, Strike: true });
+        }
+    }
+
+    [Fact]
+    public void Hyperlinks_survive_the_full_round_trip_and_unsafe_urls_are_stripped()
+    {
+        WordDocument original = new(
+        [
+            new WordParagraph(
+            [
+                new WordRun("Visit "),
+                new WordRun("our site", Href: "https://example.com/docs"),
+                new WordRun(" today."),
+            ]),
+        ]);
+
+        // model -> HTML -> model, then -> .docx -> model. The link (via a w:hyperlink
+        // relationship in the .docx) must survive both legs.
+        WordDocument viaHtml = WordHtml.FromHtml(WordHtml.ToHtml(original));
+        WordDocument viaDocx = DocxReader.Read(DocxWriter.Write(viaHtml));
+
+        foreach (WordDocument doc in new[] { viaHtml, viaDocx })
+        {
+            WordParagraph p = doc.Blocks.OfType<WordParagraph>().Single();
+            Assert.Equal("Visit our site today.", Text(p.Runs));
+            Assert.Contains(p.Runs, r => r is { Text: "our site", Href: "https://example.com/docs" });
+        }
+    }
+
+    [Fact]
+    public void Unsafe_hyperlink_urls_are_rejected_on_parse()
+    {
+        // A javascript: URL is dropped: the link text stays, but it never becomes a
+        // clickable hostile URL.
+        WordDocument doc = WordHtml.FromHtml("<p><a href=\"javascript:alert(1)\">click</a></p>");
+
+        WordParagraph p = doc.Blocks.OfType<WordParagraph>().Single();
+        Assert.Equal("click", Text(p.Runs));
+        Assert.All(p.Runs, r => Assert.Null(r.Href));
+    }
+
+    [Fact]
+    public void Find_bar_toggles_and_counts_matches()
+    {
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, SampleDocument()));
+
+        Assert.Empty(editor.FindAll(".dx-word-findbar"));
+        editor.Find("[aria-label='Find and replace']").Click();
+        Assert.Single(editor.FindAll(".dx-word-findbar"));
+
+        editor.Find(".dx-word-find-input").Input("Overview"); // the "Overview" heading
+        Assert.Contains("1 match", editor.Find(".dx-word-find-count").TextContent);
+    }
+
+    [Fact]
+    public void Replace_all_rewrites_the_document_and_raises_change()
+    {
+        WordDocument? changed = null;
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, SampleDocument())
+            .Add(e => e.DocumentChanged, EventCallback.Factory.Create<WordDocument>(this, d => changed = d)));
+
+        editor.Find("[aria-label='Find and replace']").Click();
+        editor.Find(".dx-word-find-input").Input("quarter");
+        editor.Find(".dx-word-replace-input").Input("period");
+        editor.FindAll(".dx-word-find-btn").Single(b => b.TextContent.Contains("Replace all")).Click();
+
+        Assert.NotNull(changed);
+        string text = string.Concat(
+            changed!.Blocks.OfType<WordParagraph>().SelectMany(b => b.Runs).Select(r => r.Text));
+        Assert.Contains("period", text);
+        Assert.DoesNotContain("quarter", text);
+        Assert.True(editor.Instance.IsDirty);
+    }
+
+    [Fact]
+    public void Match_case_makes_the_search_case_sensitive()
+    {
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, SampleDocument()));
+        editor.Find("[aria-label='Find and replace']").Click();
+
+        editor.Find(".dx-word-find-input").Input("overview");           // lower-case
+        Assert.Contains("1 match", editor.Find(".dx-word-find-count").TextContent);
+
+        editor.Find(".dx-word-find-case input").Change(true);           // now case-sensitive
+        Assert.Contains("0 matches", editor.Find(".dx-word-find-count").TextContent);
+    }
+
+    [Fact]
+    public void Paragraph_alignment_survives_the_full_round_trip()
+    {
+        WordDocument original = new(
+        [
+            new WordParagraph([new WordRun("centered")], WordAlignment.Center),
+            new WordParagraph([new WordRun("right")], WordAlignment.End),
+            new WordHeading(2, [new WordRun("just head")], WordAlignment.Justify),
+            new WordParagraph([new WordRun("default")]),
+        ]);
+
+        WordDocument viaHtml = WordHtml.FromHtml(WordHtml.ToHtml(original));
+        WordDocument viaDocx = DocxReader.Read(DocxWriter.Write(viaHtml));
+
+        foreach (WordDocument doc in new[] { viaHtml, viaDocx })
+        {
+            WordParagraph[] paras = doc.Blocks.OfType<WordParagraph>().ToArray();
+            Assert.Equal(WordAlignment.Center, paras.Single(p => Text(p.Runs) == "centered").Alignment);
+            Assert.Equal(WordAlignment.End, paras.Single(p => Text(p.Runs) == "right").Alignment);
+            Assert.Equal(WordAlignment.Start, paras.Single(p => Text(p.Runs) == "default").Alignment);
+            Assert.Equal(WordAlignment.Justify, doc.Blocks.OfType<WordHeading>().Single().Alignment);
+        }
+    }
+
+    [Fact]
+    public void Text_color_and_highlight_survive_the_full_round_trip()
+    {
+        WordDocument original = new(
+        [
+            new WordParagraph(
+            [
+                new WordRun("plain "),
+                new WordRun("red", Color: "#ff0000"),
+                new WordRun(" "),
+                new WordRun("hl", Highlight: "#ffff00"),
+                new WordRun(" "),
+                new WordRun("both", Color: "#0000ff", Highlight: "#00ff00"),
+            ]),
+        ]);
+
+        WordDocument viaHtml = WordHtml.FromHtml(WordHtml.ToHtml(original));
+        WordDocument viaDocx = DocxReader.Read(DocxWriter.Write(viaHtml));
+
+        foreach (WordDocument doc in new[] { viaHtml, viaDocx })
+        {
+            WordParagraph p = doc.Blocks.OfType<WordParagraph>().Single();
+            Assert.Equal("plain red hl both", Text(p.Runs));
+            Assert.Contains(p.Runs, r => r is { Text: "red", Color: "#ff0000", Highlight: null });
+            Assert.Contains(p.Runs, r => r is { Text: "hl", Color: null, Highlight: "#ffff00" });
+            Assert.Contains(p.Runs, r => r is { Text: "both", Color: "#0000ff", Highlight: "#00ff00" });
+        }
     }
 
     private static string Text(IReadOnlyList<WordRun> runs) =>

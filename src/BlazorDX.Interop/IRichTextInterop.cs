@@ -13,6 +13,12 @@ public interface IRichTextInterop
     /// <summary>Applies a formatting command (e.g. <c>bold</c>, <c>insertUnorderedList</c>).</summary>
     ValueTask ExecAsync(string command, string value);
 
+    /// <summary>
+    /// Prompts for a URL and links the current selection. Only http/https/mailto URLs are
+    /// applied; unsafe schemes are rejected in the browser bridge.
+    /// </summary>
+    ValueTask CreateLinkAsync();
+
     /// <summary>Returns the current inner HTML of the editor element.</summary>
     ValueTask<string> GetHtmlAsync(string elementId);
 

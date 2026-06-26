@@ -7,6 +7,32 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 > **Beta.** BlazorDX is pre-1.0 and built with substantial AI assistance. Breaking
 > changes can land in any minor release until 1.0.
 
+## [0.3.2] — 2026-06-26
+
+### Added — Word editor expansion
+
+- **`DxWordEditor`:** built-in **Download .docx** button, a live **document stats** line
+  (word / character / paragraph count), and a model-based **find & replace** bar (match
+  count, case toggle, Replace / Replace all).
+- **Formatting that now round-trips** to `.docx`: **underline**, **strikethrough**,
+  **hyperlinks** (with http/https/mailto URL sanitization and a `.docx` relationship part),
+  **paragraph alignment** (`<w:jc>`), and **text color + highlight** (`<w:color>`/`<w:shd>`).
+  The rich-text toolbar gains Strikethrough, Insert link, and Align left/center/right/justify.
+
+### Fixed
+
+- **`DxWordViewer` rendered only bold/italic** — it now renders underline, strike,
+  hyperlinks, and color/highlight too.
+- **Security:** the viewer **scheme-guards `.docx` hyperlink hrefs** (a `.docx` is
+  untrusted and the viewer has no sanitizer, so a `javascript:` link from a malicious file
+  is dropped rather than rendered clickable).
+
+### Known gaps (tracked)
+
+- In-editor color **apply** UI (round-trip done; the toolbar affordance needs selection
+  save/restore). Nested lists, table-editing UI, inline images, undo/redo, and a
+  model-driven editing core remain.
+
 ## [0.3.1] — 2026-06-26
 
 ### Fixed

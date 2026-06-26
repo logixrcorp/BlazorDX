@@ -46,7 +46,7 @@ namespace BlazorDX.Documents;
 /// document rather than an error.
 /// </para>
 /// </remarks>
-public static class WordHtml
+public static partial class WordHtml
 {
     // ---------------------------------------------------------------------
     // ToHtml: model -> semantic HTML
@@ -90,17 +90,26 @@ public static class WordHtml
     {
         int level = Math.Clamp(heading.Level, 1, 6);
         string tag = "h" + level.ToString(CultureInfo.InvariantCulture);
-        sb.Append('<').Append(tag).Append('>');
+        sb.Append('<').Append(tag).Append(AlignStyle(heading.Alignment)).Append('>');
         AppendRuns(sb, heading.Runs);
         sb.Append("</").Append(tag).Append('>');
     }
 
     private static void AppendParagraph(StringBuilder sb, WordParagraph paragraph)
     {
-        sb.Append("<p>");
+        sb.Append("<p").Append(AlignStyle(paragraph.Alignment)).Append('>');
         AppendRuns(sb, paragraph.Runs);
         sb.Append("</p>");
     }
+
+    // A text-align inline style for a non-default alignment, or "" for Start.
+    private static string AlignStyle(WordAlignment alignment) => alignment switch
+    {
+        WordAlignment.Center => " style=\"text-align:center\"",
+        WordAlignment.End => " style=\"text-align:right\"",
+        WordAlignment.Justify => " style=\"text-align:justify\"",
+        _ => string.Empty,
+    };
 
     private static void AppendList(StringBuilder sb, WordList list)
     {
@@ -155,6 +164,16 @@ public static class WordHtml
         {
             bool bold = run.Bold;
             bool italic = run.Italic;
+            bool underline = run.Underline;
+            bool strike = run.Strike;
+            bool link = !string.IsNullOrEmpty(run.Href);
+
+            if (link)
+            {
+                sb.Append("<a href=\"");
+                AppendEscaped(sb, run.Href!);
+                sb.Append("\">");
+            }
 
             if (bold)
             {
@@ -166,7 +185,49 @@ public static class WordHtml
                 sb.Append("<em>");
             }
 
+            if (underline)
+            {
+                sb.Append("<u>");
+            }
+
+            if (strike)
+            {
+                sb.Append("<s>");
+            }
+
+            bool colored = !string.IsNullOrEmpty(run.Color) || !string.IsNullOrEmpty(run.Highlight);
+            if (colored)
+            {
+                sb.Append("<span style=\"");
+                if (!string.IsNullOrEmpty(run.Color))
+                {
+                    sb.Append("color:").Append(run.Color).Append(';');
+                }
+
+                if (!string.IsNullOrEmpty(run.Highlight))
+                {
+                    sb.Append("background-color:").Append(run.Highlight).Append(';');
+                }
+
+                sb.Append("\">");
+            }
+
             AppendEscaped(sb, run.Text ?? string.Empty);
+
+            if (colored)
+            {
+                sb.Append("</span>");
+            }
+
+            if (strike)
+            {
+                sb.Append("</s>");
+            }
+
+            if (underline)
+            {
+                sb.Append("</u>");
+            }
 
             if (italic)
             {
@@ -176,6 +237,11 @@ public static class WordHtml
             if (bold)
             {
                 sb.Append("</strong>");
+            }
+
+            if (link)
+            {
+                sb.Append("</a>");
             }
         }
     }
@@ -286,7 +352,9 @@ public static class WordHtml
                     continue;
                 }
 
-                tokens.Add(new Token(true, name, isClose, selfClose, string.Empty));
+                // Keep the raw attribute text on opening tags so the parser can read href
+                // off an <a>. Closing tags carry none. (Text is otherwise unused for tags.)
+                tokens.Add(new Token(true, name, isClose, selfClose, isClose ? string.Empty : raw));
             }
             else
             {
@@ -356,6 +424,12 @@ public static class WordHtml
         private readonly List<WordRun> _runs = [];
         private int _bold;
         private int _italic;
+        private int _underline;
+        private int _strike;
+        private string? _href;
+        private string? _color;
+        private string? _highlight;
+        private WordAlignment _alignment;
 
         // Current block context.
         private BlockKind _kind = BlockKind.Paragraph;
@@ -416,20 +490,24 @@ public static class WordHtml
 
             bool bold = _bold > 0;
             bool italic = _italic > 0;
+            bool underline = _underline > 0;
+            bool strike = _strike > 0;
 
             // Coalesce with the previous run when formatting matches (mirrors the .docx
             // reader, keeping the model compact and the round-trip stable).
             if (_runs.Count > 0)
             {
                 WordRun last = _runs[^1];
-                if (last.Bold == bold && last.Italic == italic)
+                if (last.Bold == bold && last.Italic == italic
+                    && last.Underline == underline && last.Strike == strike
+                    && last.Href == _href && last.Color == _color && last.Highlight == _highlight)
                 {
                     _runs[^1] = last with { Text = last.Text + text };
                     return;
                 }
             }
 
-            _runs.Add(new WordRun(text, bold, italic));
+            _runs.Add(new WordRun(text, bold, italic, underline, strike, _href, _color, _highlight));
         }
 
         private void HandleTag(Token tag)
@@ -466,6 +544,67 @@ public static class WordHtml
 
                     break;
 
+                case "u" or "ins":
+                    if (tag.IsClose)
+                    {
+                        if (_underline > 0)
+                        {
+                            _underline--;
+                        }
+                    }
+                    else if (!tag.SelfClose)
+                    {
+                        _underline++;
+                    }
+
+                    break;
+
+                case "s" or "strike" or "del":
+                    if (tag.IsClose)
+                    {
+                        if (_strike > 0)
+                        {
+                            _strike--;
+                        }
+                    }
+                    else if (!tag.SelfClose)
+                    {
+                        _strike++;
+                    }
+
+                    break;
+
+                case "a":
+                    if (tag.IsClose)
+                    {
+                        _href = null;
+                    }
+                    else if (!tag.SelfClose)
+                    {
+                        // Only safe schemes survive; an unsafe/missing href leaves the
+                        // text un-linked rather than dropping it.
+                        _href = SanitizeUrl(ExtractHref(tag.Text));
+                    }
+
+                    break;
+
+                case "span" or "font":
+                    // Color via CSS (color / background-color) or a legacy <font color>.
+                    // Single-level: a closing span/font clears the colors (execCommand's
+                    // output isn't deeply nested). text-align on a styled span is ignored.
+                    if (tag.IsClose)
+                    {
+                        _color = null;
+                        _highlight = null;
+                    }
+                    else if (!tag.SelfClose)
+                    {
+                        _color = ParseCssColor(tag.Text, "color");
+                        _highlight = ParseCssColor(tag.Text, "background-color");
+                    }
+
+                    break;
+
                 case "h1" or "h2" or "h3" or "h4" or "h5" or "h6":
                     if (tag.IsClose)
                     {
@@ -475,6 +614,7 @@ public static class WordHtml
                     {
                         StartBlock(BlockKind.Heading);
                         _headingLevel = tag.Name[1] - '0';
+                        _alignment = ParseAlignment(tag.Text);
                     }
 
                     break;
@@ -487,6 +627,7 @@ public static class WordHtml
                     else
                     {
                         StartBlock(BlockKind.Paragraph);
+                        _alignment = ParseAlignment(tag.Text);
                     }
 
                     break;
@@ -498,6 +639,7 @@ public static class WordHtml
                     if (!tag.IsClose && _listItems is null && _tableRows is null)
                     {
                         StartBlock(BlockKind.Paragraph);
+                        _alignment = ParseAlignment(tag.Text);
                     }
 
                     break;
@@ -610,7 +752,14 @@ public static class WordHtml
             _runs.Clear();
             _bold = 0;
             _italic = 0;
+            _underline = 0;
+            _strike = 0;
+            _href = null;
+            _color = null;
+            _highlight = null;
+            _alignment = WordAlignment.Start;
         }
+
 
         private void FlushParagraph()
         {
@@ -623,7 +772,7 @@ public static class WordHtml
 
             if (_kind == BlockKind.Heading)
             {
-                _blocks.Add(new WordHeading(Math.Clamp(_headingLevel, 1, 6), Snapshot()));
+                _blocks.Add(new WordHeading(Math.Clamp(_headingLevel, 1, 6), Snapshot(), _alignment));
                 _kind = BlockKind.Paragraph;
                 ResetRuns();
                 return;
@@ -638,7 +787,7 @@ public static class WordHtml
 
             if (_runs.Count > 0)
             {
-                _blocks.Add(new WordParagraph(Snapshot()));
+                _blocks.Add(new WordParagraph(Snapshot(), _alignment));
             }
 
             ResetRuns();

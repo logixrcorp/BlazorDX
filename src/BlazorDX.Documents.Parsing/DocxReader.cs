@@ -47,6 +47,11 @@ public static class DocxReader
     private const string WordprocessingMl =
         "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 
+    // The relationships namespace — the r:id on <w:hyperlink> lives here, and the rels
+    // part lists each Relationship's package-relationships namespace.
+    private const string RelationshipsNs =
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+
     // Defensive cap on a single decompressed part. A .docx is attacker-controlled
     // (uploaded by an untrusted user), so a maliciously crafted "zip bomb" entry —
     // tiny compressed, enormous when inflated — must fail cleanly rather than exhaust
@@ -109,6 +114,8 @@ public static class DocxReader
         // styleId -> heading level (1-6), resolved from word/styles.xml. Lets us map
         // non-standard heading style ids (e.g. "Ttulo1") via name/outlineLvl.
         IReadOnlyDictionary<string, int> headingStyles = ReadHeadingStyles(zip);
+        // rId -> external target, so <w:hyperlink r:id> runs can carry their URL.
+        IReadOnlyDictionary<string, string> linkRels = ReadHyperlinkRels(zip);
 
         ZipArchiveEntry? document = zip.GetEntry("word/document.xml");
         if (document is null)
@@ -144,7 +151,7 @@ public static class DocxReader
 
             if (reader.LocalName == "p")
             {
-                ParagraphContent para = ReadParagraph(reader, headingStyles);
+                ParagraphContent para = ReadParagraph(reader, headingStyles, linkRels);
 
                 if (para.ListKind is { } kind)
                 {
@@ -164,17 +171,17 @@ public static class DocxReader
 
                 if (para.HeadingLevel is { } level)
                 {
-                    blocks.Add(new WordHeading(level, para.Runs));
+                    blocks.Add(new WordHeading(level, para.Runs, para.Alignment));
                 }
                 else
                 {
-                    blocks.Add(new WordParagraph(para.Runs));
+                    blocks.Add(new WordParagraph(para.Runs, para.Alignment));
                 }
             }
             else if (reader.LocalName == "tbl")
             {
                 FlushList();
-                blocks.Add(ReadTable(reader));
+                blocks.Add(ReadTable(reader, linkRels));
             }
         }
 
@@ -187,13 +194,16 @@ public static class DocxReader
     private sealed record ParagraphContent(
         IReadOnlyList<WordRun> Runs,
         int? HeadingLevel,
-        ListKind? ListKind);
+        ListKind? ListKind,
+        WordAlignment Alignment = WordAlignment.Start);
 
     // Reads one <w:p>: its paragraph properties (<w:pPr>: style, numbering) then its
     // runs. The reader is positioned on the <w:p> start element; on return it sits on
     // the matching </w:p> end element.
     private static ParagraphContent ReadParagraph(
-        XmlReader reader, IReadOnlyDictionary<string, int> headingStyles)
+        XmlReader reader,
+        IReadOnlyDictionary<string, int> headingStyles,
+        IReadOnlyDictionary<string, string> linkRels)
     {
         if (reader.IsEmptyElement)
         {
@@ -204,6 +214,7 @@ public static class DocxReader
         List<WordRun> runs = [];
         int? headingLevel = null;
         ListKind? listKind = null;
+        WordAlignment alignment = WordAlignment.Start;
 
         while (reader.Read())
         {
@@ -222,35 +233,47 @@ public static class DocxReader
             switch (reader.LocalName)
             {
                 case "pPr":
-                    (headingLevel, listKind) = ReadParagraphProperties(reader, headingStyles);
+                    (headingLevel, listKind, alignment) = ReadParagraphProperties(reader, headingStyles);
                     break;
                 case "r":
                     AppendRun(reader, runs);
                     break;
                 case "hyperlink":
-                    // A hyperlink wraps runs; flatten to its text (URL is not surfaced in v1).
+                    // Capture r:id BEFORE descending into the runs, then tag the runs the
+                    // hyperlink contained with their resolved external URL.
+                    string? rid = reader.GetAttribute("id", RelationshipsNs);
+                    int from = runs.Count;
                     ReadRunsWithin(reader, "hyperlink", runs);
+                    if (rid is not null && linkRels.TryGetValue(rid, out string? url))
+                    {
+                        for (int k = from; k < runs.Count; k++)
+                        {
+                            runs[k] = runs[k] with { Href = url };
+                        }
+                    }
+
                     break;
             }
         }
 
-        return new ParagraphContent(CoalesceRuns(runs), headingLevel, listKind);
+        return new ParagraphContent(CoalesceRuns(runs), headingLevel, listKind, alignment);
     }
 
-    // Reads <w:pPr>: resolves a heading level from <w:pStyle w:val="..."> and detects
-    // a list item from <w:numPr>. Returns (headingLevel?, listKind?).
-    private static (int? HeadingLevel, ListKind? ListKind) ReadParagraphProperties(
+    // Reads <w:pPr>: heading level (<w:pStyle>), list item (<w:numPr>), and alignment
+    // (<w:jc>). Returns (headingLevel?, listKind?, alignment).
+    private static (int? HeadingLevel, ListKind? ListKind, WordAlignment Alignment) ReadParagraphProperties(
         XmlReader reader, IReadOnlyDictionary<string, int> headingStyles)
     {
         if (reader.IsEmptyElement)
         {
-            return (null, null);
+            return (null, null, WordAlignment.Start);
         }
 
         int pprDepth = reader.Depth;
         int? headingLevel = null;
         bool isList = false;
         int numId = -1;
+        WordAlignment alignment = WordAlignment.Start;
 
         while (reader.Read())
         {
@@ -284,6 +307,9 @@ public static class DocxReader
                     }
 
                     break;
+                case "jc":
+                    alignment = ParseJustification(reader.GetAttribute("val", WordprocessingMl));
+                    break;
             }
         }
 
@@ -293,11 +319,19 @@ public static class DocxReader
             // "no numbering" sentinel Word uses for bullets in many documents; any
             // positive id is treated as ordered. Headings never coexist with lists here.
             bool ordered = numId > 0;
-            return (null, new ListKind(ordered));
+            return (null, new ListKind(ordered), alignment);
         }
 
-        return (headingLevel, null);
+        return (headingLevel, null, alignment);
     }
+
+    private static WordAlignment ParseJustification(string? val) => val?.ToLowerInvariant() switch
+    {
+        "center" => WordAlignment.Center,
+        "end" or "right" => WordAlignment.End,
+        "both" or "distribute" or "justify" => WordAlignment.Justify,
+        _ => WordAlignment.Start,
+    };
 
     // Maps a paragraph style id to a heading level (1-6), or null if it is not a
     // heading. Recognizes the conventional "Heading1".."Heading6" / "Title" ids first,
@@ -335,8 +369,7 @@ public static class DocxReader
         }
 
         int runDepth = reader.Depth;
-        bool bold = false;
-        bool italic = false;
+        RunFormat fmt = default;
         System.Text.StringBuilder? text = null;
 
         while (reader.Read())
@@ -356,7 +389,7 @@ public static class DocxReader
             switch (reader.LocalName)
             {
                 case "rPr":
-                    (bold, italic) = ReadRunProperties(reader);
+                    fmt = ReadRunProperties(reader);
                     break;
                 case "t":
                     (text ??= new System.Text.StringBuilder()).Append(ReadElementText(reader));
@@ -373,22 +406,30 @@ public static class DocxReader
 
         if (text is { Length: > 0 })
         {
-            runs.Add(new WordRun(text.ToString(), bold, italic));
+            runs.Add(new WordRun(text.ToString(), fmt.Bold, fmt.Italic, fmt.Underline, fmt.Strike,
+                Href: null, fmt.Color, fmt.Highlight));
         }
     }
 
-    // Reads <w:rPr> for bold/italic. A toggle element with w:val="false"/"0"/"off"
-    // turns the property off; its mere presence (or "true"/"1"/"on") turns it on.
-    private static (bool Bold, bool Italic) ReadRunProperties(XmlReader reader)
+    private readonly record struct RunFormat(
+        bool Bold, bool Italic, bool Underline, bool Strike, string? Color, string? Highlight);
+
+    // Reads <w:rPr>: bold/italic/strike toggles, the w:u underline style, w:color (text),
+    // and the highlight from w:shd's fill or a named w:highlight.
+    private static RunFormat ReadRunProperties(XmlReader reader)
     {
         if (reader.IsEmptyElement)
         {
-            return (false, false);
+            return default;
         }
 
         int rprDepth = reader.Depth;
         bool bold = false;
         bool italic = false;
+        bool underline = false;
+        bool strike = false;
+        string? color = null;
+        string? highlight = null;
 
         while (reader.Read())
         {
@@ -412,11 +453,71 @@ public static class DocxReader
                 case "i":
                     italic = IsToggleOn(reader.GetAttribute("val", WordprocessingMl));
                     break;
+                case "u":
+                    string? style = reader.GetAttribute("val", WordprocessingMl);
+                    underline = style is not null
+                        && !style.Equals("none", StringComparison.OrdinalIgnoreCase);
+                    break;
+                case "strike":
+                    strike = IsToggleOn(reader.GetAttribute("val", WordprocessingMl));
+                    break;
+                case "color":
+                    color = HexColor(reader.GetAttribute("val", WordprocessingMl));
+                    break;
+                case "shd":
+                    highlight = HexColor(reader.GetAttribute("fill", WordprocessingMl)) ?? highlight;
+                    break;
+                case "highlight":
+                    highlight = NamedHighlight(reader.GetAttribute("val", WordprocessingMl)) ?? highlight;
+                    break;
             }
         }
 
-        return (bold, italic);
+        return new RunFormat(bold, italic, underline, strike, color, highlight);
     }
+
+    // An OOXML RRGGBB value -> "#rrggbb"; "auto"/"none"/empty -> null.
+    private static string? HexColor(string? val)
+    {
+        if (string.IsNullOrEmpty(val)
+            || val.Equals("auto", StringComparison.OrdinalIgnoreCase)
+            || val.Equals("none", StringComparison.OrdinalIgnoreCase)
+            || val.Length != 6)
+        {
+            return null;
+        }
+
+        foreach (char c in val)
+        {
+            if (!Uri.IsHexDigit(c))
+            {
+                return null;
+            }
+        }
+
+        return "#" + val.ToLowerInvariant();
+    }
+
+    // The common named w:highlight values -> hex. Unknown names map to null.
+    private static string? NamedHighlight(string? name) => name?.ToLowerInvariant() switch
+    {
+        "yellow" => "#ffff00",
+        "green" => "#00ff00",
+        "cyan" => "#00ffff",
+        "magenta" => "#ff00ff",
+        "blue" => "#0000ff",
+        "red" => "#ff0000",
+        "darkblue" => "#000080",
+        "darkcyan" => "#008080",
+        "darkgreen" => "#008000",
+        "darkmagenta" => "#800080",
+        "darkred" => "#800000",
+        "darkyellow" => "#808000",
+        "darkgray" => "#808080",
+        "lightgray" => "#c0c0c0",
+        "black" => "#000000",
+        _ => null,
+    };
 
     // An OOXML on/off toggle: absent attribute means "on"; explicit false/0/off mean off.
     private static bool IsToggleOn(string? val) =>
@@ -456,7 +557,7 @@ public static class DocxReader
 
     // Reads one <w:tbl> into a WordTable of rows of cells. The reader is on the <w:tbl>
     // start element; on return it sits on the matching </w:tbl>.
-    private static WordTable ReadTable(XmlReader reader)
+    private static WordTable ReadTable(XmlReader reader, IReadOnlyDictionary<string, string> linkRels)
     {
         if (reader.IsEmptyElement)
         {
@@ -479,7 +580,7 @@ public static class DocxReader
                 && reader.LocalName == "tr"
                 && reader.NamespaceURI == WordprocessingMl)
             {
-                rows.Add(ReadTableRow(reader));
+                rows.Add(ReadTableRow(reader, linkRels));
             }
         }
 
@@ -487,7 +588,7 @@ public static class DocxReader
     }
 
     // Reads one <w:tr> into a row of cells.
-    private static WordTableRow ReadTableRow(XmlReader reader)
+    private static WordTableRow ReadTableRow(XmlReader reader, IReadOnlyDictionary<string, string> linkRels)
     {
         if (reader.IsEmptyElement)
         {
@@ -510,7 +611,7 @@ public static class DocxReader
                 && reader.LocalName == "tc"
                 && reader.NamespaceURI == WordprocessingMl)
             {
-                cells.Add(ReadTableCell(reader));
+                cells.Add(ReadTableCell(reader, linkRels));
             }
         }
 
@@ -519,7 +620,7 @@ public static class DocxReader
 
     // Reads one <w:tc>: gathers the runs of every paragraph it contains, joining
     // paragraph boundaries with a newline so multi-paragraph cells keep their breaks.
-    private static WordTableCell ReadTableCell(XmlReader reader)
+    private static WordTableCell ReadTableCell(XmlReader reader, IReadOnlyDictionary<string, string> linkRels)
     {
         if (reader.IsEmptyElement)
         {
@@ -549,7 +650,7 @@ public static class DocxReader
 
                 // Nested tables inside cells are not interpreted in v1; only paragraph
                 // runs are gathered (headings/lists inside cells degrade to text).
-                ParagraphContent para = ReadParagraph(reader, EmptyHeadingStyles);
+                ParagraphContent para = ReadParagraph(reader, EmptyHeadingStyles, linkRels);
                 runs.AddRange(para.Runs);
             }
         }
@@ -559,6 +660,52 @@ public static class DocxReader
 
     private static readonly IReadOnlyDictionary<string, int> EmptyHeadingStyles =
         new Dictionary<string, int>(0);
+
+    private const string PackageRelationshipsNs =
+        "http://schemas.openxmlformats.org/package/2006/relationships";
+
+    private static readonly IReadOnlyDictionary<string, string> EmptyLinkRels =
+        new Dictionary<string, string>(0);
+
+    // word/_rels/document.xml.rels: builds rId -> external target for hyperlink
+    // relationships, so <w:hyperlink r:id> runs can be tagged with their URL.
+    private static IReadOnlyDictionary<string, string> ReadHyperlinkRels(ZipArchive zip)
+    {
+        ZipArchiveEntry? entry = zip.GetEntry("word/_rels/document.xml.rels");
+        if (entry is null)
+        {
+            return EmptyLinkRels;
+        }
+
+        Dictionary<string, string>? map = null;
+        using Stream content = OpenChecked(entry);
+        using XmlReader reader = XmlReader.Create(content, ReaderSettings);
+
+        while (reader.Read())
+        {
+            if (reader.NodeType != XmlNodeType.Element
+                || reader.LocalName != "Relationship"
+                || reader.NamespaceURI != PackageRelationshipsNs)
+            {
+                continue;
+            }
+
+            string? type = reader.GetAttribute("Type");
+            if (type is null || !type.EndsWith("/hyperlink", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            string? id = reader.GetAttribute("Id");
+            string? target = reader.GetAttribute("Target");
+            if (id is not null && target is not null)
+            {
+                (map ??= new Dictionary<string, string>(StringComparer.Ordinal))[id] = target;
+            }
+        }
+
+        return map ?? EmptyLinkRels;
+    }
 
     // word/styles.xml: builds styleId -> heading level for paragraph styles whose name
     // is "heading N" / "Title" or that declare an <w:outlineLvl w:val="0..5">. This
@@ -674,8 +821,8 @@ public static class DocxReader
         return null;
     }
 
-    // Merges adjacent runs that share the same bold/italic formatting so the model is
-    // compact (Word splits runs on proofing/rsid boundaries we don't care about).
+    // Merges adjacent runs that share the same formatting so the model is compact
+    // (Word splits runs on proofing/rsid boundaries we don't care about).
     private static IReadOnlyList<WordRun> CoalesceRuns(List<WordRun> runs)
     {
         if (runs.Count <= 1)
@@ -688,7 +835,10 @@ public static class DocxReader
         for (int i = 1; i < runs.Count; i++)
         {
             WordRun next = runs[i];
-            if (next.Bold == current.Bold && next.Italic == current.Italic)
+            if (next.Bold == current.Bold && next.Italic == current.Italic
+                && next.Underline == current.Underline && next.Strike == current.Strike
+                && next.Href == current.Href
+                && next.Color == current.Color && next.Highlight == current.Highlight)
             {
                 current = current with { Text = current.Text + next.Text };
             }

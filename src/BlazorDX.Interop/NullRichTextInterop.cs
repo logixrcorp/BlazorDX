@@ -10,6 +10,8 @@ public sealed class NullRichTextInterop : IRichTextInterop
 
     public ValueTask ExecAsync(string command, string value) => ValueTask.CompletedTask;
 
+    public ValueTask CreateLinkAsync() => ValueTask.CompletedTask;
+
     public ValueTask<string> GetHtmlAsync(string elementId) => ValueTask.FromResult(string.Empty);
 
     public ValueTask SetHtmlAsync(string elementId, string html) => ValueTask.CompletedTask;

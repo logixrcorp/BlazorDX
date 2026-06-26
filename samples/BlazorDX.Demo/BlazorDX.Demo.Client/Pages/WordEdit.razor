@@ -22,13 +22,23 @@
 <p class="dx-demo-meta">
     There is no new <code>contentEditable</code> and no <code>MarkupString</code>: the
     sanitizer plus <code>FromHtml</code>'s allow-listed tag subset are the safety net.
-    Edit the heading or list below — the status line tracks unsaved changes, and the byte
-    count proves a real <code>.docx</code> is produced on each edit.
+    Edit the heading or list below — the status line tracks unsaved changes and shows a live
+    word / character / paragraph count, and the byte count proves a real <code>.docx</code>
+    is produced on each edit.
+</p>
+
+<p class="dx-demo-meta">
+    The document toolbar has <strong>Download .docx</strong> and <strong>Find &amp; replace</strong>
+    (model-based, with a match count and case toggle). The formatting toolbar now includes
+    <strong>strikethrough</strong> and <strong>Insert link</strong>, and
+    <strong>underline, strikethrough, and hyperlinks all round-trip</strong> to <code>.docx</code>
+    (links keep only http/https/mailto). Select a word and click <kbd>🔗</kbd> to add a link.
 </p>
 
 <DxWordEditor @bind-Document="document"
               Sanitizer="sanitizer"
               Label="Quarterly report body"
+              DownloadFileName="quarterly-report.docx"
               OnSave="OnSave" />
 
 <p class="dx-demo-meta" aria-live="polite">
@@ -59,7 +69,8 @@
     private static readonly HashSet<string> Allowed =
         new(StringComparer.OrdinalIgnoreCase)
         {
-            "b", "strong", "i", "em", "h1", "h2", "h3", "h4", "h5", "h6",
+            "b", "strong", "i", "em", "u", "ins", "s", "strike", "del", "a",
+            "h1", "h2", "h3", "h4", "h5", "h6",
             "ul", "ol", "li", "p", "br", "div", "table", "thead", "tbody", "tr", "th", "td",
         };
 

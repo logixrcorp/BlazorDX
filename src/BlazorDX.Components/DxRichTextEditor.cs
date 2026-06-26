@@ -42,9 +42,15 @@ public sealed class DxRichTextEditor : ComponentBase
         ("bold", "", "B", "Bold"),
         ("italic", "", "I", "Italic"),
         ("underline", "", "U", "Underline"),
+        ("strikeThrough", "", "S", "Strikethrough"),
         ("formatBlock", "<h2>", "H", "Heading"),
         ("insertUnorderedList", "", "•", "Bullet list"),
         ("insertOrderedList", "", "1.", "Numbered list"),
+        ("justifyLeft", "", "⇤", "Align left"),
+        ("justifyCenter", "", "↔", "Align center"),
+        ("justifyRight", "", "⇥", "Align right"),
+        ("justifyFull", "", "≡", "Justify"),
+        ("createLink", "", "🔗", "Insert link"),
         ("removeFormat", "", "⌫", "Clear formatting"),
     ];
 
@@ -106,7 +112,16 @@ public sealed class DxRichTextEditor : ComponentBase
 
     private async Task CommandAsync(string command, string value)
     {
-        await Interop.ExecAsync(command, value);
+        // createLink needs a URL prompt + scheme validation, which lives in the bridge.
+        if (command == "createLink")
+        {
+            await Interop.CreateLinkAsync();
+        }
+        else
+        {
+            await Interop.ExecAsync(command, value);
+        }
+
         await SyncFromDomAsync();
     }
 

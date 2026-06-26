@@ -26,14 +26,34 @@ public abstract record WordBlock;
 /// </summary>
 /// <param name="Level">The heading level, 1 (most prominent) through 6.</param>
 /// <param name="Runs">The inline runs making up the heading text.</param>
-public sealed record WordHeading(int Level, IReadOnlyList<WordRun> Runs) : WordBlock;
+/// <param name="Alignment">Paragraph alignment (maps to <c>&lt;w:jc&gt;</c> / <c>text-align</c>).</param>
+public sealed record WordHeading(
+    int Level, IReadOnlyList<WordRun> Runs, WordAlignment Alignment = WordAlignment.Start) : WordBlock;
+
+/// <summary>Horizontal alignment of a block. <see cref="Start"/> is the default (unset).</summary>
+public enum WordAlignment
+{
+    /// <summary>Leading edge (left in LTR). The default; emits no markup.</summary>
+    Start,
+
+    /// <summary>Centered.</summary>
+    Center,
+
+    /// <summary>Trailing edge (right in LTR).</summary>
+    End,
+
+    /// <summary>Justified (both edges).</summary>
+    Justify,
+}
 
 /// <summary>
 /// A body paragraph: a sequence of inline <see cref="WordRun"/>s rendered as a
 /// <c>&lt;p&gt;</c>. An empty run list is a blank paragraph.
 /// </summary>
 /// <param name="Runs">The inline runs making up the paragraph text, in order.</param>
-public sealed record WordParagraph(IReadOnlyList<WordRun> Runs) : WordBlock;
+/// <param name="Alignment">Paragraph alignment (maps to <c>&lt;w:jc&gt;</c> / <c>text-align</c>).</param>
+public sealed record WordParagraph(
+    IReadOnlyList<WordRun> Runs, WordAlignment Alignment = WordAlignment.Start) : WordBlock;
 
 /// <summary>
 /// A list: either bulleted (<c>&lt;ul&gt;</c>) or numbered (<c>&lt;ol&gt;</c>), with
@@ -62,11 +82,26 @@ public sealed record WordTableCell(IReadOnlyList<WordRun> Runs);
 
 /// <summary>
 /// An inline run of text carrying best-effort character formatting. A run with no
-/// emphasis (<see cref="Bold"/> and <see cref="Italic"/> both <see langword="false"/>)
-/// renders as bare text — the viewer never fakes a semantic element for an unstyled
-/// run.
+/// emphasis (all flags <see langword="false"/>) renders as bare text — the viewer never
+/// fakes a semantic element for an unstyled run.
 /// </summary>
 /// <param name="Text">The run's literal text.</param>
-/// <param name="Bold">Whether the run is bold (<c>&lt;w:b&gt;</c>).</param>
-/// <param name="Italic">Whether the run is italic (<c>&lt;w:i&gt;</c>).</param>
-public sealed record WordRun(string Text, bool Bold = false, bool Italic = false);
+/// <param name="Bold">Whether the run is bold (<c>&lt;w:b&gt;</c> / <c>&lt;strong&gt;</c>).</param>
+/// <param name="Italic">Whether the run is italic (<c>&lt;w:i&gt;</c> / <c>&lt;em&gt;</c>).</param>
+/// <param name="Underline">Whether the run is underlined (<c>&lt;w:u&gt;</c> / <c>&lt;u&gt;</c>).</param>
+/// <param name="Strike">Whether the run is struck through (<c>&lt;w:strike&gt;</c> / <c>&lt;s&gt;</c>).</param>
+/// <param name="Href">
+/// When non-null, the run is a hyperlink to this URL (<c>&lt;w:hyperlink&gt;</c> /
+/// <c>&lt;a href&gt;</c>). Only <c>http</c>/<c>https</c>/<c>mailto</c> URLs survive parsing.
+/// </param>
+/// <param name="Color">Text color as <c>#RRGGBB</c> (<c>&lt;w:color&gt;</c> / CSS <c>color</c>), or null.</param>
+/// <param name="Highlight">Highlight/background as <c>#RRGGBB</c> (<c>&lt;w:shd&gt;</c> / CSS <c>background-color</c>), or null.</param>
+public sealed record WordRun(
+    string Text,
+    bool Bold = false,
+    bool Italic = false,
+    bool Underline = false,
+    bool Strike = false,
+    string? Href = null,
+    string? Color = null,
+    string? Highlight = null);
