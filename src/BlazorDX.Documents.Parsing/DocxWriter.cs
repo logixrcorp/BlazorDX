@@ -225,6 +225,9 @@ public static class DocxWriter
         }
     }
 
+    // OOXML colors are 6-hex-digit RRGGBB with no leading '#'.
+    private static string HexValue(string color) => color.TrimStart('#').ToUpperInvariant();
+
     private static string? JustificationElement(WordAlignment alignment) => alignment switch
     {
         WordAlignment.Center => "<w:jc w:val=\"center\"/>",
@@ -277,7 +280,9 @@ public static class DocxWriter
     private static void AppendRun(StringBuilder sb, WordRun run)
     {
         sb.Append("<w:r>");
-        if (run.Bold || run.Italic || run.Underline || run.Strike)
+        bool hasColor = !string.IsNullOrEmpty(run.Color);
+        bool hasHighlight = !string.IsNullOrEmpty(run.Highlight);
+        if (run.Bold || run.Italic || run.Underline || run.Strike || hasColor || hasHighlight)
         {
             sb.Append("<w:rPr>");
             if (run.Bold)
@@ -298,6 +303,18 @@ public static class DocxWriter
             if (run.Strike)
             {
                 sb.Append("<w:strike/>");
+            }
+
+            if (hasColor)
+            {
+                sb.Append("<w:color w:val=\"").Append(HexValue(run.Color!)).Append("\"/>");
+            }
+
+            if (hasHighlight)
+            {
+                // Arbitrary background via shading fill (w:highlight only allows named colors).
+                sb.Append("<w:shd w:val=\"clear\" w:color=\"auto\" w:fill=\"")
+                  .Append(HexValue(run.Highlight!)).Append("\"/>");
             }
 
             sb.Append("</w:rPr>");

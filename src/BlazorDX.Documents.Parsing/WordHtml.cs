@@ -195,7 +195,29 @@ public static partial class WordHtml
                 sb.Append("<s>");
             }
 
+            bool colored = !string.IsNullOrEmpty(run.Color) || !string.IsNullOrEmpty(run.Highlight);
+            if (colored)
+            {
+                sb.Append("<span style=\"");
+                if (!string.IsNullOrEmpty(run.Color))
+                {
+                    sb.Append("color:").Append(run.Color).Append(';');
+                }
+
+                if (!string.IsNullOrEmpty(run.Highlight))
+                {
+                    sb.Append("background-color:").Append(run.Highlight).Append(';');
+                }
+
+                sb.Append("\">");
+            }
+
             AppendEscaped(sb, run.Text ?? string.Empty);
+
+            if (colored)
+            {
+                sb.Append("</span>");
+            }
 
             if (strike)
             {
@@ -405,6 +427,8 @@ public static partial class WordHtml
         private int _underline;
         private int _strike;
         private string? _href;
+        private string? _color;
+        private string? _highlight;
         private WordAlignment _alignment;
 
         // Current block context.
@@ -476,14 +500,14 @@ public static partial class WordHtml
                 WordRun last = _runs[^1];
                 if (last.Bold == bold && last.Italic == italic
                     && last.Underline == underline && last.Strike == strike
-                    && last.Href == _href)
+                    && last.Href == _href && last.Color == _color && last.Highlight == _highlight)
                 {
                     _runs[^1] = last with { Text = last.Text + text };
                     return;
                 }
             }
 
-            _runs.Add(new WordRun(text, bold, italic, underline, strike, _href));
+            _runs.Add(new WordRun(text, bold, italic, underline, strike, _href, _color, _highlight));
         }
 
         private void HandleTag(Token tag)
@@ -560,6 +584,23 @@ public static partial class WordHtml
                         // Only safe schemes survive; an unsafe/missing href leaves the
                         // text un-linked rather than dropping it.
                         _href = SanitizeUrl(ExtractHref(tag.Text));
+                    }
+
+                    break;
+
+                case "span" or "font":
+                    // Color via CSS (color / background-color) or a legacy <font color>.
+                    // Single-level: a closing span/font clears the colors (execCommand's
+                    // output isn't deeply nested). text-align on a styled span is ignored.
+                    if (tag.IsClose)
+                    {
+                        _color = null;
+                        _highlight = null;
+                    }
+                    else if (!tag.SelfClose)
+                    {
+                        _color = ParseCssColor(tag.Text, "color");
+                        _highlight = ParseCssColor(tag.Text, "background-color");
                     }
 
                     break;
@@ -714,6 +755,8 @@ public static partial class WordHtml
             _underline = 0;
             _strike = 0;
             _href = null;
+            _color = null;
+            _highlight = null;
             _alignment = WordAlignment.Start;
         }
 

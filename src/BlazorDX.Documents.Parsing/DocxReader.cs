@@ -369,10 +369,7 @@ public static class DocxReader
         }
 
         int runDepth = reader.Depth;
-        bool bold = false;
-        bool italic = false;
-        bool underline = false;
-        bool strike = false;
+        RunFormat fmt = default;
         System.Text.StringBuilder? text = null;
 
         while (reader.Read())
@@ -392,7 +389,7 @@ public static class DocxReader
             switch (reader.LocalName)
             {
                 case "rPr":
-                    (bold, italic, underline, strike) = ReadRunProperties(reader);
+                    fmt = ReadRunProperties(reader);
                     break;
                 case "t":
                     (text ??= new System.Text.StringBuilder()).Append(ReadElementText(reader));
@@ -409,18 +406,21 @@ public static class DocxReader
 
         if (text is { Length: > 0 })
         {
-            runs.Add(new WordRun(text.ToString(), bold, italic, underline, strike));
+            runs.Add(new WordRun(text.ToString(), fmt.Bold, fmt.Italic, fmt.Underline, fmt.Strike,
+                Href: null, fmt.Color, fmt.Highlight));
         }
     }
 
-    // Reads <w:rPr> for bold/italic/underline/strike. b/i/strike are toggle elements
-    // (w:val="false"/"0"/"off" turns them off; presence or "true"/"1"/"on" turns them on).
-    // w:u carries an underline STYLE: any value other than "none" counts as underlined.
-    private static (bool Bold, bool Italic, bool Underline, bool Strike) ReadRunProperties(XmlReader reader)
+    private readonly record struct RunFormat(
+        bool Bold, bool Italic, bool Underline, bool Strike, string? Color, string? Highlight);
+
+    // Reads <w:rPr>: bold/italic/strike toggles, the w:u underline style, w:color (text),
+    // and the highlight from w:shd's fill or a named w:highlight.
+    private static RunFormat ReadRunProperties(XmlReader reader)
     {
         if (reader.IsEmptyElement)
         {
-            return (false, false, false, false);
+            return default;
         }
 
         int rprDepth = reader.Depth;
@@ -428,6 +428,8 @@ public static class DocxReader
         bool italic = false;
         bool underline = false;
         bool strike = false;
+        string? color = null;
+        string? highlight = null;
 
         while (reader.Read())
         {
@@ -459,11 +461,63 @@ public static class DocxReader
                 case "strike":
                     strike = IsToggleOn(reader.GetAttribute("val", WordprocessingMl));
                     break;
+                case "color":
+                    color = HexColor(reader.GetAttribute("val", WordprocessingMl));
+                    break;
+                case "shd":
+                    highlight = HexColor(reader.GetAttribute("fill", WordprocessingMl)) ?? highlight;
+                    break;
+                case "highlight":
+                    highlight = NamedHighlight(reader.GetAttribute("val", WordprocessingMl)) ?? highlight;
+                    break;
             }
         }
 
-        return (bold, italic, underline, strike);
+        return new RunFormat(bold, italic, underline, strike, color, highlight);
     }
+
+    // An OOXML RRGGBB value -> "#rrggbb"; "auto"/"none"/empty -> null.
+    private static string? HexColor(string? val)
+    {
+        if (string.IsNullOrEmpty(val)
+            || val.Equals("auto", StringComparison.OrdinalIgnoreCase)
+            || val.Equals("none", StringComparison.OrdinalIgnoreCase)
+            || val.Length != 6)
+        {
+            return null;
+        }
+
+        foreach (char c in val)
+        {
+            if (!Uri.IsHexDigit(c))
+            {
+                return null;
+            }
+        }
+
+        return "#" + val.ToLowerInvariant();
+    }
+
+    // The common named w:highlight values -> hex. Unknown names map to null.
+    private static string? NamedHighlight(string? name) => name?.ToLowerInvariant() switch
+    {
+        "yellow" => "#ffff00",
+        "green" => "#00ff00",
+        "cyan" => "#00ffff",
+        "magenta" => "#ff00ff",
+        "blue" => "#0000ff",
+        "red" => "#ff0000",
+        "darkblue" => "#000080",
+        "darkcyan" => "#008080",
+        "darkgreen" => "#008000",
+        "darkmagenta" => "#800080",
+        "darkred" => "#800000",
+        "darkyellow" => "#808000",
+        "darkgray" => "#808080",
+        "lightgray" => "#c0c0c0",
+        "black" => "#000000",
+        _ => null,
+    };
 
     // An OOXML on/off toggle: absent attribute means "on"; explicit false/0/off mean off.
     private static bool IsToggleOn(string? val) =>
@@ -783,7 +837,8 @@ public static class DocxReader
             WordRun next = runs[i];
             if (next.Bold == current.Bold && next.Italic == current.Italic
                 && next.Underline == current.Underline && next.Strike == current.Strike
-                && next.Href == current.Href)
+                && next.Href == current.Href
+                && next.Color == current.Color && next.Highlight == current.Highlight)
             {
                 current = current with { Text = current.Text + next.Text };
             }

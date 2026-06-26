@@ -397,6 +397,35 @@ public sealed class DxWordEditorTests : TestContext
         }
     }
 
+    [Fact]
+    public void Text_color_and_highlight_survive_the_full_round_trip()
+    {
+        WordDocument original = new(
+        [
+            new WordParagraph(
+            [
+                new WordRun("plain "),
+                new WordRun("red", Color: "#ff0000"),
+                new WordRun(" "),
+                new WordRun("hl", Highlight: "#ffff00"),
+                new WordRun(" "),
+                new WordRun("both", Color: "#0000ff", Highlight: "#00ff00"),
+            ]),
+        ]);
+
+        WordDocument viaHtml = WordHtml.FromHtml(WordHtml.ToHtml(original));
+        WordDocument viaDocx = DocxReader.Read(DocxWriter.Write(viaHtml));
+
+        foreach (WordDocument doc in new[] { viaHtml, viaDocx })
+        {
+            WordParagraph p = doc.Blocks.OfType<WordParagraph>().Single();
+            Assert.Equal("plain red hl both", Text(p.Runs));
+            Assert.Contains(p.Runs, r => r is { Text: "red", Color: "#ff0000", Highlight: null });
+            Assert.Contains(p.Runs, r => r is { Text: "hl", Color: null, Highlight: "#ffff00" });
+            Assert.Contains(p.Runs, r => r is { Text: "both", Color: "#0000ff", Highlight: "#00ff00" });
+        }
+    }
+
     private static string Text(IReadOnlyList<WordRun> runs) =>
         string.Concat(runs.Select(r => r.Text));
 }

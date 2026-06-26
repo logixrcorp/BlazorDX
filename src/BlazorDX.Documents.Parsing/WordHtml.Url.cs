@@ -51,6 +51,98 @@ public static partial class WordHtml
     // "text-align" is tried before "align" so a CSS rule wins over a legacy attribute.
     private static readonly string[] AlignKeys = ["text-align", "align"];
 
+    // Reads a CSS property's value from a raw tag's style and normalizes it to #rrggbb.
+    // Returns null for unsupported (named colors) or absent values.
+    private static string? ParseCssColor(string rawTag, string property)
+    {
+        int idx = 0;
+        while ((idx = rawTag.IndexOf(property, idx, System.StringComparison.OrdinalIgnoreCase)) >= 0)
+        {
+            // Start-of-declaration boundary so "color" doesn't match inside "background-color".
+            bool boundary = idx == 0 || rawTag[idx - 1] is ' ' or ';' or '"' or '\'' or '{' or '>';
+            int p = idx + property.Length;
+            while (p < rawTag.Length && rawTag[p] == ' ')
+            {
+                p++;
+            }
+
+            if (boundary && p < rawTag.Length && rawTag[p] == ':')
+            {
+                p++;
+                while (p < rawTag.Length && rawTag[p] == ' ')
+                {
+                    p++;
+                }
+
+                int end = p;
+                while (end < rawTag.Length && rawTag[end] is not (';' or '"' or '\'' or '}'))
+                {
+                    end++;
+                }
+
+                return NormalizeColor(rawTag.Substring(p, end - p).Trim());
+            }
+
+            idx = p;
+        }
+
+        return null;
+    }
+
+    // Normalizes #rgb / #rrggbb / rgb(r,g,b[,a]) to lowercase #rrggbb; null otherwise.
+    private static string? NormalizeColor(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return null;
+        }
+
+        if (value[0] == '#')
+        {
+            string hex = value[1..];
+            if (hex.Length == 3)
+            {
+                hex = new string([hex[0], hex[0], hex[1], hex[1], hex[2], hex[2]]);
+            }
+
+            return hex.Length == 6 && IsHex(hex) ? "#" + hex.ToLowerInvariant() : null;
+        }
+
+        if (value.StartsWith("rgb", System.StringComparison.OrdinalIgnoreCase))
+        {
+            int open = value.IndexOf('(');
+            int close = value.IndexOf(')');
+            if (open >= 0 && close > open)
+            {
+                string[] parts = value[(open + 1)..close].Split(',');
+                if (parts.Length >= 3
+                    && int.TryParse(parts[0].Trim(), out int r)
+                    && int.TryParse(parts[1].Trim(), out int g)
+                    && int.TryParse(parts[2].Trim(), out int b))
+                {
+                    return $"#{Clamp(r):x2}{Clamp(g):x2}{Clamp(b):x2}";
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static int Clamp(int v) => v < 0 ? 0 : v > 255 ? 255 : v;
+
+    private static bool IsHex(string s)
+    {
+        foreach (char c in s)
+        {
+            if (!System.Uri.IsHexDigit(c))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     // Pulls the href value out of an opening tag's raw attribute text (e.g.
     // 'a href="https://x" title="y"'). Best-effort: quoted or bare, entity-decoded.
     private static string? ExtractHref(string rawTag)

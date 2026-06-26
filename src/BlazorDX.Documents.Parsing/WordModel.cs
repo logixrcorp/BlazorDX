@@ -94,10 +94,14 @@ public sealed record WordTableCell(IReadOnlyList<WordRun> Runs);
 /// When non-null, the run is a hyperlink to this URL (<c>&lt;w:hyperlink&gt;</c> /
 /// <c>&lt;a href&gt;</c>). Only <c>http</c>/<c>https</c>/<c>mailto</c> URLs survive parsing.
 /// </param>
+/// <param name="Color">Text color as <c>#RRGGBB</c> (<c>&lt;w:color&gt;</c> / CSS <c>color</c>), or null.</param>
+/// <param name="Highlight">Highlight/background as <c>#RRGGBB</c> (<c>&lt;w:shd&gt;</c> / CSS <c>background-color</c>), or null.</param>
 public sealed record WordRun(
     string Text,
     bool Bold = false,
     bool Italic = false,
     bool Underline = false,
     bool Strike = false,
-    string? Href = null);
+    string? Href = null,
+    string? Color = null,
+    string? Highlight = null);
