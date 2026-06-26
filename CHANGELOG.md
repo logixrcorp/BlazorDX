@@ -7,6 +7,23 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 > **Beta.** BlazorDX is pre-1.0 and built with substantial AI assistance. Breaking
 > changes can land in any minor release until 1.0.
 
+## [0.3.3] — 2026-06-26
+
+### Added
+
+- **In-editor text color + highlight** swatches on the rich-text toolbar. The bridge
+  remembers the last in-editor selection and restores it before applying, so the native
+  color picker (which steals the contentEditable selection) still colors the intended
+  text. Completes the color gap (round-trip shipped in 0.3.2).
+
+### Docs
+
+- **ADR 0015 — model-driven editing core** (*Proposed*): the decision to invert the editor
+  so `WordDocument` is the source of truth and `contentEditable` is an I/O surface (the
+  ProseMirror/Lexical pattern), reusing the model + round-trip we already own — no
+  `execCommand`, no third-party JS editor. Phased, flag-gated. It unblocks undo/redo,
+  table-editing, find-highlight, comments, track changes, and collaboration.
+
 ## [0.3.2] — 2026-06-26
 
 ### Added — Word editor expansion
