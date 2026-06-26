@@ -45,6 +45,12 @@ public sealed partial class RichTextInterop : IRichTextInterop
         ApplyColor(command, color);
     }
 
+    public async ValueTask<int> FindInEditorAsync(string elementId, string query, bool forward, bool caseSensitive)
+    {
+        await EnsureLoadedAsync();
+        return FindInEditor(elementId, query, forward, caseSensitive);
+    }
+
     public async ValueTask<string> GetHtmlAsync(string elementId)
     {
         await EnsureLoadedAsync();
@@ -71,6 +77,9 @@ public sealed partial class RichTextInterop : IRichTextInterop
 
     [JSImport("applyColor", ModuleName)]
     private static partial void ApplyColor(string command, string color);
+
+    [JSImport("findInEditor", ModuleName)]
+    private static partial int FindInEditor(string elementId, string query, bool forward, bool caseSensitive);
 
     [JSImport("getHtml", ModuleName)]
     private static partial string GetHtml(string elementId);

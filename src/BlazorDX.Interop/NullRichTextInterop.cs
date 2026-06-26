@@ -14,6 +14,9 @@ public sealed class NullRichTextInterop : IRichTextInterop
 
     public ValueTask ApplyColorAsync(string command, string color) => ValueTask.CompletedTask;
 
+    public ValueTask<int> FindInEditorAsync(string elementId, string query, bool forward, bool caseSensitive) =>
+        ValueTask.FromResult(0);
+
     public ValueTask<string> GetHtmlAsync(string elementId) => ValueTask.FromResult(string.Empty);
 
     public ValueTask SetHtmlAsync(string elementId, string html) => ValueTask.CompletedTask;

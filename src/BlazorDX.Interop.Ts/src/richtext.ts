@@ -77,3 +77,84 @@ export function setHtml(elementId: string, html: string): void {
 export function focusEditor(elementId: string): void {
   document.getElementById(elementId)?.focus();
 }
+
+// Selects the next/previous occurrence of `query` in the editor (wrapping at the ends) and
+// scrolls it into view, relative to the current caret. Returns the 1-based index of the
+// selected match, or 0 if there are none. Search runs over the live text nodes, so it owns
+// the selection without any model<->DOM coordinate mapping.
+export function findInEditor(
+  elementId: string, query: string, forward: boolean, caseSensitive: boolean): number {
+  const root = document.getElementById(elementId);
+  if (!root || !query) {
+    return 0;
+  }
+
+  // Flatten the text nodes, remembering where each starts in the combined string.
+  const segments: { node: Text; start: number }[] = [];
+  let text = "";
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let node: Node | null;
+  while ((node = walker.nextNode())) {
+    const t = node as Text;
+    segments.push({ node: t, start: text.length });
+    text += t.data;
+  }
+
+  const hay = caseSensitive ? text : text.toLowerCase();
+  const needle = caseSensitive ? query : query.toLowerCase();
+  const matches: number[] = [];
+  for (let i = hay.indexOf(needle); i >= 0; i = hay.indexOf(needle, i + needle.length)) {
+    matches.push(i);
+  }
+
+  if (matches.length === 0) {
+    return 0;
+  }
+
+  // Where is the caret now (combined-string offset)? -1 / end when there's no selection.
+  let caret = forward ? -1 : text.length;
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount > 0) {
+    const r = sel.getRangeAt(0);
+    for (const seg of segments) {
+      if (seg.node === r.startContainer) {
+        caret = seg.start + r.startOffset;
+        break;
+      }
+    }
+  }
+
+  let idx: number;
+  if (forward) {
+    idx = matches.findIndex((m) => m > caret);
+    if (idx < 0) { idx = 0; } // wrap to first
+  } else {
+    idx = -1;
+    for (let k = matches.length - 1; k >= 0; k--) {
+      if (matches[k] < caret) { idx = k; break; }
+    }
+    if (idx < 0) { idx = matches.length - 1; } // wrap to last
+  }
+
+  const range = document.createRange();
+  point(range, segments, matches[idx], true);
+  point(range, segments, matches[idx] + needle.length, false);
+  if (sel) {
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  (range.startContainer.parentElement ?? root).scrollIntoView({ block: "nearest" });
+  return idx + 1;
+}
+
+// Places a range edge at a combined-string offset by locating the owning text node.
+function point(range: Range, segments: { node: Text; start: number }[], offset: number, isStart: boolean): void {
+  for (const seg of segments) {
+    if (offset <= seg.start + seg.node.length) {
+      const local = Math.max(0, offset - seg.start);
+      if (isStart) { range.setStart(seg.node, local); } else { range.setEnd(seg.node, local); }
+      return;
+    }
+  }
+}

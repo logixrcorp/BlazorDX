@@ -360,6 +360,22 @@ public sealed class DxWordEditorTests : TestContext
     }
 
     [Fact]
+    public void Find_bar_has_previous_next_match_navigation()
+    {
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, SampleDocument()));
+        editor.Find("[aria-label='Find and replace']").Click();
+
+        Assert.Single(editor.FindAll("[aria-label='Previous match']"));
+        Assert.Single(editor.FindAll("[aria-label='Next match']"));
+
+        // Clicking next drives the editor's FindNextAsync through the (null) bridge,
+        // which returns 0 off-browser — the path must not throw.
+        editor.Find(".dx-word-find-input").Input("steady");
+        editor.Find("[aria-label='Next match']").Click();
+    }
+
+    [Fact]
     public void Match_case_makes_the_search_case_sensitive()
     {
         IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p

@@ -1,3 +1,4 @@
+using BlazorDX.Components;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
 
@@ -24,6 +25,21 @@ public sealed partial class DxWordEditor
     private string replaceText = string.Empty;
     private bool caseSensitive;
     private int matchCount;
+    private int currentMatch; // 1-based index of the match navigated to, or 0
+
+    // Captured DxRichTextEditor instance, used to drive in-editor find-next selection.
+    private DxRichTextEditor? _rte;
+
+    private async Task FindNextAsync(bool forward)
+    {
+        if (_rte is null || findText.Length == 0)
+        {
+            return;
+        }
+
+        currentMatch = await _rte.FindNextAsync(findText, forward, caseSensitive);
+        StateHasChanged();
+    }
 
     private void ToggleFind()
     {
@@ -54,6 +70,7 @@ public sealed partial class DxWordEditor
         builder.AddAttribute(12, "aria-live", "polite");
         builder.AddContent(13, findText.Length == 0
             ? string.Empty
+            : currentMatch > 0 ? $"{currentMatch} of {matchCount}"
             : matchCount == 1 ? "1 match" : $"{matchCount} matches");
         builder.CloseElement();
 
@@ -79,22 +96,37 @@ public sealed partial class DxWordEditor
         FindButton(builder, 30, "Replace", ReplaceOneAsync);
         FindButton(builder, 40, "Replace all", ReplaceAllAsync);
 
+        // Previous / next match navigation (selects + scrolls to the match in the editor).
+        FindButton(builder, 100, "‹", PreviousMatchAsync, "Previous match");
+        FindButton(builder, 110, "›", NextMatchAsync, "Next match");
+
         builder.CloseElement();
     }
 
-    private void FindButton(RenderTreeBuilder builder, int seq, string text, Func<Task> handler)
+    private void FindButton(RenderTreeBuilder builder, int seq, string text, Func<Task> handler, string? label = null)
     {
         builder.OpenElement(seq, "button");
         builder.AddAttribute(seq + 1, "type", "button");
         builder.AddAttribute(seq + 2, "class", "dx-word-find-btn");
         builder.AddAttribute(seq + 3, "onclick", EventCallback.Factory.Create(this, handler));
-        builder.AddContent(seq + 4, text);
+        if (label is not null)
+        {
+            builder.AddAttribute(seq + 4, "aria-label", label);
+            builder.AddAttribute(seq + 5, "title", label);
+        }
+
+        builder.AddContent(seq + 6, text);
         builder.CloseElement();
     }
+
+    private Task NextMatchAsync() => FindNextAsync(forward: true);
+
+    private Task PreviousMatchAsync() => FindNextAsync(forward: false);
 
     private void OnFindInput(ChangeEventArgs args)
     {
         findText = args.Value?.ToString() ?? string.Empty;
+        currentMatch = 0; // navigation position is no longer valid for a changed query
         matchCount = CountMatches(Current, findText, caseSensitive);
     }
 
@@ -104,6 +136,7 @@ public sealed partial class DxWordEditor
     private void OnCaseToggle(ChangeEventArgs args)
     {
         caseSensitive = args.Value is bool b && b;
+        currentMatch = 0;
         matchCount = CountMatches(Current, findText, caseSensitive);
     }
 
