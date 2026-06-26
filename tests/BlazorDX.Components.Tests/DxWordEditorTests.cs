@@ -324,6 +324,55 @@ public sealed class DxWordEditorTests : TestContext
         Assert.All(p.Runs, r => Assert.Null(r.Href));
     }
 
+    [Fact]
+    public void Find_bar_toggles_and_counts_matches()
+    {
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, SampleDocument()));
+
+        Assert.Empty(editor.FindAll(".dx-word-findbar"));
+        editor.Find("[aria-label='Find and replace']").Click();
+        Assert.Single(editor.FindAll(".dx-word-findbar"));
+
+        editor.Find(".dx-word-find-input").Input("Overview"); // the "Overview" heading
+        Assert.Contains("1 match", editor.Find(".dx-word-find-count").TextContent);
+    }
+
+    [Fact]
+    public void Replace_all_rewrites_the_document_and_raises_change()
+    {
+        WordDocument? changed = null;
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, SampleDocument())
+            .Add(e => e.DocumentChanged, EventCallback.Factory.Create<WordDocument>(this, d => changed = d)));
+
+        editor.Find("[aria-label='Find and replace']").Click();
+        editor.Find(".dx-word-find-input").Input("quarter");
+        editor.Find(".dx-word-replace-input").Input("period");
+        editor.FindAll(".dx-word-find-btn").Single(b => b.TextContent.Contains("Replace all")).Click();
+
+        Assert.NotNull(changed);
+        string text = string.Concat(
+            changed!.Blocks.OfType<WordParagraph>().SelectMany(b => b.Runs).Select(r => r.Text));
+        Assert.Contains("period", text);
+        Assert.DoesNotContain("quarter", text);
+        Assert.True(editor.Instance.IsDirty);
+    }
+
+    [Fact]
+    public void Match_case_makes_the_search_case_sensitive()
+    {
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, SampleDocument()));
+        editor.Find("[aria-label='Find and replace']").Click();
+
+        editor.Find(".dx-word-find-input").Input("overview");           // lower-case
+        Assert.Contains("1 match", editor.Find(".dx-word-find-count").TextContent);
+
+        editor.Find(".dx-word-find-case input").Change(true);           // now case-sensitive
+        Assert.Contains("0 matches", editor.Find(".dx-word-find-count").TextContent);
+    }
+
     private static string Text(IReadOnlyList<WordRun> runs) =>
         string.Concat(runs.Select(r => r.Text));
 }

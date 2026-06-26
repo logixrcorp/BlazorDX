@@ -37,7 +37,7 @@ namespace BlazorDX.Documents;
 /// constant <see cref="RenderTreeBuilder"/> sequence numbers throughout.
 /// </para>
 /// </remarks>
-public sealed class DxWordEditor : ComponentBase
+public sealed partial class DxWordEditor : ComponentBase
 {
     private static readonly WordDocument Empty = new([]);
 
@@ -170,10 +170,30 @@ public sealed class DxWordEditor : ComponentBase
             builder.AddContent(12, "Download .docx");
             builder.CloseElement();
 
+            builder.OpenElement(13, "button");
+            builder.AddAttribute(14, "type", "button");
+            builder.AddAttribute(15, "class", "dx-word-toolbar-btn");
+            builder.AddAttribute(16, "aria-label", "Find and replace");
+            builder.AddAttribute(17, "title", "Find and replace");
+            builder.AddAttribute(18, "aria-expanded", showFind ? "true" : "false");
+            builder.AddAttribute(19, "onclick", EventCallback.Factory.Create(this, ToggleFind));
+            builder.AddContent(20, "Find & replace");
+            builder.CloseElement();
+
             builder.CloseElement();
         }
 
+        if (showFind)
+        {
+            builder.OpenRegion(18);
+            BuildFindBar(builder);
+            builder.CloseRegion();
+        }
+
         builder.OpenComponent<DxRichTextEditor>(20);
+        // Re-keyed on a find/replace so the editor re-mounts and re-seeds from the updated
+        // model (it deliberately ignores Value changes after mount to protect the caret).
+        builder.SetKey(editorEpoch);
         builder.AddComponentParameter(21, nameof(DxRichTextEditor.Value), editorHtml);
         builder.AddComponentParameter(22, nameof(DxRichTextEditor.ValueChanged),
             EventCallback.Factory.Create<string?>(this, OnEditorHtmlChangedAsync));

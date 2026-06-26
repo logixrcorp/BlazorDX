@@ -37,6 +37,62 @@
   outline-offset: 1px;
 }
 
+/* Find & replace bar. */
+.dx-word-findbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 8px;
+  background: var(--dx-surface-alt, #f8fafc);
+  border: 1px solid var(--dx-border, #e2e8f0);
+  border-radius: 8px;
+}
+.dx-word-find-input,
+.dx-word-replace-input {
+  min-height: 28px;
+  padding: 4px 10px;
+  font: inherit;
+  color: var(--dx-text, #1e293b);
+  background: var(--dx-surface, #ffffff);
+  border: 1px solid var(--dx-border, #cbd5e1);
+  border-radius: 6px;
+}
+.dx-word-find-input:focus-visible,
+.dx-word-replace-input:focus-visible {
+  outline: 2px solid var(--dx-accent, #2563eb);
+  outline-offset: -1px;
+}
+.dx-word-find-count {
+  min-width: 5rem;
+  font-size: 0.85rem;
+  color: var(--dx-text-muted, #475569);
+}
+.dx-word-find-case {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.875rem;
+  color: var(--dx-text, #1e293b);
+}
+.dx-word-find-btn {
+  min-width: 24px;
+  min-height: 28px;
+  padding: 4px 12px;
+  font: inherit;
+  color: var(--dx-text, #1e293b);
+  background: var(--dx-surface, #ffffff);
+  border: 1px solid var(--dx-border, #cbd5e1);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.dx-word-find-btn:hover { background: var(--dx-surface-alt, #f1f5f9); }
+.dx-word-find-btn:focus-visible {
+  outline: 2px solid var(--dx-accent, #2563eb);
+  outline-offset: 1px;
+}
+
 /* Give the editing surface document-like proportions to match DxWordViewer. */
 .dx-word-editor .dx-word-editor-surface .dx-rte-surface {
   min-height: 16rem;
