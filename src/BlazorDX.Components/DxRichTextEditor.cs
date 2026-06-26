@@ -80,6 +80,11 @@ public sealed class DxRichTextEditor : ComponentBase
             builder.CloseElement();
         }
 
+        // Color pickers (native <input type=color>) — not .dx-rte-tool buttons. The bridge
+        // restores the editor selection before applying, so clicking the swatch is safe.
+        BuildColorInput(builder, 20, "foreColor", "Text color", "#000000");
+        BuildColorInput(builder, 30, "hiliteColor", "Highlight color", "#ffff00");
+
         builder.CloseElement();
 
         builder.OpenElement(15, "div");
@@ -110,6 +115,19 @@ public sealed class DxRichTextEditor : ComponentBase
         }
     }
 
+    private void BuildColorInput(RenderTreeBuilder builder, int seq, string command, string label, string initial)
+    {
+        builder.OpenElement(seq, "input");
+        builder.AddAttribute(seq + 1, "type", "color");
+        builder.AddAttribute(seq + 2, "class", "dx-rte-color");
+        builder.AddAttribute(seq + 3, "aria-label", label);
+        builder.AddAttribute(seq + 4, "title", label);
+        builder.AddAttribute(seq + 5, "value", initial);
+        builder.AddAttribute(seq + 6, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(
+            this, e => CommandColorAsync(command, e.Value?.ToString() ?? initial)));
+        builder.CloseElement();
+    }
+
     private async Task CommandAsync(string command, string value)
     {
         // createLink needs a URL prompt + scheme validation, which lives in the bridge.
@@ -122,6 +140,12 @@ public sealed class DxRichTextEditor : ComponentBase
             await Interop.ExecAsync(command, value);
         }
 
+        await SyncFromDomAsync();
+    }
+
+    private async Task CommandColorAsync(string command, string color)
+    {
+        await Interop.ApplyColorAsync(command, color);
         await SyncFromDomAsync();
     }
 

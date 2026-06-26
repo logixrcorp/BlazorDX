@@ -39,6 +39,21 @@ public sealed class DxRichTextEditorTests : TestContext
     }
 
     [Fact]
+    public void Toolbar_includes_text_color_and_highlight_swatches()
+    {
+        IRenderedComponent<DxRichTextEditor> editor = RenderComponent<DxRichTextEditor>();
+
+        // Two native color inputs, distinct from the 13 command tools.
+        Assert.Equal(2, editor.FindAll(".dx-rte-color").Count);
+        Assert.Equal(13, editor.FindAll(".dx-rte-tool").Count);
+        Assert.Single(editor.FindAll("[aria-label='Text color']"));
+        Assert.Single(editor.FindAll("[aria-label='Highlight color']"));
+
+        // Changing a swatch routes through the (null) bridge without throwing.
+        editor.Find("[aria-label='Text color']").Change("#ff0000");
+    }
+
+    [Fact]
     public void Edited_html_is_routed_through_the_injected_sanitizer()
     {
         bool sanitized = false;
