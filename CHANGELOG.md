@@ -7,6 +7,16 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 > **Beta.** BlazorDX is pre-1.0 and built with substantial AI assistance. Breaking
 > changes can land in any minor release until 1.0.
 
+## [0.3.4] — 2026-06-26
+
+### Added
+
+- **Nested lists** round-trip (gap fix 3): `WordList` gains an optional per-item `Levels`
+  array. Nesting survives `WordHtml` (nested `<ul>`/`<ol>` ↔ depth parse), `DocxWriter`/
+  `DocxReader` (`<w:ilvl>`, with 4 indented levels declared in numbering.xml so Word
+  renders them), and `DxWordViewer` (real nested `<ul>` tree). Existing flat-list callers
+  are unaffected (`Levels` null = flat). Per-level ordered/bulleted kind is not modeled.
+
 ## [0.3.3] — 2026-06-26
 
 ### Added
