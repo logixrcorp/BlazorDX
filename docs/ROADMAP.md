@@ -7,11 +7,13 @@
 
 The original foundation goal — *explore whether a secure-by-default, AOT-safe, headless
 component system is possible* — is largely met as a proof of concept, and the catalog has
-grown well past the original plan: **~95 components** on a shared headless engine, a
+grown well past the original plan: **100+ components** on a shared headless engine, a
 DataGrid family (flat / tree / pivot, with server-side data and grouping), data
 visualization, scheduling, editors, file management, forms (one model that doubles as an
-AI/MCP tool), AI chat, and standards-verified barcodes/QR — built to publish trim-clean.
-See [COMPONENTS.md](COMPONENTS.md) and [ARCHITECTURE.md](ARCHITECTURE.md).
+AI/MCP tool), AI chat, standards-verified barcodes/QR, and an **Extended Document Handling**
+track (Excel/Word viewers & editors, native PDF, SSRS & Power BI reporting; see
+[roadmap-documents-and-reporting.md](roadmap-documents-and-reporting.md)) — built to publish
+trim-clean. See [COMPONENTS.md](COMPONENTS.md) and [ARCHITECTURE.md](ARCHITECTURE.md).
 
 This roadmap is now about **finishing the library to a coherent 1.0** and **earning
 adoption**, deliberately scoped so we deepen our identity instead of chasing a

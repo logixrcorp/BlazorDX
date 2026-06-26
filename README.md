@@ -129,12 +129,14 @@ every other component's demo — see [COMPONENTS.md](docs/COMPONENTS.md).
 > has had only limited testing. Expect defects, gaps, and breaking changes. It is **not intended
 > for production use** — treat it as a preview to evaluate and give feedback on.
 
-BlazorDX spans **~95 components** across overlays, inputs, navigation, the data-grid
+BlazorDX spans **100+ components** across overlays, inputs, navigation, the data-grid
 family (flat / tree / pivot, with server-side data and grouping), data visualization,
 scheduling (calendar / Gantt), editors (Markdown / WYSIWYG), files, forms (rendered from one
-model that doubles as an AI/MCP tool), and an AI chat surface — every one built on the shared
-headless engine and verified in a real browser. See [COMPONENTS.md](docs/COMPONENTS.md) for the
-full catalog.
+model that doubles as an AI/MCP tool), an AI chat surface, and an **Extended Document
+Handling** track — Excel (.xlsx) and Word (.docx) viewers/editors with a live formula
+engine and hand-rolled OOXML, a native PDF viewer, and SSRS / Power BI reporting — every
+one built on the shared headless engine and verified in a real browser. See
+[COMPONENTS.md](docs/COMPONENTS.md) for the full catalog.
 
 - **Tests:** bUnit + compute + analyzer suites green, plus the Rust crate's own unit
   tests, plus a **Playwright E2E suite** that drives a real browser against the running

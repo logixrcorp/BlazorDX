@@ -82,6 +82,22 @@ sample app (`samples/BlazorDX.Demo`).
 | `DxChat` | AI chat surface (assistant turns render via `DxMarkdown`) | `/chat` |
 | `DxFileManager` | Two-pane folder tree + contents with breadcrumb | `/files` |
 
+## Documents & reporting
+
+Heavy parsers and external SDKs are quarantined in opt-in packages (`BlazorDX.Documents`,
+`BlazorDX.Integrations.Reporting`, `BlazorDX.Integrations.PowerBI`, `BlazorDX.Htmx`); report
+credentials stay server-side. See [roadmap-documents-and-reporting.md](roadmap-documents-and-reporting.md)
+and [ADR-0010](adr/0010-documents-and-reporting-integration.md).
+
+| Component | What it does | Demo |
+|---|---|---|
+| `DxDocumentViewer` | Native-embed viewer for PDF + browser-renderable documents (toolbar + iframe shell, no parser) | `/docviewer` |
+| `DxSpreadsheetViewer` | Excel (.xlsx) viewer/editor with a live formula recalc graph; hand-rolled OOXML, no external deps | `/excel`, `/excel-edit` |
+| `DxWordViewer` / `DxWordEditor` | Word (.docx) viewer + editor over a sanitized OOXML↔HTML round-trip | `/word`, `/word-edit` |
+| `DxReportViewer` | Server-side SSRS rendering via Microsoft's URL-access engine, delivered over HTMX | `/reports` |
+| `DxPowerBiReport` | Lazy-loaded wrapper over `powerbi-client`; embed token minted server-side | `/powerbi` |
+| `DxHtmxDocumentViewer` | Static-SSR, read-only PDF/Excel/Word viewer with a no-JS fallback | `/htmx/doc` |
+
 ## Feedback
 
 | Component | What it does | Demo |

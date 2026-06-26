@@ -210,6 +210,10 @@ read the columns to persist.
   DxCandlestickChart
 - **Scheduling:** DxScheduler, DxGantt
 - **Editors/files/AI:** DxMarkdown, DxMarkdownEditor, DxRichTextEditor, DxChat, DxFileManager
+- **Documents & reporting:** DxDocumentViewer (core; PDF/embed), DxSpreadsheetViewer (Excel
+  viewer/editor, `BlazorDX.Documents`), DxWordViewer/DxWordEditor (`BlazorDX.Documents`),
+  DxReportViewer (SSRS over HTMX, `BlazorDX.Integrations.Reporting`), DxPowerBiReport
+  (`BlazorDX.Integrations.PowerBI`), DxHtmxDocumentViewer (static-SSR, `BlazorDX.Htmx`)
 - **Feedback:** DxToastHost, DxAlert, DxSpinner, DxProgress, DxSkeleton
 
 ---

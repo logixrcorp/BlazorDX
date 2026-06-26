@@ -5,7 +5,7 @@ makes a handful of strong claims; below, each one is paired with where it lives,
 to verify it, and what would *falsify* it. Please try to break them — a review that
 only confirms what we believe is worth little.
 
-The library is young (v0.1.0, single author, no production deployments yet). We are
+The library is young (v0.3.0, single author, no production deployments yet). We are
 not asking "is this as mature as Telerik" — it isn't. We are asking: **is the
 architecture sound, are the differentiating claims actually true across the whole
 catalog (not just the demo), and is the public surface safe to freeze at 1.0?**

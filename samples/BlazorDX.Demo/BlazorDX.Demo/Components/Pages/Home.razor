@@ -14,8 +14,8 @@
         </p>
 
         <div class="dx-stats">
-            <span class="dx-stat"><strong>90+</strong> components</span>
-            <span class="dx-stat"><strong>386</strong> tests green</span>
+            <span class="dx-stat"><strong>100+</strong> components</span>
+            <span class="dx-stat"><strong>900+</strong> tests green</span>
             <span class="dx-stat"><strong>0</strong> reflection · trim-clean</span>
             <span class="dx-stat"><strong>MIT</strong> licensed</span>
             <span class="dx-stat"><strong>1000-line</strong> file cap, enforced</span>
@@ -672,6 +672,49 @@
             new("DxQueryBuilder", "Visual, nestable predicate tree (AND/OR groups).", "/query",
                 """
                 <DxQueryBuilder Fields="fields" Root="query" OnChange="StateHasChanged" />
+                """),
+        ]),
+
+        new("Documents & reporting", "Open, edit, and embed real document formats. Heavy parsers live in opt-in packages; report credentials stay server-side.",
+        [
+            new("DxDocumentViewer", "Native-embed viewer for PDF and other browser-renderable documents — a toolbar + iframe shell, no parser.", "/docviewer",
+                """
+                <DxDocumentViewer Documents="docs" />
+
+                @code {
+                    private readonly IReadOnlyList<ViewerDocument> docs =
+                        [new("Q3 report.pdf", DocumentKind.Pdf, "/files/q3.pdf")];
+                }
+                """),
+            new("DxSpreadsheetViewer", "Excel (.xlsx) viewer/editor with a live formula recalc graph — hand-rolled OOXML, no external NuGet deps.", "/excel",
+                """
+                @* read-only *@
+                <DxSpreadsheetViewer Workbook="workbook" />
+
+                @* editable: cell edits recalculate the dependency graph *@
+                <DxSpreadsheetViewer Workbook="workbook" Editable="true" />
+
+                @code { private readonly Workbook workbook = XlsxReader.Read(bytes); }
+                """),
+            new("DxWordViewer / DxWordEditor", "Word (.docx) viewer and editor over a sanitized OOXML↔HTML round-trip.", "/word",
+                """
+                <DxWordViewer Document="document" Label="Quarterly report" />
+                <DxWordEditor @bind-Document="document" Sanitizer="sanitizer" />
+
+                @code { private WordDocument document = DocxReader.Read(bytes); }
+                """),
+            new("DxReportViewer (SSRS)", "Server-side SSRS rendering via Microsoft's own URL-access engine, delivered over HTMX — parameter forms + fragment swaps, no WASM payload.", "/reports",
+                """
+                <DxReportViewer Report="/Sales/Quarterly" Format="ReportFormat.Html"
+                                Values="parameters" />
+                """),
+            new("DxPowerBiReport", "Lazy-loaded wrapper over Microsoft's powerbi-client SDK — the embed token is minted server-side and fetched from your endpoint, so AAD credentials never reach the browser.", "/powerbi",
+                """
+                <DxPowerBiReport ConfigEndpoint="/powerbi/embedconfig" />
+                """),
+            new("DxHtmxDocumentViewer", "Static-SSR, read-only document viewer (PDF / Excel / Word) with a no-JS href fallback — zero circuit, zero WASM.", "/htmx/doc",
+                """
+                <DxHtmxDocumentViewer Kind="HtmxDocumentKind.Excel" Source="/files/book.xlsx" />
                 """),
         ]),
 
