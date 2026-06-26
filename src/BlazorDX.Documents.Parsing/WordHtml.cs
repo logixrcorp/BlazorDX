@@ -439,6 +439,21 @@ public static partial class WordHtml
 
                     break;
 
+                case "img":
+                    // A (data-URL) image becomes a block-level WordImage between paragraphs.
+                    // Only handled at top level (not inside a list item or table cell) in v1.
+                    if (!tag.IsClose && _listItems is null && _tableRows is null && !_inCell)
+                    {
+                        WordImage? image = ParseImage(tag.Text);
+                        if (image is not null)
+                        {
+                            FlushParagraph();
+                            _blocks.Add(image);
+                        }
+                    }
+
+                    break;
+
                 case "ul" or "ol":
                     if (tag.IsClose)
                     {

@@ -143,16 +143,18 @@ public static partial class WordHtml
         return true;
     }
 
-    // Pulls the href value out of an opening tag's raw attribute text (e.g.
-    // 'a href="https://x" title="y"'). Best-effort: quoted or bare, entity-decoded.
-    private static string? ExtractHref(string rawTag)
+    private static string? ExtractHref(string rawTag) => ReadAttribute(rawTag, "href");
+
+    // Pulls a named attribute's value out of an opening tag's raw attribute text (e.g.
+    // 'img src="data:…" alt="x"'). Best-effort: quoted or bare, entity-decoded, with a word
+    // boundary so "src" doesn't match inside "data-src".
+    private static string? ReadAttribute(string rawTag, string name)
     {
-        int idx = rawTag.IndexOf("href", System.StringComparison.OrdinalIgnoreCase);
+        int idx = rawTag.IndexOf(name, System.StringComparison.OrdinalIgnoreCase);
         while (idx >= 0)
         {
-            // Require a word boundary so "data-href" / "xhref" don't match.
             bool boundary = idx == 0 || char.IsWhiteSpace(rawTag[idx - 1]);
-            int p = idx + 4;
+            int p = idx + name.Length;
             while (p < rawTag.Length && char.IsWhiteSpace(rawTag[p]))
             {
                 p++;
@@ -190,10 +192,76 @@ public static partial class WordHtml
                 }
             }
 
-            idx = rawTag.IndexOf("href", idx + 4, System.StringComparison.OrdinalIgnoreCase);
+            idx = rawTag.IndexOf(name, idx + name.Length, System.StringComparison.OrdinalIgnoreCase);
         }
 
         return null;
+    }
+
+    // Builds a WordImage from an <img> tag's raw text. Only base64 data: URLs are accepted
+    // (a self-contained doc; external/remote src is ignored). Returns null if unusable.
+    private static WordImage? ParseImage(string rawTag)
+    {
+        string? src = ReadAttribute(rawTag, "src");
+        if (src is null || !src.StartsWith("data:", System.StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        int comma = src.IndexOf(',');
+        if (comma < 0)
+        {
+            return null;
+        }
+
+        string meta = src[5..comma]; // between "data:" and ","
+        if (!meta.Contains("base64", System.StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        int semi = meta.IndexOf(';');
+        string contentType = (semi >= 0 ? meta[..semi] : meta).Trim();
+
+        byte[] data;
+        try
+        {
+            data = System.Convert.FromBase64String(src[(comma + 1)..].Trim());
+        }
+        catch (System.FormatException)
+        {
+            return null;
+        }
+
+        if (data.Length == 0)
+        {
+            return null;
+        }
+
+        string? alt = ReadAttribute(rawTag, "alt");
+        return new WordImage(
+            data,
+            contentType.Length > 0 ? contentType : "image/png",
+            string.IsNullOrEmpty(alt) ? null : alt,
+            ParseLeadingInt(ReadAttribute(rawTag, "width")),
+            ParseLeadingInt(ReadAttribute(rawTag, "height")));
+    }
+
+    // Reads the leading integer of a value (so "200" and "200px" both yield 200); 0 if none.
+    private static int ParseLeadingInt(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return 0;
+        }
+
+        int i = 0;
+        while (i < value.Length && char.IsDigit(value[i]))
+        {
+            i++;
+        }
+
+        return i > 0 && int.TryParse(value[..i], out int n) ? n : 0;
     }
 
     // Only http/https/mailto URLs survive — javascript:, data:, and relative URLs are

@@ -7,6 +7,17 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 > **Beta.** BlazorDX is pre-1.0 and built with substantial AI assistance. Breaking
 > changes can land in any minor release until 1.0.
 
+## [0.3.5] — 2026-06-26
+
+### Added
+
+- **Embedded images** round-trip (gap fix 5): a new `WordImage` block (bytes + content
+  type + alt + pixel size). It survives `WordHtml` (base64 `data:` URL `<img>`),
+  `DocxWriter`/`DocxReader` (a `word/media` part + image relationship + `<w:drawing>`/
+  `pic:pic`), and `DxWordViewer` (`<img>` with an always-present `alt`, WCAG 1.1.1).
+  Only base64 `data:` URLs are accepted on parse (no remote `src`). The in-editor
+  insert-image affordance (file picker) and images inside tables/lists are deferred.
+
 ## [0.3.4] — 2026-06-26
 
 ### Added

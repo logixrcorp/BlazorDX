@@ -36,10 +36,32 @@ public static partial class WordHtml
                 case WordParagraph paragraph:
                     AppendParagraph(sb, paragraph);
                     break;
+                case WordImage image:
+                    AppendImage(sb, image);
+                    break;
             }
         }
 
         return sb.ToString();
+    }
+
+    private static void AppendImage(StringBuilder sb, WordImage image)
+    {
+        sb.Append("<img src=\"data:").Append(image.ContentType).Append(";base64,")
+          .Append(Convert.ToBase64String(image.Data)).Append("\" alt=\"");
+        AppendEscaped(sb, image.AltText ?? string.Empty);
+        sb.Append('"');
+        if (image.Width > 0)
+        {
+            sb.Append(" width=\"").Append(image.Width.ToString(CultureInfo.InvariantCulture)).Append('"');
+        }
+
+        if (image.Height > 0)
+        {
+            sb.Append(" height=\"").Append(image.Height.ToString(CultureInfo.InvariantCulture)).Append('"');
+        }
+
+        sb.Append(" />");
     }
 
     private static void AppendHeading(StringBuilder sb, WordHeading heading)

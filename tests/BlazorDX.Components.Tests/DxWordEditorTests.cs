@@ -454,6 +454,32 @@ public sealed class DxWordEditorTests : TestContext
         }
     }
 
+    [Fact]
+    public void Embedded_images_round_trip_their_bytes_alt_and_size()
+    {
+        byte[] pixels = [0x89, 0x50, 0x4E, 0x47, 1, 2, 3, 4, 5, 6, 7, 8]; // stand-in PNG bytes
+        WordDocument original = new(
+        [
+            new WordParagraph([new WordRun("Before")]),
+            new WordImage(pixels, "image/png", "A red dot", 64, 48),
+            new WordParagraph([new WordRun("After")]),
+        ]);
+
+        // model -> HTML (data URL) -> model, then -> .docx (media part + <w:drawing>) -> model.
+        WordDocument viaHtml = WordHtml.FromHtml(WordHtml.ToHtml(original));
+        WordDocument viaDocx = DocxReader.Read(DocxWriter.Write(viaHtml));
+
+        foreach (WordDocument doc in new[] { viaHtml, viaDocx })
+        {
+            WordImage img = doc.Blocks.OfType<WordImage>().Single();
+            Assert.Equal(pixels, img.Data);
+            Assert.Equal("image/png", img.ContentType);
+            Assert.Equal("A red dot", img.AltText);
+            Assert.Equal(64, img.Width);
+            Assert.Equal(48, img.Height);
+        }
+    }
+
     private static string Text(IReadOnlyList<WordRun> runs) =>
         string.Concat(runs.Select(r => r.Text));
 }
