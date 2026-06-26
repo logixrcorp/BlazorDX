@@ -40,11 +40,14 @@ jobs:
       - name: Speed wasm build smoke (opt-level 3 + simd128)
         run: dotnet build src/BlazorDX.Interop/BlazorDX.Interop.csproj -c Release -p:RustSpeed=true
 
-      - name: Unit tests (bUnit + compute + analyzers)
+      - name: Unit tests (bUnit + compute + analyzers + documents/reporting)
         run: |
           dotnet test tests/BlazorDX.Components.Tests/BlazorDX.Components.Tests.csproj -c Release --no-build
           dotnet test tests/BlazorDX.Compute.Tests/BlazorDX.Compute.Tests.csproj -c Release --no-build
           dotnet test tests/BlazorDX.Analyzers.Tests/BlazorDX.Analyzers.Tests.csproj -c Release --no-build
+          dotnet test tests/BlazorDX.MockReportServer.Tests/BlazorDX.MockReportServer.Tests.csproj -c Release --no-build
+          dotnet test tests/BlazorDX.Integrations.Reporting.Tests/BlazorDX.Integrations.Reporting.Tests.csproj -c Release --no-build
+          dotnet test tests/BlazorDX.Integrations.PowerBI.Tests/BlazorDX.Integrations.PowerBI.Tests.csproj -c Release --no-build
 
   e2e:
     name: E2E (${{ matrix.browser }})
@@ -94,14 +97,17 @@ jobs:
           BLAZORDX_BROWSER: ${{ matrix.browser }}
         run: dotnet test tests/BlazorDX.E2E.Tests/BlazorDX.E2E.Tests.csproj -c Release --no-build
 
-  # AOT is the headline differentiator and a long (~20 min) compile, so it runs only
-  # on main / manual dispatch, not on every PR. It publishes the WHOLE component set
-  # AOT-compiled + trimmed, then drives the published app with the E2E suite to prove
-  # it actually runs — not just that it compiled.
+  # AOT is the headline differentiator and a long (~20 min) compile. It publishes the
+  # WHOLE component set AOT-compiled + trimmed, then drives the published app with the
+  # E2E suite to prove it actually runs — not just that it compiled.
+  #
+  # It runs on PRs too (not just main): a WASM-AOT/trim break compiles fine in Debug and
+  # in a plain Release build, so without this it would pass the PR and only turn `main`
+  # red on merge. Catching it pre-merge is worth the runtime. (To trade merge-safety back
+  # for cheaper PRs, restore `if: github.event_name != 'pull_request'`.)
   aot-publish:
     name: AOT publish + smoke
     runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request'
     needs: build-and-unit
     steps:
       - uses: actions/checkout@v5
