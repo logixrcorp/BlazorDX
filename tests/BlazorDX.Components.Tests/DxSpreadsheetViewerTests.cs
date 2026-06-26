@@ -182,4 +182,98 @@ public sealed class DxSpreadsheetViewerTests : TestContext
         Assert.NotNull(changed);
         Assert.True(viewer.Instance.IsDirty);
     }
+
+    private static int AriaRowCount(IRenderedComponent<DxSpreadsheetViewer> v) =>
+        int.Parse(v.Find("[role=grid]").GetAttribute("aria-rowcount")!);
+
+    // aria-colcount includes the +1 row-label gutter column.
+    private static int AriaColCount(IRenderedComponent<DxSpreadsheetViewer> v) =>
+        int.Parse(v.Find("[role=grid]").GetAttribute("aria-colcount")!);
+
+    [Fact]
+    public void Editable_grid_shows_a_toolbar_and_formula_bar()
+    {
+        IRenderedComponent<DxSpreadsheetViewer> viewer = RenderEditable(SampleWorkbook());
+
+        Assert.Single(viewer.FindAll("[role=toolbar]"));
+        Assert.Single(viewer.FindAll(".dx-sheet-formulabar-input"));
+        Assert.True(viewer.FindAll(".dx-sheet-toolbar-btn").Count >= 5); // 4 structural + download
+    }
+
+    [Fact]
+    public void Toolbar_insert_and_delete_row_change_the_row_count()
+    {
+        IRenderedComponent<DxSpreadsheetViewer> viewer = RenderEditable(SampleWorkbook());
+        int before = AriaRowCount(viewer); // header + 2 data = 3
+
+        viewer.Find("[aria-label='Insert row above the active cell']").Click();
+        Assert.Equal(before + 1, AriaRowCount(viewer));
+
+        viewer.Find("[aria-label='Delete the active row']").Click();
+        Assert.Equal(before, AriaRowCount(viewer));
+    }
+
+    [Fact]
+    public void Toolbar_insert_and_delete_column_change_the_column_count()
+    {
+        IRenderedComponent<DxSpreadsheetViewer> viewer = RenderEditable(SampleWorkbook());
+        int before = AriaColCount(viewer); // 2 data + 1 gutter = 3
+
+        viewer.Find("[aria-label='Insert column before the active cell']").Click();
+        Assert.Equal(before + 1, AriaColCount(viewer));
+
+        viewer.Find("[aria-label='Delete the active column']").Click();
+        Assert.Equal(before, AriaColCount(viewer));
+    }
+
+    [Fact]
+    public void Typing_a_character_opens_the_editor_seeded_with_it()
+    {
+        // The active cell defaults to (0,0). A printable keydown on the grid opens the
+        // in-cell editor pre-filled with that character (Excel type-to-edit).
+        IRenderedComponent<DxSpreadsheetViewer> viewer = RenderEditable(SampleWorkbook());
+
+        viewer.Find("[role=grid]").KeyDown("x");
+
+        Assert.Equal("x", viewer.Find(".dx-sheet-cell-input").GetAttribute("value"));
+    }
+
+    [Fact]
+    public void Delete_clears_the_active_cell()
+    {
+        IRenderedComponent<DxSpreadsheetViewer> viewer = RenderEditable(SampleWorkbook());
+
+        viewer.Find("[role=grid]").KeyDown("Delete");
+
+        // (0,0) was "Name"; the formula bar reflects the now-empty active cell.
+        Assert.Equal(string.Empty, viewer.Find(".dx-sheet-formulabar-input").GetAttribute("value"));
+    }
+
+    [Fact]
+    public void Editing_in_the_formula_bar_commits_to_the_active_cell()
+    {
+        Workbook? changed = null;
+        IRenderedComponent<DxSpreadsheetViewer> viewer = RenderComponent<DxSpreadsheetViewer>(p => p
+            .Add(v => v.Workbook, SampleWorkbook())
+            .Add(v => v.Editable, true)
+            .Add(v => v.ViewportHeight, 600)
+            .Add(v => v.WorkbookChanged, wb => changed = wb));
+
+        IElement bar = viewer.Find(".dx-sheet-formulabar-input");
+        bar.Input("Renamed");
+        bar.KeyDown("Enter");
+
+        Assert.NotNull(changed);
+        Assert.True(viewer.Instance.IsDirty);
+    }
+
+    [Fact]
+    public void Download_button_serializes_the_workbook_without_error()
+    {
+        // The null interop makes the actual file save a no-op; this asserts the click
+        // path (build edited workbook -> XlsxWorkbookWriter -> bridge) doesn't throw.
+        IRenderedComponent<DxSpreadsheetViewer> viewer = RenderEditable(SampleWorkbook());
+
+        viewer.Find("[aria-label='Download the workbook as an .xlsx file']").Click();
+    }
 }
