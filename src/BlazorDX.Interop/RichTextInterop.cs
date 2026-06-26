@@ -33,6 +33,12 @@ public sealed partial class RichTextInterop : IRichTextInterop
         Exec(command, value);
     }
 
+    public async ValueTask CreateLinkAsync()
+    {
+        await EnsureLoadedAsync();
+        CreateLink();
+    }
+
     public async ValueTask<string> GetHtmlAsync(string elementId)
     {
         await EnsureLoadedAsync();
@@ -53,6 +59,9 @@ public sealed partial class RichTextInterop : IRichTextInterop
 
     [JSImport("exec", ModuleName)]
     private static partial void Exec(string command, string value);
+
+    [JSImport("createLink", ModuleName)]
+    private static partial void CreateLink();
 
     [JSImport("getHtml", ModuleName)]
     private static partial string GetHtml(string elementId);

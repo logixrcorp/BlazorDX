@@ -22,7 +22,7 @@ public sealed class DxRichTextEditorTests : TestContext
         IRenderedComponent<DxRichTextEditor> editor = RenderComponent<DxRichTextEditor>(parameters => parameters
             .Add(e => e.AriaLabel, "Body"));
 
-        Assert.Equal(8, editor.FindAll(".dx-rte-tool").Count);   // B I U S H • 1. clear
+        Assert.Equal(9, editor.FindAll(".dx-rte-tool").Count);   // B I U S H • 1. link clear
         var surface = editor.Find(".dx-rte-surface");
         Assert.Equal("true", surface.GetAttribute("contenteditable"));
         Assert.Equal("textbox", surface.GetAttribute("role"));

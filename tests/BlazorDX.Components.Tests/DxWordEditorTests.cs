@@ -148,9 +148,9 @@ public sealed class DxWordEditorTests : TestContext
         Assert.Equal("toolbar", toolbar.GetAttribute("role"));
         Assert.Equal("Formatting", toolbar.GetAttribute("aria-label"));
 
-        // The reused formatting tools (bold/italic/underline/strike/heading/lists/clear) are all labeled.
+        // The reused formatting tools (bold/italic/underline/strike/heading/lists/link/clear) are labeled.
         IRefreshableElementCollection<IElement> tools = editor.FindAll(".dx-rte-tool");
-        Assert.Equal(8, tools.Count);
+        Assert.Equal(9, tools.Count);
         Assert.All(tools, t => Assert.False(string.IsNullOrEmpty(t.GetAttribute("aria-label"))));
     }
 
