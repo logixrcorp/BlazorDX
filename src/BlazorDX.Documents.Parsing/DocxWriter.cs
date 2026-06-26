@@ -188,7 +188,7 @@ public static class DocxWriter
                     AppendHeading(sb, heading, links);
                     break;
                 case WordParagraph paragraph:
-                    AppendParagraph(sb, paragraph.Runs, pPr: null, links);
+                    AppendParagraph(sb, paragraph.Runs, pPr: null, links, paragraph.Alignment);
                     break;
                 case WordList list:
                     AppendList(sb, list, links);
@@ -209,7 +209,7 @@ public static class DocxWriter
         int level = Math.Clamp(heading.Level, 1, 6);
         string pPr = "<w:pStyle w:val=\"Heading" +
             level.ToString(CultureInfo.InvariantCulture) + "\"/>";
-        AppendParagraph(sb, heading.Runs, pPr, links);
+        AppendParagraph(sb, heading.Runs, pPr, links, heading.Alignment);
     }
 
     private static void AppendList(StringBuilder sb, WordList list, LinkRels links)
@@ -225,14 +225,36 @@ public static class DocxWriter
         }
     }
 
-    // Emits one <w:p>: optional <w:pPr> (style or numbering) followed by its runs. A run
-    // carrying an Href is wrapped in <w:hyperlink r:id="…"> referencing an external rel.
-    private static void AppendParagraph(StringBuilder sb, IReadOnlyList<WordRun> runs, string? pPr, LinkRels links)
+    private static string? JustificationElement(WordAlignment alignment) => alignment switch
+    {
+        WordAlignment.Center => "<w:jc w:val=\"center\"/>",
+        WordAlignment.End => "<w:jc w:val=\"end\"/>",
+        WordAlignment.Justify => "<w:jc w:val=\"both\"/>",
+        _ => null,
+    };
+
+    // Emits one <w:p>: optional <w:pPr> (style/numbering + justification) then its runs. A
+    // run carrying an Href is wrapped in <w:hyperlink r:id="…"> referencing an external rel.
+    private static void AppendParagraph(
+        StringBuilder sb, IReadOnlyList<WordRun> runs, string? pPr, LinkRels links,
+        WordAlignment alignment = WordAlignment.Start)
     {
         sb.Append("<w:p>");
-        if (pPr is not null)
+        string? jc = JustificationElement(alignment);
+        if (pPr is not null || jc is not null)
         {
-            sb.Append("<w:pPr>").Append(pPr).Append("</w:pPr>");
+            sb.Append("<w:pPr>");
+            if (pPr is not null)
+            {
+                sb.Append(pPr);
+            }
+
+            if (jc is not null)
+            {
+                sb.Append(jc);
+            }
+
+            sb.Append("</w:pPr>");
         }
 
         foreach (WordRun run in runs)

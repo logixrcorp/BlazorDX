@@ -90,17 +90,26 @@ public static partial class WordHtml
     {
         int level = Math.Clamp(heading.Level, 1, 6);
         string tag = "h" + level.ToString(CultureInfo.InvariantCulture);
-        sb.Append('<').Append(tag).Append('>');
+        sb.Append('<').Append(tag).Append(AlignStyle(heading.Alignment)).Append('>');
         AppendRuns(sb, heading.Runs);
         sb.Append("</").Append(tag).Append('>');
     }
 
     private static void AppendParagraph(StringBuilder sb, WordParagraph paragraph)
     {
-        sb.Append("<p>");
+        sb.Append("<p").Append(AlignStyle(paragraph.Alignment)).Append('>');
         AppendRuns(sb, paragraph.Runs);
         sb.Append("</p>");
     }
+
+    // A text-align inline style for a non-default alignment, or "" for Start.
+    private static string AlignStyle(WordAlignment alignment) => alignment switch
+    {
+        WordAlignment.Center => " style=\"text-align:center\"",
+        WordAlignment.End => " style=\"text-align:right\"",
+        WordAlignment.Justify => " style=\"text-align:justify\"",
+        _ => string.Empty,
+    };
 
     private static void AppendList(StringBuilder sb, WordList list)
     {
@@ -396,6 +405,7 @@ public static partial class WordHtml
         private int _underline;
         private int _strike;
         private string? _href;
+        private WordAlignment _alignment;
 
         // Current block context.
         private BlockKind _kind = BlockKind.Paragraph;
@@ -563,6 +573,7 @@ public static partial class WordHtml
                     {
                         StartBlock(BlockKind.Heading);
                         _headingLevel = tag.Name[1] - '0';
+                        _alignment = ParseAlignment(tag.Text);
                     }
 
                     break;
@@ -575,6 +586,7 @@ public static partial class WordHtml
                     else
                     {
                         StartBlock(BlockKind.Paragraph);
+                        _alignment = ParseAlignment(tag.Text);
                     }
 
                     break;
@@ -586,6 +598,7 @@ public static partial class WordHtml
                     if (!tag.IsClose && _listItems is null && _tableRows is null)
                     {
                         StartBlock(BlockKind.Paragraph);
+                        _alignment = ParseAlignment(tag.Text);
                     }
 
                     break;
@@ -701,6 +714,7 @@ public static partial class WordHtml
             _underline = 0;
             _strike = 0;
             _href = null;
+            _alignment = WordAlignment.Start;
         }
 
 
@@ -715,7 +729,7 @@ public static partial class WordHtml
 
             if (_kind == BlockKind.Heading)
             {
-                _blocks.Add(new WordHeading(Math.Clamp(_headingLevel, 1, 6), Snapshot()));
+                _blocks.Add(new WordHeading(Math.Clamp(_headingLevel, 1, 6), Snapshot(), _alignment));
                 _kind = BlockKind.Paragraph;
                 ResetRuns();
                 return;
@@ -730,7 +744,7 @@ public static partial class WordHtml
 
             if (_runs.Count > 0)
             {
-                _blocks.Add(new WordParagraph(Snapshot()));
+                _blocks.Add(new WordParagraph(Snapshot(), _alignment));
             }
 
             ResetRuns();

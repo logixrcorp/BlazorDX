@@ -148,9 +148,9 @@ public sealed class DxWordEditorTests : TestContext
         Assert.Equal("toolbar", toolbar.GetAttribute("role"));
         Assert.Equal("Formatting", toolbar.GetAttribute("aria-label"));
 
-        // The reused formatting tools (bold/italic/underline/strike/heading/lists/link/clear) are labeled.
+        // The reused formatting tools (B/I/U/S, heading, lists, align ×4, link, clear) are labeled.
         IRefreshableElementCollection<IElement> tools = editor.FindAll(".dx-rte-tool");
-        Assert.Equal(9, tools.Count);
+        Assert.Equal(13, tools.Count);
         Assert.All(tools, t => Assert.False(string.IsNullOrEmpty(t.GetAttribute("aria-label"))));
     }
 
@@ -371,6 +371,30 @@ public sealed class DxWordEditorTests : TestContext
 
         editor.Find(".dx-word-find-case input").Change(true);           // now case-sensitive
         Assert.Contains("0 matches", editor.Find(".dx-word-find-count").TextContent);
+    }
+
+    [Fact]
+    public void Paragraph_alignment_survives_the_full_round_trip()
+    {
+        WordDocument original = new(
+        [
+            new WordParagraph([new WordRun("centered")], WordAlignment.Center),
+            new WordParagraph([new WordRun("right")], WordAlignment.End),
+            new WordHeading(2, [new WordRun("just head")], WordAlignment.Justify),
+            new WordParagraph([new WordRun("default")]),
+        ]);
+
+        WordDocument viaHtml = WordHtml.FromHtml(WordHtml.ToHtml(original));
+        WordDocument viaDocx = DocxReader.Read(DocxWriter.Write(viaHtml));
+
+        foreach (WordDocument doc in new[] { viaHtml, viaDocx })
+        {
+            WordParagraph[] paras = doc.Blocks.OfType<WordParagraph>().ToArray();
+            Assert.Equal(WordAlignment.Center, paras.Single(p => Text(p.Runs) == "centered").Alignment);
+            Assert.Equal(WordAlignment.End, paras.Single(p => Text(p.Runs) == "right").Alignment);
+            Assert.Equal(WordAlignment.Start, paras.Single(p => Text(p.Runs) == "default").Alignment);
+            Assert.Equal(WordAlignment.Justify, doc.Blocks.OfType<WordHeading>().Single().Alignment);
+        }
     }
 
     private static string Text(IReadOnlyList<WordRun> runs) =>

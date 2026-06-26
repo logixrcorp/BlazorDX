@@ -46,6 +46,10 @@ public sealed class DxRichTextEditor : ComponentBase
         ("formatBlock", "<h2>", "H", "Heading"),
         ("insertUnorderedList", "", "•", "Bullet list"),
         ("insertOrderedList", "", "1.", "Numbered list"),
+        ("justifyLeft", "", "⇤", "Align left"),
+        ("justifyCenter", "", "↔", "Align center"),
+        ("justifyRight", "", "⇥", "Align right"),
+        ("justifyFull", "", "≡", "Justify"),
         ("createLink", "", "🔗", "Insert link"),
         ("removeFormat", "", "⌫", "Clear formatting"),
     ];

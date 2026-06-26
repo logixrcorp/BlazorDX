@@ -171,11 +171,11 @@ public static class DocxReader
 
                 if (para.HeadingLevel is { } level)
                 {
-                    blocks.Add(new WordHeading(level, para.Runs));
+                    blocks.Add(new WordHeading(level, para.Runs, para.Alignment));
                 }
                 else
                 {
-                    blocks.Add(new WordParagraph(para.Runs));
+                    blocks.Add(new WordParagraph(para.Runs, para.Alignment));
                 }
             }
             else if (reader.LocalName == "tbl")
@@ -194,7 +194,8 @@ public static class DocxReader
     private sealed record ParagraphContent(
         IReadOnlyList<WordRun> Runs,
         int? HeadingLevel,
-        ListKind? ListKind);
+        ListKind? ListKind,
+        WordAlignment Alignment = WordAlignment.Start);
 
     // Reads one <w:p>: its paragraph properties (<w:pPr>: style, numbering) then its
     // runs. The reader is positioned on the <w:p> start element; on return it sits on
@@ -213,6 +214,7 @@ public static class DocxReader
         List<WordRun> runs = [];
         int? headingLevel = null;
         ListKind? listKind = null;
+        WordAlignment alignment = WordAlignment.Start;
 
         while (reader.Read())
         {
@@ -231,7 +233,7 @@ public static class DocxReader
             switch (reader.LocalName)
             {
                 case "pPr":
-                    (headingLevel, listKind) = ReadParagraphProperties(reader, headingStyles);
+                    (headingLevel, listKind, alignment) = ReadParagraphProperties(reader, headingStyles);
                     break;
                 case "r":
                     AppendRun(reader, runs);
@@ -254,23 +256,24 @@ public static class DocxReader
             }
         }
 
-        return new ParagraphContent(CoalesceRuns(runs), headingLevel, listKind);
+        return new ParagraphContent(CoalesceRuns(runs), headingLevel, listKind, alignment);
     }
 
-    // Reads <w:pPr>: resolves a heading level from <w:pStyle w:val="..."> and detects
-    // a list item from <w:numPr>. Returns (headingLevel?, listKind?).
-    private static (int? HeadingLevel, ListKind? ListKind) ReadParagraphProperties(
+    // Reads <w:pPr>: heading level (<w:pStyle>), list item (<w:numPr>), and alignment
+    // (<w:jc>). Returns (headingLevel?, listKind?, alignment).
+    private static (int? HeadingLevel, ListKind? ListKind, WordAlignment Alignment) ReadParagraphProperties(
         XmlReader reader, IReadOnlyDictionary<string, int> headingStyles)
     {
         if (reader.IsEmptyElement)
         {
-            return (null, null);
+            return (null, null, WordAlignment.Start);
         }
 
         int pprDepth = reader.Depth;
         int? headingLevel = null;
         bool isList = false;
         int numId = -1;
+        WordAlignment alignment = WordAlignment.Start;
 
         while (reader.Read())
         {
@@ -304,6 +307,9 @@ public static class DocxReader
                     }
 
                     break;
+                case "jc":
+                    alignment = ParseJustification(reader.GetAttribute("val", WordprocessingMl));
+                    break;
             }
         }
 
@@ -313,11 +319,19 @@ public static class DocxReader
             // "no numbering" sentinel Word uses for bullets in many documents; any
             // positive id is treated as ordered. Headings never coexist with lists here.
             bool ordered = numId > 0;
-            return (null, new ListKind(ordered));
+            return (null, new ListKind(ordered), alignment);
         }
 
-        return (headingLevel, null);
+        return (headingLevel, null, alignment);
     }
+
+    private static WordAlignment ParseJustification(string? val) => val?.ToLowerInvariant() switch
+    {
+        "center" => WordAlignment.Center,
+        "end" or "right" => WordAlignment.End,
+        "both" or "distribute" or "justify" => WordAlignment.Justify,
+        _ => WordAlignment.Start,
+    };
 
     // Maps a paragraph style id to a heading level (1-6), or null if it is not a
     // heading. Recognizes the conventional "Heading1".."Heading6" / "Title" ids first,

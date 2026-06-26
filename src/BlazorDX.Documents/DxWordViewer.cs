@@ -98,6 +98,11 @@ public sealed class DxWordViewer : ComponentBase
         int level = Math.Clamp(heading.Level, 1, 6);
         builder.OpenElement(10, HeadingTag(level));
         builder.AddAttribute(11, "class", "dx-word-heading");
+        if (AlignStyle(heading.Alignment) is { } style)
+        {
+            builder.AddAttribute(12, "style", style);
+        }
+
         BuildRuns(builder, heading.Runs);
         builder.CloseElement();
     }
@@ -106,9 +111,22 @@ public sealed class DxWordViewer : ComponentBase
     {
         builder.OpenElement(20, "p");
         builder.AddAttribute(21, "class", "dx-word-para");
+        if (AlignStyle(paragraph.Alignment) is { } style)
+        {
+            builder.AddAttribute(22, "style", style);
+        }
+
         BuildRuns(builder, paragraph.Runs);
         builder.CloseElement();
     }
+
+    private static string? AlignStyle(WordAlignment alignment) => alignment switch
+    {
+        WordAlignment.Center => "text-align:center",
+        WordAlignment.End => "text-align:right",
+        WordAlignment.Justify => "text-align:justify",
+        _ => null,
+    };
 
     private static void BuildList(RenderTreeBuilder builder, WordList list)
     {

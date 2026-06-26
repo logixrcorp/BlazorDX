@@ -26,14 +26,34 @@ public abstract record WordBlock;
 /// </summary>
 /// <param name="Level">The heading level, 1 (most prominent) through 6.</param>
 /// <param name="Runs">The inline runs making up the heading text.</param>
-public sealed record WordHeading(int Level, IReadOnlyList<WordRun> Runs) : WordBlock;
+/// <param name="Alignment">Paragraph alignment (maps to <c>&lt;w:jc&gt;</c> / <c>text-align</c>).</param>
+public sealed record WordHeading(
+    int Level, IReadOnlyList<WordRun> Runs, WordAlignment Alignment = WordAlignment.Start) : WordBlock;
+
+/// <summary>Horizontal alignment of a block. <see cref="Start"/> is the default (unset).</summary>
+public enum WordAlignment
+{
+    /// <summary>Leading edge (left in LTR). The default; emits no markup.</summary>
+    Start,
+
+    /// <summary>Centered.</summary>
+    Center,
+
+    /// <summary>Trailing edge (right in LTR).</summary>
+    End,
+
+    /// <summary>Justified (both edges).</summary>
+    Justify,
+}
 
 /// <summary>
 /// A body paragraph: a sequence of inline <see cref="WordRun"/>s rendered as a
 /// <c>&lt;p&gt;</c>. An empty run list is a blank paragraph.
 /// </summary>
 /// <param name="Runs">The inline runs making up the paragraph text, in order.</param>
-public sealed record WordParagraph(IReadOnlyList<WordRun> Runs) : WordBlock;
+/// <param name="Alignment">Paragraph alignment (maps to <c>&lt;w:jc&gt;</c> / <c>text-align</c>).</param>
+public sealed record WordParagraph(
+    IReadOnlyList<WordRun> Runs, WordAlignment Alignment = WordAlignment.Start) : WordBlock;
 
 /// <summary>
 /// A list: either bulleted (<c>&lt;ul&gt;</c>) or numbered (<c>&lt;ol&gt;</c>), with
