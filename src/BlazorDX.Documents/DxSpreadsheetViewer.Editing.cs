@@ -112,7 +112,10 @@ public sealed partial class DxSpreadsheetViewer
 
     private int EditRowCount => editRaw?.Count ?? 0;
 
-    private int EditColumnCount => ActiveSheet?.ColumnCount ?? 0;
+    // Width comes from the live buffer (so insert/delete column is reflected), falling
+    // back to the source sheet before the buffer is built.
+    private int EditColumnCount =>
+        editRaw is { Count: > 0 } ? editRaw[0].Count : (ActiveSheet?.ColumnCount ?? 0);
 
     private string RawAt(int row, int column) =>
         editRaw is not null && row >= 0 && row < editRaw.Count
@@ -133,6 +136,20 @@ public sealed partial class DxSpreadsheetViewer
         IReadOnlyList<string> header = sheet.Rows.Count > 0 ? sheet.Rows[0] : [];
         int dataRowCount = Math.Max(0, EditRowCount - 1);
         int dataColumns = EditColumnCount;
+
+        // Toolbar + formula bar are siblings ABOVE the grid. Each goes in its own region
+        // so its internal sequence numbers can't collide with the grid's (the diff matches
+        // siblings by sequence; overlapping numbers corrupt it).
+        if (ShowToolbar)
+        {
+            builder.OpenRegion(28);
+            BuildEditToolbar(builder);
+            builder.CloseRegion();
+
+            builder.OpenRegion(29);
+            BuildFormulaBar(builder);
+            builder.CloseRegion();
+        }
 
         builder.OpenElement(30, "div");
         builder.AddAttribute(31, "class", "dx-sheet-grid dx-sheet-grid-editable");
@@ -292,7 +309,7 @@ public sealed partial class DxSpreadsheetViewer
 
     // ---- Keyboard ----------------------------------------------------------------
 
-    private void OnGridKeyDownAsync(KeyboardEventArgs args)
+    private async Task OnGridKeyDownAsync(KeyboardEventArgs args)
     {
         if (editingRow >= 0)
         {
@@ -325,7 +342,18 @@ public sealed partial class DxSpreadsheetViewer
             case "F2":
                 BeginEdit(activeRow, activeColumn);
                 return;
+            case "Delete":
+            case "Backspace":
+                await ClearActiveCellAsync();
+                return;
             default:
+                // Excel-style type-to-edit: a single printable character (no modifier)
+                // opens the cell seeded with that character, replacing prior content.
+                if (args.Key.Length == 1 && !args.CtrlKey && !args.AltKey && !args.MetaKey)
+                {
+                    BeginEdit(activeRow, activeColumn, args.Key);
+                }
+
                 return;
         }
 
@@ -374,7 +402,7 @@ public sealed partial class DxSpreadsheetViewer
         StateHasChanged();
     }
 
-    private void BeginEdit(int rowIndex, int column)
+    private void BeginEdit(int rowIndex, int column, string? initialText = null)
     {
         if (editRaw is null || rowIndex < 0 || rowIndex >= editRaw.Count)
         {
@@ -385,7 +413,7 @@ public sealed partial class DxSpreadsheetViewer
         activeColumn = column;
         editingRow = rowIndex;
         editingColumn = column;
-        editBuffer = RawAt(rowIndex, column);
+        editBuffer = initialText ?? RawAt(rowIndex, column);
         focusEditInput = true;
         StateHasChanged();
     }

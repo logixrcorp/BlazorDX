@@ -7,6 +7,27 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 > **Beta.** BlazorDX is pre-1.0 and built with substantial AI assistance. Breaking
 > changes can land in any minor release until 1.0.
 
+## [0.3.1] — 2026-06-26
+
+### Fixed
+
+- **Editable spreadsheet crash:** moving the active cell threw
+  `Unexpected frame type during RemoveOldFrame: ElementReferenceCapture` (cascading into
+  null-reference / missing-event-handler errors that broke the `excel-edit` page). The
+  cell's reference capture is now emitted unconditionally.
+- **Spreadsheet footer overlap:** the worksheet tab panel reused the `dx-sheet-panel`
+  class owned by the `DxSheet` offcanvas overlay (`position: fixed`), pulling the grid out
+  of flow and dropping it on the page footer. Renamed to `dx-sheet-tabpanel`.
+- **Blank columns/rows on real `.xlsx`:** `XlsxReader` now trims trailing empty
+  rows/columns to the true used range (interior blanks preserved).
+
+### Added
+
+- **Editable spreadsheet, fleshed out:** a **formula bar** (active cell's A1 address +
+  raw-content input), a **toolbar** (insert/delete row & column, Download `.xlsx`), and
+  Excel-style keyboard entry (type-to-replace, `Delete`/`Backspace` to clear). Structural
+  insert/delete does not yet rewrite formula references (documented).
+
 ## [0.3.0] — 2026-06-26
 
 ### Added — Extended Document Handling track
