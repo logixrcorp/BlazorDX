@@ -26,6 +26,13 @@ public interface IRichTextInterop
     /// </summary>
     ValueTask ApplyColorAsync(string command, string color);
 
+    /// <summary>
+    /// Selects (and scrolls to) the next/previous occurrence of <paramref name="query"/> in
+    /// the editor element, wrapping at the ends. Returns the 1-based index of the selected
+    /// match, or 0 if there are none.
+    /// </summary>
+    ValueTask<int> FindInEditorAsync(string elementId, string query, bool forward, bool caseSensitive);
+
     /// <summary>Returns the current inner HTML of the editor element.</summary>
     ValueTask<string> GetHtmlAsync(string elementId);
 

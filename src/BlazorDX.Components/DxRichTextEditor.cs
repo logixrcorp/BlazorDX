@@ -149,6 +149,14 @@ public sealed class DxRichTextEditor : ComponentBase
         await SyncFromDomAsync();
     }
 
+    /// <summary>
+    /// Selects and scrolls to the next (or previous) occurrence of <paramref name="query"/>
+    /// in the editing surface, wrapping at the ends. Returns the 1-based match index, or 0
+    /// if there are no matches. The selection is owned via the bridge (no model mapping).
+    /// </summary>
+    public ValueTask<int> FindNextAsync(string query, bool forward, bool caseSensitive) =>
+        Interop.FindInEditorAsync(editorId, query, forward, caseSensitive);
+
     private async Task SyncFromDomAsync()
     {
         string raw = await Interop.GetHtmlAsync(editorId);

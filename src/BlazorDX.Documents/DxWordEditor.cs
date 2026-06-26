@@ -200,6 +200,7 @@ public sealed partial class DxWordEditor : ComponentBase
         builder.AddComponentParameter(23, nameof(DxRichTextEditor.Sanitizer), Sanitizer);
         builder.AddComponentParameter(24, nameof(DxRichTextEditor.AriaLabel), Label);
         builder.AddComponentParameter(25, nameof(DxRichTextEditor.Class), "dx-word-editor-surface");
+        builder.AddComponentReferenceCapture(26, rte => _rte = (DxRichTextEditor)rte);
         builder.CloseComponent();
 
         if (ShowStatus)
