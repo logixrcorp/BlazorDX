@@ -219,7 +219,7 @@ public sealed partial class DxWordEditor
             {
                 WordHeading h => new WordHeading(h.Level, MapRuns(h.Runs)),
                 WordParagraph p => new WordParagraph(MapRuns(p.Runs)),
-                WordList l => new WordList(l.Ordered, MapItems(l.Items, MapRuns)),
+                WordList l => new WordList(l.Ordered, MapItems(l.Items, MapRuns), l.Levels),
                 WordTable t => new WordTable(MapRows(t.Rows, MapRuns)),
                 WordBlock other => other,
             };

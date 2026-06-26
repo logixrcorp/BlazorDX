@@ -131,15 +131,18 @@ public static class DocxReader
         // coalesced into one WordList so they render as a single <ul>/<ol>.
         bool listOrdered = false;
         List<IReadOnlyList<WordRun>>? listItems = null;
+        List<int>? listLevels = null;
 
         void FlushList()
         {
             if (listItems is { Count: > 0 })
             {
-                blocks.Add(new WordList(listOrdered, listItems));
+                bool nested = listLevels is not null && listLevels.Exists(l => l > 0);
+                blocks.Add(new WordList(listOrdered, listItems, nested ? listLevels : null));
             }
 
             listItems = null;
+            listLevels = null;
         }
 
         while (reader.Read())
@@ -163,7 +166,9 @@ public static class DocxReader
 
                     listOrdered = kind.Ordered;
                     listItems ??= [];
+                    listLevels ??= [];
                     listItems.Add(para.Runs);
+                    listLevels.Add(kind.Level);
                     continue;
                 }
 
@@ -189,7 +194,7 @@ public static class DocxReader
         return new WordDocument(blocks);
     }
 
-    private readonly record struct ListKind(bool Ordered);
+    private readonly record struct ListKind(bool Ordered, int Level);
 
     private sealed record ParagraphContent(
         IReadOnlyList<WordRun> Runs,
@@ -273,6 +278,7 @@ public static class DocxReader
         int? headingLevel = null;
         bool isList = false;
         int numId = -1;
+        int ilvl = 0;
         WordAlignment alignment = WordAlignment.Start;
 
         while (reader.Read())
@@ -307,6 +313,15 @@ public static class DocxReader
                     }
 
                     break;
+                case "ilvl" when isList:
+                    // <w:ilvl w:val="N"> inside <w:numPr>: the 0-based nesting level.
+                    if (int.TryParse(reader.GetAttribute("val", WordprocessingMl),
+                        NumberStyles.Integer, CultureInfo.InvariantCulture, out int lvl) && lvl > 0)
+                    {
+                        ilvl = lvl;
+                    }
+
+                    break;
                 case "jc":
                     alignment = ParseJustification(reader.GetAttribute("val", WordprocessingMl));
                     break;
@@ -319,7 +334,7 @@ public static class DocxReader
             // "no numbering" sentinel Word uses for bullets in many documents; any
             // positive id is treated as ordered. Headings never coexist with lists here.
             bool ordered = numId > 0;
-            return (null, new ListKind(ordered), alignment);
+            return (null, new ListKind(ordered, ilvl), alignment);
         }
 
         return (headingLevel, null, alignment);
