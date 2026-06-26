@@ -46,7 +46,7 @@ namespace BlazorDX.Documents;
 /// document rather than an error.
 /// </para>
 /// </remarks>
-public static class WordHtml
+public static partial class WordHtml
 {
     // ---------------------------------------------------------------------
     // ToHtml: model -> semantic HTML
@@ -157,6 +157,14 @@ public static class WordHtml
             bool italic = run.Italic;
             bool underline = run.Underline;
             bool strike = run.Strike;
+            bool link = !string.IsNullOrEmpty(run.Href);
+
+            if (link)
+            {
+                sb.Append("<a href=\"");
+                AppendEscaped(sb, run.Href!);
+                sb.Append("\">");
+            }
 
             if (bold)
             {
@@ -198,6 +206,11 @@ public static class WordHtml
             if (bold)
             {
                 sb.Append("</strong>");
+            }
+
+            if (link)
+            {
+                sb.Append("</a>");
             }
         }
     }
@@ -308,7 +321,9 @@ public static class WordHtml
                     continue;
                 }
 
-                tokens.Add(new Token(true, name, isClose, selfClose, string.Empty));
+                // Keep the raw attribute text on opening tags so the parser can read href
+                // off an <a>. Closing tags carry none. (Text is otherwise unused for tags.)
+                tokens.Add(new Token(true, name, isClose, selfClose, isClose ? string.Empty : raw));
             }
             else
             {
@@ -380,6 +395,7 @@ public static class WordHtml
         private int _italic;
         private int _underline;
         private int _strike;
+        private string? _href;
 
         // Current block context.
         private BlockKind _kind = BlockKind.Paragraph;
@@ -449,14 +465,15 @@ public static class WordHtml
             {
                 WordRun last = _runs[^1];
                 if (last.Bold == bold && last.Italic == italic
-                    && last.Underline == underline && last.Strike == strike)
+                    && last.Underline == underline && last.Strike == strike
+                    && last.Href == _href)
                 {
                     _runs[^1] = last with { Text = last.Text + text };
                     return;
                 }
             }
 
-            _runs.Add(new WordRun(text, bold, italic, underline, strike));
+            _runs.Add(new WordRun(text, bold, italic, underline, strike, _href));
         }
 
         private void HandleTag(Token tag)
@@ -519,6 +536,20 @@ public static class WordHtml
                     else if (!tag.SelfClose)
                     {
                         _strike++;
+                    }
+
+                    break;
+
+                case "a":
+                    if (tag.IsClose)
+                    {
+                        _href = null;
+                    }
+                    else if (!tag.SelfClose)
+                    {
+                        // Only safe schemes survive; an unsafe/missing href leaves the
+                        // text un-linked rather than dropping it.
+                        _href = SanitizeUrl(ExtractHref(tag.Text));
                     }
 
                     break;
@@ -669,7 +700,9 @@ public static class WordHtml
             _italic = 0;
             _underline = 0;
             _strike = 0;
+            _href = null;
         }
+
 
         private void FlushParagraph()
         {

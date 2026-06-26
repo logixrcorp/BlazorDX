@@ -47,6 +47,11 @@ public static class DocxReader
     private const string WordprocessingMl =
         "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 
+    // The relationships namespace — the r:id on <w:hyperlink> lives here, and the rels
+    // part lists each Relationship's package-relationships namespace.
+    private const string RelationshipsNs =
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+
     // Defensive cap on a single decompressed part. A .docx is attacker-controlled
     // (uploaded by an untrusted user), so a maliciously crafted "zip bomb" entry —
     // tiny compressed, enormous when inflated — must fail cleanly rather than exhaust
@@ -109,6 +114,8 @@ public static class DocxReader
         // styleId -> heading level (1-6), resolved from word/styles.xml. Lets us map
         // non-standard heading style ids (e.g. "Ttulo1") via name/outlineLvl.
         IReadOnlyDictionary<string, int> headingStyles = ReadHeadingStyles(zip);
+        // rId -> external target, so <w:hyperlink r:id> runs can carry their URL.
+        IReadOnlyDictionary<string, string> linkRels = ReadHyperlinkRels(zip);
 
         ZipArchiveEntry? document = zip.GetEntry("word/document.xml");
         if (document is null)
@@ -144,7 +151,7 @@ public static class DocxReader
 
             if (reader.LocalName == "p")
             {
-                ParagraphContent para = ReadParagraph(reader, headingStyles);
+                ParagraphContent para = ReadParagraph(reader, headingStyles, linkRels);
 
                 if (para.ListKind is { } kind)
                 {
@@ -174,7 +181,7 @@ public static class DocxReader
             else if (reader.LocalName == "tbl")
             {
                 FlushList();
-                blocks.Add(ReadTable(reader));
+                blocks.Add(ReadTable(reader, linkRels));
             }
         }
 
@@ -193,7 +200,9 @@ public static class DocxReader
     // runs. The reader is positioned on the <w:p> start element; on return it sits on
     // the matching </w:p> end element.
     private static ParagraphContent ReadParagraph(
-        XmlReader reader, IReadOnlyDictionary<string, int> headingStyles)
+        XmlReader reader,
+        IReadOnlyDictionary<string, int> headingStyles,
+        IReadOnlyDictionary<string, string> linkRels)
     {
         if (reader.IsEmptyElement)
         {
@@ -228,8 +237,19 @@ public static class DocxReader
                     AppendRun(reader, runs);
                     break;
                 case "hyperlink":
-                    // A hyperlink wraps runs; flatten to its text (URL is not surfaced in v1).
+                    // Capture r:id BEFORE descending into the runs, then tag the runs the
+                    // hyperlink contained with their resolved external URL.
+                    string? rid = reader.GetAttribute("id", RelationshipsNs);
+                    int from = runs.Count;
                     ReadRunsWithin(reader, "hyperlink", runs);
+                    if (rid is not null && linkRels.TryGetValue(rid, out string? url))
+                    {
+                        for (int k = from; k < runs.Count; k++)
+                        {
+                            runs[k] = runs[k] with { Href = url };
+                        }
+                    }
+
                     break;
             }
         }
@@ -469,7 +489,7 @@ public static class DocxReader
 
     // Reads one <w:tbl> into a WordTable of rows of cells. The reader is on the <w:tbl>
     // start element; on return it sits on the matching </w:tbl>.
-    private static WordTable ReadTable(XmlReader reader)
+    private static WordTable ReadTable(XmlReader reader, IReadOnlyDictionary<string, string> linkRels)
     {
         if (reader.IsEmptyElement)
         {
@@ -492,7 +512,7 @@ public static class DocxReader
                 && reader.LocalName == "tr"
                 && reader.NamespaceURI == WordprocessingMl)
             {
-                rows.Add(ReadTableRow(reader));
+                rows.Add(ReadTableRow(reader, linkRels));
             }
         }
 
@@ -500,7 +520,7 @@ public static class DocxReader
     }
 
     // Reads one <w:tr> into a row of cells.
-    private static WordTableRow ReadTableRow(XmlReader reader)
+    private static WordTableRow ReadTableRow(XmlReader reader, IReadOnlyDictionary<string, string> linkRels)
     {
         if (reader.IsEmptyElement)
         {
@@ -523,7 +543,7 @@ public static class DocxReader
                 && reader.LocalName == "tc"
                 && reader.NamespaceURI == WordprocessingMl)
             {
-                cells.Add(ReadTableCell(reader));
+                cells.Add(ReadTableCell(reader, linkRels));
             }
         }
 
@@ -532,7 +552,7 @@ public static class DocxReader
 
     // Reads one <w:tc>: gathers the runs of every paragraph it contains, joining
     // paragraph boundaries with a newline so multi-paragraph cells keep their breaks.
-    private static WordTableCell ReadTableCell(XmlReader reader)
+    private static WordTableCell ReadTableCell(XmlReader reader, IReadOnlyDictionary<string, string> linkRels)
     {
         if (reader.IsEmptyElement)
         {
@@ -562,7 +582,7 @@ public static class DocxReader
 
                 // Nested tables inside cells are not interpreted in v1; only paragraph
                 // runs are gathered (headings/lists inside cells degrade to text).
-                ParagraphContent para = ReadParagraph(reader, EmptyHeadingStyles);
+                ParagraphContent para = ReadParagraph(reader, EmptyHeadingStyles, linkRels);
                 runs.AddRange(para.Runs);
             }
         }
@@ -572,6 +592,52 @@ public static class DocxReader
 
     private static readonly IReadOnlyDictionary<string, int> EmptyHeadingStyles =
         new Dictionary<string, int>(0);
+
+    private const string PackageRelationshipsNs =
+        "http://schemas.openxmlformats.org/package/2006/relationships";
+
+    private static readonly IReadOnlyDictionary<string, string> EmptyLinkRels =
+        new Dictionary<string, string>(0);
+
+    // word/_rels/document.xml.rels: builds rId -> external target for hyperlink
+    // relationships, so <w:hyperlink r:id> runs can be tagged with their URL.
+    private static IReadOnlyDictionary<string, string> ReadHyperlinkRels(ZipArchive zip)
+    {
+        ZipArchiveEntry? entry = zip.GetEntry("word/_rels/document.xml.rels");
+        if (entry is null)
+        {
+            return EmptyLinkRels;
+        }
+
+        Dictionary<string, string>? map = null;
+        using Stream content = OpenChecked(entry);
+        using XmlReader reader = XmlReader.Create(content, ReaderSettings);
+
+        while (reader.Read())
+        {
+            if (reader.NodeType != XmlNodeType.Element
+                || reader.LocalName != "Relationship"
+                || reader.NamespaceURI != PackageRelationshipsNs)
+            {
+                continue;
+            }
+
+            string? type = reader.GetAttribute("Type");
+            if (type is null || !type.EndsWith("/hyperlink", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            string? id = reader.GetAttribute("Id");
+            string? target = reader.GetAttribute("Target");
+            if (id is not null && target is not null)
+            {
+                (map ??= new Dictionary<string, string>(StringComparer.Ordinal))[id] = target;
+            }
+        }
+
+        return map ?? EmptyLinkRels;
+    }
 
     // word/styles.xml: builds styleId -> heading level for paragraph styles whose name
     // is "heading N" / "Title" or that declare an <w:outlineLvl w:val="0..5">. This
@@ -702,7 +768,8 @@ public static class DocxReader
         {
             WordRun next = runs[i];
             if (next.Bold == current.Bold && next.Italic == current.Italic
-                && next.Underline == current.Underline && next.Strike == current.Strike)
+                && next.Underline == current.Underline && next.Strike == current.Strike
+                && next.Href == current.Href)
             {
                 current = current with { Text = current.Text + next.Text };
             }

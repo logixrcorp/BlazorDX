@@ -286,6 +286,44 @@ public sealed class DxWordEditorTests : TestContext
         }
     }
 
+    [Fact]
+    public void Hyperlinks_survive_the_full_round_trip_and_unsafe_urls_are_stripped()
+    {
+        WordDocument original = new(
+        [
+            new WordParagraph(
+            [
+                new WordRun("Visit "),
+                new WordRun("our site", Href: "https://example.com/docs"),
+                new WordRun(" today."),
+            ]),
+        ]);
+
+        // model -> HTML -> model, then -> .docx -> model. The link (via a w:hyperlink
+        // relationship in the .docx) must survive both legs.
+        WordDocument viaHtml = WordHtml.FromHtml(WordHtml.ToHtml(original));
+        WordDocument viaDocx = DocxReader.Read(DocxWriter.Write(viaHtml));
+
+        foreach (WordDocument doc in new[] { viaHtml, viaDocx })
+        {
+            WordParagraph p = doc.Blocks.OfType<WordParagraph>().Single();
+            Assert.Equal("Visit our site today.", Text(p.Runs));
+            Assert.Contains(p.Runs, r => r is { Text: "our site", Href: "https://example.com/docs" });
+        }
+    }
+
+    [Fact]
+    public void Unsafe_hyperlink_urls_are_rejected_on_parse()
+    {
+        // A javascript: URL is dropped: the link text stays, but it never becomes a
+        // clickable hostile URL.
+        WordDocument doc = WordHtml.FromHtml("<p><a href=\"javascript:alert(1)\">click</a></p>");
+
+        WordParagraph p = doc.Blocks.OfType<WordParagraph>().Single();
+        Assert.Equal("click", Text(p.Runs));
+        Assert.All(p.Runs, r => Assert.Null(r.Href));
+    }
+
     private static string Text(IReadOnlyList<WordRun> runs) =>
         string.Concat(runs.Select(r => r.Text));
 }

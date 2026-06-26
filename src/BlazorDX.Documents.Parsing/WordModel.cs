@@ -70,5 +70,14 @@ public sealed record WordTableCell(IReadOnlyList<WordRun> Runs);
 /// <param name="Italic">Whether the run is italic (<c>&lt;w:i&gt;</c> / <c>&lt;em&gt;</c>).</param>
 /// <param name="Underline">Whether the run is underlined (<c>&lt;w:u&gt;</c> / <c>&lt;u&gt;</c>).</param>
 /// <param name="Strike">Whether the run is struck through (<c>&lt;w:strike&gt;</c> / <c>&lt;s&gt;</c>).</param>
+/// <param name="Href">
+/// When non-null, the run is a hyperlink to this URL (<c>&lt;w:hyperlink&gt;</c> /
+/// <c>&lt;a href&gt;</c>). Only <c>http</c>/<c>https</c>/<c>mailto</c> URLs survive parsing.
+/// </param>
 public sealed record WordRun(
-    string Text, bool Bold = false, bool Italic = false, bool Underline = false, bool Strike = false);
+    string Text,
+    bool Bold = false,
+    bool Italic = false,
+    bool Underline = false,
+    bool Strike = false,
+    string? Href = null);
