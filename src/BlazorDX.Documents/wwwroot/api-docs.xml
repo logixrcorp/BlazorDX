@@ -37,6 +37,18 @@
             model); error cells get an <c>aria-label</c> that announces the error so meaning does
             not rely on color alone (WCAG 1.4.1).
             </remarks>
+            <summary>
+            The editing chrome for <see cref="T:BlazorDX.Documents.DxSpreadsheetViewer"/> in <see cref="P:BlazorDX.Documents.DxSpreadsheetViewer.Editable"/> mode:
+            a <c>role="toolbar"</c> (insert/delete row &amp; column, download) and an Excel-style
+            formula bar (the active cell's A1 address + an input bound to its <b>raw</b> content).
+            </summary>
+            <remarks>
+            Structural edits (insert/delete) mutate the in-memory buffer and recalculate; they do
+            <b>not</b> rewrite formula references (e.g. inserting a row does not shift <c>=B2</c> to
+            <c>=B3</c>) — a documented limitation. Download serializes the edited workbook with
+            <see cref="T:BlazorDX.Documents.XlsxWorkbookWriter"/> (formulas preserved) and streams it through the shared
+            <see cref="T:BlazorDX.Interop.IGridDomInterop"/> bridge ([JSImport], base64 over the boundary).
+            </remarks>
         </member>
         <member name="P:BlazorDX.Documents.DxSpreadsheetViewer.Class">
             <summary>Optional extra CSS class on the viewer root.</summary>
@@ -68,6 +80,15 @@
             Builds a <see cref="T:BlazorDX.Documents.Workbook"/> of the current raw content (formulas preserved as
             <c>=…</c>). The active sheet reflects in-flight edits; other sheets pass through.
             </summary>
+        </member>
+        <member name="P:BlazorDX.Documents.DxSpreadsheetViewer.Interop">
+            <summary>The client-side download bridge (browser real / SSR + tests null).</summary>
+        </member>
+        <member name="P:BlazorDX.Documents.DxSpreadsheetViewer.ShowToolbar">
+            <summary>Shows the editing toolbar + formula bar above the grid. On by default.</summary>
+        </member>
+        <member name="P:BlazorDX.Documents.DxSpreadsheetViewer.DownloadFileName">
+            <summary>File name used by the toolbar's "Download .xlsx" action.</summary>
         </member>
         <member name="T:BlazorDX.Documents.DxWordEditor">
             <summary>
