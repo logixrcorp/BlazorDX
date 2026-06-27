@@ -1196,6 +1196,16 @@
             CSS-variable driven (see dx-layout.css).
             </summary>
         </member>
+        <member name="T:BlazorDX.Components.ColorCommandArgs">
+            <summary>A color toolbar command: <c>foreColor</c> (text) or <c>hiliteColor</c>
+            (highlight) paired with a CSS color. Passed to a model-driven host via
+            <see cref="P:BlazorDX.Components.DxRichTextEditor.OnColorCommand"/>.</summary>
+        </member>
+        <member name="M:BlazorDX.Components.ColorCommandArgs.#ctor(System.String,System.String)">
+            <summary>A color toolbar command: <c>foreColor</c> (text) or <c>hiliteColor</c>
+            (highlight) paired with a CSS color. Passed to a model-driven host via
+            <see cref="P:BlazorDX.Components.DxRichTextEditor.OnColorCommand"/>.</summary>
+        </member>
         <member name="T:BlazorDX.Components.DxRichTextEditor">
             <summary>
             A WYSIWYG rich-text editor over a <c>contentEditable</c> region with a
@@ -1218,6 +1228,13 @@
             <c>document.execCommand</c>, so a host can apply the edit to its own model and re-seed
             the surface (the model-driven editing core, ADR-0015). All other tools keep their
             built-in behavior.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxRichTextEditor.OnColorCommand">
+            <summary>
+            Optional interceptor for the color inputs (<c>foreColor</c> text, <c>hiliteColor</c>
+            highlight). When set, picking a color invokes this callback instead of applying the
+            color through the browser, so a model-driven host owns the edit (ADR-0015).
             </summary>
         </member>
         <member name="M:BlazorDX.Components.DxRichTextEditor.GetSelectionRangeAsync">
