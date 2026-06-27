@@ -672,6 +672,63 @@ public sealed class DxWordEditorTests : TestContext
         Assert.Null(run.Color);
     }
 
+    [Fact]
+    public void ModelDriven_heading_button_toggles_paragraph_to_heading_and_back()
+    {
+        FakeRichTextInterop fake = new() { SelectionRange = "0,2,2" }; // caret in container 0
+        Services.AddScoped<IRichTextInterop>(_ => fake);
+
+        WordDocument? changed = null;
+        WordDocument doc = new([new WordParagraph([new WordRun("Section")], WordAlignment.Center)]);
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, doc)
+            .Add(e => e.EditingCore, EditingCore.ModelDriven)
+            .Add(e => e.DocumentChanged, EventCallback.Factory.Create<WordDocument>(this, d => changed = d)));
+
+        // Paragraph -> heading (level 2), preserving runs and alignment.
+        editor.Find("[aria-label='Heading']").Click();
+        WordHeading h = changed!.Blocks.OfType<WordHeading>().Single();
+        Assert.Equal(2, h.Level);
+        Assert.Equal("Section", Text(h.Runs));
+        Assert.Equal(WordAlignment.Center, h.Alignment);
+
+        // A fresh heading document toggles back to a paragraph.
+        WordDocument? back = null;
+        WordDocument headingDoc = new([new WordHeading(2, [new WordRun("Section")], WordAlignment.Center)]);
+        IRenderedComponent<DxWordEditor> editor2 = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, headingDoc)
+            .Add(e => e.EditingCore, EditingCore.ModelDriven)
+            .Add(e => e.DocumentChanged, EventCallback.Factory.Create<WordDocument>(this, d => back = d)));
+
+        editor2.Find("[aria-label='Heading']").Click();
+        WordParagraph para = back!.Blocks.OfType<WordParagraph>().Single();
+        Assert.Empty(back!.Blocks.OfType<WordHeading>());
+        Assert.Equal("Section", Text(para.Runs));
+        Assert.Equal(WordAlignment.Center, para.Alignment);
+    }
+
+    [Fact]
+    public void ModelDriven_text_color_sets_the_run_color_over_the_selection()
+    {
+        FakeRichTextInterop fake = new() { SelectionRange = "0,0,5" }; // "Hello"
+        Services.AddScoped<IRichTextInterop>(_ => fake);
+
+        WordDocument? changed = null;
+        WordDocument doc = new([new WordParagraph([new WordRun("Hello world")])]);
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, doc)
+            .Add(e => e.EditingCore, EditingCore.ModelDriven)
+            .Add(e => e.DocumentChanged, EventCallback.Factory.Create<WordDocument>(this, d => changed = d)));
+
+        editor.Find("[aria-label='Text color']").Change("#ff0000");
+
+        WordParagraph para = changed!.Blocks.OfType<WordParagraph>().Single();
+        Assert.Equal("Hello world", Text(para.Runs));
+        Assert.Equal("#ff0000", para.Runs[0].Color); // "Hello" colored
+        Assert.Equal("Hello", para.Runs[0].Text);
+        Assert.Null(para.Runs[^1].Color);            // " world" untouched
+    }
+
     private sealed class FakeRichTextInterop : IRichTextInterop
     {
         public string TableCell { get; init; } = string.Empty;

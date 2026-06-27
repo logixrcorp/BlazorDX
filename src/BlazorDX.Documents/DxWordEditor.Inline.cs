@@ -1,3 +1,4 @@
+using BlazorDX.Components;
 using Microsoft.AspNetCore.Components;
 
 namespace BlazorDX.Documents;
@@ -61,7 +62,7 @@ public sealed partial class DxWordEditor
             return;
         }
 
-        // Character commands need a non-empty selection; alignment applies to the caret's block.
+        // Character commands need a non-empty selection; block commands apply at the caret.
         WordDocument? updated = command switch
         {
             "bold" or "italic" or "underline" or "strikeThrough" when start < end =>
@@ -70,6 +71,8 @@ public sealed partial class DxWordEditor
                 ClearInline(Current, container, start, end),
             "justifyLeft" or "justifyCenter" or "justifyRight" or "justifyFull" =>
                 SetAlignment(Current, container, MapAlignment(command)),
+            "formatBlock" =>
+                ToggleHeading(Current, container),
             _ => null,
         };
 
@@ -77,6 +80,44 @@ public sealed partial class DxWordEditor
         {
             await CommitModelEditAsync(updated, range);
         }
+    }
+
+    // Handles the color inputs (text / highlight) in the model-driven core: set the chosen
+    // color on the selected run range. A no-op for an empty selection or a malformed color.
+    private async Task HandleModelColorAsync(ColorCommandArgs args)
+    {
+        if (_rte is null || !IsHexColor(args.Color))
+        {
+            return;
+        }
+
+        string range = await _rte.GetSelectionRangeAsync();
+        if (!TryParseRange(range, out int container, out int start, out int end) || start >= end)
+        {
+            return;
+        }
+
+        bool highlight = args.Command == "hiliteColor";
+        await CommitModelEditAsync(SetColor(Current, container, start, end, args.Color, highlight), range);
+    }
+
+    // A #RRGGBB color, the only shape the native color input produces and the model stores.
+    private static bool IsHexColor(string value)
+    {
+        if (value.Length != 7 || value[0] != '#')
+        {
+            return false;
+        }
+
+        for (int i = 1; i < 7; i++)
+        {
+            if (!Uri.IsHexDigit(value[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static InlineFormat? MapFormat(string command) => command switch
@@ -116,6 +157,52 @@ public sealed partial class DxWordEditor
 
     private static WordDocument ClearInline(WordDocument document, int containerIndex, int start, int end) =>
         EditContainer(document, containerIndex, runs => ClearRange(runs, start, end));
+
+    private static WordDocument SetColor(
+        WordDocument document, int containerIndex, int start, int end, string color, bool highlight) =>
+        EditContainer(document, containerIndex, runs => ApplyToRange(runs, start, end,
+            run => highlight ? run with { Highlight = color } : run with { Color = color }));
+
+    // Toggles the block owning the target run-container between a paragraph and a level-2
+    // heading, preserving its runs and alignment. The toolbar's only formatBlock value is
+    // <h2>, so this models it as a heading toggle. List items and table cells can't be
+    // headings, so those are a no-op (the container index still advances).
+    private static WordDocument ToggleHeading(WordDocument document, int containerIndex)
+    {
+        int seen = -1;
+        var blocks = new WordBlock[document.Blocks.Count];
+        for (int i = 0; i < document.Blocks.Count; i++)
+        {
+            blocks[i] = HeadingBlock(document.Blocks[i], ref seen, containerIndex);
+        }
+
+        return new WordDocument(blocks);
+    }
+
+    private static WordBlock HeadingBlock(WordBlock block, ref int seen, int target)
+    {
+        switch (block)
+        {
+            case WordHeading h:
+                seen++;
+                return seen == target ? new WordParagraph(h.Runs, h.Alignment) : h;
+            case WordParagraph p:
+                seen++;
+                return seen == target ? new WordHeading(2, p.Runs, p.Alignment) : p;
+            case WordList l:
+                seen += l.Items.Count;
+                return l;
+            case WordTable t:
+                foreach (WordTableRow row in t.Rows)
+                {
+                    seen += row.Cells.Count;
+                }
+
+                return t;
+            default:
+                return block;
+        }
+    }
 
     // Sets paragraph alignment on the block owning the target run-container. Alignment lives
     // on headings and paragraphs only; list items and table cells carry none, so those are a

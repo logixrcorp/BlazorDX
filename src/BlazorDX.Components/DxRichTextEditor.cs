@@ -6,6 +6,11 @@ using Microsoft.AspNetCore.Components.Web;
 
 namespace BlazorDX.Components;
 
+/// <summary>A color toolbar command: <c>foreColor</c> (text) or <c>hiliteColor</c>
+/// (highlight) paired with a CSS color. Passed to a model-driven host via
+/// <see cref="DxRichTextEditor.OnColorCommand"/>.</summary>
+public readonly record struct ColorCommandArgs(string Command, string Color);
+
 /// <summary>
 /// A WYSIWYG rich-text editor over a <c>contentEditable</c> region with a
 /// formatting toolbar. Edited HTML is read back from the DOM and routed through an
@@ -42,6 +47,13 @@ public sealed class DxRichTextEditor : ComponentBase
     /// built-in behavior.
     /// </summary>
     [Parameter] public EventCallback<string> OnCommand { get; set; }
+
+    /// <summary>
+    /// Optional interceptor for the color inputs (<c>foreColor</c> text, <c>hiliteColor</c>
+    /// highlight). When set, picking a color invokes this callback instead of applying the
+    /// color through the browser, so a model-driven host owns the edit (ADR-0015).
+    /// </summary>
+    [Parameter] public EventCallback<ColorCommandArgs> OnColorCommand { get; set; }
 
     [Inject] private IRichTextInterop Interop { get; set; } = default!;
 
@@ -162,7 +174,7 @@ public sealed class DxRichTextEditor : ComponentBase
 
     private static bool IsModelCommand(string command) =>
         command is "bold" or "italic" or "underline" or "strikeThrough" or "removeFormat"
-            or "justifyLeft" or "justifyCenter" or "justifyRight" or "justifyFull";
+            or "formatBlock" or "justifyLeft" or "justifyCenter" or "justifyRight" or "justifyFull";
 
     /// <summary>The current owned selection as <c>"containerIndex,start,end"</c> (see
     /// <see cref="IRichTextInterop.GetSelectionRangeAsync"/>), or empty if unaddressable.</summary>
@@ -186,6 +198,12 @@ public sealed class DxRichTextEditor : ComponentBase
 
     private async Task CommandColorAsync(string command, string color)
     {
+        if (OnColorCommand.HasDelegate)
+        {
+            await OnColorCommand.InvokeAsync(new ColorCommandArgs(command, color));
+            return; // host owns the edit + re-seed + selection
+        }
+
         await Interop.ApplyColorAsync(command, color);
         await SyncFromDomAsync();
     }
