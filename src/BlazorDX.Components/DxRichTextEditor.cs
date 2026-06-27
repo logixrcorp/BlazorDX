@@ -34,11 +34,12 @@ public sealed class DxRichTextEditor : ComponentBase
     [Parameter] public string? Class { get; set; }
 
     /// <summary>
-    /// Optional interceptor for the basic inline-format toolbar commands (<c>bold</c>,
-    /// <c>italic</c>, <c>underline</c>, <c>strikeThrough</c>). When set, those buttons invoke
-    /// this callback instead of <c>document.execCommand</c>, so a host can apply the edit to
-    /// its own model and re-seed the surface (the model-driven editing core, ADR-0015). All
-    /// other tools keep their built-in behavior.
+    /// Optional interceptor for the model-drivable toolbar commands: <c>bold</c>, <c>italic</c>,
+    /// <c>underline</c>, <c>strikeThrough</c>, <c>removeFormat</c>, and the four
+    /// <c>justify*</c> alignments. When set, those buttons invoke this callback instead of
+    /// <c>document.execCommand</c>, so a host can apply the edit to its own model and re-seed
+    /// the surface (the model-driven editing core, ADR-0015). All other tools keep their
+    /// built-in behavior.
     /// </summary>
     [Parameter] public EventCallback<string> OnCommand { get; set; }
 
@@ -160,7 +161,8 @@ public sealed class DxRichTextEditor : ComponentBase
     }
 
     private static bool IsModelCommand(string command) =>
-        command is "bold" or "italic" or "underline" or "strikeThrough";
+        command is "bold" or "italic" or "underline" or "strikeThrough" or "removeFormat"
+            or "justifyLeft" or "justifyCenter" or "justifyRight" or "justifyFull";
 
     /// <summary>The current owned selection as <c>"containerIndex,start,end"</c> (see
     /// <see cref="IRichTextInterop.GetSelectionRangeAsync"/>), or empty if unaddressable.</summary>

@@ -620,6 +620,58 @@ public sealed class DxWordEditorTests : TestContext
         Assert.Equal((0, 0, 5), fake.RestoredSelection);
     }
 
+    [Fact]
+    public void ModelDriven_align_center_sets_paragraph_alignment_at_the_caret_block()
+    {
+        // Caret in run-container 1 (the paragraph); alignment ignores the empty range.
+        FakeRichTextInterop fake = new() { SelectionRange = "1,3,3" };
+        Services.AddScoped<IRichTextInterop>(_ => fake);
+
+        WordDocument? changed = null;
+        WordDocument doc = new(
+        [
+            new WordHeading(1, [new WordRun("Title")]),    // container 0
+            new WordParagraph([new WordRun("Body text")]), // container 1
+        ]);
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, doc)
+            .Add(e => e.EditingCore, EditingCore.ModelDriven)
+            .Add(e => e.DocumentChanged, EventCallback.Factory.Create<WordDocument>(this, d => changed = d)));
+
+        editor.Find("[aria-label='Align center']").Click();
+
+        WordParagraph para = changed!.Blocks.OfType<WordParagraph>().Single();
+        Assert.Equal(WordAlignment.Center, para.Alignment);
+        Assert.Equal(WordAlignment.Start, changed!.Blocks.OfType<WordHeading>().Single().Alignment); // heading untouched
+    }
+
+    [Fact]
+    public void ModelDriven_clear_formatting_strips_emphasis_and_color_over_the_selection()
+    {
+        FakeRichTextInterop fake = new() { SelectionRange = "0,0,5" }; // "Hello"
+        Services.AddScoped<IRichTextInterop>(_ => fake);
+
+        WordDocument? changed = null;
+        WordDocument doc = new(
+        [
+            new WordParagraph([new WordRun("Hello", Bold: true, Italic: true, Color: "#ff0000"), new WordRun(" world")]),
+        ]);
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, doc)
+            .Add(e => e.EditingCore, EditingCore.ModelDriven)
+            .Add(e => e.DocumentChanged, EventCallback.Factory.Create<WordDocument>(this, d => changed = d)));
+
+        editor.Find("[aria-label='Clear formatting']").Click();
+
+        WordParagraph para = changed!.Blocks.OfType<WordParagraph>().Single();
+        Assert.Equal("Hello world", Text(para.Runs));
+        Assert.Single(para.Runs); // stripped fragment coalesced with " world"
+        WordRun run = para.Runs[0];
+        Assert.False(run.Bold);
+        Assert.False(run.Italic);
+        Assert.Null(run.Color);
+    }
+
     private sealed class FakeRichTextInterop : IRichTextInterop
     {
         public string TableCell { get; init; } = string.Empty;

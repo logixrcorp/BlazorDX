@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Components;
 
 namespace BlazorDX.Documents;
 
-/// <summary>Which editing engine a <see cref="DxWordEditor"/> uses for inline formatting.</summary>
+/// <summary>Which editing engine a <see cref="DxWordEditor"/> uses for formatting.</summary>
 public enum EditingCore
 {
     /// <summary>
@@ -12,7 +12,7 @@ public enum EditingCore
     ContentEditable,
 
     /// <summary>
-    /// The model-driven core (ADR-0015): inline-format commands mutate the authoritative
+    /// The model-driven core (ADR-0015): formatting commands mutate the authoritative
     /// <see cref="WordDocument"/> over an owned selection, the surface is re-rendered from
     /// the model, and the selection is restored. No <c>execCommand</c>.
     /// </summary>
@@ -20,12 +20,13 @@ public enum EditingCore
 }
 
 /// <summary>
-/// The model-driven inline-formatting commands for <see cref="DxWordEditor"/> (ADR-0015,
-/// Phase B). When <see cref="EditingCore"/> is <see cref="EditingCore.ModelDriven"/>, the
-/// bold/italic/underline/strikethrough toolbar buttons are intercepted here: the caret's
-/// owned selection is read as a run-container + character range, the edit is applied to the
-/// immutable model as a pure function, and the surface is re-seeded in place and the
-/// selection restored — so the model, not the DOM, is the source of truth.
+/// The model-driven formatting commands for <see cref="DxWordEditor"/> (ADR-0015, Phases B
+/// and D). When <see cref="EditingCore"/> is <see cref="EditingCore.ModelDriven"/>, the
+/// toolbar's character commands (bold/italic/underline/strikethrough, clear formatting) and
+/// paragraph commands (alignment) are intercepted here: the caret's owned selection is read
+/// as a run-container + character range, the edit is applied to the immutable model as a pure
+/// function, and the surface is re-seeded in place with the selection restored — so the
+/// model, not the DOM, is the source of truth.
 /// </summary>
 public sealed partial class DxWordEditor
 {
@@ -38,31 +39,44 @@ public sealed partial class DxWordEditor
     }
 
     /// <summary>
-    /// The editing engine for inline formatting. Defaults to
-    /// <see cref="EditingCore.ContentEditable"/>; opt into <see cref="EditingCore.ModelDriven"/>
-    /// to drive bold/italic/underline/strikethrough through the model (ADR-0015).
+    /// The editing engine for formatting. Defaults to <see cref="EditingCore.ContentEditable"/>;
+    /// opt into <see cref="EditingCore.ModelDriven"/> to drive the supported commands through
+    /// the model (ADR-0015): bold/italic/underline/strikethrough, clear formatting, alignment.
     /// </summary>
     [Parameter] public EditingCore EditingCore { get; set; } = EditingCore.ContentEditable;
 
-    // Handles an intercepted inline-format command from the editor toolbar: read the owned
-    // selection, toggle the format on the model over that range, re-seed in place, restore
-    // the selection. A no-op when nothing is selected or the selection isn't addressable.
+    // Handles an intercepted formatting command from the editor toolbar: read the owned
+    // selection, apply the matching pure model transform, then commit (re-seed in place +
+    // restore selection + history). A no-op when the selection can't be addressed.
     private async Task HandleModelCommandAsync(string command)
     {
-        if (_rte is null || MapFormat(command) is not InlineFormat format)
+        if (_rte is null)
         {
             return;
         }
 
         string range = await _rte.GetSelectionRangeAsync();
-        if (!TryParseRange(range, out int container, out int start, out int end) || start >= end)
+        if (!TryParseRange(range, out int container, out int start, out int end))
         {
-            return; // no selection, collapsed caret, or a selection we can't address yet
+            return;
         }
 
-        // Commit through the shared funnel, passing the selection so the caret is restored
-        // after the in-place re-seed (toggling preserves text length, so it still maps).
-        await CommitModelEditAsync(ToggleInline(Current, container, start, end, format), range);
+        // Character commands need a non-empty selection; alignment applies to the caret's block.
+        WordDocument? updated = command switch
+        {
+            "bold" or "italic" or "underline" or "strikeThrough" when start < end =>
+                ToggleInline(Current, container, start, end, MapFormat(command)!.Value),
+            "removeFormat" when start < end =>
+                ClearInline(Current, container, start, end),
+            "justifyLeft" or "justifyCenter" or "justifyRight" or "justifyFull" =>
+                SetAlignment(Current, container, MapAlignment(command)),
+            _ => null,
+        };
+
+        if (updated is not null)
+        {
+            await CommitModelEditAsync(updated, range);
+        }
     }
 
     private static InlineFormat? MapFormat(string command) => command switch
@@ -72,6 +86,14 @@ public sealed partial class DxWordEditor
         "underline" => InlineFormat.Underline,
         "strikeThrough" => InlineFormat.Strike,
         _ => null,
+    };
+
+    private static WordAlignment MapAlignment(string command) => command switch
+    {
+        "justifyCenter" => WordAlignment.Center,
+        "justifyRight" => WordAlignment.End,
+        "justifyFull" => WordAlignment.Justify,
+        _ => WordAlignment.Start, // justifyLeft / unknown
     };
 
     private static bool TryParseRange(string value, out int container, out int start, out int end)
@@ -84,37 +106,84 @@ public sealed partial class DxWordEditor
             && int.TryParse(parts[2], out end);
     }
 
-    // Returns a copy of the document with the inline format toggled over characters
-    // [start, end) of the run-container at containerIndex (run-containers numbered in
-    // document order: heading/paragraph = one each, then each list item, then each table
-    // cell — matching WordHtml.ToHtml and the bridge's selector). Toggle semantics: if every
-    // selected character already has the format it is cleared, otherwise it is set. Pure and
-    // side-effect-free, so it is unit-testable without the editor.
+    // ---- Pure model transforms ---------------------------------------------------
+    // Run-containers are numbered in document order: heading/paragraph = one each, then each
+    // list item, then each table cell — matching WordHtml.ToHtml and the selection bridge.
+
     private static WordDocument ToggleInline(
-        WordDocument document, int containerIndex, int start, int end, InlineFormat format)
+        WordDocument document, int containerIndex, int start, int end, InlineFormat format) =>
+        EditContainer(document, containerIndex, runs => Toggle(runs, start, end, format));
+
+    private static WordDocument ClearInline(WordDocument document, int containerIndex, int start, int end) =>
+        EditContainer(document, containerIndex, runs => ClearRange(runs, start, end));
+
+    // Sets paragraph alignment on the block owning the target run-container. Alignment lives
+    // on headings and paragraphs only; list items and table cells carry none, so those are a
+    // no-op (the container index still advances so the addressing stays consistent).
+    private static WordDocument SetAlignment(WordDocument document, int containerIndex, WordAlignment alignment)
     {
         int seen = -1;
         var blocks = new WordBlock[document.Blocks.Count];
         for (int i = 0; i < document.Blocks.Count; i++)
         {
-            blocks[i] = MapBlock(document.Blocks[i], ref seen, containerIndex, start, end, format);
+            blocks[i] = AlignBlock(document.Blocks[i], ref seen, containerIndex, alignment);
+        }
+
+        return new WordDocument(blocks);
+    }
+
+    private static WordBlock AlignBlock(WordBlock block, ref int seen, int target, WordAlignment alignment)
+    {
+        switch (block)
+        {
+            case WordHeading h:
+                seen++;
+                return seen == target ? h with { Alignment = alignment } : h;
+            case WordParagraph p:
+                seen++;
+                return seen == target ? p with { Alignment = alignment } : p;
+            case WordList l:
+                seen += l.Items.Count; // items occupy containers but carry no alignment
+                return l;
+            case WordTable t:
+                foreach (WordTableRow row in t.Rows)
+                {
+                    seen += row.Cells.Count;
+                }
+
+                return t;
+            default:
+                return block;
+        }
+    }
+
+    // Applies a run-list transform to the run-container at containerIndex (in document order),
+    // rebuilding the owning block immutably. Container-less blocks (images) are passed through.
+    private static WordDocument EditContainer(
+        WordDocument document, int containerIndex, Func<IReadOnlyList<WordRun>, IReadOnlyList<WordRun>> map)
+    {
+        int seen = -1;
+        var blocks = new WordBlock[document.Blocks.Count];
+        for (int i = 0; i < document.Blocks.Count; i++)
+        {
+            blocks[i] = MapBlock(document.Blocks[i], ref seen, containerIndex, map);
         }
 
         return new WordDocument(blocks);
     }
 
     private static WordBlock MapBlock(
-        WordBlock block, ref int seen, int target, int start, int end, InlineFormat format)
+        WordBlock block, ref int seen, int target, Func<IReadOnlyList<WordRun>, IReadOnlyList<WordRun>> map)
     {
         switch (block)
         {
             case WordHeading heading:
                 seen++;
-                return seen == target ? heading with { Runs = Toggle(heading.Runs, start, end, format) } : heading;
+                return seen == target ? heading with { Runs = map(heading.Runs) } : heading;
 
             case WordParagraph paragraph:
                 seen++;
-                return seen == target ? paragraph with { Runs = Toggle(paragraph.Runs, start, end, format) } : paragraph;
+                return seen == target ? paragraph with { Runs = map(paragraph.Runs) } : paragraph;
 
             case WordList list:
             {
@@ -122,7 +191,7 @@ public sealed partial class DxWordEditor
                 for (int k = 0; k < list.Items.Count; k++)
                 {
                     seen++;
-                    items[k] = seen == target ? Toggle(list.Items[k], start, end, format) : list.Items[k];
+                    items[k] = seen == target ? map(list.Items[k]) : list.Items[k];
                 }
 
                 return list with { Items = items };
@@ -138,7 +207,7 @@ public sealed partial class DxWordEditor
                     {
                         seen++;
                         WordTableCell cell = table.Rows[r].Cells[c];
-                        cells[c] = seen == target ? new WordTableCell(Toggle(cell.Runs, start, end, format)) : cell;
+                        cells[c] = seen == target ? new WordTableCell(map(cell.Runs)) : cell;
                     }
 
                     rows[r] = new WordTableRow(cells);
@@ -152,9 +221,31 @@ public sealed partial class DxWordEditor
         }
     }
 
-    // Splits runs at the [start, end) boundaries and sets/clears the format on the slice.
+    // Toggles an inline format over [start, end): if every selected character already has it,
+    // it is cleared, otherwise set.
     private static IReadOnlyList<WordRun> Toggle(
         IReadOnlyList<WordRun> runs, int start, int end, InlineFormat format)
+    {
+        bool enable = !AllSet(runs, start, end, format);
+        return ApplyToRange(runs, start, end, run => WithFormat(run, format, enable));
+    }
+
+    // Strips all character formatting (emphasis + color) from [start, end), keeping links.
+    private static IReadOnlyList<WordRun> ClearRange(IReadOnlyList<WordRun> runs, int start, int end) =>
+        ApplyToRange(runs, start, end, run => run with
+        {
+            Bold = false,
+            Italic = false,
+            Underline = false,
+            Strike = false,
+            Color = null,
+            Highlight = null,
+        });
+
+    // Splits runs at the [start, end) boundaries and applies a transform to the slice, then
+    // coalesces. The shared core of every character-level model command.
+    private static IReadOnlyList<WordRun> ApplyToRange(
+        IReadOnlyList<WordRun> runs, int start, int end, Func<WordRun, WordRun> transform)
     {
         int length = 0;
         foreach (WordRun run in runs)
@@ -168,8 +259,6 @@ public sealed partial class DxWordEditor
         {
             return runs;
         }
-
-        bool enable = !AllSet(runs, start, end, format); // toggle: all-set -> clear, else set
 
         var result = new List<WordRun>(runs.Count + 2);
         int pos = 0;
@@ -192,7 +281,7 @@ public sealed partial class DxWordEditor
                 result.Add(run with { Text = run.Text[..(s - runStart)] });
             }
 
-            result.Add(WithFormat(run with { Text = run.Text[(s - runStart)..(e - runStart)] }, format, enable));
+            result.Add(transform(run with { Text = run.Text[(s - runStart)..(e - runStart)] }));
 
             if (e < runEnd)
             {
@@ -241,7 +330,7 @@ public sealed partial class DxWordEditor
     };
 
     // Merges adjacent runs with identical formatting (and drops empty fragments left by a
-    // split), so toggling never fragments the model more than necessary.
+    // split), so an edit never fragments the model more than necessary.
     private static IReadOnlyList<WordRun> Coalesce(List<WordRun> runs)
     {
         var merged = new List<WordRun>(runs.Count);
