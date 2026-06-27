@@ -73,6 +73,10 @@ public sealed partial class DxWordEditor
                 SetAlignment(Current, container, MapAlignment(command)),
             "formatBlock" =>
                 ToggleHeading(Current, container),
+            "insertUnorderedList" =>
+                SetList(Current, container, ordered: false),
+            "insertOrderedList" =>
+                SetList(Current, container, ordered: true),
             _ => null,
         };
 

@@ -174,7 +174,8 @@ public sealed class DxRichTextEditor : ComponentBase
 
     private static bool IsModelCommand(string command) =>
         command is "bold" or "italic" or "underline" or "strikeThrough" or "removeFormat"
-            or "formatBlock" or "justifyLeft" or "justifyCenter" or "justifyRight" or "justifyFull";
+            or "formatBlock" or "insertUnorderedList" or "insertOrderedList"
+            or "justifyLeft" or "justifyCenter" or "justifyRight" or "justifyFull";
 
     /// <summary>The current owned selection as <c>"containerIndex,start,end"</c> (see
     /// <see cref="IRichTextInterop.GetSelectionRangeAsync"/>), or empty if unaddressable.</summary>

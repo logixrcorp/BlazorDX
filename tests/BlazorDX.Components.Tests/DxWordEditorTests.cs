@@ -729,6 +729,59 @@ public sealed class DxWordEditorTests : TestContext
         Assert.Null(para.Runs[^1].Color);            // " world" untouched
     }
 
+    [Fact]
+    public void ModelDriven_bullet_button_merges_a_paragraph_into_the_adjacent_list()
+    {
+        // Caret in container 1 — the paragraph that follows a one-item bullet list.
+        FakeRichTextInterop fake = new() { SelectionRange = "1,0,0" };
+        Services.AddScoped<IRichTextInterop>(_ => fake);
+
+        WordDocument? changed = null;
+        WordDocument doc = new(
+        [
+            new WordList(false, [[new WordRun("First")]]), // container 0 (one item)
+            new WordParagraph([new WordRun("Second")]),    // container 1
+        ]);
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, doc)
+            .Add(e => e.EditingCore, EditingCore.ModelDriven)
+            .Add(e => e.DocumentChanged, EventCallback.Factory.Create<WordDocument>(this, d => changed = d)));
+
+        editor.Find("[aria-label='Bullet list']").Click();
+
+        WordList list = Assert.IsType<WordList>(Assert.Single(changed!.Blocks)); // merged into one list
+        Assert.False(list.Ordered);
+        Assert.Equal(2, list.Items.Count);
+        Assert.Equal("First", Text(list.Items[0]));
+        Assert.Equal("Second", Text(list.Items[1]));
+    }
+
+    [Fact]
+    public void ModelDriven_bullet_button_unlists_a_middle_item_and_splits_the_list()
+    {
+        // Caret in container 1 — the middle item of a 3-item bullet list.
+        FakeRichTextInterop fake = new() { SelectionRange = "1,0,0" };
+        Services.AddScoped<IRichTextInterop>(_ => fake);
+
+        WordDocument? changed = null;
+        WordDocument doc = new(
+        [
+            new WordList(false, [[new WordRun("A")], [new WordRun("B")], [new WordRun("C")]]),
+        ]);
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, doc)
+            .Add(e => e.EditingCore, EditingCore.ModelDriven)
+            .Add(e => e.DocumentChanged, EventCallback.Factory.Create<WordDocument>(this, d => changed = d)));
+
+        // Toggling the same (unordered) kind on a list item un-lists it -> paragraph.
+        editor.Find("[aria-label='Bullet list']").Click();
+
+        Assert.Collection(changed!.Blocks,
+            b => Assert.Equal("A", Text(Assert.IsType<WordList>(b).Items.Single())),
+            b => Assert.Equal("B", Text(Assert.IsType<WordParagraph>(b).Runs)), // un-listed in the middle
+            b => Assert.Equal("C", Text(Assert.IsType<WordList>(b).Items.Single())));
+    }
+
     private sealed class FakeRichTextInterop : IRichTextInterop
     {
         public string TableCell { get; init; } = string.Empty;
