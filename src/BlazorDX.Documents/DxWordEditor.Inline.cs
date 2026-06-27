@@ -54,15 +54,15 @@ public sealed partial class DxWordEditor
             return;
         }
 
-        if (!TryParseRange(await _rte.GetSelectionRangeAsync(), out int container, out int start, out int end)
-            || start >= end)
+        string range = await _rte.GetSelectionRangeAsync();
+        if (!TryParseRange(range, out int container, out int start, out int end) || start >= end)
         {
             return; // no selection, collapsed caret, or a selection we can't address yet
         }
 
-        await CommitModelEditInPlaceAsync(ToggleInline(Current, container, start, end, format));
-        // Toggling preserves text length, so the offsets are unchanged — restore the selection.
-        await _rte.SetSelectionRangeAsync(container, start, end);
+        // Commit through the shared funnel, passing the selection so the caret is restored
+        // after the in-place re-seed (toggling preserves text length, so it still maps).
+        await CommitModelEditAsync(ToggleInline(Current, container, start, end, format), range);
     }
 
     private static InlineFormat? MapFormat(string command) => command switch

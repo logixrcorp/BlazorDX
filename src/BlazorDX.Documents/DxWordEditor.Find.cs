@@ -12,14 +12,11 @@ namespace BlazorDX.Documents;
 /// <remarks>
 /// Matches are counted and replaced <b>within a single run</b> — a match split across a
 /// formatting boundary (e.g. <c>wor</c>+<c>&lt;b&gt;d&lt;/b&gt;</c>) is not found. Replace
-/// re-mounts the editor (bumping the key), which resets the caret — acceptable for an
-/// explicit replace action.
+/// re-seeds the surface in place through the shared commit funnel (ADR-0015, Phase C); the
+/// caret is not repositioned to the match.
 /// </remarks>
 public sealed partial class DxWordEditor
 {
-    // Bumped on each replace so the keyed DxRichTextEditor re-mounts and re-seeds.
-    private int editorEpoch;
-
     private bool showFind;
     private string findText = string.Empty;
     private string replaceText = string.Empty;

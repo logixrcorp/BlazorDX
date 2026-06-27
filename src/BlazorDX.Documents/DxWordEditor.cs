@@ -149,11 +149,12 @@ public sealed partial class DxWordEditor : ComponentBase
             if (!_restoring)
             {
                 // A genuinely new external document resets the history baseline.
-                ResetHistory(html);
+                ResetHistory(source, html);
             }
         }
 
-        _baselineHtml ??= html; // initialize on first load (incl. an empty document)
+        // Initialize on first load (incl. an empty document).
+        _baseline ??= new HistoryEntry(source, html, null);
     }
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
@@ -207,9 +208,9 @@ public sealed partial class DxWordEditor : ComponentBase
         }
 
         builder.OpenComponent<DxRichTextEditor>(20);
-        // Re-keyed on a find/replace so the editor re-mounts and re-seeds from the updated
-        // model (it deliberately ignores Value changes after mount to protect the caret).
-        builder.SetKey(editorEpoch);
+        // The editor mounts once and is re-seeded in place (DxRichTextEditor.ReseedAsync) for
+        // every model edit — no re-mount — so the caret survives (ADR-0015, Phase C). Value
+        // seeds the initial content; the editor ignores later Value changes to protect edits.
         builder.AddComponentParameter(21, nameof(DxRichTextEditor.Value), editorHtml);
         builder.AddComponentParameter(22, nameof(DxRichTextEditor.ValueChanged),
             EventCallback.Factory.Create<string?>(this, OnEditorHtmlChangedAsync));
@@ -336,11 +337,14 @@ public sealed partial class DxWordEditor : ComponentBase
     private async Task OnEditorHtmlChangedAsync(string? html)
     {
         string next = html ?? string.Empty;
-        CaptureHistory(next); // record the prior state so this edit is undoable
 
         // The editor already sanitized this HTML. Re-parse it into the model; this is the
         // load→save bridge and the path the round-trip test exercises directly.
         WordDocument parsed = WordHtml.FromHtml(next);
+
+        // Record the prior state so this typing edit is undoable. No owned selection is known
+        // for a free-form keystroke, so undo of typing won't reposition the caret.
+        CaptureHistory(parsed, next, null);
 
         editorHtml = next;
         // Record what the model now serializes to, so a re-render does not re-seed the

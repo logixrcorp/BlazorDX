@@ -589,6 +589,37 @@ public sealed class DxWordEditorTests : TestContext
         Assert.False(reverted.Runs[0].Bold);
     }
 
+    [Fact]
+    public void ModelDriven_undo_redo_round_trips_the_model_and_restores_the_caret_on_redo()
+    {
+        FakeRichTextInterop fake = new() { SelectionRange = "0,0,5" }; // selection over "Hello"
+        Services.AddScoped<IRichTextInterop>(_ => fake);
+
+        WordDocument? changed = null;
+        WordDocument doc = new([new WordParagraph([new WordRun("Hello world")])]);
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, doc)
+            .Add(e => e.EditingCore, EditingCore.ModelDriven)
+            .Add(e => e.DocumentChanged, EventCallback.Factory.Create<WordDocument>(this, d => changed = d)));
+
+        static WordParagraph P(WordDocument? d) => d!.Blocks.OfType<WordParagraph>().Single();
+
+        editor.Find("[aria-label='Bold']").Click();
+        Assert.True(P(changed).Runs[0].Bold); // model edit applied
+        Assert.True(editor.Instance.CanUndo);
+
+        // Undo restores the prior model state in place (no re-mount) — the run is plain again.
+        editor.Find("[aria-label='Undo']").Click();
+        Assert.All(P(changed).Runs, r => Assert.False(r.Bold));
+        Assert.True(editor.Instance.CanRedo);
+
+        // Redo re-applies the model state AND restores the selection captured with the edit.
+        fake.ClearRestored();
+        editor.Find("[aria-label='Redo']").Click();
+        Assert.True(P(changed).Runs[0].Bold);
+        Assert.Equal((0, 0, 5), fake.RestoredSelection);
+    }
+
     private sealed class FakeRichTextInterop : IRichTextInterop
     {
         public string TableCell { get; init; } = string.Empty;
@@ -596,6 +627,8 @@ public sealed class DxWordEditorTests : TestContext
 
         // Captures the last selection restore, so a test can assert the caret was put back.
         public (int Container, int Start, int End)? RestoredSelection { get; private set; }
+
+        public void ClearRestored() => RestoredSelection = null;
 
         public ValueTask EnsureLoadedAsync() => ValueTask.CompletedTask;
         public ValueTask ExecAsync(string command, string value) => ValueTask.CompletedTask;
