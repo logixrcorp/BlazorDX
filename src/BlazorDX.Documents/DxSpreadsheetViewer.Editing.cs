@@ -2,6 +2,7 @@ using System.Globalization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
 using BlazorDX.Components;
 using BlazorDX.Documents.Formula;
 
@@ -30,6 +31,26 @@ public sealed partial class DxSpreadsheetViewer
     private List<List<string>>? editRaw;
     private IncrementalWorkbook? editWorkbook;
     private int editSheetIndex = -1;
+
+    // 2-D virtualization of the editable grid: a single scroll container windows both rows and
+    // columns. Fixed cell metrics (must match dx-spreadsheet.css: cell 9.5rem, gutter 3.25rem).
+    private const int ColWidthPx = 152;       // .dx-sheet-cell width (9.5rem @ 16px root)
+    private const int RowLabelWidthPx = 52;   // .dx-sheet-rowlabel width (3.25rem)
+    private const int ColOverscan = 3;
+    private const int RowOverscan = 6;
+
+    private readonly string gridScrollId = $"dx-sheet-scroll-{Guid.NewGuid():N}";
+    private bool gridScrollSubscribed;
+    private int rowWinFirst;   // first DATA-row index in the window (data rows are buffer rows 1..)
+    private int rowWinCount;
+    private int colWinFirst;   // first column index in the window
+    private int colWinCount;
+
+    /// <summary>
+    /// Assumed viewport width (px) for the initial column window before the live container is
+    /// measured (and off-browser, e.g. SSR/tests). The real width drives windowing once mounted.
+    /// </summary>
+    [Parameter] public int ViewportWidth { get; set; } = 960;
 
     // The active cell (full-sheet coordinates incl. the header at row 0) and, when a
     // cell is open for editing, the in-progress text and the input/cell element refs.
@@ -104,6 +125,14 @@ public sealed partial class DxSpreadsheetViewer
         editRaw = buffer;
         activeRow = Math.Clamp(activeRow, 0, Math.Max(0, buffer.Count - 1));
         activeColumn = Math.Clamp(activeColumn, 0, Math.Max(0, columns - 1));
+
+        // Seed the windows from the assumed viewport; the real container size refines them
+        // once mounted (UpdateWindowFromScrollAsync).
+        rowWinFirst = 0;
+        colWinFirst = 0;
+        rowWinCount = ((int)Math.Ceiling((double)ViewportHeight / RowHeight)) + (RowOverscan * 2);
+        colWinCount = ((int)Math.Ceiling((double)ViewportWidth / ColWidthPx)) + (ColOverscan * 2);
+
         RebuildWorkbook();
     }
 
@@ -133,9 +162,22 @@ public sealed partial class DxSpreadsheetViewer
 
     private void BuildEditableGrid(RenderTreeBuilder builder, Worksheet sheet)
     {
-        IReadOnlyList<string> header = sheet.Rows.Count > 0 ? sheet.Rows[0] : [];
         int dataRowCount = Math.Max(0, EditRowCount - 1);
         int dataColumns = EditColumnCount;
+
+        // Resolve the column window (clamped to the sheet).
+        int cFirst = Math.Clamp(colWinFirst, 0, Math.Max(0, dataColumns - 1));
+        int cLast = Math.Min(dataColumns, cFirst + Math.Max(1, colWinCount));
+
+        // Resolve the data-row window.
+        int rFirst = Math.Clamp(rowWinFirst, 0, Math.Max(0, dataRowCount));
+        int rLast = Math.Min(dataRowCount, rFirst + Math.Max(1, rowWinCount));
+
+        double totalWidth = RowLabelWidthPx + ((double)dataColumns * ColWidthPx);
+        double leftSpacer = (double)cFirst * ColWidthPx;
+        double rightSpacer = (double)(dataColumns - cLast) * ColWidthPx;
+        double topSpacer = (double)rFirst * RowHeight;
+        double bottomSpacer = (double)Math.Max(0, dataRowCount - rLast) * RowHeight;
 
         // Toolbar + formula bar are siblings ABOVE the grid. Each goes in its own region
         // so its internal sequence numbers can't collide with the grid's (the diff matches
@@ -151,58 +193,88 @@ public sealed partial class DxSpreadsheetViewer
             builder.CloseRegion();
         }
 
+        // One scroll container windows BOTH axes (ADR-0009: runtime column schema). The header
+        // row and the row-label gutter freeze via position:sticky; left/right and top/bottom
+        // spacers reserve the off-window extent so the scrollbars reflect the full sheet.
         builder.OpenElement(30, "div");
-        builder.AddAttribute(31, "class", "dx-sheet-grid dx-sheet-grid-editable");
-        builder.AddAttribute(32, "role", "grid");
-        builder.AddAttribute(33, "aria-multiselectable", "false");
-        builder.AddAttribute(34, "aria-label", $"{sheet.Name} worksheet, editable");
-        builder.AddAttribute(35, "aria-rowcount", EditRowCount.ToString(CultureInfo.InvariantCulture));
-        builder.AddAttribute(36, "aria-colcount", (dataColumns + 1).ToString(CultureInfo.InvariantCulture));
-        builder.AddAttribute(37, "onkeydown",
+        builder.AddAttribute(31, "id", gridScrollId);
+        builder.AddAttribute(32, "class", "dx-sheet-grid dx-sheet-grid-editable dx-sheet-scroll");
+        builder.AddAttribute(33, "role", "grid");
+        builder.AddAttribute(34, "aria-multiselectable", "false");
+        builder.AddAttribute(35, "aria-label", $"{sheet.Name} worksheet, editable");
+        builder.AddAttribute(36, "aria-rowcount", EditRowCount.ToString(CultureInfo.InvariantCulture));
+        builder.AddAttribute(37, "aria-colcount", (dataColumns + 1).ToString(CultureInfo.InvariantCulture));
+        builder.AddAttribute(38, "tabindex", "0"); // scrollable region is keyboard-reachable (WCAG 2.1.1)
+        builder.AddAttribute(39, "style", $"height:{ViewportHeight}px;");
+        builder.AddAttribute(40, "onkeydown",
             EventCallback.Factory.Create<KeyboardEventArgs>(this, OnGridKeyDownAsync));
 
-        // Header row (aria-rowindex 1): row 0 of the buffer. It is editable like any
-        // other row, so column labels can be renamed.
-        BuildEditableRow(builder, 0, dataColumns, isHeader: true);
+        // Header row (aria-rowindex 1): buffer row 0. Sticky-top, editable for column labels.
+        BuildEditableRow(builder, 0, cFirst, cLast, totalWidth, leftSpacer, rightSpacer, isHeader: true);
 
-        builder.OpenComponent<DxVirtualize<int>>(60);
-        builder.AddComponentParameter(61, nameof(DxVirtualize<int>.Items), DataRowIndices(dataRowCount));
-        builder.AddComponentParameter(62, nameof(DxVirtualize<int>.ItemHeight), RowHeight);
-        builder.AddComponentParameter(63, nameof(DxVirtualize<int>.ViewportHeight), ViewportHeight);
-        builder.AddComponentParameter(64, nameof(DxVirtualize<int>.Role), "rowgroup");
-        builder.AddComponentParameter(65, nameof(DxVirtualize<int>.ItemRole), "presentation");
-        builder.AddComponentParameter(67, nameof(DxVirtualize<int>.TabIndex), 0);
-        builder.AddComponentParameter(66, nameof(DxVirtualize<int>.ChildContent),
-            (RenderFragment<int>)(dataIndex => rowBuilder =>
-                BuildEditableRow(rowBuilder, dataIndex + 1, dataColumns, isHeader: false)));
-        builder.CloseComponent();
+        // Top spacer (reserves the rows scrolled above the window).
+        Spacer(builder, 50, $"height:{topSpacer.ToString(CultureInfo.InvariantCulture)}px;");
+
+        for (int di = rFirst; di < rLast; di++)
+        {
+            BuildEditableRow(builder, di + 1, cFirst, cLast, totalWidth, leftSpacer, rightSpacer, isHeader: false);
+        }
+
+        // Bottom spacer (reserves the rows scrolled below the window).
+        Spacer(builder, 70, $"height:{bottomSpacer.ToString(CultureInfo.InvariantCulture)}px;");
 
         builder.CloseElement(); // grid
     }
 
-    // Renders one row of the editable grid. rowIndex is the buffer (full-sheet) index;
-    // the header row uses columnheader cells, data rows use editable gridcells.
-    private void BuildEditableRow(RenderTreeBuilder builder, int rowIndex, int dataColumns, bool isHeader)
+    // A presentational block that reserves scroll extent without breaking the grid hierarchy.
+    private static void Spacer(RenderTreeBuilder builder, int seq, string style)
+    {
+        builder.OpenElement(seq, "div");
+        builder.AddAttribute(seq + 1, "role", "presentation");
+        builder.AddAttribute(seq + 2, "style", style);
+        builder.CloseElement();
+    }
+
+    // Renders one row of the editable grid over the column window [cFirst, cLast), with left
+    // and right spacers reserving the off-window columns. rowIndex is the buffer (full-sheet)
+    // index; the header row uses columnheader cells, data rows use editable gridcells.
+    private void BuildEditableRow(
+        RenderTreeBuilder builder, int rowIndex, int cFirst, int cLast,
+        double totalWidth, double leftSpacer, double rightSpacer, bool isHeader)
     {
         builder.OpenElement(0, "div");
+        builder.SetKey(isHeader ? "dx-head" : rowIndex);
         builder.AddAttribute(1, "class", isHeader ? "dx-sheet-headrow" : "dx-sheet-row");
         builder.AddAttribute(2, "role", "row");
         builder.AddAttribute(3, "aria-rowindex", (rowIndex + 1).ToString(CultureInfo.InvariantCulture));
+        builder.AddAttribute(4, "style",
+            $"width:{totalWidth.ToString(CultureInfo.InvariantCulture)}px;" +
+            (isHeader ? string.Empty : $"height:{RowHeight}px;"));
 
-        // Row-label gutter: an empty corner for the header, the data-row number otherwise.
-        builder.OpenElement(4, "span");
-        builder.AddAttribute(5, "class", isHeader
+        // Row-label gutter (sticky-left): an empty corner for the header, the row number otherwise.
+        builder.OpenElement(5, "span");
+        builder.AddAttribute(6, "class", isHeader
             ? "dx-sheet-colhead dx-sheet-rowlabel"
             : "dx-sheet-cell dx-sheet-rowlabel");
-        builder.AddAttribute(6, "role", isHeader ? "columnheader" : "rowheader");
-        builder.AddAttribute(7, "aria-colindex", "1");
-        builder.AddContent(8, isHeader ? string.Empty : rowIndex.ToString(CultureInfo.InvariantCulture));
+        builder.AddAttribute(7, "role", isHeader ? "columnheader" : "rowheader");
+        builder.AddAttribute(8, "aria-colindex", "1");
+        builder.AddContent(9, isHeader ? string.Empty : rowIndex.ToString(CultureInfo.InvariantCulture));
         builder.CloseElement();
 
-        for (int c = 0; c < dataColumns; c++)
+        // Spacers are always present (width 0 when the window touches an edge) so the row's
+        // child structure stays stable across renders. The cell loop is wrapped in a region so
+        // BuildEditableCell's internal sequence numbers can't collide with the spacers'.
+        Spacer(builder, 10, $"flex:0 0 {leftSpacer.ToString(CultureInfo.InvariantCulture)}px;");
+
+        builder.OpenRegion(13);
+        for (int c = cFirst; c < cLast; c++)
         {
             BuildEditableCell(builder, rowIndex, c, isHeader);
         }
+
+        builder.CloseRegion();
+
+        Spacer(builder, 14, $"flex:0 0 {rightSpacer.ToString(CultureInfo.InvariantCulture)}px;");
 
         builder.CloseElement(); // row
     }
@@ -357,6 +429,7 @@ public sealed partial class DxSpreadsheetViewer
                 return;
         }
 
+        EnsureActiveInWindow(); // Home/End move the active cell directly
         focusActiveCell = true;
         StateHasChanged();
     }
@@ -365,6 +438,86 @@ public sealed partial class DxSpreadsheetViewer
     {
         activeRow = Math.Clamp(activeRow + rowDelta, 0, Math.Max(0, EditRowCount - 1));
         activeColumn = Math.Clamp(activeColumn + colDelta, 0, Math.Max(0, EditColumnCount - 1));
+        EnsureActiveInWindow();
+    }
+
+    // ---- 2-D virtualization window -----------------------------------------------
+
+    // Subscribes to the scroll container once it is mounted, then computes the initial window.
+    private async Task EnsureGridScrollAsync()
+    {
+        if (!Editable || gridScrollSubscribed || !OperatingSystem.IsBrowser())
+        {
+            return;
+        }
+
+        gridScrollSubscribed = true;
+        await Interop.SubscribeScrollAsync(gridScrollId, OnGridScroll);
+        await UpdateWindowFromScrollAsync();
+    }
+
+    private void OnGridScroll() => _ = UpdateWindowFromScrollAsync();
+
+    // Recomputes the row/column window from the live scroll metrics (mouse / trackpad / scrollbar).
+    private async Task UpdateWindowFromScrollAsync()
+    {
+        (double top, double left, double clientH, double clientW) =
+            await Interop.MeasureViewport2dAsync(gridScrollId);
+        int viewH = clientH > 0 ? (int)clientH : ViewportHeight;
+        int viewW = clientW > 0 ? (int)clientW : ViewportWidth;
+
+        int newRowFirst = Math.Max(0, (int)(top / RowHeight) - RowOverscan);
+        int newRowCount = (int)Math.Ceiling((double)viewH / RowHeight) + (RowOverscan * 2);
+        int newColFirst = Math.Max(0, (int)(left / ColWidthPx) - ColOverscan);
+        int newColCount = (int)Math.Ceiling((double)viewW / ColWidthPx) + (ColOverscan * 2);
+
+        if (newRowFirst == rowWinFirst && newRowCount == rowWinCount
+            && newColFirst == colWinFirst && newColCount == colWinCount)
+        {
+            return; // window unchanged — skip the re-render
+        }
+
+        rowWinFirst = newRowFirst;
+        rowWinCount = newRowCount;
+        colWinFirst = newColFirst;
+        colWinCount = newColCount;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    // Shifts the window so the active cell is always rendered (hence focusable; the browser
+    // then scrolls it into view via FocusAsync). Called whenever the active cell moves.
+    private void EnsureActiveInWindow()
+    {
+        int dataColumns = EditColumnCount;
+        int dataRowCount = Math.Max(0, EditRowCount - 1);
+
+        int colVisible = Math.Max(1, colWinCount - (ColOverscan * 2));
+        if (activeColumn < colWinFirst)
+        {
+            colWinFirst = activeColumn;
+        }
+        else if (activeColumn >= colWinFirst + colVisible)
+        {
+            colWinFirst = activeColumn - colVisible + 1;
+        }
+
+        colWinFirst = Math.Clamp(colWinFirst, 0, Math.Max(0, dataColumns - 1));
+
+        if (activeRow >= 1) // row 0 is the always-rendered sticky header
+        {
+            int activeData = activeRow - 1;
+            int rowVisible = Math.Max(1, rowWinCount - (RowOverscan * 2));
+            if (activeData < rowWinFirst)
+            {
+                rowWinFirst = activeData;
+            }
+            else if (activeData >= rowWinFirst + rowVisible)
+            {
+                rowWinFirst = activeData - rowVisible + 1;
+            }
+
+            rowWinFirst = Math.Clamp(rowWinFirst, 0, Math.Max(0, dataRowCount - 1));
+        }
     }
 
     private async Task OnInputKeyDownAsync(KeyboardEventArgs args)
@@ -398,6 +551,7 @@ public sealed partial class DxSpreadsheetViewer
     {
         activeRow = rowIndex;
         activeColumn = column;
+        EnsureActiveInWindow();
         focusActiveCell = true;
         StateHasChanged();
     }
@@ -414,6 +568,7 @@ public sealed partial class DxSpreadsheetViewer
         editingRow = rowIndex;
         editingColumn = column;
         editBuffer = initialText ?? RawAt(rowIndex, column);
+        EnsureActiveInWindow();
         focusEditInput = true;
         StateHasChanged();
     }
@@ -494,9 +649,9 @@ public sealed partial class DxSpreadsheetViewer
             {
                 await editInput.FocusAsync();
             }
-            catch (InvalidOperationException)
+            catch (Exception ex) when (ex is InvalidOperationException or JSException)
             {
-                // input not yet in the DOM; ignore.
+                // input not yet realized, or its element ref went stale before focus ran; ignore.
             }
 
             return;
@@ -509,9 +664,9 @@ public sealed partial class DxSpreadsheetViewer
             {
                 await activeCellElement.FocusAsync();
             }
-            catch (InvalidOperationException)
+            catch (Exception ex) when (ex is InvalidOperationException or JSException)
             {
-                // active cell not realized (virtualized out); ignore.
+                // active cell not realized (virtualized out) or its ref went stale; ignore.
             }
         }
     }

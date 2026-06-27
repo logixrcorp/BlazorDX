@@ -260,6 +260,7 @@ public sealed partial class DxSpreadsheetViewer : SpreadsheetViewerPrimitive
     {
         pendingFocus = index;
         await SetActiveAsync(index);
+        SyncEditState(); // an internal tab switch doesn't fire OnParametersSet — reload the buffer
     }
 
     // Re-route keyboard activation through the primitive, then focus the new tab so
@@ -271,6 +272,7 @@ public sealed partial class DxSpreadsheetViewer : SpreadsheetViewerPrimitive
         if (ActiveIndex != before)
         {
             pendingFocus = ActiveIndex;
+            SyncEditState(); // reload the edit buffer for the newly active sheet
         }
     }
 
@@ -290,6 +292,7 @@ public sealed partial class DxSpreadsheetViewer : SpreadsheetViewerPrimitive
             }
         }
 
+        await EnsureGridScrollAsync();
         await ApplyPendingEditFocusAsync();
     }
 }

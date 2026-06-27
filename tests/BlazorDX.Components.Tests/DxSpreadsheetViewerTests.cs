@@ -159,6 +159,40 @@ public sealed class DxSpreadsheetViewerTests : TestContext
     }
 
     [Fact]
+    public void Editable_grid_virtualizes_columns_to_a_window()
+    {
+        // A wide sheet: 1 header + 2 data rows × 40 columns.
+        var rows = new List<IReadOnlyList<string>>();
+        for (int r = 0; r < 3; r++)
+        {
+            var row = new string[40];
+            for (int c = 0; c < 40; c++)
+            {
+                row[c] = $"r{r}c{c}";
+            }
+
+            rows.Add(row);
+        }
+
+        Workbook wide = new([new Worksheet("Wide", rows, 40)]);
+
+        IRenderedComponent<DxSpreadsheetViewer> viewer = RenderComponent<DxSpreadsheetViewer>(p => p
+            .Add(v => v.Workbook, wide)
+            .Add(v => v.Editable, true)
+            .Add(v => v.ViewportHeight, 600)
+            .Add(v => v.ViewportWidth, 600)); // ~ceil(600/152)+6 ≈ 10 columns windowed
+
+        // aria-colcount reports the FULL sheet (40 data columns + the row-label gutter).
+        Assert.Equal(41, int.Parse(viewer.Find("[role=grid]").GetAttribute("aria-colcount")!));
+
+        // A data row renders only the column window, not all 40 columns — and includes column 0.
+        IElement firstDataRow = viewer.FindAll(".dx-sheet-row[role=row]")[0];
+        int cellsInRow = firstDataRow.QuerySelectorAll(".dx-sheet-editcell").Length;
+        Assert.InRange(cellsInRow, 1, 39); // windowed: fewer than the full 40
+        Assert.NotNull(firstDataRow.QuerySelector(".dx-sheet-editcell[aria-colindex='2']")); // column 0
+    }
+
+    [Fact]
     public void Editable_grid_edits_a_cell_and_raises_workbook_changed()
     {
         // Entering/leaving edit mode swaps a cell's content for an <input> subtree (which

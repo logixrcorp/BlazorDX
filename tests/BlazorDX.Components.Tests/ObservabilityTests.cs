@@ -229,6 +229,7 @@ public sealed class ObservabilityTests : TestContext
     {
         public ValueTask EnsureLoadedAsync() => ValueTask.CompletedTask;
         public ValueTask<(double, double, double)> MeasureViewportAsync(string id) => ValueTask.FromResult<(double, double, double)>((0, 0, 0));
+        public ValueTask<(double, double, double, double)> MeasureViewport2dAsync(string id) => ValueTask.FromResult<(double, double, double, double)>((0, 0, 0, 0));
         public ValueTask SubscribeScrollAsync(string id, Action onScroll) => ValueTask.CompletedTask;
         public ValueTask FocusFirstAsync(string id) => ValueTask.CompletedTask;
         public ValueTask DownloadTextAsync(string f, string m, string c) => ValueTask.CompletedTask;

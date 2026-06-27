@@ -13,6 +13,13 @@ public interface IGridDomInterop : IAsyncDisposable
     /// <summary>Returns the element's scroll window as (scrollTop, clientHeight, scrollHeight).</summary>
     ValueTask<(double ScrollTop, double ClientHeight, double ScrollHeight)> MeasureViewportAsync(string elementId);
 
+    /// <summary>
+    /// Full 2-D scroll metrics of a scroll container: scroll offset and client size on both
+    /// axes. Used by the editable spreadsheet to window rows and columns from one container.
+    /// </summary>
+    ValueTask<(double ScrollTop, double ScrollLeft, double ClientHeight, double ClientWidth)>
+        MeasureViewport2dAsync(string elementId);
+
     /// <summary>Invokes <paramref name="onScroll"/> (throttled to a frame) whenever the element scrolls.</summary>
     ValueTask SubscribeScrollAsync(string elementId, Action onScroll);
 

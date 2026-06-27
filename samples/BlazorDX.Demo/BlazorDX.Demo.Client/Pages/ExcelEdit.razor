@@ -73,7 +73,33 @@
             ["Bad cell", "", "", "=1/0"],
         ], 4);
 
-        byte[] bytes = XlsxWorkbookWriter.Write(new Workbook([orders]));
+        // A wide, tall sheet to exercise 2-D virtualization: only the visible row/column
+        // window is in the DOM, the header row and row-number gutter stay frozen while
+        // scrolling, and a per-row formula sums the row across all columns.
+        var wideRows = new List<IReadOnlyList<string>>();
+        var headerRow = new string[60];
+        for (int c = 0; c < 60; c++)
+        {
+            headerRow[c] = c == 59 ? "Row total" : $"Col {c + 1}";
+        }
+
+        wideRows.Add(headerRow);
+        for (int r = 1; r <= 500; r++)
+        {
+            var row = new string[60];
+            for (int c = 0; c < 59; c++)
+            {
+                row[c] = ((r * 10) + c).ToString();
+            }
+
+            // Last column sums the row across the first 59 columns (A..BG on this row).
+            row[59] = $"=SUM(A{r + 1}:BG{r + 1})";
+            wideRows.Add(row);
+        }
+
+        Worksheet wide = new("Wide (60×500)", wideRows, 60);
+
+        byte[] bytes = XlsxWorkbookWriter.Write(new Workbook([orders, wide]));
         return XlsxReader.Read(bytes);
     }
 }

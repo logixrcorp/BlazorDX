@@ -36,6 +36,14 @@ public sealed partial class GridDomInterop : IGridDomInterop
         return (metrics[0], metrics[1], metrics[2]);
     }
 
+    public async ValueTask<(double ScrollTop, double ScrollLeft, double ClientHeight, double ClientWidth)>
+        MeasureViewport2dAsync(string elementId)
+    {
+        await EnsureLoadedAsync();
+        double[] m = MeasureViewport2d(elementId);
+        return (m[0], m[1], m[2], m[3]);
+    }
+
     public async ValueTask SubscribeScrollAsync(string elementId, Action onScroll)
     {
         await EnsureLoadedAsync();
@@ -100,6 +108,10 @@ public sealed partial class GridDomInterop : IGridDomInterop
     [JSImport("measureViewport", ModuleName)]
     [return: JSMarshalAs<JSType.Array<JSType.Number>>]
     private static partial double[] MeasureViewport(string elementId);
+
+    [JSImport("measureViewport2d", ModuleName)]
+    [return: JSMarshalAs<JSType.Array<JSType.Number>>]
+    private static partial double[] MeasureViewport2d(string elementId);
 
     [JSImport("subscribeScroll", ModuleName)]
     private static partial void SubscribeScroll(

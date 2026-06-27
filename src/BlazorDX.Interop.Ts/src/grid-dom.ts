@@ -19,6 +19,22 @@ export function measureViewport(elementId: string): number[] {
   return [element.scrollTop, element.clientHeight, element.scrollHeight];
 }
 
+// Full 2-D viewport metrics for a scroll container, as a flat number array:
+// [scrollTop, scrollLeft, clientHeight, clientWidth, scrollHeight, scrollWidth]. The editable
+// spreadsheet windows both rows and columns from a single scroll container, so it needs the
+// horizontal axis too.
+export function measureViewport2d(elementId: string): number[] {
+  const element = document.getElementById(elementId);
+  if (element === null) {
+    return [0, 0, 0, 0, 0, 0];
+  }
+  return [
+    element.scrollTop, element.scrollLeft,
+    element.clientHeight, element.clientWidth,
+    element.scrollHeight, element.scrollWidth,
+  ];
+}
+
 // Subscribes the given .NET callback to the element's scroll events. Returns
 // nothing; the component unsubscribes by disposing (the listener is GC'd with
 // the element on navigation). Scroll is coalesced to one callback per frame via

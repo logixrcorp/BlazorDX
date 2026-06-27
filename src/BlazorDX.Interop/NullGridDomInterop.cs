@@ -13,6 +13,10 @@ public sealed class NullGridDomInterop : IGridDomInterop
     public ValueTask<(double ScrollTop, double ClientHeight, double ScrollHeight)> MeasureViewportAsync(
         string elementId) => ValueTask.FromResult<(double, double, double)>((0, 0, 0));
 
+    public ValueTask<(double ScrollTop, double ScrollLeft, double ClientHeight, double ClientWidth)>
+        MeasureViewport2dAsync(string elementId) =>
+        ValueTask.FromResult<(double, double, double, double)>((0, 0, 0, 0));
+
     public ValueTask SubscribeScrollAsync(string elementId, Action onScroll) => ValueTask.CompletedTask;
 
     public ValueTask FocusFirstAsync(string elementId) => ValueTask.CompletedTask;

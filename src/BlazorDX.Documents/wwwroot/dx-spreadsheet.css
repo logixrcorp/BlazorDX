@@ -195,6 +195,35 @@
   cursor: cell;
 }
 
+/* The editable grid is a single 2-D scroll container that windows both rows and columns.
+   The header row freezes on the vertical axis, the row-number gutter on the horizontal
+   axis, and the corner stays above both. Row/column spacers (inline-styled) reserve the
+   off-window extent so both scrollbars reflect the full sheet. */
+.dx-sheet-scroll {
+  overflow: auto;
+  position: relative;
+}
+
+.dx-sheet-scroll .dx-sheet-headrow {
+  z-index: 2; /* above data rows when vertically scrolled under the sticky header */
+}
+
+.dx-sheet-scroll .dx-sheet-rowlabel {
+  position: sticky;
+  left: 0;
+  z-index: 1; /* the row-number gutter stays put during horizontal scroll */
+}
+
+.dx-sheet-scroll .dx-sheet-headrow .dx-sheet-rowlabel {
+  z-index: 3; /* the corner stays above both axes */
+}
+
+/* Windowed rows are not contiguous DOM siblings (spacers interleave), so nth-child
+   striping would be arbitrary — keep the editable rows uniform instead. */
+.dx-sheet-scroll .dx-sheet-row:nth-child(even) {
+  background: none;
+}
+
 /* The active cell carries the roving tabindex; its focus ring marks the cursor
    position for keyboard users (not color-dependent). */
 .dx-sheet-cell-active {
