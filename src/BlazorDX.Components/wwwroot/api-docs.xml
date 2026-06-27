@@ -1237,6 +1237,10 @@
             color through the browser, so a model-driven host owns the edit (ADR-0015).
             </summary>
         </member>
+        <member name="M:BlazorDX.Components.DxRichTextEditor.PromptLinkAsync">
+            <summary>Prompts for a URL (http/https/mailto only) and returns it, or empty on cancel —
+            the model-driven host then sets the link itself.</summary>
+        </member>
         <member name="M:BlazorDX.Components.DxRichTextEditor.GetSelectionRangeAsync">
             <summary>The current owned selection as <c>"containerIndex,start,end"</c> (see
             <see cref="M:BlazorDX.Interop.IRichTextInterop.GetSelectionRangeAsync(System.String)"/>), or empty if unaddressable.</summary>
