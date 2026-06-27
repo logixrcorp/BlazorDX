@@ -174,8 +174,12 @@ public sealed class DxRichTextEditor : ComponentBase
 
     private static bool IsModelCommand(string command) =>
         command is "bold" or "italic" or "underline" or "strikeThrough" or "removeFormat"
-            or "formatBlock" or "insertUnorderedList" or "insertOrderedList"
+            or "formatBlock" or "insertUnorderedList" or "insertOrderedList" or "createLink"
             or "justifyLeft" or "justifyCenter" or "justifyRight" or "justifyFull";
+
+    /// <summary>Prompts for a URL (http/https/mailto only) and returns it, or empty on cancel —
+    /// the model-driven host then sets the link itself.</summary>
+    public ValueTask<string> PromptLinkAsync() => Interop.PromptLinkAsync();
 
     /// <summary>The current owned selection as <c>"containerIndex,start,end"</c> (see
     /// <see cref="IRichTextInterop.GetSelectionRangeAsync"/>), or empty if unaddressable.</summary>

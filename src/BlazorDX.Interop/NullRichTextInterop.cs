@@ -12,6 +12,8 @@ public sealed class NullRichTextInterop : IRichTextInterop
 
     public ValueTask CreateLinkAsync() => ValueTask.CompletedTask;
 
+    public ValueTask<string> PromptLinkAsync() => ValueTask.FromResult(string.Empty);
+
     public ValueTask ApplyColorAsync(string command, string color) => ValueTask.CompletedTask;
 
     public ValueTask<int> FindInEditorAsync(string elementId, string query, bool forward, bool caseSensitive) =>

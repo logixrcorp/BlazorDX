@@ -23,6 +23,18 @@ export function createLink(): void {
   }
 }
 
+// Prompts for a URL and returns it (http/https/mailto only) without touching the DOM, so the
+// model-driven core can set the link on its own model. Returns "" on cancel or an unsafe scheme.
+export function promptLink(): string {
+  const input = window.prompt("Link URL (http, https, or mailto):", "https://");
+  if (input === null) {
+    return "";
+  }
+
+  const url = input.trim();
+  return /^(https?:|mailto:)/i.test(url) ? url : "";
+}
+
 // The last selection range observed inside a rich-text surface. A color <input> steals
 // the contentEditable selection when clicked, so we remember it and restore it before
 // applying the color (otherwise execCommand has nothing to format).

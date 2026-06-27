@@ -62,6 +62,23 @@ public sealed partial class DxWordEditor
             return;
         }
 
+        // createLink needs an async URL prompt before the edit, so it is handled out of band.
+        if (command == "createLink")
+        {
+            if (start >= end)
+            {
+                return;
+            }
+
+            string url = await _rte.PromptLinkAsync();
+            if (!string.IsNullOrEmpty(url))
+            {
+                await CommitModelEditAsync(SetLink(Current, container, start, end, url), range);
+            }
+
+            return;
+        }
+
         // Character commands need a non-empty selection; block commands apply at the caret.
         WordDocument? updated = command switch
         {
@@ -166,6 +183,11 @@ public sealed partial class DxWordEditor
         WordDocument document, int containerIndex, int start, int end, string color, bool highlight) =>
         EditContainer(document, containerIndex, runs => ApplyToRange(runs, start, end,
             run => highlight ? run with { Highlight = color } : run with { Color = color }));
+
+    private static WordDocument SetLink(
+        WordDocument document, int containerIndex, int start, int end, string href) =>
+        EditContainer(document, containerIndex, runs => ApplyToRange(runs, start, end,
+            run => run with { Href = href }));
 
     // Toggles the block owning the target run-container between a paragraph and a level-2
     // heading, preserving its runs and alignment. The toolbar's only formatBlock value is

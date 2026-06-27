@@ -20,6 +20,12 @@ public interface IRichTextInterop
     ValueTask CreateLinkAsync();
 
     /// <summary>
+    /// Prompts for a URL and returns it without touching the DOM (http/https/mailto only;
+    /// empty on cancel or an unsafe scheme). Lets the model-driven core set the link itself.
+    /// </summary>
+    ValueTask<string> PromptLinkAsync();
+
+    /// <summary>
     /// Applies a color to the last in-editor selection. <paramref name="command"/> is
     /// <c>foreColor</c> (text) or <c>hiliteColor</c> (highlight); <paramref name="color"/>
     /// is a CSS color. The bridge restores the remembered selection first.

@@ -782,6 +782,28 @@ public sealed class DxWordEditorTests : TestContext
             b => Assert.Equal("C", Text(Assert.IsType<WordList>(b).Items.Single())));
     }
 
+    [Fact]
+    public void ModelDriven_link_button_sets_the_href_on_the_selected_run()
+    {
+        FakeRichTextInterop fake = new() { SelectionRange = "0,0,5", LinkUrl = "https://example.com" };
+        Services.AddScoped<IRichTextInterop>(_ => fake);
+
+        WordDocument? changed = null;
+        WordDocument doc = new([new WordParagraph([new WordRun("Hello world")])]);
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, doc)
+            .Add(e => e.EditingCore, EditingCore.ModelDriven)
+            .Add(e => e.DocumentChanged, EventCallback.Factory.Create<WordDocument>(this, d => changed = d)));
+
+        editor.Find("[aria-label='Insert link']").Click();
+
+        WordParagraph para = changed!.Blocks.OfType<WordParagraph>().Single();
+        Assert.Equal("Hello world", Text(para.Runs));
+        Assert.Equal("https://example.com", para.Runs[0].Href); // "Hello" linked
+        Assert.Equal("Hello", para.Runs[0].Text);
+        Assert.Null(para.Runs[^1].Href);                        // " world" untouched
+    }
+
     private sealed class FakeRichTextInterop : IRichTextInterop
     {
         public string TableCell { get; init; } = string.Empty;
@@ -794,7 +816,10 @@ public sealed class DxWordEditorTests : TestContext
 
         public ValueTask EnsureLoadedAsync() => ValueTask.CompletedTask;
         public ValueTask ExecAsync(string command, string value) => ValueTask.CompletedTask;
+        public string LinkUrl { get; init; } = string.Empty;
+
         public ValueTask CreateLinkAsync() => ValueTask.CompletedTask;
+        public ValueTask<string> PromptLinkAsync() => ValueTask.FromResult(LinkUrl);
         public ValueTask ApplyColorAsync(string command, string color) => ValueTask.CompletedTask;
         public ValueTask<int> FindInEditorAsync(string e, string q, bool f, bool c) => ValueTask.FromResult(0);
         public ValueTask<string> GetTableCellAsync(string e) => ValueTask.FromResult(TableCell);
