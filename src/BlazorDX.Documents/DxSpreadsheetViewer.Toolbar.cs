@@ -226,7 +226,7 @@ public sealed partial class DxSpreadsheetViewer
         {
             editRaw[activeRow][activeColumn] = string.Empty;
             IsDirty = true;
-            Recompute();
+            editWorkbook?.SetCell(activeRow, activeColumn, string.Empty); // incremental
             if (WorkbookChanged.HasDelegate)
             {
                 await WorkbookChanged.InvokeAsync(BuildEditedWorkbook());
@@ -245,7 +245,7 @@ public sealed partial class DxSpreadsheetViewer
         editingColumn = -1;
         editBuffer = string.Empty;
         IsDirty = true;
-        Recompute();
+        RebuildWorkbook(); // dimensions changed — rebuild the dependency graph
         focusActiveCell = true;
         if (WorkbookChanged.HasDelegate)
         {

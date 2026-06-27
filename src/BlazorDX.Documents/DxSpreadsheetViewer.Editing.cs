@@ -24,9 +24,11 @@ namespace BlazorDX.Documents;
 /// </remarks>
 public sealed partial class DxSpreadsheetViewer
 {
-    // Per-sheet mutable raw content (the edit buffer) and its last computed values.
+    // Per-sheet mutable raw content (the edit buffer) and the incremental recalc engine
+    // computed over it. The engine is rebuilt on load / structural change; single-cell
+    // edits go through editWorkbook.SetCell so only affected cells recompute.
     private List<List<string>>? editRaw;
-    private CellValue[][]? editComputed;
+    private IncrementalWorkbook? editWorkbook;
     private int editSheetIndex = -1;
 
     // The active cell (full-sheet coordinates incl. the header at row 0) and, when a
@@ -82,7 +84,7 @@ public sealed partial class DxSpreadsheetViewer
         if (sheet is null)
         {
             editRaw = null;
-            editComputed = null;
+            editWorkbook = null;
             return;
         }
 
@@ -102,13 +104,14 @@ public sealed partial class DxSpreadsheetViewer
         editRaw = buffer;
         activeRow = Math.Clamp(activeRow, 0, Math.Max(0, buffer.Count - 1));
         activeColumn = Math.Clamp(activeColumn, 0, Math.Max(0, columns - 1));
-        Recompute();
+        RebuildWorkbook();
     }
 
-    // Runs the formula engine over the whole sheet buffer (header row included; it is
-    // just text literals) and caches the typed result grid for display.
-    private void Recompute() =>
-        editComputed = editRaw is null ? null : FormulaEngine.Recalculate(editRaw);
+    // Builds a fresh incremental workbook from the whole sheet buffer (header row included;
+    // it is just text literals). Used on load and after a structural change, where the
+    // dimensions move; single-cell edits go through editWorkbook.SetCell instead.
+    private void RebuildWorkbook() =>
+        editWorkbook = editRaw is null ? null : new IncrementalWorkbook(editRaw);
 
     private int EditRowCount => editRaw?.Count ?? 0;
 
@@ -124,10 +127,7 @@ public sealed partial class DxSpreadsheetViewer
             : string.Empty;
 
     private CellValue ComputedAt(int row, int column) =>
-        editComputed is not null && row >= 0 && row < editComputed.Length
-        && column >= 0 && column < editComputed[row].Length
-            ? editComputed[row][column]
-            : CellValue.Blank;
+        editWorkbook?.GetValue(row, column) ?? CellValue.Blank;
 
     // ---- Rendering ---------------------------------------------------------------
 
@@ -445,7 +445,7 @@ public sealed partial class DxSpreadsheetViewer
         {
             editRaw[row][column] = newValue;
             IsDirty = true;
-            Recompute();
+            editWorkbook?.SetCell(row, column, newValue); // incremental: only dependents recompute
             if (WorkbookChanged.HasDelegate)
             {
                 await WorkbookChanged.InvokeAsync(BuildEditedWorkbook());
