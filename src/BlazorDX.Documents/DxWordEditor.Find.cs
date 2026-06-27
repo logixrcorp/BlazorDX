@@ -153,6 +153,7 @@ public sealed partial class DxWordEditor
 
         WordDocument updated = ReplaceInDocument(Current, findText, replaceText, caseSensitive, all);
 
+        CaptureHistory(WordHtml.ToHtml(updated)); // make the replace undoable
         editorHtml = WordHtml.ToHtml(updated);
         lastSeededHtml = editorHtml;
         dirty = true;

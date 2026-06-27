@@ -146,7 +146,14 @@ public sealed partial class DxWordEditor : ComponentBase
         {
             editorHtml = html;
             lastSeededHtml = html;
+            if (!_restoring)
+            {
+                // A genuinely new external document resets the history baseline.
+                ResetHistory(html);
+            }
         }
+
+        _baselineHtml ??= html; // initialize on first load (incl. an empty document)
     }
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
@@ -179,6 +186,9 @@ public sealed partial class DxWordEditor : ComponentBase
             builder.AddAttribute(19, "onclick", EventCallback.Factory.Create(this, ToggleFind));
             builder.AddContent(20, "Find & replace");
             builder.CloseElement();
+
+            ToolbarButton(builder, 30, "Undo", "Undo", UndoAsync, !CanUndo);
+            ToolbarButton(builder, 40, "Redo", "Redo", RedoAsync, !CanRedo);
 
             builder.CloseElement();
         }
@@ -221,6 +231,20 @@ public sealed partial class DxWordEditor : ComponentBase
 
     private async Task DownloadAsync() =>
         await Interop.DownloadBytesAsync(DownloadFileName, DocxMime, DocxWriter.Write(Current));
+
+    private void ToolbarButton(
+        RenderTreeBuilder builder, int seq, string text, string label, Func<Task> handler, bool disabled)
+    {
+        builder.OpenElement(seq, "button");
+        builder.AddAttribute(seq + 1, "type", "button");
+        builder.AddAttribute(seq + 2, "class", "dx-word-toolbar-btn");
+        builder.AddAttribute(seq + 3, "aria-label", label);
+        builder.AddAttribute(seq + 4, "title", label);
+        builder.AddAttribute(seq + 5, "disabled", disabled);
+        builder.AddAttribute(seq + 6, "onclick", EventCallback.Factory.Create(this, handler));
+        builder.AddContent(seq + 7, text);
+        builder.CloseElement();
+    }
 
     private readonly record struct DocumentStats(int Words, int Characters, int Paragraphs);
 
@@ -299,6 +323,7 @@ public sealed partial class DxWordEditor : ComponentBase
     private async Task OnEditorHtmlChangedAsync(string? html)
     {
         string next = html ?? string.Empty;
+        CaptureHistory(next); // record the prior state so this edit is undoable
 
         // The editor already sanitized this HTML. Re-parse it into the model; this is the
         // load→save bridge and the path the round-trip test exercises directly.
