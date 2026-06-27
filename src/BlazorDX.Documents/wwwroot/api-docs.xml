@@ -146,12 +146,13 @@
             and cheap change-detection) and an optional <c>"container,start,end"</c> selection.
             </remarks>
             <summary>
-            The model-driven inline-formatting commands for <see cref="T:BlazorDX.Documents.DxWordEditor"/> (ADR-0015,
-            Phase B). When <see cref="P:BlazorDX.Documents.DxWordEditor.EditingCore"/> is <see cref="F:BlazorDX.Documents.EditingCore.ModelDriven"/>, the
-            bold/italic/underline/strikethrough toolbar buttons are intercepted here: the caret's
-            owned selection is read as a run-container + character range, the edit is applied to the
-            immutable model as a pure function, and the surface is re-seeded in place and the
-            selection restored — so the model, not the DOM, is the source of truth.
+            The model-driven formatting commands for <see cref="T:BlazorDX.Documents.DxWordEditor"/> (ADR-0015, Phases B
+            and D). When <see cref="P:BlazorDX.Documents.DxWordEditor.EditingCore"/> is <see cref="F:BlazorDX.Documents.EditingCore.ModelDriven"/>, the
+            toolbar's character commands (bold/italic/underline/strikethrough, clear formatting) and
+            paragraph commands (alignment) are intercepted here: the caret's owned selection is read
+            as a run-container + character range, the edit is applied to the immutable model as a pure
+            function, and the surface is re-seeded in place with the selection restored — so the
+            model, not the DOM, is the source of truth.
             </summary>
             <summary>
             Table-editing for <see cref="T:BlazorDX.Documents.DxWordEditor"/>: insert/delete the row or column the caret
@@ -237,13 +238,13 @@
         </member>
         <member name="P:BlazorDX.Documents.DxWordEditor.EditingCore">
             <summary>
-            The editing engine for inline formatting. Defaults to
-            <see cref="F:BlazorDX.Documents.EditingCore.ContentEditable"/>; opt into <see cref="F:BlazorDX.Documents.EditingCore.ModelDriven"/>
-            to drive bold/italic/underline/strikethrough through the model (ADR-0015).
+            The editing engine for formatting. Defaults to <see cref="F:BlazorDX.Documents.EditingCore.ContentEditable"/>;
+            opt into <see cref="F:BlazorDX.Documents.EditingCore.ModelDriven"/> to drive the supported commands through
+            the model (ADR-0015): bold/italic/underline/strikethrough, clear formatting, alignment.
             </summary>
         </member>
         <member name="T:BlazorDX.Documents.EditingCore">
-            <summary>Which editing engine a <see cref="T:BlazorDX.Documents.DxWordEditor"/> uses for inline formatting.</summary>
+            <summary>Which editing engine a <see cref="T:BlazorDX.Documents.DxWordEditor"/> uses for formatting.</summary>
         </member>
         <member name="F:BlazorDX.Documents.EditingCore.ContentEditable">
             <summary>
@@ -253,7 +254,7 @@
         </member>
         <member name="F:BlazorDX.Documents.EditingCore.ModelDriven">
             <summary>
-            The model-driven core (ADR-0015): inline-format commands mutate the authoritative
+            The model-driven core (ADR-0015): formatting commands mutate the authoritative
             <see cref="T:BlazorDX.Documents.WordDocument"/> over an owned selection, the surface is re-rendered from
             the model, and the selection is restored. No <c>execCommand</c>.
             </summary>
