@@ -179,6 +179,111 @@ export function getTableCell(elementId: string): string {
   return tableIndex < 0 || rowIndex < 0 || colIndex < 0 ? "" : `${tableIndex},${rowIndex},${colIndex}`;
 }
 
+// The run-containers the model addresses, in document order. Each holds a single run
+// sequence: a heading/paragraph, a list item, or a table cell. This selector's
+// document-order match is identical to the model's run-container enumeration, so an
+// index into one indexes the other — no data attributes needed.
+const RUN_CONTAINER_SELECTOR = "h1,h2,h3,h4,h5,h6,p,li,td,th";
+
+// Reports the current selection as "containerIndex,start,end": the run-container (in
+// document order) the selection sits in, and the character offsets within that container's
+// text (start <= end). Returns "" when there is no selection, when it spans more than one
+// container, or when it lies outside the editor. This is the owned selection the
+// model-driven editing core maps its commands onto (ADR-0015).
+export function getSelectionRange(elementId: string): string {
+  const root = document.getElementById(elementId);
+  if (!root) {
+    return "";
+  }
+
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) {
+    return "";
+  }
+
+  const container = containerOf(sel.anchorNode, root);
+  if (!container || container !== containerOf(sel.focusNode, root)) {
+    return ""; // no container, or a cross-container selection we can't address yet
+  }
+
+  const index = Array.from(root.querySelectorAll(RUN_CONTAINER_SELECTOR)).indexOf(container);
+  if (index < 0) {
+    return "";
+  }
+
+  const a = offsetWithin(container, sel.anchorNode!, sel.anchorOffset);
+  const f = offsetWithin(container, sel.focusNode!, sel.focusOffset);
+  return `${index},${Math.min(a, f)},${Math.max(a, f)}`;
+}
+
+// Restores a selection addressed as a run-container index plus character offsets (the
+// inverse of getSelectionRange), and focuses the editor so editing can continue.
+export function setSelectionRange(
+  elementId: string, containerIndex: number, start: number, end: number): void {
+  const root = document.getElementById(elementId);
+  if (!root) {
+    return;
+  }
+
+  const container = Array.from(root.querySelectorAll(RUN_CONTAINER_SELECTOR))[containerIndex];
+  if (!container) {
+    return;
+  }
+
+  const range = document.createRange();
+  locate(container, start, range, true);
+  locate(container, end, range, false);
+  const sel = window.getSelection();
+  if (sel) {
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  root.focus();
+}
+
+// The nearest run-container of a node, or null when the node is outside the editor.
+function containerOf(node: Node | null, root: HTMLElement): Element | null {
+  const el = node && (node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement);
+  const container = el?.closest(RUN_CONTAINER_SELECTOR);
+  return container && root.contains(container) ? container : null;
+}
+
+// Character offset from the start of a container to (node, nodeOffset), counting text only.
+// Uses a Range so element- and text-node anchors are handled uniformly.
+function offsetWithin(container: Element, node: Node, nodeOffset: number): number {
+  const r = document.createRange();
+  r.selectNodeContents(container);
+  try {
+    r.setEnd(node, nodeOffset);
+  } catch {
+    return container.textContent?.length ?? 0;
+  }
+
+  return r.toString().length;
+}
+
+// Places a range edge at a character offset within a single container by walking its text
+// nodes. Past-the-end offsets clamp to the container end.
+function locate(container: Element, offset: number, range: Range, isStart: boolean): void {
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+  let acc = 0;
+  let node: Node | null;
+  while ((node = walker.nextNode())) {
+    const t = node as Text;
+    if (offset <= acc + t.length) {
+      const local = Math.max(0, offset - acc);
+      if (isStart) { range.setStart(t, local); } else { range.setEnd(t, local); }
+      return;
+    }
+
+    acc += t.length;
+  }
+
+  const tail = container.childNodes.length;
+  if (isStart) { range.setStart(container, tail); } else { range.setEnd(container, tail); }
+}
+
 // Places a range edge at a combined-string offset by locating the owning text node.
 function point(range: Range, segments: { node: Text; start: number }[], offset: number, isStart: boolean): void {
   for (const seg of segments) {

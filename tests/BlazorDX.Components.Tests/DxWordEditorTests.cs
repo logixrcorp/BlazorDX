@@ -550,9 +550,52 @@ public sealed class DxWordEditorTests : TestContext
         Assert.All(T(changed).Rows, r => Assert.Single(r.Cells)); // 2 cols -> 1
     }
 
+    [Fact]
+    public void ModelDriven_bold_toggles_the_format_on_the_selected_range_through_the_model()
+    {
+        // Owned selection: run-container 0 (the paragraph), characters [0,5) = "Hello".
+        FakeRichTextInterop fake = new() { SelectionRange = "0,0,5" };
+        Services.AddScoped<IRichTextInterop>(_ => fake);
+
+        WordDocument? changed = null;
+        WordDocument doc = new([new WordParagraph([new WordRun("Hello world")])]);
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, doc)
+            .Add(e => e.EditingCore, EditingCore.ModelDriven)
+            .Add(e => e.DocumentChanged, EventCallback.Factory.Create<WordDocument>(this, d => changed = d)));
+
+        editor.Find("[aria-label='Bold']").Click();
+
+        WordParagraph para = changed!.Blocks.OfType<WordParagraph>().Single();
+        Assert.Equal("Hello world", Text(para.Runs)); // text unchanged
+        Assert.Equal("Hello", para.Runs[0].Text);     // split exactly at the selection end
+        Assert.True(para.Runs[0].Bold);               // selection is bolded
+        Assert.False(para.Runs[^1].Bold);             // the remainder is untouched
+        Assert.Equal((0, 0, 5), fake.RestoredSelection); // caret restored after the re-seed
+
+        // Toggling a range that is already fully bold clears it and coalesces back to one run.
+        WordDocument? cleared = null;
+        WordDocument boldDoc = new([new WordParagraph([new WordRun("Hello", Bold: true), new WordRun(" world")])]);
+        IRenderedComponent<DxWordEditor> editor2 = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, boldDoc)
+            .Add(e => e.EditingCore, EditingCore.ModelDriven)
+            .Add(e => e.DocumentChanged, EventCallback.Factory.Create<WordDocument>(this, d => cleared = d)));
+
+        editor2.Find("[aria-label='Bold']").Click();
+
+        WordParagraph reverted = cleared!.Blocks.OfType<WordParagraph>().Single();
+        Assert.Equal("Hello world", Text(reverted.Runs));
+        Assert.Single(reverted.Runs);                  // split fragments merged back together
+        Assert.False(reverted.Runs[0].Bold);
+    }
+
     private sealed class FakeRichTextInterop : IRichTextInterop
     {
         public string TableCell { get; init; } = string.Empty;
+        public string SelectionRange { get; init; } = string.Empty;
+
+        // Captures the last selection restore, so a test can assert the caret was put back.
+        public (int Container, int Start, int End)? RestoredSelection { get; private set; }
 
         public ValueTask EnsureLoadedAsync() => ValueTask.CompletedTask;
         public ValueTask ExecAsync(string command, string value) => ValueTask.CompletedTask;
@@ -560,6 +603,14 @@ public sealed class DxWordEditorTests : TestContext
         public ValueTask ApplyColorAsync(string command, string color) => ValueTask.CompletedTask;
         public ValueTask<int> FindInEditorAsync(string e, string q, bool f, bool c) => ValueTask.FromResult(0);
         public ValueTask<string> GetTableCellAsync(string e) => ValueTask.FromResult(TableCell);
+        public ValueTask<string> GetSelectionRangeAsync(string e) => ValueTask.FromResult(SelectionRange);
+
+        public ValueTask SetSelectionRangeAsync(string e, int container, int start, int end)
+        {
+            RestoredSelection = (container, start, end);
+            return ValueTask.CompletedTask;
+        }
+
         public ValueTask<string> GetHtmlAsync(string e) => ValueTask.FromResult(string.Empty);
         public ValueTask SetHtmlAsync(string e, string h) => ValueTask.CompletedTask;
         public ValueTask FocusAsync(string e) => ValueTask.CompletedTask;

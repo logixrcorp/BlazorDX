@@ -33,6 +33,15 @@ public sealed class DxRichTextEditor : ComponentBase
 
     [Parameter] public string? Class { get; set; }
 
+    /// <summary>
+    /// Optional interceptor for the basic inline-format toolbar commands (<c>bold</c>,
+    /// <c>italic</c>, <c>underline</c>, <c>strikeThrough</c>). When set, those buttons invoke
+    /// this callback instead of <c>document.execCommand</c>, so a host can apply the edit to
+    /// its own model and re-seed the surface (the model-driven editing core, ADR-0015). All
+    /// other tools keep their built-in behavior.
+    /// </summary>
+    [Parameter] public EventCallback<string> OnCommand { get; set; }
+
     [Inject] private IRichTextInterop Interop { get; set; } = default!;
 
     private HtmlSanitizer ActiveSanitizer => Sanitizer ?? InertSanitizer;
@@ -130,6 +139,13 @@ public sealed class DxRichTextEditor : ComponentBase
 
     private async Task CommandAsync(string command, string value)
     {
+        // Model-driven host owns the basic inline formats: hand off and let it edit + re-seed.
+        if (OnCommand.HasDelegate && IsModelCommand(command))
+        {
+            await OnCommand.InvokeAsync(command);
+            return;
+        }
+
         // createLink needs a URL prompt + scheme validation, which lives in the bridge.
         if (command == "createLink")
         {
@@ -141,6 +157,29 @@ public sealed class DxRichTextEditor : ComponentBase
         }
 
         await SyncFromDomAsync();
+    }
+
+    private static bool IsModelCommand(string command) =>
+        command is "bold" or "italic" or "underline" or "strikeThrough";
+
+    /// <summary>The current owned selection as <c>"containerIndex,start,end"</c> (see
+    /// <see cref="IRichTextInterop.GetSelectionRangeAsync"/>), or empty if unaddressable.</summary>
+    public ValueTask<string> GetSelectionRangeAsync() => Interop.GetSelectionRangeAsync(editorId);
+
+    /// <summary>Restores a selection by run-container index and character offsets, refocusing
+    /// the editor — used after a model edit re-renders the surface.</summary>
+    public ValueTask SetSelectionRangeAsync(int containerIndex, int start, int end) =>
+        Interop.SetSelectionRangeAsync(editorId, containerIndex, start, end);
+
+    /// <summary>
+    /// Replaces the editing surface's HTML in place (no re-mount), so a model-driven host can
+    /// push a freshly rendered model into the DOM and then restore the caret with
+    /// <see cref="SetSelectionRangeAsync"/>. The HTML is sanitized like the initial seed.
+    /// </summary>
+    public async Task ReseedAsync(string html)
+    {
+        lastEmitted = ActiveSanitizer.Sanitize(html ?? string.Empty).Value;
+        await Interop.SetHtmlAsync(editorId, lastEmitted);
     }
 
     private async Task CommandColorAsync(string command, string color)

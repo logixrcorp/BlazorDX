@@ -216,7 +216,14 @@ public sealed partial class DxWordEditor : ComponentBase
         builder.AddComponentParameter(23, nameof(DxRichTextEditor.Sanitizer), Sanitizer);
         builder.AddComponentParameter(24, nameof(DxRichTextEditor.AriaLabel), Label);
         builder.AddComponentParameter(25, nameof(DxRichTextEditor.Class), "dx-word-editor-surface");
-        builder.AddComponentReferenceCapture(26, rte => _rte = (DxRichTextEditor)rte);
+        if (EditingCore == EditingCore.ModelDriven)
+        {
+            // Intercept the inline-format buttons so they edit the model, not the DOM.
+            builder.AddComponentParameter(26, nameof(DxRichTextEditor.OnCommand),
+                EventCallback.Factory.Create<string>(this, HandleModelCommandAsync));
+        }
+
+        builder.AddComponentReferenceCapture(27, rte => _rte = (DxRichTextEditor)rte);
         builder.CloseComponent();
 
         if (ShowStatus)

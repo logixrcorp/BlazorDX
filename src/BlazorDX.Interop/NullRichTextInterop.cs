@@ -19,6 +19,11 @@ public sealed class NullRichTextInterop : IRichTextInterop
 
     public ValueTask<string> GetTableCellAsync(string elementId) => ValueTask.FromResult(string.Empty);
 
+    public ValueTask<string> GetSelectionRangeAsync(string elementId) => ValueTask.FromResult(string.Empty);
+
+    public ValueTask SetSelectionRangeAsync(string elementId, int containerIndex, int start, int end) =>
+        ValueTask.CompletedTask;
+
     public ValueTask<string> GetHtmlAsync(string elementId) => ValueTask.FromResult(string.Empty);
 
     public ValueTask SetHtmlAsync(string elementId, string html) => ValueTask.CompletedTask;

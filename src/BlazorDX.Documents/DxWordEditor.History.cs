@@ -139,6 +139,37 @@ public sealed partial class DxWordEditor
         StateHasChanged();
     }
 
+    // Adopts a model edited in C# WITHOUT re-mounting the editor: the surface HTML is
+    // replaced in place (DxRichTextEditor.ReseedAsync) so the caller can immediately restore
+    // the owned selection on the same instance. Used by the model-driven inline-format
+    // commands (ADR-0015), where the re-mount path would discard the selection we want to
+    // keep. Still records history and surfaces the new document, like CommitModelEditAsync.
+    private async Task CommitModelEditInPlaceAsync(WordDocument updated)
+    {
+        string html = WordHtml.ToHtml(updated);
+        CaptureHistory(html);
+        editorHtml = html;
+        lastSeededHtml = html;
+        dirty = true;
+
+        if (_rte is not null)
+        {
+            await _rte.ReseedAsync(html);
+        }
+
+        if (DocumentChanged.HasDelegate)
+        {
+            await DocumentChanged.InvokeAsync(updated);
+        }
+
+        if (OnSave.HasDelegate)
+        {
+            await OnSave.InvokeAsync(DocxWriter.Write(updated));
+        }
+
+        StateHasChanged();
+    }
+
     private static void TrimHistory(Stack<string> stack)
     {
         if (stack.Count <= MaxHistory)

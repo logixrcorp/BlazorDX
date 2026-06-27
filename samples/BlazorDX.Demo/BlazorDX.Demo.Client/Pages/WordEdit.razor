@@ -37,10 +37,21 @@
     http/https/mailto). Select a word and click <kbd>🔗</kbd> to add a link.
 </p>
 
+<p class="dx-demo-meta">
+    <label>
+        <input type="checkbox" @bind="modelDriven" />
+        <strong>Model-driven core</strong> (ADR-0015, preview): bold / italic / underline /
+        strikethrough edit the <code>WordDocument</code> directly over an owned selection and
+        re-render from the model — no <code>execCommand</code>. Select text, then use those four
+        buttons.
+    </label>
+</p>
+
 <DxWordEditor @bind-Document="document"
               Sanitizer="sanitizer"
               Label="Quarterly report body"
               DownloadFileName="quarterly-report.docx"
+              EditingCore="@(modelDriven ? EditingCore.ModelDriven : EditingCore.ContentEditable)"
               OnSave="OnSave" />
 
 <p class="dx-demo-meta" aria-live="polite">
@@ -58,6 +69,7 @@
 
 @code {
     private WordDocument document = BuildSample();
+    private bool modelDriven;
     private int? savedSize;
 
     private void OnSave(byte[] docx) => savedSize = docx.Length;

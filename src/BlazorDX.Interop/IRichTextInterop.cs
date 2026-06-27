@@ -39,6 +39,21 @@ public interface IRichTextInterop
     /// </summary>
     ValueTask<string> GetTableCellAsync(string elementId);
 
+    /// <summary>
+    /// Reports the current selection as <c>"containerIndex,start,end"</c>: the run-container
+    /// (heading/paragraph/list-item/table-cell, in document order) and the character offsets
+    /// within it. Empty when there is no selection, it spans more than one container, or it
+    /// lies outside the editor. This is the owned selection the model-driven editing core
+    /// maps commands onto (ADR-0015).
+    /// </summary>
+    ValueTask<string> GetSelectionRangeAsync(string elementId);
+
+    /// <summary>
+    /// Restores a selection addressed as a run-container index plus character offsets (the
+    /// inverse of <see cref="GetSelectionRangeAsync"/>) and refocuses the editor.
+    /// </summary>
+    ValueTask SetSelectionRangeAsync(string elementId, int containerIndex, int start, int end);
+
     /// <summary>Returns the current inner HTML of the editor element.</summary>
     ValueTask<string> GetHtmlAsync(string elementId);
 

@@ -1210,6 +1210,30 @@
         <member name="P:BlazorDX.Components.DxRichTextEditor.Sanitizer">
             <summary>The sanitizer applied to edited HTML. Defaults to an inert (encode-all) policy.</summary>
         </member>
+        <member name="P:BlazorDX.Components.DxRichTextEditor.OnCommand">
+            <summary>
+            Optional interceptor for the basic inline-format toolbar commands (<c>bold</c>,
+            <c>italic</c>, <c>underline</c>, <c>strikeThrough</c>). When set, those buttons invoke
+            this callback instead of <c>document.execCommand</c>, so a host can apply the edit to
+            its own model and re-seed the surface (the model-driven editing core, ADR-0015). All
+            other tools keep their built-in behavior.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Components.DxRichTextEditor.GetSelectionRangeAsync">
+            <summary>The current owned selection as <c>"containerIndex,start,end"</c> (see
+            <see cref="M:BlazorDX.Interop.IRichTextInterop.GetSelectionRangeAsync(System.String)"/>), or empty if unaddressable.</summary>
+        </member>
+        <member name="M:BlazorDX.Components.DxRichTextEditor.SetSelectionRangeAsync(System.Int32,System.Int32,System.Int32)">
+            <summary>Restores a selection by run-container index and character offsets, refocusing
+            the editor — used after a model edit re-renders the surface.</summary>
+        </member>
+        <member name="M:BlazorDX.Components.DxRichTextEditor.ReseedAsync(System.String)">
+            <summary>
+            Replaces the editing surface's HTML in place (no re-mount), so a model-driven host can
+            push a freshly rendered model into the DOM and then restore the caret with
+            <see cref="M:BlazorDX.Components.DxRichTextEditor.SetSelectionRangeAsync(System.Int32,System.Int32,System.Int32)"/>. The HTML is sanitized like the initial seed.
+            </summary>
+        </member>
         <member name="M:BlazorDX.Components.DxRichTextEditor.FindNextAsync(System.String,System.Boolean,System.Boolean)">
             <summary>
             Selects and scrolls to the next (or previous) occurrence of <paramref name="query"/>

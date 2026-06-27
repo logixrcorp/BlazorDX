@@ -57,6 +57,18 @@ public sealed partial class RichTextInterop : IRichTextInterop
         return GetTableCell(elementId);
     }
 
+    public async ValueTask<string> GetSelectionRangeAsync(string elementId)
+    {
+        await EnsureLoadedAsync();
+        return GetSelectionRange(elementId);
+    }
+
+    public async ValueTask SetSelectionRangeAsync(string elementId, int containerIndex, int start, int end)
+    {
+        await EnsureLoadedAsync();
+        SetSelectionRange(elementId, containerIndex, start, end);
+    }
+
     public async ValueTask<string> GetHtmlAsync(string elementId)
     {
         await EnsureLoadedAsync();
@@ -89,6 +101,12 @@ public sealed partial class RichTextInterop : IRichTextInterop
 
     [JSImport("getTableCell", ModuleName)]
     private static partial string GetTableCell(string elementId);
+
+    [JSImport("getSelectionRange", ModuleName)]
+    private static partial string GetSelectionRange(string elementId);
+
+    [JSImport("setSelectionRange", ModuleName)]
+    private static partial void SetSelectionRange(string elementId, int containerIndex, int start, int end);
 
     [JSImport("getHtml", ModuleName)]
     private static partial string GetHtml(string elementId);

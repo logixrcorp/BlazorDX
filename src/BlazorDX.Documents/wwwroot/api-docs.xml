@@ -144,6 +144,14 @@
             are editor HTML (cheap to store and to re-seed); the model is re-derived on restore.
             </remarks>
             <summary>
+            The model-driven inline-formatting commands for <see cref="T:BlazorDX.Documents.DxWordEditor"/> (ADR-0015,
+            Phase B). When <see cref="P:BlazorDX.Documents.DxWordEditor.EditingCore"/> is <see cref="F:BlazorDX.Documents.EditingCore.ModelDriven"/>, the
+            bold/italic/underline/strikethrough toolbar buttons are intercepted here: the caret's
+            owned selection is read as a run-container + character range, the edit is applied to the
+            immutable model as a pure function, and the surface is re-seeded in place and the
+            selection restored — so the model, not the DOM, is the source of truth.
+            </summary>
+            <summary>
             Table-editing for <see cref="T:BlazorDX.Documents.DxWordEditor"/>: insert/delete the row or column the caret
             is in. The caret's cell is resolved via the editor's selection bridge
             (<c>GetTableCellAsync</c>); the edit then runs on the document model and re-seeds the
@@ -224,6 +232,29 @@
         </member>
         <member name="P:BlazorDX.Documents.DxWordEditor.CanRedo">
             <summary>Whether an undone state can be redone.</summary>
+        </member>
+        <member name="P:BlazorDX.Documents.DxWordEditor.EditingCore">
+            <summary>
+            The editing engine for inline formatting. Defaults to
+            <see cref="F:BlazorDX.Documents.EditingCore.ContentEditable"/>; opt into <see cref="F:BlazorDX.Documents.EditingCore.ModelDriven"/>
+            to drive bold/italic/underline/strikethrough through the model (ADR-0015).
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Documents.EditingCore">
+            <summary>Which editing engine a <see cref="T:BlazorDX.Documents.DxWordEditor"/> uses for inline formatting.</summary>
+        </member>
+        <member name="F:BlazorDX.Documents.EditingCore.ContentEditable">
+            <summary>
+            The default: formatting goes through the browser's <c>contentEditable</c> +
+            <c>document.execCommand</c>, and the model is re-derived from the edited HTML.
+            </summary>
+        </member>
+        <member name="F:BlazorDX.Documents.EditingCore.ModelDriven">
+            <summary>
+            The model-driven core (ADR-0015): inline-format commands mutate the authoritative
+            <see cref="T:BlazorDX.Documents.WordDocument"/> over an owned selection, the surface is re-rendered from
+            the model, and the selection is restored. No <c>execCommand</c>.
+            </summary>
         </member>
         <member name="T:BlazorDX.Documents.DxWordViewer">
             <summary>
