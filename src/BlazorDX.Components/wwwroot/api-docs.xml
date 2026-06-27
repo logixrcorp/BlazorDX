@@ -1217,6 +1217,12 @@
             if there are no matches. The selection is owned via the bridge (no model mapping).
             </summary>
         </member>
+        <member name="M:BlazorDX.Components.DxRichTextEditor.GetTableCellAsync">
+            <summary>
+            Reports the caret's table position as <c>"tableIndex,rowIndex,colIndex"</c> (0-based,
+            table index in document order), or an empty string when the caret is not in a table.
+            </summary>
+        </member>
         <member name="T:BlazorDX.Components.ChartPoint">
             <summary>An (x, y) point for a scatter plot.</summary>
         </member>

@@ -143,6 +143,12 @@
             History granularity is per change-event (one per oninput), not per character. Snapshots
             are editor HTML (cheap to store and to re-seed); the model is re-derived on restore.
             </remarks>
+            <summary>
+            Table-editing for <see cref="T:BlazorDX.Documents.DxWordEditor"/>: insert/delete the row or column the caret
+            is in. The caret's cell is resolved via the editor's selection bridge
+            (<c>GetTableCellAsync</c>); the edit then runs on the document model and re-seeds the
+            editor through the shared commit path (so it is undoable and round-trips to .docx).
+            </summary>
         </member>
         <member name="P:BlazorDX.Documents.DxWordEditor.Document">
             <summary>
