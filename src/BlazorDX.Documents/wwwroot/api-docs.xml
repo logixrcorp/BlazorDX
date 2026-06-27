@@ -133,6 +133,16 @@
             re-mounts the editor (bumping the key), which resets the caret — acceptable for an
             explicit replace action.
             </remarks>
+            <summary>
+            Undo/redo for <see cref="T:BlazorDX.Documents.DxWordEditor"/> as a stack of editor-HTML snapshots. Each
+            committed change (a typing edit or a find/replace) pushes the prior state; undo/redo
+            re-seed the editor from a snapshot via the same re-mount path find/replace uses. This
+            fixes find/replace previously discarding the editor's history.
+            </summary>
+            <remarks>
+            History granularity is per change-event (one per oninput), not per character. Snapshots
+            are editor HTML (cheap to store and to re-seed); the model is re-derived on restore.
+            </remarks>
         </member>
         <member name="P:BlazorDX.Documents.DxWordEditor.Document">
             <summary>
@@ -202,6 +212,12 @@
             Clears the dirty flag. Call this once the host has persisted/downloaded the bytes so
             the status indicator reflects a saved state.
             </summary>
+        </member>
+        <member name="P:BlazorDX.Documents.DxWordEditor.CanUndo">
+            <summary>Whether there is a prior state to undo to.</summary>
+        </member>
+        <member name="P:BlazorDX.Documents.DxWordEditor.CanRedo">
+            <summary>Whether an undone state can be redone.</summary>
         </member>
         <member name="T:BlazorDX.Documents.DxWordViewer">
             <summary>
