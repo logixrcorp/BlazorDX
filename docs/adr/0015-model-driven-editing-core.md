@@ -1,6 +1,7 @@
 # ADR 0015 — Model-driven editing core for the document editors
 
-**Status:** Proposed
+**Status:** Accepted — Phase A (owned selection) and Phase B (model-driven inline
+formatting, behind `EditingCore="ModelDriven"`) implemented; Phases C–E pending.
 
 ## Context
 
