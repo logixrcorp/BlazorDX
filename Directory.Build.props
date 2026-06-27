@@ -32,7 +32,7 @@
     <RepositoryUrl>https://github.com/logixrcorp/BlazorDX.git</RepositoryUrl>
     <PackageProjectUrl>https://blazordx.com</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
-    <Version>0.3.16</Version>
+    <Version>0.3.17</Version>
     <Description>BlazorDX — a secure-by-default, AOT-safe, headless Blazor component system for .NET 10. Zero runtime reflection; C# + Rust + TypeScript. Beta / AI-generated; not for production use.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>blazor;components;datagrid;headless;aot;trimming;wasm;rust;ui;dotnet</PackageTags>

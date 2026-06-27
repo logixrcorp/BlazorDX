@@ -59,6 +59,12 @@
         <member name="P:BlazorDX.Documents.DxSpreadsheetViewer.ViewportHeight">
             <summary>Pixel height of the scrollable grid viewport.</summary>
         </member>
+        <member name="P:BlazorDX.Documents.DxSpreadsheetViewer.ViewportWidth">
+            <summary>
+            Assumed viewport width (px) for the initial column window before the live container is
+            measured (and off-browser, e.g. SSR/tests). The real width drives windowing once mounted.
+            </summary>
+        </member>
         <member name="P:BlazorDX.Documents.DxSpreadsheetViewer.Editable">
             <summary>
             When true the viewer is an editable spreadsheet: cells accept literals and
