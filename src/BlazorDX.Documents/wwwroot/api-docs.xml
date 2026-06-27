@@ -155,6 +155,20 @@
             model, not the DOM, is the source of truth.
             </summary>
             <summary>
+            Model-driven list toggling for <see cref="T:BlazorDX.Documents.DxWordEditor"/> (ADR-0015, Phase D): the
+            <c>insertUnorderedList</c> / <c>insertOrderedList</c> toolbar commands convert the caret's
+            block between a paragraph and a list item over the document <em>model</em>.
+            </summary>
+            <remarks>
+            The transform flattens the document into a line sequence (paragraphs and list <em>items</em>
+            become individual lines; headings/tables/images pass through), toggles the one targeted
+            line, then rebuilds — regrouping consecutive same-kind list lines into <see cref="T:BlazorDX.Documents.WordList"/>
+            blocks. Merge (two adjacent items become one list) and split (un-listing a middle item
+            breaks one list into two) both fall out of the regroup for free. Headings, tables and
+            images never become list items, so the command is a no-op on them. Converting preserves the
+            run-container count and order, so the owned selection still maps after the edit.
+            </remarks>
+            <summary>
             Table-editing for <see cref="T:BlazorDX.Documents.DxWordEditor"/>: insert/delete the row or column the caret
             is in. The caret's cell is resolved via the editor's selection bridge
             (<c>GetTableCellAsync</c>); the edit then runs on the document model and re-seeds the
