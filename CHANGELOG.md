@@ -7,6 +7,14 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 > **Beta.** BlazorDX is pre-1.0 and built with substantial AI assistance. Breaking
 > changes can land in any minor release until 1.0.
 
+## [0.3.7] — 2026-06-26
+
+### Added
+
+- **Undo / redo** in the Word editor (toolbar buttons) — gap fix 6 complete. A
+  model-snapshot history captures each edit and each find/replace, so a replace is now
+  undoable (fixing the prior history loss). Per-change-event granularity, capped at 200.
+
 ## [0.3.6] — 2026-06-26
 
 ### Added

@@ -1210,6 +1210,13 @@
         <member name="P:BlazorDX.Components.DxRichTextEditor.Sanitizer">
             <summary>The sanitizer applied to edited HTML. Defaults to an inert (encode-all) policy.</summary>
         </member>
+        <member name="M:BlazorDX.Components.DxRichTextEditor.FindNextAsync(System.String,System.Boolean,System.Boolean)">
+            <summary>
+            Selects and scrolls to the next (or previous) occurrence of <paramref name="query"/>
+            in the editing surface, wrapping at the ends. Returns the 1-based match index, or 0
+            if there are no matches. The selection is owned via the bridge (no model mapping).
+            </summary>
+        </member>
         <member name="T:BlazorDX.Components.ChartPoint">
             <summary>An (x, y) point for a scatter plot.</summary>
         </member>

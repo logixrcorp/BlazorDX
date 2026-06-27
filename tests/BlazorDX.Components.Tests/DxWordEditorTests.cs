@@ -496,6 +496,31 @@ public sealed class DxWordEditorTests : TestContext
         }
     }
 
+    [Fact]
+    public void Undo_and_redo_restore_prior_editor_states()
+    {
+        WordDocument? changed = null;
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, SampleDocument())
+            .Add(e => e.Sanitizer, new HtmlSanitizer(h => h))
+            .Add(e => e.DocumentChanged, EventCallback.Factory.Create<WordDocument>(this, d => changed = d)));
+
+        DxRichTextEditor rte = editor.FindComponent<DxRichTextEditor>().Instance;
+
+        // An edit makes the prior state undoable.
+        editor.InvokeAsync(() => rte.ValueChanged.InvokeAsync("<h1>Edited Title</h1>"));
+        Assert.Equal("Edited Title", Text(changed!.Blocks.OfType<WordHeading>().First().Runs));
+        Assert.True(editor.Instance.CanUndo);
+
+        // Undo returns to the original document; redo re-applies the edit.
+        editor.Find("[aria-label='Undo']").Click();
+        Assert.Equal("Quarterly Report", Text(changed!.Blocks.OfType<WordHeading>().First().Runs));
+        Assert.True(editor.Instance.CanRedo);
+
+        editor.Find("[aria-label='Redo']").Click();
+        Assert.Equal("Edited Title", Text(changed!.Blocks.OfType<WordHeading>().First().Runs));
+    }
+
     private static string Text(IReadOnlyList<WordRun> runs) =>
         string.Concat(runs.Select(r => r.Text));
 }
