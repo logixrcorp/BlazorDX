@@ -51,6 +51,12 @@ public sealed partial class RichTextInterop : IRichTextInterop
         return FindInEditor(elementId, query, forward, caseSensitive);
     }
 
+    public async ValueTask<string> GetTableCellAsync(string elementId)
+    {
+        await EnsureLoadedAsync();
+        return GetTableCell(elementId);
+    }
+
     public async ValueTask<string> GetHtmlAsync(string elementId)
     {
         await EnsureLoadedAsync();
@@ -80,6 +86,9 @@ public sealed partial class RichTextInterop : IRichTextInterop
 
     [JSImport("findInEditor", ModuleName)]
     private static partial int FindInEditor(string elementId, string query, bool forward, bool caseSensitive);
+
+    [JSImport("getTableCell", ModuleName)]
+    private static partial string GetTableCell(string elementId);
 
     [JSImport("getHtml", ModuleName)]
     private static partial string GetHtml(string elementId);

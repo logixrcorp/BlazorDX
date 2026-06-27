@@ -33,6 +33,12 @@ public interface IRichTextInterop
     /// </summary>
     ValueTask<int> FindInEditorAsync(string elementId, string query, bool forward, bool caseSensitive);
 
+    /// <summary>
+    /// Reports the caret's table position as <c>"tableIndex,rowIndex,colIndex"</c> (0-based),
+    /// or an empty string when the caret is not inside a table.
+    /// </summary>
+    ValueTask<string> GetTableCellAsync(string elementId);
+
     /// <summary>Returns the current inner HTML of the editor element.</summary>
     ValueTask<string> GetHtmlAsync(string elementId);
 

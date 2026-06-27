@@ -190,6 +190,12 @@ public sealed partial class DxWordEditor : ComponentBase
             ToolbarButton(builder, 30, "Undo", "Undo", UndoAsync, !CanUndo);
             ToolbarButton(builder, 40, "Redo", "Redo", RedoAsync, !CanRedo);
 
+            // Table editing — act on the table the caret is in (a no-op elsewhere).
+            ToolbarButton(builder, 50, "+ Row", "Insert table row", () => TableEditAsync(TableOp.InsertRow), false);
+            ToolbarButton(builder, 60, "− Row", "Delete table row", () => TableEditAsync(TableOp.DeleteRow), false);
+            ToolbarButton(builder, 70, "+ Col", "Insert table column", () => TableEditAsync(TableOp.InsertColumn), false);
+            ToolbarButton(builder, 80, "− Col", "Delete table column", () => TableEditAsync(TableOp.DeleteColumn), false);
+
             builder.CloseElement();
         }
 

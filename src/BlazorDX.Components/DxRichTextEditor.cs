@@ -157,6 +157,12 @@ public sealed class DxRichTextEditor : ComponentBase
     public ValueTask<int> FindNextAsync(string query, bool forward, bool caseSensitive) =>
         Interop.FindInEditorAsync(editorId, query, forward, caseSensitive);
 
+    /// <summary>
+    /// Reports the caret's table position as <c>"tableIndex,rowIndex,colIndex"</c> (0-based,
+    /// table index in document order), or an empty string when the caret is not in a table.
+    /// </summary>
+    public ValueTask<string> GetTableCellAsync() => Interop.GetTableCellAsync(editorId);
+
     private async Task SyncFromDomAsync()
     {
         string raw = await Interop.GetHtmlAsync(editorId);

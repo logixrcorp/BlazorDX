@@ -115,6 +115,30 @@ public sealed partial class DxWordEditor
         }
     }
 
+    // Adopts a model edited in C# (find/replace, table ops): records history, re-seeds the
+    // editor (re-mount), and surfaces the new document. The single funnel for model edits.
+    private async Task CommitModelEditAsync(WordDocument updated)
+    {
+        string html = WordHtml.ToHtml(updated);
+        CaptureHistory(html);
+        editorHtml = html;
+        lastSeededHtml = html;
+        dirty = true;
+        editorEpoch++; // re-mount so the editor shows the edited model
+
+        if (DocumentChanged.HasDelegate)
+        {
+            await DocumentChanged.InvokeAsync(updated);
+        }
+
+        if (OnSave.HasDelegate)
+        {
+            await OnSave.InvokeAsync(DocxWriter.Write(updated));
+        }
+
+        StateHasChanged();
+    }
+
     private static void TrimHistory(Stack<string> stack)
     {
         if (stack.Count <= MaxHistory)

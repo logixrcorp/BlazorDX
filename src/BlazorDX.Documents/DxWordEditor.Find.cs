@@ -152,25 +152,8 @@ public sealed partial class DxWordEditor
         }
 
         WordDocument updated = ReplaceInDocument(Current, findText, replaceText, caseSensitive, all);
-
-        CaptureHistory(WordHtml.ToHtml(updated)); // make the replace undoable
-        editorHtml = WordHtml.ToHtml(updated);
-        lastSeededHtml = editorHtml;
-        dirty = true;
-        editorEpoch++; // re-mount the editor so it shows the replaced content
         matchCount = CountMatches(updated, findText, caseSensitive);
-
-        if (DocumentChanged.HasDelegate)
-        {
-            await DocumentChanged.InvokeAsync(updated);
-        }
-
-        if (OnSave.HasDelegate)
-        {
-            await OnSave.InvokeAsync(DocxWriter.Write(updated));
-        }
-
-        StateHasChanged();
+        await CommitModelEditAsync(updated); // records history + re-seeds + raises DocumentChanged
     }
 
     // ---- Model transforms (within-run) -------------------------------------------

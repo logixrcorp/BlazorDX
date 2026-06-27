@@ -521,6 +521,50 @@ public sealed class DxWordEditorTests : TestContext
         Assert.Equal("Edited Title", Text(changed!.Blocks.OfType<WordHeading>().First().Runs));
     }
 
+    [Fact]
+    public void Table_toolbar_inserts_and_deletes_rows_and_columns_at_the_caret_cell()
+    {
+        // Fake bridge: the caret sits in table 0, row 1, col 0.
+        FakeRichTextInterop fake = new() { TableCell = "0,1,0" };
+        Services.AddScoped<IRichTextInterop>(_ => fake);
+
+        WordDocument? changed = null;
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, SampleDocument()) // table: 2 rows × 2 cols
+            .Add(e => e.DocumentChanged, EventCallback.Factory.Create<WordDocument>(this, d => changed = d)));
+
+        // Each click edits the same source document (one-way binding here), so each assert
+        // reflects that single op applied to the 2×2 sample table.
+        static WordTable T(WordDocument? d) => d!.Blocks.OfType<WordTable>().Single();
+
+        editor.Find("[aria-label='Insert table row']").Click();
+        Assert.Equal(3, T(changed).Rows.Count); // 2 rows -> 3
+
+        editor.Find("[aria-label='Delete table row']").Click();
+        Assert.Single(T(changed).Rows); // 2 rows -> 1
+
+        editor.Find("[aria-label='Insert table column']").Click();
+        Assert.All(T(changed).Rows, r => Assert.Equal(3, r.Cells.Count)); // 2 cols -> 3
+
+        editor.Find("[aria-label='Delete table column']").Click();
+        Assert.All(T(changed).Rows, r => Assert.Single(r.Cells)); // 2 cols -> 1
+    }
+
+    private sealed class FakeRichTextInterop : IRichTextInterop
+    {
+        public string TableCell { get; init; } = string.Empty;
+
+        public ValueTask EnsureLoadedAsync() => ValueTask.CompletedTask;
+        public ValueTask ExecAsync(string command, string value) => ValueTask.CompletedTask;
+        public ValueTask CreateLinkAsync() => ValueTask.CompletedTask;
+        public ValueTask ApplyColorAsync(string command, string color) => ValueTask.CompletedTask;
+        public ValueTask<int> FindInEditorAsync(string e, string q, bool f, bool c) => ValueTask.FromResult(0);
+        public ValueTask<string> GetTableCellAsync(string e) => ValueTask.FromResult(TableCell);
+        public ValueTask<string> GetHtmlAsync(string e) => ValueTask.FromResult(string.Empty);
+        public ValueTask SetHtmlAsync(string e, string h) => ValueTask.CompletedTask;
+        public ValueTask FocusAsync(string e) => ValueTask.CompletedTask;
+    }
+
     private static string Text(IReadOnlyList<WordRun> runs) =>
         string.Concat(runs.Select(r => r.Text));
 }

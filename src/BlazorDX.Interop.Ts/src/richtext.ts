@@ -148,6 +148,37 @@ export function findInEditor(
   return idx + 1;
 }
 
+// Reports the caret's position within a table as "tableIndex,rowIndex,colIndex" (all
+// 0-based, the table index among the editor's tables in document order), or "" when the
+// caret is not inside a table. Lets table edits target the right cell in the model.
+export function getTableCell(elementId: string): string {
+  const root = document.getElementById(elementId);
+  if (!root) {
+    return "";
+  }
+
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) {
+    return "";
+  }
+
+  const start = sel.getRangeAt(0).startContainer;
+  const from = start.nodeType === Node.ELEMENT_NODE ? (start as Element) : start.parentElement;
+  const cell = from?.closest("td,th");
+  const table = cell?.closest("table");
+  if (!cell || !table || !root.contains(table)) {
+    return "";
+  }
+
+  const tableIndex = Array.from(root.querySelectorAll("table")).indexOf(table);
+  const row = cell.closest("tr");
+  const rowIndex = row ? Array.from(table.querySelectorAll("tr")).indexOf(row) : -1;
+  const colIndex = row
+    ? Array.from(row.children).filter((c) => c.tagName === "TD" || c.tagName === "TH").indexOf(cell)
+    : -1;
+  return tableIndex < 0 || rowIndex < 0 || colIndex < 0 ? "" : `${tableIndex},${rowIndex},${colIndex}`;
+}
+
 // Places a range edge at a combined-string offset by locating the owning text node.
 function point(range: Range, segments: { node: Text; start: number }[], offset: number, isStart: boolean): void {
   for (const seg of segments) {
