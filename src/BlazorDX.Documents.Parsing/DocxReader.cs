@@ -182,11 +182,13 @@ public static partial class DocxReader
                 }
                 else if (para.HeadingLevel is { } level)
                 {
-                    blocks.Add(new WordHeading(level, para.Runs, para.Alignment));
+                    blocks.Add(new WordHeading(level, para.Runs, para.Alignment,
+                        para.LineSpacing, para.IndentLevel));
                 }
                 else
                 {
-                    blocks.Add(new WordParagraph(para.Runs, para.Alignment));
+                    blocks.Add(new WordParagraph(para.Runs, para.Alignment,
+                        para.LineSpacing, para.IndentLevel));
                 }
             }
             else if (reader.LocalName == "tbl")
@@ -207,7 +209,9 @@ public static partial class DocxReader
         int? HeadingLevel,
         ListKind? ListKind,
         WordAlignment Alignment = WordAlignment.Start,
-        WordImage? Image = null);
+        WordImage? Image = null,
+        double? LineSpacing = null,
+        int IndentLevel = 0);
 
     // Reads one <w:p>: its paragraph properties (<w:pPr>: style, numbering) then its
     // runs (and any embedded image). The reader is positioned on the <w:p> start element;
@@ -229,6 +233,8 @@ public static partial class DocxReader
         int? headingLevel = null;
         ListKind? listKind = null;
         WordAlignment alignment = WordAlignment.Start;
+        double? lineSpacing = null;
+        int indentLevel = 0;
 
         while (reader.Read())
         {
@@ -247,7 +253,12 @@ public static partial class DocxReader
             switch (reader.LocalName)
             {
                 case "pPr":
-                    (headingLevel, listKind, alignment) = ReadParagraphProperties(reader, headingStyles);
+                    ParagraphProperties pp = ReadParagraphProperties(reader, headingStyles);
+                    headingLevel = pp.HeadingLevel;
+                    listKind = pp.ListKind;
+                    alignment = pp.Alignment;
+                    lineSpacing = pp.LineSpacing;
+                    indentLevel = pp.IndentLevel;
                     break;
                 case "r":
                     AppendRun(reader, runs, imageParts, images);
@@ -271,17 +282,17 @@ public static partial class DocxReader
         }
 
         return new ParagraphContent(CoalesceRuns(runs), headingLevel, listKind, alignment,
-            images.Count > 0 ? images[0] : null);
+            images.Count > 0 ? images[0] : null, lineSpacing, indentLevel);
     }
 
     // Reads <w:pPr>: heading level (<w:pStyle>), list item (<w:numPr>), and alignment
     // (<w:jc>). Returns (headingLevel?, listKind?, alignment).
-    private static (int? HeadingLevel, ListKind? ListKind, WordAlignment Alignment) ReadParagraphProperties(
+    private static ParagraphProperties ReadParagraphProperties(
         XmlReader reader, IReadOnlyDictionary<string, int> headingStyles)
     {
         if (reader.IsEmptyElement)
         {
-            return (null, null, WordAlignment.Start);
+            return new ParagraphProperties(null, null, WordAlignment.Start, null, 0);
         }
 
         int pprDepth = reader.Depth;
@@ -290,6 +301,8 @@ public static partial class DocxReader
         int numId = -1;
         int ilvl = 0;
         WordAlignment alignment = WordAlignment.Start;
+        double? lineSpacing = null;
+        int indentLevel = 0;
 
         while (reader.Read())
         {
@@ -335,6 +348,24 @@ public static partial class DocxReader
                 case "jc":
                     alignment = ParseJustification(reader.GetAttribute("val", WordprocessingMl));
                     break;
+                case "spacing":
+                    // w:line is in 240ths of a line under lineRule="auto" (the common case).
+                    if (int.TryParse(reader.GetAttribute("line", WordprocessingMl),
+                        NumberStyles.Integer, CultureInfo.InvariantCulture, out int line) && line > 0)
+                    {
+                        lineSpacing = Math.Round(line / 240.0, 2);
+                    }
+
+                    break;
+                case "ind":
+                    // w:left is in twips (1/20 pt); 720 twips = 0.5 inch = one indent step.
+                    if (int.TryParse(reader.GetAttribute("left", WordprocessingMl),
+                        NumberStyles.Integer, CultureInfo.InvariantCulture, out int left) && left > 0)
+                    {
+                        indentLevel = (int)Math.Round(left / 720.0);
+                    }
+
+                    break;
             }
         }
 
@@ -344,11 +375,14 @@ public static partial class DocxReader
             // "no numbering" sentinel Word uses for bullets in many documents; any
             // positive id is treated as ordered. Headings never coexist with lists here.
             bool ordered = numId > 0;
-            return (null, new ListKind(ordered, ilvl), alignment);
+            return new ParagraphProperties(null, new ListKind(ordered, ilvl), alignment, null, 0);
         }
 
-        return (headingLevel, null, alignment);
+        return new ParagraphProperties(headingLevel, null, alignment, lineSpacing, indentLevel);
     }
+
+    private readonly record struct ParagraphProperties(
+        int? HeadingLevel, ListKind? ListKind, WordAlignment Alignment, double? LineSpacing, int IndentLevel);
 
     private static WordAlignment ParseJustification(string? val) => val?.ToLowerInvariant() switch
     {

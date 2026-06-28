@@ -27,8 +27,14 @@ public abstract record WordBlock;
 /// <param name="Level">The heading level, 1 (most prominent) through 6.</param>
 /// <param name="Runs">The inline runs making up the heading text.</param>
 /// <param name="Alignment">Paragraph alignment (maps to <c>&lt;w:jc&gt;</c> / <c>text-align</c>).</param>
+/// <param name="LineSpacing">Line-height multiplier (1.0, 1.5, …) (<c>&lt;w:spacing w:line&gt;</c> / CSS <c>line-height</c>), or null for the default.</param>
+/// <param name="IndentLevel">Left indent in 0.5-inch steps (<c>&lt;w:ind w:left&gt;</c> / CSS <c>margin-left</c>); 0 = none.</param>
 public sealed record WordHeading(
-    int Level, IReadOnlyList<WordRun> Runs, WordAlignment Alignment = WordAlignment.Start) : WordBlock;
+    int Level,
+    IReadOnlyList<WordRun> Runs,
+    WordAlignment Alignment = WordAlignment.Start,
+    double? LineSpacing = null,
+    int IndentLevel = 0) : WordBlock;
 
 /// <summary>Horizontal alignment of a block. <see cref="Start"/> is the default (unset).</summary>
 public enum WordAlignment
@@ -52,8 +58,13 @@ public enum WordAlignment
 /// </summary>
 /// <param name="Runs">The inline runs making up the paragraph text, in order.</param>
 /// <param name="Alignment">Paragraph alignment (maps to <c>&lt;w:jc&gt;</c> / <c>text-align</c>).</param>
+/// <param name="LineSpacing">Line-height multiplier (1.0, 1.5, …) (<c>&lt;w:spacing w:line&gt;</c> / CSS <c>line-height</c>), or null for the default.</param>
+/// <param name="IndentLevel">Left indent in 0.5-inch steps (<c>&lt;w:ind w:left&gt;</c> / CSS <c>margin-left</c>); 0 = none.</param>
 public sealed record WordParagraph(
-    IReadOnlyList<WordRun> Runs, WordAlignment Alignment = WordAlignment.Start) : WordBlock;
+    IReadOnlyList<WordRun> Runs,
+    WordAlignment Alignment = WordAlignment.Start,
+    double? LineSpacing = null,
+    int IndentLevel = 0) : WordBlock;
 
 /// <summary>
 /// A list: either bulleted (<c>&lt;ul&gt;</c>) or numbered (<c>&lt;ol&gt;</c>), with

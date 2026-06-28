@@ -150,7 +150,7 @@ public sealed class DxWordEditorTests : TestContext
 
         // The reused formatting tools (B/I/U/S, super/sub, heading, lists, align ×4, link, clear) are labeled.
         IRefreshableElementCollection<IElement> tools = editor.FindAll(".dx-rte-tool");
-        Assert.Equal(15, tools.Count);
+        Assert.Equal(17, tools.Count);
         Assert.All(tools, t => Assert.False(string.IsNullOrEmpty(t.GetAttribute("aria-label"))));
     }
 
@@ -940,47 +940,37 @@ public sealed class DxWordEditorTests : TestContext
         Assert.Equal("Title text", Text(back!.Blocks.OfType<WordParagraph>().Single().Runs));
     }
 
-    private sealed class FakeRichTextInterop : IRichTextInterop
+    [Fact]
+    public void ModelDriven_line_spacing_and_indent_edit_the_block()
     {
-        public string TableCell { get; init; } = string.Empty;
-        public string SelectionRange { get; init; } = string.Empty;
+        FakeRichTextInterop fake = new() { SelectionRange = "0,0,0" }; // caret in container 0
+        Services.AddScoped<IRichTextInterop>(_ => fake);
 
-        // Captures the last selection restore, so a test can assert the caret was put back.
-        public (int Container, int Start, int End)? RestoredSelection { get; private set; }
+        WordDocument? changed = null;
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, new WordDocument([new WordParagraph([new WordRun("Body")])]))
+            .Add(e => e.DocumentChanged, EventCallback.Factory.Create<WordDocument>(this, d => changed = d)));
 
-        public void ClearRestored() => RestoredSelection = null;
+        editor.Find("[aria-label='Line spacing']").Change("1.5");
+        Assert.Equal(1.5, changed!.Blocks.OfType<WordParagraph>().Single().LineSpacing);
 
-        public ValueTask EnsureLoadedAsync() => ValueTask.CompletedTask;
-        public ValueTask ExecAsync(string command, string value) => ValueTask.CompletedTask;
-        public string LinkUrl { get; init; } = string.Empty;
+        editor.Find("[aria-label='Increase indent']").Click();
+        Assert.Equal(1, changed!.Blocks.OfType<WordParagraph>().Single().IndentLevel);
+    }
 
-        public ValueTask CreateLinkAsync() => ValueTask.CompletedTask;
-        public ValueTask<string> PromptLinkAsync() => ValueTask.FromResult(LinkUrl);
-        public ValueTask ApplyColorAsync(string command, string color) => ValueTask.CompletedTask;
-        public ValueTask<int> FindInEditorAsync(string e, string q, bool f, bool c) => ValueTask.FromResult(0);
-        public ValueTask<string> GetTableCellAsync(string e) => ValueTask.FromResult(TableCell);
-        public ValueTask<string> GetSelectionRangeAsync(string e) => ValueTask.FromResult(SelectionRange);
+    [Fact]
+    public void Paragraph_spacing_and_indent_round_trip_through_html_and_docx()
+    {
+        WordDocument doc = new(
+            [new WordParagraph([new WordRun("Body")], WordAlignment.Start, LineSpacing: 1.5, IndentLevel: 2)]);
 
-        public ValueTask SetSelectionRangeAsync(string e, int container, int start, int end)
-        {
-            RestoredSelection = (container, start, end);
-            return ValueTask.CompletedTask;
-        }
+        WordParagraph viaHtml = WordHtml.FromHtml(WordHtml.ToHtml(doc)).Blocks.OfType<WordParagraph>().Single();
+        Assert.Equal(1.5, viaHtml.LineSpacing);
+        Assert.Equal(2, viaHtml.IndentLevel);
 
-        public string ImageData { get; init; } = string.Empty; // "mime|base64" returned by the picker
-        public ValueTask<string> PickImageAsync() => ValueTask.FromResult(ImageData);
-
-        public ValueTask<string> GetHtmlAsync(string e) => ValueTask.FromResult(string.Empty);
-        public ValueTask SetHtmlAsync(string e, string h) => ValueTask.CompletedTask;
-        public ValueTask FocusAsync(string e) => ValueTask.CompletedTask;
-
-        // Captures the keyboard-shortcut callback so a test can fire a shortcut without JS.
-        public Action<string>? Shortcut { get; private set; }
-        public ValueTask SubscribeShortcutsAsync(string e, Action<string> onShortcut)
-        {
-            Shortcut = onShortcut;
-            return ValueTask.CompletedTask;
-        }
+        WordParagraph viaDocx = DocxReader.Read(DocxWriter.Write(doc)).Blocks.OfType<WordParagraph>().Single();
+        Assert.Equal(1.5, viaDocx.LineSpacing);
+        Assert.Equal(2, viaDocx.IndentLevel);
     }
 
     private static string Text(IReadOnlyList<WordRun> runs) =>

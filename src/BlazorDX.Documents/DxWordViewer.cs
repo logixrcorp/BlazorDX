@@ -101,7 +101,7 @@ public sealed class DxWordViewer : ComponentBase
         int level = Math.Clamp(heading.Level, 1, 6);
         builder.OpenElement(10, HeadingTag(level));
         builder.AddAttribute(11, "class", "dx-word-heading");
-        if (AlignStyle(heading.Alignment) is { } style)
+        if (BlockStyle(heading.Alignment, heading.LineSpacing, heading.IndentLevel) is { } style)
         {
             builder.AddAttribute(12, "style", style);
         }
@@ -114,7 +114,7 @@ public sealed class DxWordViewer : ComponentBase
     {
         builder.OpenElement(20, "p");
         builder.AddAttribute(21, "class", "dx-word-para");
-        if (AlignStyle(paragraph.Alignment) is { } style)
+        if (BlockStyle(paragraph.Alignment, paragraph.LineSpacing, paragraph.IndentLevel) is { } style)
         {
             builder.AddAttribute(22, "style", style);
         }
@@ -123,13 +123,25 @@ public sealed class DxWordViewer : ComponentBase
         builder.CloseElement();
     }
 
-    private static string? AlignStyle(WordAlignment alignment) => alignment switch
+    private static string? BlockStyle(WordAlignment alignment, double? lineSpacing, int indentLevel)
     {
-        WordAlignment.Center => "text-align:center",
-        WordAlignment.End => "text-align:right",
-        WordAlignment.Justify => "text-align:justify",
-        _ => null,
-    };
+        string align = alignment switch
+        {
+            WordAlignment.Center => "text-align:center;",
+            WordAlignment.End => "text-align:right;",
+            WordAlignment.Justify => "text-align:justify;",
+            _ => string.Empty,
+        };
+        string line = lineSpacing is > 0 and double m
+            ? $"line-height:{m.ToString(System.Globalization.CultureInfo.InvariantCulture)};"
+            : string.Empty;
+        string indent = indentLevel > 0
+            ? $"margin-left:{(indentLevel * 0.5).ToString(System.Globalization.CultureInfo.InvariantCulture)}in;"
+            : string.Empty;
+
+        string style = align + line + indent;
+        return style.Length == 0 ? null : style;
+    }
 
     private static void BuildImage(RenderTreeBuilder builder, WordImage image)
     {

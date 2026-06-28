@@ -273,7 +273,8 @@ public static class DocxWriter
                     AppendHeading(sb, heading, links);
                     break;
                 case WordParagraph paragraph:
-                    AppendParagraph(sb, paragraph.Runs, pPr: null, links, paragraph.Alignment);
+                    AppendParagraph(sb, paragraph.Runs, pPr: null, links, paragraph.Alignment,
+                        paragraph.LineSpacing, paragraph.IndentLevel);
                     break;
                 case WordList list:
                     AppendList(sb, list, links);
@@ -328,7 +329,7 @@ public static class DocxWriter
         int level = Math.Clamp(heading.Level, 1, 6);
         string pPr = "<w:pStyle w:val=\"Heading" +
             level.ToString(CultureInfo.InvariantCulture) + "\"/>";
-        AppendParagraph(sb, heading.Runs, pPr, links, heading.Alignment);
+        AppendParagraph(sb, heading.Runs, pPr, links, heading.Alignment, heading.LineSpacing, heading.IndentLevel);
     }
 
     private static void AppendList(StringBuilder sb, WordList list, DocRels links)
@@ -361,16 +362,34 @@ public static class DocxWriter
     // run carrying an Href is wrapped in <w:hyperlink r:id="…"> referencing an external rel.
     private static void AppendParagraph(
         StringBuilder sb, IReadOnlyList<WordRun> runs, string? pPr, DocRels links,
-        WordAlignment alignment = WordAlignment.Start)
+        WordAlignment alignment = WordAlignment.Start, double? lineSpacing = null, int indentLevel = 0)
     {
         sb.Append("<w:p>");
         string? jc = JustificationElement(alignment);
-        if (pPr is not null || jc is not null)
+        string? spacing = lineSpacing is > 0 and double m
+            ? "<w:spacing w:line=\"" + ((int)Math.Round(m * 240)).ToString(CultureInfo.InvariantCulture)
+              + "\" w:lineRule=\"auto\"/>"
+            : null;
+        string? ind = indentLevel > 0
+            ? "<w:ind w:left=\"" + (indentLevel * 720).ToString(CultureInfo.InvariantCulture) + "\"/>"
+            : null;
+        if (pPr is not null || jc is not null || spacing is not null || ind is not null)
         {
             sb.Append("<w:pPr>");
             if (pPr is not null)
             {
                 sb.Append(pPr);
+            }
+
+            // Schema order within pPr: style/numbering, then spacing, then indent, then jc.
+            if (spacing is not null)
+            {
+                sb.Append(spacing);
+            }
+
+            if (ind is not null)
+            {
+                sb.Append(ind);
             }
 
             if (jc is not null)

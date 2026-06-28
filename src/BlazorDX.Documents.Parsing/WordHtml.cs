@@ -217,6 +217,8 @@ public static partial class WordHtml
         private int _sup;
         private int _sub;
         private WordAlignment _alignment;
+        private double? _lineSpacing;
+        private int _indentLevel;
 
         // Current block context.
         private BlockKind _kind = BlockKind.Paragraph;
@@ -444,6 +446,8 @@ public static partial class WordHtml
                         StartBlock(BlockKind.Heading);
                         _headingLevel = tag.Name[1] - '0';
                         _alignment = ParseAlignment(tag.Text);
+                        _lineSpacing = ParseCssLineHeight(tag.Text);
+                        _indentLevel = ParseCssIndentLevel(tag.Text);
                     }
 
                     break;
@@ -457,6 +461,8 @@ public static partial class WordHtml
                     {
                         StartBlock(BlockKind.Paragraph);
                         _alignment = ParseAlignment(tag.Text);
+                        _lineSpacing = ParseCssLineHeight(tag.Text);
+                        _indentLevel = ParseCssIndentLevel(tag.Text);
                     }
 
                     break;
@@ -628,6 +634,8 @@ public static partial class WordHtml
             _sup = 0;
             _sub = 0;
             _alignment = WordAlignment.Start;
+            _lineSpacing = null;
+            _indentLevel = 0;
         }
 
 
@@ -642,7 +650,8 @@ public static partial class WordHtml
 
             if (_kind == BlockKind.Heading)
             {
-                _blocks.Add(new WordHeading(Math.Clamp(_headingLevel, 1, 6), Snapshot(), _alignment));
+                _blocks.Add(new WordHeading(
+                    Math.Clamp(_headingLevel, 1, 6), Snapshot(), _alignment, _lineSpacing, _indentLevel));
                 _kind = BlockKind.Paragraph;
                 ResetRuns();
                 return;
@@ -657,7 +666,7 @@ public static partial class WordHtml
 
             if (_runs.Count > 0)
             {
-                _blocks.Add(new WordParagraph(Snapshot(), _alignment));
+                _blocks.Add(new WordParagraph(Snapshot(), _alignment, _lineSpacing, _indentLevel));
             }
 
             ResetRuns();

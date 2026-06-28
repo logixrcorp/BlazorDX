@@ -93,6 +93,8 @@ public sealed class DxRichTextEditor : ComponentBase
         ("justifyCenter", "", "↔", "Align center"),
         ("justifyRight", "", "⇥", "Align right"),
         ("justifyFull", "", "≡", "Justify"),
+        ("outdent", "", "⇤|", "Decrease indent"),
+        ("indent", "", "|⇥", "Increase indent"),
         ("createLink", "", "🔗", "Insert link"),
         ("removeFormat", "", "⌫", "Clear formatting"),
     ];
@@ -102,6 +104,8 @@ public sealed class DxRichTextEditor : ComponentBase
 
     private static readonly string[] FontSizes =
         ["8", "9", "10", "11", "12", "14", "16", "18", "24", "36"];
+
+    private static readonly string[] LineSpacings = ["1.0", "1.15", "1.5", "2.0"];
 
     // Paragraph styles: display text -> "blockStyle" value (0 = body paragraph, N = heading level).
     private static readonly (string Text, string Value)[] BlockStyles =
@@ -142,6 +146,7 @@ public sealed class DxRichTextEditor : ComponentBase
         BuildStyleSelect(builder, 40);
         BuildFontSelect(builder, 60, "fontName", "Font family", "Font", FontFamilies);
         BuildFontSelect(builder, 80, "fontSize", "Font size", "Size", FontSizes);
+        BuildFontSelect(builder, 100, "lineSpacing", "Line spacing", "Spacing", LineSpacings);
 
         builder.CloseElement();
 
@@ -306,6 +311,7 @@ public sealed class DxRichTextEditor : ComponentBase
         command is "bold" or "italic" or "underline" or "strikeThrough" or "removeFormat"
             or "superscript" or "subscript"
             or "formatBlock" or "insertUnorderedList" or "insertOrderedList" or "createLink"
+            or "indent" or "outdent"
             or "justifyLeft" or "justifyCenter" or "justifyRight" or "justifyFull";
 
     /// <summary>Prompts for a URL (http/https/mailto only) and returns it, or empty on cancel —

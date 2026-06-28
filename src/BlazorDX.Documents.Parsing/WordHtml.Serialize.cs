@@ -68,26 +68,41 @@ public static partial class WordHtml
     {
         int level = Math.Clamp(heading.Level, 1, 6);
         string tag = "h" + level.ToString(CultureInfo.InvariantCulture);
-        sb.Append('<').Append(tag).Append(AlignStyle(heading.Alignment)).Append('>');
+        sb.Append('<').Append(tag)
+          .Append(BlockStyle(heading.Alignment, heading.LineSpacing, heading.IndentLevel)).Append('>');
         AppendRuns(sb, heading.Runs);
         sb.Append("</").Append(tag).Append('>');
     }
 
     private static void AppendParagraph(StringBuilder sb, WordParagraph paragraph)
     {
-        sb.Append("<p").Append(AlignStyle(paragraph.Alignment)).Append('>');
+        sb.Append("<p")
+          .Append(BlockStyle(paragraph.Alignment, paragraph.LineSpacing, paragraph.IndentLevel)).Append('>');
         AppendRuns(sb, paragraph.Runs);
         sb.Append("</p>");
     }
 
-    // A text-align inline style for a non-default alignment, or "" for Start.
-    private static string AlignStyle(WordAlignment alignment) => alignment switch
+    // A combined inline style attribute for a block's alignment, line spacing, and indent — or
+    // "" when all are at their defaults.
+    private static string BlockStyle(WordAlignment alignment, double? lineSpacing, int indentLevel)
     {
-        WordAlignment.Center => " style=\"text-align:center\"",
-        WordAlignment.End => " style=\"text-align:right\"",
-        WordAlignment.Justify => " style=\"text-align:justify\"",
-        _ => string.Empty,
-    };
+        string align = alignment switch
+        {
+            WordAlignment.Center => "text-align:center;",
+            WordAlignment.End => "text-align:right;",
+            WordAlignment.Justify => "text-align:justify;",
+            _ => string.Empty,
+        };
+        string line = lineSpacing is > 0 and double m
+            ? "line-height:" + m.ToString(CultureInfo.InvariantCulture) + ";"
+            : string.Empty;
+        string indent = indentLevel > 0
+            ? "margin-left:" + (indentLevel * 0.5).ToString(CultureInfo.InvariantCulture) + "in;"
+            : string.Empty;
+
+        string style = align + line + indent;
+        return style.Length == 0 ? string.Empty : " style=\"" + style + "\"";
+    }
 
     private static void AppendList(StringBuilder sb, WordList list)
     {

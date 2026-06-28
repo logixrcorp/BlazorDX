@@ -101,6 +101,10 @@ public sealed partial class DxWordEditor
                 SetList(Current, container, ordered: false),
             "insertOrderedList" =>
                 SetList(Current, container, ordered: true),
+            "indent" =>
+                AdjustIndent(Current, container, +1),
+            "outdent" =>
+                AdjustIndent(Current, container, -1),
             _ => null,
         };
 
@@ -154,6 +158,9 @@ public sealed partial class DxWordEditor
             "blockStyle" when int.TryParse(args.Value,
                 System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture,
                 out int level) => SetBlockLevel(Current, container, level),
+            "lineSpacing" when double.TryParse(args.Value,
+                System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture,
+                out double mult) && mult > 0 => SetLineSpacing(Current, container, mult),
             _ => null,
         };
 
@@ -294,10 +301,10 @@ public sealed partial class DxWordEditor
         {
             case WordHeading h:
                 seen++;
-                return seen == target ? new WordParagraph(h.Runs, h.Alignment) : h;
+                return seen == target ? new WordParagraph(h.Runs, h.Alignment, h.LineSpacing, h.IndentLevel) : h;
             case WordParagraph p:
                 seen++;
-                return seen == target ? new WordHeading(2, p.Runs, p.Alignment) : p;
+                return seen == target ? new WordHeading(2, p.Runs, p.Alignment, p.LineSpacing, p.IndentLevel) : p;
             case WordList l:
                 seen += l.Items.Count;
                 return l;
@@ -335,13 +342,13 @@ public sealed partial class DxWordEditor
             case WordHeading h:
                 seen++;
                 return seen != target ? h
-                    : level <= 0 ? new WordParagraph(h.Runs, h.Alignment)
-                    : new WordHeading(Math.Clamp(level, 1, 6), h.Runs, h.Alignment);
+                    : level <= 0 ? new WordParagraph(h.Runs, h.Alignment, h.LineSpacing, h.IndentLevel)
+                    : new WordHeading(Math.Clamp(level, 1, 6), h.Runs, h.Alignment, h.LineSpacing, h.IndentLevel);
             case WordParagraph p:
                 seen++;
                 return seen != target ? p
                     : level <= 0 ? p
-                    : new WordHeading(Math.Clamp(level, 1, 6), p.Runs, p.Alignment);
+                    : new WordHeading(Math.Clamp(level, 1, 6), p.Runs, p.Alignment, p.LineSpacing, p.IndentLevel);
             case WordList l:
                 seen += l.Items.Count;
                 return l;
@@ -395,6 +402,42 @@ public sealed partial class DxWordEditor
             default:
                 return block;
         }
+    }
+
+    private static WordDocument SetLineSpacing(WordDocument document, int containerIndex, double multiplier) =>
+        MapTargetBlock(document, containerIndex, block => block switch
+        {
+            WordHeading h => h with { LineSpacing = multiplier },
+            WordParagraph p => p with { LineSpacing = multiplier },
+            _ => block,
+        });
+
+    private static WordDocument AdjustIndent(WordDocument document, int containerIndex, int delta) =>
+        MapTargetBlock(document, containerIndex, block => block switch
+        {
+            WordHeading h => h with { IndentLevel = Math.Clamp(h.IndentLevel + delta, 0, 8) },
+            WordParagraph p => p with { IndentLevel = Math.Clamp(p.IndentLevel + delta, 0, 8) },
+            _ => block,
+        });
+
+    // Applies a transform to the block owning the run-container at containerIndex (document
+    // order). Headings/paragraphs are mapped; list items / table cells advance the index but
+    // map to themselves (they carry no block-level spacing/indent in the model).
+    private static WordDocument MapTargetBlock(
+        WordDocument document, int containerIndex, Func<WordBlock, WordBlock> map)
+    {
+        int seen = -1;
+        var blocks = new WordBlock[document.Blocks.Count];
+        for (int i = 0; i < document.Blocks.Count; i++)
+        {
+            WordBlock block = document.Blocks[i];
+            int span = ContainerCount(block);
+            bool isTarget = containerIndex > seen && containerIndex <= seen + span;
+            seen += span;
+            blocks[i] = isTarget ? map(block) : block;
+        }
+
+        return new WordDocument(blocks);
     }
 
     // Applies a run-list transform to the run-container at containerIndex (in document order),

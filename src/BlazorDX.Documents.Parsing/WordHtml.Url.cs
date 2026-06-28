@@ -97,6 +97,51 @@ public static partial class WordHtml
         return null;
     }
 
+    // Line-height as a unitless multiplier from "line-height:1.5"; null otherwise.
+    private static double? ParseCssLineHeight(string rawTag)
+    {
+        string? raw = ReadCssValue(rawTag, "line-height");
+        return !string.IsNullOrEmpty(raw)
+            && double.TryParse(raw.Trim(), System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out double v) && v > 0
+            ? System.Math.Round(v, 2)
+            : null;
+    }
+
+    // Left indent as a 0.5-inch step count from "margin-left:1in" (or px / pt); 0 otherwise.
+    private static int ParseCssIndentLevel(string rawTag)
+    {
+        string? raw = ReadCssValue(rawTag, "margin-left");
+        if (string.IsNullOrEmpty(raw))
+        {
+            return 0;
+        }
+
+        double inches;
+        if (raw.EndsWith("in", System.StringComparison.OrdinalIgnoreCase))
+        {
+            inches = ParseDouble(raw[..^2]);
+        }
+        else if (raw.EndsWith("pt", System.StringComparison.OrdinalIgnoreCase))
+        {
+            inches = ParseDouble(raw[..^2]) / 72.0;
+        }
+        else if (raw.EndsWith("px", System.StringComparison.OrdinalIgnoreCase))
+        {
+            inches = ParseDouble(raw[..^2]) / 96.0;
+        }
+        else
+        {
+            return 0;
+        }
+
+        return inches <= 0 ? 0 : (int)System.Math.Round(inches / 0.5);
+    }
+
+    private static double ParseDouble(string s) =>
+        double.TryParse(s.Trim(), System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture, out double v) ? v : 0;
+
     // The first declared font family, unquoted (e.g. font-family:"Times New Roman",serif -> Times New Roman).
     private static string? ParseCssFontFamily(string rawTag)
     {
