@@ -174,7 +174,11 @@ public static class MockReportServerExtensions
         var renderRequest = new RenderRequest(report, values, rows, toolbar, showParameters);
         var result = ReportRenderer.Render(format, renderRequest);
 
-        return Results.File(result.Content, result.ContentType, result.FileName);
+        // HTML renders are meant to display inline in the viewer's <iframe>; passing a download
+        // name would set Content-Disposition: attachment and the browser would download instead.
+        // Binary export formats (PDF/Excel/CSV/Word) keep the filename so they download.
+        bool inline = result.ContentType.StartsWith("text/html", StringComparison.OrdinalIgnoreCase);
+        return Results.File(result.Content, result.ContentType, inline ? null : result.FileName);
     }
 
     private static IResult ParameterDefinitions(
