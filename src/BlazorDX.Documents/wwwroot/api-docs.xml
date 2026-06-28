@@ -152,6 +152,12 @@
             and cheap change-detection) and an optional <c>"container,start,end"</c> selection.
             </remarks>
             <summary>
+            Image insertion for <see cref="T:BlazorDX.Documents.DxWordEditor"/>: a toolbar action picks an image file (via the
+            editor's bridge), turns it into a <see cref="T:BlazorDX.Documents.WordImage"/> block, and inserts it into the
+            document model after the caret's block — so it round-trips to <c>.docx</c> like any other
+            block. The model is the source of truth; the surface is re-seeded through the shared commit.
+            </summary>
+            <summary>
             The model-driven formatting commands for <see cref="T:BlazorDX.Documents.DxWordEditor"/> (ADR-0015, Phases B
             and D). When <see cref="P:BlazorDX.Documents.DxWordEditor.EditingCore"/> is <see cref="F:BlazorDX.Documents.EditingCore.ModelDriven"/>, the
             toolbar's character commands (bold/italic/underline/strikethrough, clear formatting) and
@@ -258,25 +264,28 @@
         </member>
         <member name="P:BlazorDX.Documents.DxWordEditor.EditingCore">
             <summary>
-            The editing engine for formatting. Defaults to <see cref="F:BlazorDX.Documents.EditingCore.ContentEditable"/>;
-            opt into <see cref="F:BlazorDX.Documents.EditingCore.ModelDriven"/> to drive the supported commands through
-            the model (ADR-0015): bold/italic/underline/strikethrough, clear formatting, alignment.
+            The editing engine for formatting. Defaults to <see cref="F:BlazorDX.Documents.EditingCore.ModelDriven"/> — every
+            toolbar command (bold/italic/underline/strikethrough, clear, alignment, heading, lists,
+            links, color) and the keyboard shortcuts edit the authoritative <see cref="T:BlazorDX.Documents.WordDocument"/>,
+            with no <c>execCommand</c>. Set <see cref="F:BlazorDX.Documents.EditingCore.ContentEditable"/> for the legacy
+            execCommand path.
             </summary>
         </member>
         <member name="T:BlazorDX.Documents.EditingCore">
             <summary>Which editing engine a <see cref="T:BlazorDX.Documents.DxWordEditor"/> uses for formatting.</summary>
         </member>
-        <member name="F:BlazorDX.Documents.EditingCore.ContentEditable">
-            <summary>
-            The default: formatting goes through the browser's <c>contentEditable</c> +
-            <c>document.execCommand</c>, and the model is re-derived from the edited HTML.
-            </summary>
-        </member>
         <member name="F:BlazorDX.Documents.EditingCore.ModelDriven">
             <summary>
-            The model-driven core (ADR-0015): formatting commands mutate the authoritative
-            <see cref="T:BlazorDX.Documents.WordDocument"/> over an owned selection, the surface is re-rendered from
-            the model, and the selection is restored. No <c>execCommand</c>.
+            The default (ADR-0015): formatting commands mutate the authoritative
+            <see cref="T:BlazorDX.Documents.WordDocument"/> over an owned selection, the surface is re-rendered from the
+            model, and the selection is restored. No <c>execCommand</c>.
+            </summary>
+        </member>
+        <member name="F:BlazorDX.Documents.EditingCore.ContentEditable">
+            <summary>
+            Legacy: formatting goes through the browser's <c>contentEditable</c> +
+            the deprecated <c>document.execCommand</c>, and the model is re-derived from the edited
+            HTML. Retained as an escape hatch; prefer <see cref="F:BlazorDX.Documents.EditingCore.ModelDriven"/>.
             </summary>
         </member>
         <member name="T:BlazorDX.Documents.DxWordViewer">

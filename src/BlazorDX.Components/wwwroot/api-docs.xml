@@ -1248,6 +1248,10 @@
             <summary>Prompts for a URL (http/https/mailto only) and returns it, or empty on cancel —
             the model-driven host then sets the link itself.</summary>
         </member>
+        <member name="M:BlazorDX.Components.DxRichTextEditor.PickImageAsync">
+            <summary>Opens an image file picker and returns <c>"mimeType|base64"</c>, or empty on
+            cancel — the host turns it into a model image block.</summary>
+        </member>
         <member name="M:BlazorDX.Components.DxRichTextEditor.GetSelectionRangeAsync">
             <summary>The current owned selection as <c>"containerIndex,start,end"</c> (see
             <see cref="M:BlazorDX.Interop.IRichTextInterop.GetSelectionRangeAsync(System.String)"/>), or empty if unaddressable.</summary>
