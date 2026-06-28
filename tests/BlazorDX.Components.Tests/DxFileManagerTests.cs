@@ -16,8 +16,9 @@ public sealed class DxFileManagerTests : TestContext
 
     public DxFileManagerTests()
     {
-        // DxFileManager injects the native-DnD bridge; off-browser it is the no-op.
+        // DxFileManager injects the native-DnD and file-hash bridges; off-browser both are no-ops.
         Services.AddScoped<IFileDndInterop, NullFileDndInterop>();
+        Services.AddScoped<IFileHashInterop, NullFileHashInterop>();
     }
 
     private static IReadOnlyList<FileSystemEntry> Roots() =>
@@ -435,5 +436,111 @@ public sealed class DxFileManagerTests : TestContext
         Assert.Contains(boxNames, n => n.Contains("a.txt"));
         Assert.Contains(boxNames, n => n.Contains("b.txt"));
         Assert.Contains(boxNames, n => n.Contains("c.txt"));
+    }
+
+    // ---- Upload integrity verification (two-sided hash) ----
+
+    // Stands in for the Web Crypto bridge: returns whatever client hashes the test configures,
+    // so the C# verify path (re-hash the received stream, compare) is exercised without JS.
+    private sealed class StubFileHashInterop : IFileHashInterop
+    {
+        private readonly IReadOnlyList<FileHashResult> results;
+
+        public StubFileHashInterop(IReadOnlyList<FileHashResult> results) => this.results = results;
+
+        public ValueTask EnsureLoadedAsync() => ValueTask.CompletedTask;
+
+        public ValueTask<IReadOnlyList<FileHashResult>> HashInputFilesAsync(string elementId, string algorithm) =>
+            ValueTask.FromResult(results);
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    }
+
+    private static string Sha256Hex(string text) =>
+        Convert.ToHexStringLower(
+            System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(text)));
+
+    [Fact]
+    public void Upload_with_matching_client_hash_verifies()
+    {
+        const string content = "integrity matters";
+        Services.AddScoped<IFileHashInterop>(_ =>
+            new StubFileHashInterop([new FileHashResult("note.txt", content.Length, Sha256Hex(content))]));
+
+        IReadOnlyList<FileIntegrityResult>? verified = null;
+        IRenderedComponent<DxFileManager> fm = RenderComponent<DxFileManager>(parameters =>
+        {
+            parameters.Add(f => f.Roots, Roots());
+            parameters.Add(f => f.VerifyIntegrity, true);
+            parameters.Add(f => f.OnUploadVerified,
+                EventCallback.Factory.Create<IReadOnlyList<FileIntegrityResult>>(this, r => verified = r));
+        });
+
+        fm.FindComponent<InputFile>().UploadFiles(InputFileContent.CreateFromText(content, "note.txt"));
+
+        Assert.NotNull(verified);
+        FileIntegrityResult result = Assert.Single(verified!);
+        Assert.True(result.Verified);
+        Assert.Equal(Sha256Hex(content), result.ServerHash);
+        Assert.Equal(result.ClientHash, result.ServerHash);
+    }
+
+    [Fact]
+    public void Upload_with_a_mismatched_client_hash_fails_verification()
+    {
+        // The browser reported a hash for different bytes than the server received.
+        Services.AddScoped<IFileHashInterop>(_ =>
+            new StubFileHashInterop([new FileHashResult("note.txt", 5, Sha256Hex("tampered"))]));
+
+        IReadOnlyList<FileIntegrityResult>? verified = null;
+        IRenderedComponent<DxFileManager> fm = RenderComponent<DxFileManager>(parameters =>
+        {
+            parameters.Add(f => f.Roots, Roots());
+            parameters.Add(f => f.VerifyIntegrity, true);
+            parameters.Add(f => f.OnUploadVerified,
+                EventCallback.Factory.Create<IReadOnlyList<FileIntegrityResult>>(this, r => verified = r));
+        });
+
+        fm.FindComponent<InputFile>().UploadFiles(InputFileContent.CreateFromText("real bytes", "note.txt"));
+
+        FileIntegrityResult result = Assert.Single(verified!);
+        Assert.False(result.Verified);
+        Assert.Equal(Sha256Hex("real bytes"), result.ServerHash);   // the true hash is still surfaced
+    }
+
+    [Fact]
+    public void Upload_without_a_client_hash_reports_unverified()
+    {
+        // The default no-op bridge (e.g. off-browser) supplies no client hash.
+        IReadOnlyList<FileIntegrityResult>? verified = null;
+        IRenderedComponent<DxFileManager> fm = RenderComponent<DxFileManager>(parameters =>
+        {
+            parameters.Add(f => f.Roots, Roots());
+            parameters.Add(f => f.VerifyIntegrity, true);
+            parameters.Add(f => f.OnUploadVerified,
+                EventCallback.Factory.Create<IReadOnlyList<FileIntegrityResult>>(this, r => verified = r));
+        });
+
+        fm.FindComponent<InputFile>().UploadFiles(InputFileContent.CreateFromText("anything", "note.txt"));
+
+        FileIntegrityResult result = Assert.Single(verified!);
+        Assert.False(result.Verified);
+        Assert.Equal(string.Empty, result.ClientHash);
+    }
+
+    [Fact]
+    public void Upload_does_not_verify_when_integrity_is_off()
+    {
+        bool raised = false;
+        IRenderedComponent<DxFileManager> fm = RenderComponent<DxFileManager>(parameters =>
+        {
+            parameters.Add(f => f.Roots, Roots());
+            parameters.Add(f => f.OnUploadVerified,
+                EventCallback.Factory.Create<IReadOnlyList<FileIntegrityResult>>(this, _ => raised = true));
+        });
+
+        fm.FindComponent<InputFile>().UploadFiles(InputFileContent.CreateFromText("x", "note.txt"));
+
+        Assert.False(raised);   // VerifyIntegrity defaults off
     }
 }

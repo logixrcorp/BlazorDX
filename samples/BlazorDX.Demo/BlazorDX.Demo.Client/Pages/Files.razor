@@ -23,10 +23,39 @@
     always-available upload path. Last action: <strong>@status</strong>.
 </p>
 
+<p class="dx-demo-meta">
+    <strong>Upload integrity (two-sided SHA-256).</strong> With <code>VerifyIntegrity</code>
+    on, each uploaded file is hashed in the browser with Web Crypto, then re-hashed here from
+    the received stream and compared — so corruption in transit is caught before anything is
+    written. Pick a file with <em>Upload files</em> to see its result:
+</p>
+
+@if (integrity.Count > 0)
+{
+    <ul class="dx-demo-meta">
+        @foreach (FileIntegrityResult r in integrity)
+        {
+            <li>
+                <strong>@r.Name</strong> (@r.Size B):
+                @if (r.Verified)
+                {
+                    <span>✓ verified — SHA-256 <code>@Short(r.ServerHash)</code></span>
+                }
+                else
+                {
+                    <span>✗ not verified (client <code>@Short(r.ClientHash)</code> vs server <code>@Short(r.ServerHash)</code>)</span>
+                }
+            </li>
+        }
+    </ul>
+}
+
 <DxFileManager Roots="roots"
+               VerifyIntegrity="true"
                OnFileOpen="OnOpen"
                OnItemMove="OnMove"
                OnUpload="OnUpload"
+               OnUploadVerified="OnVerified"
                OnFilesDropped="OnDropped" />
 
 @code {
@@ -40,8 +69,20 @@
             ? $"moved {result.Item.Name} to {result.Target?.Name ?? "Files"}"
             : $"move of {result.Item.Name} rejected";
 
+    private IReadOnlyList<FileIntegrityResult> integrity = [];
+
     private void OnUpload(IReadOnlyList<IBrowserFile> files) =>
         status = $"selected {files.Count} file(s) to upload";
+
+    private void OnVerified(IReadOnlyList<FileIntegrityResult> results)
+    {
+        integrity = results;
+        int ok = results.Count(r => r.Verified);
+        status = $"verified {ok}/{results.Count} upload(s)";
+    }
+
+    private static string Short(string hash) =>
+        string.IsNullOrEmpty(hash) ? "—" : (hash.Length <= 16 ? hash : hash[..16] + "…");
 
     private void OnDropped(FileDropArgs args) =>
         status = $"dropped {args.Files.Count} file(s) onto {args.Destination?.Name ?? "Files"}";

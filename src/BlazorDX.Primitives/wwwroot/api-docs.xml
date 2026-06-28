@@ -381,6 +381,50 @@
             no-argument <c>AddBlazorDXDiagnostics()</c>.
             </summary>
         </member>
+        <member name="T:BlazorDX.Primitives.Files.FileHashVerification">
+            <summary>The outcome of verifying a stream against an expected hash.</summary>
+            <param name="Verified">True when the stream's hash matched the expected value.</param>
+            <param name="ActualHashHex">The lowercase hex hash actually computed from the stream.</param>
+        </member>
+        <member name="M:BlazorDX.Primitives.Files.FileHashVerification.#ctor(System.Boolean,System.String)">
+            <summary>The outcome of verifying a stream against an expected hash.</summary>
+            <param name="Verified">True when the stream's hash matched the expected value.</param>
+            <param name="ActualHashHex">The lowercase hex hash actually computed from the stream.</param>
+        </member>
+        <member name="P:BlazorDX.Primitives.Files.FileHashVerification.Verified">
+            <summary>True when the stream's hash matched the expected value.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Files.FileHashVerification.ActualHashHex">
+            <summary>The lowercase hex hash actually computed from the stream.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Files.FileHasher">
+            <summary>
+            Streaming file-integrity hashing for the upload "verify before write" path: the receiving side
+            re-hashes the bytes it actually got and confirms they match the hash the browser computed before
+            the upload, so corruption in transit is caught before the file is committed.
+            </summary>
+            <remarks>
+            Built on <see cref="T:System.Security.Cryptography.IncrementalHash"/>, so a file of any size is hashed in fixed-size chunks and
+            is never fully buffered in memory. The default algorithm is <see cref="P:System.Security.Cryptography.HashAlgorithmName.SHA256"/>:
+            SHA-1 is deliberately not the default because it is a broken primitive, though any
+            <see cref="T:System.Security.Cryptography.HashAlgorithmName"/> may be passed to match an external system. Comparison is
+            constant-time (<see cref="M:System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(System.ReadOnlySpan{System.Byte},System.ReadOnlySpan{System.Byte})"/>)
+            so a verifier never leaks, via timing, how many leading bytes of a hash matched.
+            </remarks>
+        </member>
+        <member name="M:BlazorDX.Primitives.Files.FileHasher.ComputeHexAsync(System.IO.Stream,System.Security.Cryptography.HashAlgorithmName,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Computes the lowercase hex hash of <paramref name="source"/>, reading it in fixed-size chunks
+            (never buffering the whole stream). Defaults to SHA-256.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Files.FileHasher.VerifyAsync(System.IO.Stream,System.String,System.Security.Cryptography.HashAlgorithmName,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Streams <paramref name="source"/>, hashes it, and reports whether it matches
+            <paramref name="expectedHashHex"/> (case-insensitive, constant-time), along with the hash
+            actually computed. A null/empty/malformed expected value verifies as false rather than throwing.
+            </summary>
+        </member>
         <member name="T:BlazorDX.Primitives.Files.FileSystemEntry">
             <summary>
             A node in a file tree. Reference identity matters (expand/select track the

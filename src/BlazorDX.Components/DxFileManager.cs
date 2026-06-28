@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Security.Cryptography;
 using BlazorDX.Interop;
 using BlazorDX.Primitives.Files;
 using BlazorDX.Security;
@@ -27,7 +28,27 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
 
     [Inject] private IFileDndInterop Dnd { get; set; } = default!;
 
+    [Inject] private IFileHashInterop Hash { get; set; } = default!;
+
     [Parameter] public string? Class { get; set; }
+
+    /// <summary>
+    /// When true, each uploaded file is hashed in the browser (Web Crypto) and re-hashed here from
+    /// the received <see cref="IBrowserFile"/> stream; the two hashes are compared and the per-file
+    /// outcome is raised through <see cref="OnUploadVerified"/> so corruption in transit is caught
+    /// before the host writes anything. Off by default and a no-op off-browser (the client hash is
+    /// unavailable), where files simply upload unverified.
+    /// </summary>
+    [Parameter] public bool VerifyIntegrity { get; set; }
+
+    /// <summary>Hash algorithm for <see cref="VerifyIntegrity"/>. Defaults to SHA-256.</summary>
+    [Parameter] public HashAlgorithmName HashAlgorithm { get; set; } = HashAlgorithmName.SHA256;
+
+    /// <summary>Max bytes read per file when re-hashing an upload (the read-stream cap). Default 10 MB.</summary>
+    [Parameter] public long MaxVerifySize { get; set; } = 10L * 1024 * 1024;
+
+    /// <summary>Raised after an upload when <see cref="VerifyIntegrity"/> is on, with each file's result.</summary>
+    [Parameter] public EventCallback<IReadOnlyList<FileIntegrityResult>> OnUploadVerified { get; set; }
 
     /// <summary>
     /// Raised when OS files are dropped on the contents pane (native DnD). Carries the
@@ -43,6 +64,9 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
     // Stable element-id base for this instance, so JS DnD addresses elements by id
     // (no ElementReference crosses the boundary). Unique per component instance.
     private readonly string baseId = $"dxfm-{Guid.NewGuid():N}";
+
+    // Id stamped on the upload <input> so the Web Crypto bridge can read its selected files by id.
+    private string UploadInputId => $"{baseId}-upload";
 
     // The contents shown in the last render, in row order, so a JS drop callback that
     // reports a row element id can resolve it back to the entry it represents.
@@ -147,6 +171,9 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
         builder.OpenComponent<InputFile>(29);
         builder.AddComponentParameter(30, "class", "dx-fm-upload-input");
         builder.AddComponentParameter(31, "multiple", true);
+        // Stamp an id so the Web Crypto bridge can read the selected files by element id when
+        // integrity verification is on. InputFile splats unmatched attributes onto its <input>.
+        builder.AddComponentParameter(36, "id", UploadInputId);
         builder.AddComponentParameter(32, "OnChange",
             EventCallback.Factory.Create<InputFileChangeEventArgs>(this, HandleUploadAsync));
         builder.CloseComponent();
@@ -356,6 +383,58 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
         {
             await OnUpload.InvokeAsync(files);
         }
+
+        if (VerifyIntegrity)
+        {
+            await VerifyUploadAsync(files);
+        }
+    }
+
+    // Two-sided integrity check: the browser hashed each selected file (Web Crypto); here we
+    // re-hash the bytes we actually received from the IBrowserFile stream and compare. A mismatch
+    // (or a file the browser could not hash) reports Verified = false so the host can refuse to
+    // write it. Off-browser the client hash list is empty, so every file is reported unverified.
+    private async Task VerifyUploadAsync(IReadOnlyList<IBrowserFile> files)
+    {
+        string algorithmName = HashAlgorithm.Name ?? HashAlgorithmName.SHA256.Name!;
+        IReadOnlyList<FileHashResult> clientHashes = await Hash.HashInputFilesAsync(UploadInputId, algorithmName);
+
+        // Both lists derive from the same <input>, so they share order; match by index and fall
+        // back to name (first match) if the counts ever diverge.
+        Dictionary<string, string> byName = new(StringComparer.Ordinal);
+        foreach (FileHashResult client in clientHashes)
+        {
+            byName.TryAdd(client.Name, client.Hash);
+        }
+
+        List<FileIntegrityResult> results = new(files.Count);
+        for (int i = 0; i < files.Count; i++)
+        {
+            IBrowserFile file = files[i];
+            string? expected = i < clientHashes.Count && clientHashes[i].Name == file.Name
+                ? clientHashes[i].Hash
+                : byName.GetValueOrDefault(file.Name);
+
+            FileHashVerification check;
+            try
+            {
+                await using Stream stream = file.OpenReadStream(MaxVerifySize);
+                check = await FileHasher.VerifyAsync(stream, expected, HashAlgorithm);
+            }
+            catch (Exception ex) when (ex is IOException or InvalidOperationException)
+            {
+                // Stream too large for MaxVerifySize, or already consumed: treat as unverifiable.
+                check = new FileHashVerification(false, string.Empty);
+            }
+
+            results.Add(new FileIntegrityResult(
+                file.Name, file.Size, expected ?? string.Empty, check.ActualHashHex, check.Verified));
+        }
+
+        if (OnUploadVerified.HasDelegate)
+        {
+            await OnUploadVerified.InvokeAsync(results);
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -555,6 +634,7 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
         }
 
         await Dnd.DisposeAsync();
+        await Hash.DisposeAsync();
     }
 
     private static string FormatSize(long bytes)
@@ -576,3 +656,16 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
 
 /// <summary>OS files dropped on the file manager via native drag-and-drop, plus their destination.</summary>
 public readonly record struct FileDropArgs(IReadOnlyList<DroppedFile> Files, FileSystemEntry? Destination);
+
+/// <summary>The per-file outcome of an upload integrity check (browser hash vs. re-hash on receipt).</summary>
+/// <param name="Name">The uploaded file's name.</param>
+/// <param name="Size">The uploaded file's size in bytes.</param>
+/// <param name="ClientHash">The hash the browser computed before upload (empty if unavailable).</param>
+/// <param name="ServerHash">The hash re-computed here from the received bytes.</param>
+/// <param name="Verified">True only when both hashes are present and equal.</param>
+public readonly record struct FileIntegrityResult(
+    string Name,
+    long Size,
+    string ClientHash,
+    string ServerHash,
+    bool Verified);

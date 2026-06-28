@@ -30,6 +30,17 @@ is treated as an enhancement layered on top, never the only path.
 - **Concurrency.** Rapid drops are serialized through a per-component guard so a
   fire-and-forget move can't corrupt the model:
   [`DxFileManager.cs:446`](../../src/BlazorDX.Components/DxFileManager.cs) (`QueueMove`).
+- **Upload integrity (opt-in, two-sided).** With `VerifyIntegrity`, the browser hashes each
+  selected file with Web Crypto ([`file-hash.ts`](../../src/BlazorDX.Interop.Ts/src/file-hash.ts)
+  via [`IFileHashInterop`](../../src/BlazorDX.Interop/IFileHashInterop.cs)) and the component
+  re-hashes the received `IBrowserFile` stream and compares, raising a per-file result through
+  `OnUploadVerified` (`VerifyUploadAsync` in
+  [`DxFileManager.cs`](../../src/BlazorDX.Components/DxFileManager.cs)). The re-hash is a
+  streaming, constant-time check in
+  [`FileHasher.cs`](../../src/BlazorDX.Primitives/Files/FileHasher.cs) — `IncrementalHash`, so a
+  file of any size is never fully buffered. SHA-256 by default (SHA-1 is supported but never the
+  default — it is a broken primitive). SubtleCrypto has no incremental digest, so the browser side
+  reads each file in full and digests once with the native implementation.
 
 ## Why (accessibility + non-negotiables)
 
@@ -57,3 +68,8 @@ is treated as an enhancement layered on top, never the only path.
 bUnit unit tests cover the primitive's move rules; the native-DnD acceptance gate
 and the drag-free alternatives (which bUnit cannot drive) are covered by
 [`FileManagerE2ETests.cs`](../../tests/BlazorDX.E2E.Tests/FileManagerE2ETests.cs).
+The streaming verifier has NIST-vector tests
+([`FileHasherTests.cs`](../../tests/BlazorDX.Components.Tests/FileHasherTests.cs)), and the
+upload verify path (match / mismatch / no-client-hash / off) is covered with a stubbed hash
+bridge plus bUnit's `InputFile` upload in
+[`DxFileManagerTests.cs`](../../tests/BlazorDX.Components.Tests/DxFileManagerTests.cs).

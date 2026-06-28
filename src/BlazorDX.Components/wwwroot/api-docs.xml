@@ -578,6 +578,24 @@
              an <c>aria-live</c> region (4.1.3). Styling is token-driven (see dx-filemanager.css).</para>
              </summary>
         </member>
+        <member name="P:BlazorDX.Components.DxFileManager.VerifyIntegrity">
+            <summary>
+            When true, each uploaded file is hashed in the browser (Web Crypto) and re-hashed here from
+            the received <see cref="T:Microsoft.AspNetCore.Components.Forms.IBrowserFile"/> stream; the two hashes are compared and the per-file
+            outcome is raised through <see cref="P:BlazorDX.Components.DxFileManager.OnUploadVerified"/> so corruption in transit is caught
+            before the host writes anything. Off by default and a no-op off-browser (the client hash is
+            unavailable), where files simply upload unverified.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxFileManager.HashAlgorithm">
+            <summary>Hash algorithm for <see cref="P:BlazorDX.Components.DxFileManager.VerifyIntegrity"/>. Defaults to SHA-256.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxFileManager.MaxVerifySize">
+            <summary>Max bytes read per file when re-hashing an upload (the read-stream cap). Default 10 MB.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxFileManager.OnUploadVerified">
+            <summary>Raised after an upload when <see cref="P:BlazorDX.Components.DxFileManager.VerifyIntegrity"/> is on, with each file's result.</summary>
+        </member>
         <member name="P:BlazorDX.Components.DxFileManager.OnFilesDropped">
             <summary>
             Raised when OS files are dropped on the contents pane (native DnD). Carries the
@@ -594,6 +612,37 @@
         </member>
         <member name="M:BlazorDX.Components.FileDropArgs.#ctor(System.Collections.Generic.IReadOnlyList{BlazorDX.Interop.DroppedFile},BlazorDX.Primitives.Files.FileSystemEntry)">
             <summary>OS files dropped on the file manager via native drag-and-drop, plus their destination.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.FileIntegrityResult">
+            <summary>The per-file outcome of an upload integrity check (browser hash vs. re-hash on receipt).</summary>
+            <param name="Name">The uploaded file's name.</param>
+            <param name="Size">The uploaded file's size in bytes.</param>
+            <param name="ClientHash">The hash the browser computed before upload (empty if unavailable).</param>
+            <param name="ServerHash">The hash re-computed here from the received bytes.</param>
+            <param name="Verified">True only when both hashes are present and equal.</param>
+        </member>
+        <member name="M:BlazorDX.Components.FileIntegrityResult.#ctor(System.String,System.Int64,System.String,System.String,System.Boolean)">
+            <summary>The per-file outcome of an upload integrity check (browser hash vs. re-hash on receipt).</summary>
+            <param name="Name">The uploaded file's name.</param>
+            <param name="Size">The uploaded file's size in bytes.</param>
+            <param name="ClientHash">The hash the browser computed before upload (empty if unavailable).</param>
+            <param name="ServerHash">The hash re-computed here from the received bytes.</param>
+            <param name="Verified">True only when both hashes are present and equal.</param>
+        </member>
+        <member name="P:BlazorDX.Components.FileIntegrityResult.Name">
+            <summary>The uploaded file's name.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.FileIntegrityResult.Size">
+            <summary>The uploaded file's size in bytes.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.FileIntegrityResult.ClientHash">
+            <summary>The hash the browser computed before upload (empty if unavailable).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.FileIntegrityResult.ServerHash">
+            <summary>The hash re-computed here from the received bytes.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.FileIntegrityResult.Verified">
+            <summary>True only when both hashes are present and equal.</summary>
         </member>
         <member name="T:BlazorDX.Components.DxFileUpload">
             <summary>
