@@ -103,6 +103,10 @@ public sealed class DxRichTextEditor : ComponentBase
     private static readonly string[] FontSizes =
         ["8", "9", "10", "11", "12", "14", "16", "18", "24", "36"];
 
+    // Paragraph styles: display text -> "blockStyle" value (0 = body paragraph, N = heading level).
+    private static readonly (string Text, string Value)[] BlockStyles =
+        [("Normal", "0"), ("Heading 1", "1"), ("Heading 2", "2"), ("Heading 3", "3")];
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "div");
@@ -134,9 +138,10 @@ public sealed class DxRichTextEditor : ComponentBase
         BuildColorInput(builder, 20, "foreColor", "Text color", "#000000");
         BuildColorInput(builder, 30, "hiliteColor", "Highlight color", "#ffff00");
 
-        // Font family / size dropdowns (value commands).
-        BuildFontSelect(builder, 40, "fontName", "Font family", "Font", FontFamilies);
-        BuildFontSelect(builder, 60, "fontSize", "Font size", "Size", FontSizes);
+        // Paragraph style + font family / size dropdowns (value commands).
+        BuildStyleSelect(builder, 40);
+        BuildFontSelect(builder, 60, "fontName", "Font family", "Font", FontFamilies);
+        BuildFontSelect(builder, 80, "fontSize", "Font size", "Size", FontSizes);
 
         builder.CloseElement();
 
@@ -215,6 +220,34 @@ public sealed class DxRichTextEditor : ComponentBase
         builder.AddAttribute(seq + 5, "value", initial);
         builder.AddAttribute(seq + 6, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(
             this, e => CommandColorAsync(command, e.Value?.ToString() ?? initial)));
+        builder.CloseElement();
+    }
+
+    // The paragraph-style dropdown (Normal / Heading 1-3). Display text differs from the value,
+    // so it has its own builder. Routes through CommandValueAsync as the "blockStyle" command.
+    private void BuildStyleSelect(RenderTreeBuilder builder, int seq)
+    {
+        builder.OpenElement(seq, "select");
+        builder.AddAttribute(seq + 1, "class", "dx-rte-select");
+        builder.AddAttribute(seq + 2, "aria-label", "Paragraph style");
+        builder.AddAttribute(seq + 3, "title", "Paragraph style");
+        builder.AddAttribute(seq + 4, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(
+            this, e => CommandValueAsync("blockStyle", e.Value?.ToString() ?? string.Empty)));
+
+        builder.OpenElement(seq + 5, "option");
+        builder.AddAttribute(seq + 6, "value", string.Empty);
+        builder.AddContent(seq + 7, "Style");
+        builder.CloseElement();
+
+        foreach ((string text, string value) in BlockStyles)
+        {
+            builder.OpenElement(seq + 8, "option");
+            builder.SetKey(value);
+            builder.AddAttribute(seq + 9, "value", value);
+            builder.AddContent(seq + 10, text);
+            builder.CloseElement();
+        }
+
         builder.CloseElement();
     }
 

@@ -912,6 +912,34 @@ public sealed class DxWordEditorTests : TestContext
         Assert.Equal("E=mc2", string.Concat(para.Runs.Select(r => r.Text)));
     }
 
+    [Fact]
+    public void ModelDriven_style_dropdown_sets_block_to_heading_and_back_to_normal()
+    {
+        FakeRichTextInterop fake = new() { SelectionRange = "0,0,0" }; // caret in container 0
+        Services.AddScoped<IRichTextInterop>(_ => fake);
+
+        WordDocument? changed = null;
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, new WordDocument([new WordParagraph([new WordRun("Title text")], WordAlignment.Center)]))
+            .Add(e => e.DocumentChanged, EventCallback.Factory.Create<WordDocument>(this, d => changed = d)));
+
+        editor.Find("[aria-label='Paragraph style']").Change("2"); // Heading 2
+        WordHeading h = changed!.Blocks.OfType<WordHeading>().Single();
+        Assert.Equal(2, h.Level);
+        Assert.Equal("Title text", Text(h.Runs));
+        Assert.Equal(WordAlignment.Center, h.Alignment); // alignment preserved across the style change
+
+        // Heading -> Normal on a fresh heading document.
+        WordDocument? back = null;
+        IRenderedComponent<DxWordEditor> editor2 = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, new WordDocument([new WordHeading(2, [new WordRun("Title text")])]))
+            .Add(e => e.DocumentChanged, EventCallback.Factory.Create<WordDocument>(this, d => back = d)));
+
+        editor2.Find("[aria-label='Paragraph style']").Change("0"); // Normal
+        Assert.Empty(back!.Blocks.OfType<WordHeading>());
+        Assert.Equal("Title text", Text(back!.Blocks.OfType<WordParagraph>().Single().Runs));
+    }
+
     private sealed class FakeRichTextInterop : IRichTextInterop
     {
         public string TableCell { get; init; } = string.Empty;

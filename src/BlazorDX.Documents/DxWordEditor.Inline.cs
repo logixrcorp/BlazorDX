@@ -139,17 +139,21 @@ public sealed partial class DxWordEditor
         }
 
         string range = await _rte.GetSelectionRangeAsync();
-        if (!TryParseRange(range, out int container, out int start, out int end) || start >= end)
+        if (!TryParseRange(range, out int container, out int start, out int end))
         {
             return;
         }
 
+        // Font commands need a non-empty selection; the block-style command applies at the caret.
         WordDocument? updated = args.Command switch
         {
-            "fontName" => SetFontFamily(Current, container, start, end, args.Value),
-            "fontSize" when double.TryParse(args.Value,
+            "fontName" when start < end => SetFontFamily(Current, container, start, end, args.Value),
+            "fontSize" when start < end && double.TryParse(args.Value,
                 System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture,
                 out double pt) && pt > 0 => SetFontSize(Current, container, start, end, pt),
+            "blockStyle" when int.TryParse(args.Value,
+                System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture,
+                out int level) => SetBlockLevel(Current, container, level),
             _ => null,
         };
 
@@ -294,6 +298,50 @@ public sealed partial class DxWordEditor
             case WordParagraph p:
                 seen++;
                 return seen == target ? new WordHeading(2, p.Runs, p.Alignment) : p;
+            case WordList l:
+                seen += l.Items.Count;
+                return l;
+            case WordTable t:
+                foreach (WordTableRow row in t.Rows)
+                {
+                    seen += row.Cells.Count;
+                }
+
+                return t;
+            default:
+                return block;
+        }
+    }
+
+    // Sets the block owning the target run-container to a named style: level 0 = body paragraph,
+    // 1-6 = the matching heading. Preserves runs and alignment. List items / table cells can't be
+    // styled as headings, so those are a no-op (the container index still advances).
+    private static WordDocument SetBlockLevel(WordDocument document, int containerIndex, int level)
+    {
+        int seen = -1;
+        var blocks = new WordBlock[document.Blocks.Count];
+        for (int i = 0; i < document.Blocks.Count; i++)
+        {
+            blocks[i] = StyleBlock(document.Blocks[i], ref seen, containerIndex, level);
+        }
+
+        return new WordDocument(blocks);
+    }
+
+    private static WordBlock StyleBlock(WordBlock block, ref int seen, int target, int level)
+    {
+        switch (block)
+        {
+            case WordHeading h:
+                seen++;
+                return seen != target ? h
+                    : level <= 0 ? new WordParagraph(h.Runs, h.Alignment)
+                    : new WordHeading(Math.Clamp(level, 1, 6), h.Runs, h.Alignment);
+            case WordParagraph p:
+                seen++;
+                return seen != target ? p
+                    : level <= 0 ? p
+                    : new WordHeading(Math.Clamp(level, 1, 6), p.Runs, p.Alignment);
             case WordList l:
                 seen += l.Items.Count;
                 return l;
