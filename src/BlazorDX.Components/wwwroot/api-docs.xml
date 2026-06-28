@@ -1230,6 +1230,13 @@
             built-in behavior.
             </summary>
         </member>
+        <member name="P:BlazorDX.Components.DxRichTextEditor.OnUndo">
+            <summary>Invoked for the undo keyboard shortcut (Ctrl/Cmd+Z), so a host can drive its
+            own history instead of the browser's contentEditable undo.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxRichTextEditor.OnRedo">
+            <summary>Invoked for the redo keyboard shortcut (Ctrl/Cmd+Y or Shift+Ctrl/Cmd+Z).</summary>
+        </member>
         <member name="P:BlazorDX.Components.DxRichTextEditor.OnColorCommand">
             <summary>
             Optional interceptor for the color inputs (<c>foreColor</c> text, <c>hiliteColor</c>
