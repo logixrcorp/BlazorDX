@@ -70,6 +70,7 @@ sample app (`samples/BlazorDX.Demo`).
 
 | Component | What it does | Demo |
 |---|---|---|
+| `DxCalendar` | Inline month calendar: single or range date selection, marker dots, disabled dates, a per-day template, culture-aware week start | `/calendar` |
 | `DxScheduler` | Week / Month / Day calendar with time-positioned event blocks, RRULE-style recurrence, and pointer drag-to-move / drag-to-create | `/scheduler` |
 | `DxGantt` | Task timeline bars with progress fills | `/gantt` |
 

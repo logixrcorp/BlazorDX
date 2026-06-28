@@ -1,0 +1,139 @@
+/* DxCalendar — inline month calendar. Token-driven; all colours fall back to sensible
+   defaults so it themes with the rest of BlazorDX (see dx-theme.css). */
+
+.dx-cal {
+  display: inline-block;
+  padding: 12px;
+  background: var(--dx-surface, #ffffff);
+  border: 1px solid var(--dx-border, #e2e8f0);
+  border-radius: 10px;
+  color: var(--dx-text, #0f172a);
+  font: inherit;
+  user-select: none;
+}
+
+.dx-cal-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.dx-cal-month {
+  flex: 1;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.dx-cal-nav {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  font: inherit;
+  color: var(--dx-text, #0f172a);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.dx-cal-nav:hover { background: var(--dx-surface-alt, #f1f5f9); }
+.dx-cal-nav:focus-visible {
+  outline: 2px solid var(--dx-accent, #2563eb);
+  outline-offset: 1px;
+}
+
+.dx-cal-grid { border-radius: 6px; }
+.dx-cal-grid:focus-visible {
+  outline: 2px solid var(--dx-accent, #2563eb);
+  outline-offset: 2px;
+}
+
+.dx-cal-weekdays,
+.dx-cal-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(34px, 1fr));
+}
+
+.dx-cal-weekday {
+  padding: 4px 0;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--dx-text-muted, #64748b);
+}
+
+.dx-cal-day {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  margin: 1px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.dx-cal-day:hover { background: var(--dx-surface-alt, #f1f5f9); }
+
+.dx-cal-outside { color: var(--dx-text-muted, #94a3b8); }
+
+/* Today: a ring, so it reads even when also selected/in-range. */
+.dx-cal-today { box-shadow: inset 0 0 0 1px var(--dx-accent, #2563eb); }
+
+/* In-range fill (light accent tint, dark text keeps AA for any tint). */
+.dx-cal-in-range { background: color-mix(in srgb, var(--dx-accent, #2563eb) 16%, transparent); }
+
+/* Selected / range endpoints: solid accent with white text (>= 4.5:1 on the default accent). */
+.dx-cal-selected,
+.dx-cal-range-start,
+.dx-cal-range-end {
+  background: var(--dx-accent, #2563eb);
+  color: #ffffff;
+}
+.dx-cal-selected:hover,
+.dx-cal-range-start:hover,
+.dx-cal-range-end:hover { background: var(--dx-accent, #2563eb); }
+
+/* The keyboard-focused day (aria-activedescendant target). */
+.dx-cal-focused { outline: 2px solid var(--dx-accent, #2563eb); outline-offset: -2px; }
+
+.dx-cal-disabled {
+  color: var(--dx-text-muted, #cbd5e1);
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+.dx-cal-disabled:hover { background: transparent; }
+
+/* Marker dot for "marked" dates (selection-independent). */
+.dx-cal-dot {
+  position: absolute;
+  bottom: 3px;
+  font-size: 0.5rem;
+  line-height: 1;
+  color: var(--dx-accent, #2563eb);
+}
+/* On a selected day the dot must show against the accent fill. */
+.dx-cal-selected .dx-cal-dot,
+.dx-cal-range-start .dx-cal-dot,
+.dx-cal-range-end .dx-cal-dot { color: #ffffff; }
+
+.dx-cal-day-num { line-height: 1.1; }
+
+/* Visually-hidden live region. */
+.dx-cal-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dx-cal-day { transition: none; }
+}

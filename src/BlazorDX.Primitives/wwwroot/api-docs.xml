@@ -1642,6 +1642,69 @@
             bold first row, then each item of <paramref name="rows"/> becomes a row.
             </summary>
         </member>
+        <member name="T:BlazorDX.Primitives.Inputs.CalendarSelectionMode">
+            <summary>How the calendar resolves clicks into a selection.</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Inputs.CalendarSelectionMode.Single">
+            <summary>One date at a time (<c>Value</c>).</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Inputs.CalendarSelectionMode.Range">
+            <summary>A start/end date range (<c>RangeStart</c>/<c>RangeEnd</c>).</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Inputs.CalendarRange">
+            <summary>An inclusive selected date range (either end may be null while a range is being picked).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Inputs.CalendarRange.#ctor(System.Nullable{System.DateOnly},System.Nullable{System.DateOnly})">
+            <summary>An inclusive selected date range (either end may be null while a range is being picked).</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Inputs.CalendarPrimitive">
+            <summary>
+            Tier 1 headless <em>inline</em> calendar: an always-visible month grid with month/year navigation,
+            single or range date selection, min/max bounds, an arbitrary disabled-date predicate, and a set of
+            "marked" dates the styled layer can decorate. The focused day is surfaced via the WAI-ARIA grid
+            pattern (aria-activedescendant) with full 2-D keyboard navigation. The week starts on the culture's
+            first day of week. Renders no markup itself — the styled layer (<c>DxCalendar</c>) turns this into UI.
+            </summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Inputs.CalendarPrimitive.CellCount">
+            <summary>Always six weeks so the grid never reflows as months change height.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Inputs.CalendarPrimitive.OnRangeSelected">
+            <summary>Raised once a range is completed (both ends chosen), ordered start ≤ end.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Inputs.CalendarPrimitive.OnDateSelected">
+            <summary>Raised when a date is chosen in <see cref="F:BlazorDX.Primitives.Inputs.CalendarSelectionMode.Single"/> mode.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Inputs.CalendarPrimitive.Month">
+            <summary>The first day of the month shown. Two-way bindable; defaults to the current month.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Inputs.CalendarPrimitive.IsDateDisabled">
+            <summary>Optional predicate marking individual dates unselectable (in addition to Min/Max).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Inputs.CalendarPrimitive.MarkedDates">
+            <summary>Dates the styled layer decorates (e.g. an event dot). Selection-independent.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Inputs.CalendarPrimitive.Culture">
+            <summary>Culture for month/weekday text and the first day of week (defaults to current UI culture).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Inputs.CalendarPrimitive.WeekdayHeaders">
+            <summary>Abbreviated weekday headers, ordered from the culture's first day of week.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Inputs.CalendarPrimitive.CalendarDays">
+            <summary>The 42 grid days, starting on the first-day-of-week on/before the 1st of the month.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Inputs.CalendarPrimitive.GridId">
+            <summary>Stable per-instance id base for the grid and its cells (aria-activedescendant target).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Inputs.CalendarPrimitive.IsInRange(System.DateOnly)">
+            <summary>Whether a date falls inside the selected range, or the in-progress hover preview.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Inputs.CalendarPrimitive.SelectAsync(System.DateOnly)">
+            <summary>Selects <paramref name="date"/> (single mode) or advances the range (range mode).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Inputs.CalendarPrimitive.SetHover(System.DateOnly)">
+            <summary>Sets the hovered day for the range preview (range mode, only while half-picked).</summary>
+        </member>
         <member name="T:BlazorDX.Primitives.Inputs.DatePickerPrimitive">
             <summary>
             Tier 1 headless date picker: a trigger that opens an anchored calendar with

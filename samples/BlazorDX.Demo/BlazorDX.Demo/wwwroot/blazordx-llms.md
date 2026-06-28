@@ -197,6 +197,27 @@ read the columns to persist.
 <DxSpinner /> <DxProgress Value="65" /> <DxSkeleton Width="70%" Height="1rem" />
 ```
 
+### DxCalendar (inline month calendar)
+A standalone, always-visible month calendar (distinct from `DxDatePicker`, which is a popup input).
+`SelectionMode` is `Single` (`@bind-Value`) or `Range` (`@bind-RangeStart` / `@bind-RangeEnd`). Optional
+`Min`/`Max`, an `IsDateDisabled` predicate, a `MarkedDates` set (dot decoration), and a `DayTemplate`
+fragment. Week starts on the culture's first day; full ARIA-grid keyboard nav.
+```razor
+@using BlazorDX.Primitives.Inputs
+<DxCalendar @bind-Value="picked" MarkedDates="marked" />
+
+<DxCalendar SelectionMode="CalendarSelectionMode.Range"
+            @bind-RangeStart="from" @bind-RangeEnd="to"
+            Min="@DateOnly.FromDateTime(DateTime.Today)"
+            IsDateDisabled="@(d => d.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)"
+            OnRangeSelected="r => { /* r.Start, r.End */ }" />
+@code {
+    private DateOnly? picked = DateOnly.FromDateTime(DateTime.Today);
+    private DateOnly? from, to;
+    private readonly IReadOnlyCollection<DateOnly> marked = new[] { DateOnly.FromDateTime(DateTime.Today) };
+}
+```
+
 ### DxScheduler (Week / Month / Day calendar)
 `SchedulerEvent(Title, Start, End, Color?, Category?, Recurrence?)`. Bind `WeekStart` and `View`.
 Set a `Recurrence` to repeat an event; the scheduler expands it for the visible window. On the
@@ -260,7 +281,7 @@ Server-side, re-hash any stream with the same primitive: `BlazorDX.Primitives.Fi
 - **Charts:** DxLineChart, DxAreaChart, DxBarChart, DxPieChart, DxHistogram, DxSparkline,
   DxRadialGauge, DxLinearGauge, DxStackedBarChart, DxScatterChart, DxRadarChart, DxFunnelChart,
   DxCandlestickChart
-- **Scheduling:** DxScheduler, DxGantt
+- **Scheduling:** DxCalendar, DxScheduler, DxGantt
 - **Editors/files/AI:** DxMarkdown, DxMarkdownEditor, DxRichTextEditor, DxChat, DxFileManager
 - **Documents & reporting:** DxDocumentViewer (core; PDF/embed), DxSpreadsheetViewer (Excel
   viewer/editor, `BlazorDX.Documents`), DxWordViewer/DxWordEditor (`BlazorDX.Documents`),

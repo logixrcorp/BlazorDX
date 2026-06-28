@@ -109,7 +109,8 @@ public static class ComponentCatalog
         new("funnelchart", "DxFunnelChart", "Data visualization", "Stacked-trapezoid conversion funnel.", "/charts", "DxFunnelChart"),
         new("candlestickchart", "DxCandlestickChart", "Data visualization", "OHLC candlesticks coloured by direction.", "/charts", "DxCandlestickChart"),
 
-        new("scheduler", "DxScheduler", "Scheduling", "Week calendar with time-positioned event blocks.", "/scheduler", "DxScheduler"),
+        new("calendar", "DxCalendar", "Scheduling", "Inline month calendar with single/range selection, markers, and a day template.", "/calendar", "DxCalendar"),
+        new("scheduler", "DxScheduler", "Scheduling", "Week/Month/Day calendar with recurrence and drag-to-move/create.", "/scheduler", "DxScheduler"),
         new("gantt", "DxGantt", "Scheduling", "Task timeline bars with progress fills.", "/gantt", "DxGantt"),
 
         new("markdown", "DxMarkdown", "Editors, files & AI", "Safe Markdown renderer (encode-then-format).", "/markdown", "DxMarkdown"),

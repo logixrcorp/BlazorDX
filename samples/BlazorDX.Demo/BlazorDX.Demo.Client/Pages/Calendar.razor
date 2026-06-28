@@ -1,0 +1,66 @@
+@page "/calendar"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@using BlazorDX.Primitives.Inputs
+
+<PageTitle>Calendar</PageTitle>
+
+<h1>BlazorDX Calendar</h1>
+
+<p class="dx-demo-meta">
+    An always-visible month calendar (<code>DxCalendar</code>): a real ARIA grid with
+    previous/next/today navigation and 2-D arrow-key movement (Home/End for the week edges,
+    PageUp/PageDown for months, Shift+PageUp/Down for years; Enter or Space selects). The week
+    starts on the culture's first day. It supports single-date and date-range selection, marker
+    dots, disabled dates, and a per-day template.
+</p>
+
+<div class="dx-demo-row" style="display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start;">
+    <div>
+        <h2>Single date</h2>
+        <DxCalendar @bind-Value="picked" MarkedDates="marked" />
+        <p class="dx-demo-meta">Selected: <strong>@(picked?.ToString("D") ?? "(none)")</strong>.
+            Dots mark this week's Mon/Wed/Fri.</p>
+    </div>
+
+    <div>
+        <h2>Date range</h2>
+        <DxCalendar SelectionMode="CalendarSelectionMode.Range"
+                    @bind-RangeStart="from" @bind-RangeEnd="to"
+                    Min="rangeMin"
+                    IsDateDisabled="IsWeekend"
+                    OnRangeSelected="OnRange" />
+        <p class="dx-demo-meta">
+            Range: <strong>@RangeText</strong>. Weekends are disabled; dates before today are out of bounds.
+        </p>
+    </div>
+</div>
+
+@code {
+    private DateOnly? picked = DateOnly.FromDateTime(DateTime.Today);
+    private DateOnly? from;
+    private DateOnly? to;
+    private string rangeSummary = "(none)";
+
+    private static readonly DateOnly rangeMin = DateOnly.FromDateTime(DateTime.Today);
+
+    private string RangeText => from is null
+        ? "(none)"
+        : $"{from:MMM d}" + (to is null ? " – …" : $" – {to:MMM d}  ({to.Value.DayNumber - from.Value.DayNumber + 1} days)");
+
+    private void OnRange(CalendarRange r) =>
+        rangeSummary = r.Start is null || r.End is null ? "(incomplete)" : $"{r.Start:d}–{r.End:d}";
+
+    private static bool IsWeekend(DateOnly d) =>
+        d.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
+
+    // Mark this week's Mon/Wed/Fri so the dot decoration is visible by default.
+    private readonly IReadOnlyCollection<DateOnly> marked = BuildMarked();
+
+    private static IReadOnlyCollection<DateOnly> BuildMarked()
+    {
+        DateOnly today = DateOnly.FromDateTime(DateTime.Today);
+        DateOnly monday = today.AddDays(-(((int)today.DayOfWeek + 6) % 7));
+        return [monday, monday.AddDays(2), monday.AddDays(4)];
+    }
+}

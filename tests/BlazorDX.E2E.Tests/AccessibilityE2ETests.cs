@@ -25,6 +25,7 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
     [InlineData("/app/new")]
     [InlineData("/app/record/1")]
     [InlineData("/files")]       // hybrid drag-and-drop file manager
+    [InlineData("/calendar")]    // inline month calendar (single + range)
     [InlineData("/scheduler")]   // scheduler month/day/week views
     [InlineData("/docviewer")]   // PDF / document viewer
     [InlineData("/excel")]       // read-only virtualized spreadsheet viewer

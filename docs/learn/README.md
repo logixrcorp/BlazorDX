@@ -17,6 +17,7 @@ for the quoted member name.
 |---|---|---|---|
 | [File manager](file-manager.md) | `/files` | [`DxFileManager.cs:24`](../../src/BlazorDX.Components/DxFileManager.cs) · [`FileManagerPrimitive.cs:39`](../../src/BlazorDX.Primitives/Files/FileManagerPrimitive.cs) | [0013](../adr/0013-render-mode-selection.md), [0012](../adr/0012-wcag-conformance-gate.md), [0007](../adr/0007-security-baseline.md), [0001](../adr/0001-two-tier-headless.md) |
 | [Scheduler](scheduler.md) | `/scheduler` | [`DxScheduler.cs:24`](../../src/BlazorDX.Components/DxScheduler.cs) · `SchedulerPrimitive.cs` | [0013](../adr/0013-render-mode-selection.md), [0012](../adr/0012-wcag-conformance-gate.md), [0011](../adr/0011-speed-vs-size-rust-profile.md), [0001](../adr/0001-two-tier-headless.md) |
+| [Calendar](calendar.md) | `/calendar` | [`DxCalendar.cs`](../../src/BlazorDX.Components/DxCalendar.cs) · [`CalendarPrimitive.cs`](../../src/BlazorDX.Primitives/Inputs/CalendarPrimitive.cs) | [0012](../adr/0012-wcag-conformance-gate.md), [0001](../adr/0001-two-tier-headless.md) |
 | [PDF / document viewer](document-viewer.md) | `/docviewer` | [`DxDocumentViewer.cs:59`](../../src/BlazorDX.Components/DxDocumentViewer.cs) | [0013](../adr/0013-render-mode-selection.md), [0012](../adr/0012-wcag-conformance-gate.md), [0007](../adr/0007-security-baseline.md), [0010](../adr/0010-documents-and-reporting-integration.md) |
 
 ## The non-negotiables these pages tie back to

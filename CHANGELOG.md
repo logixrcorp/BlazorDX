@@ -11,6 +11,12 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ### Added
 
+- **`DxCalendar` — inline month calendar.** A standalone, always-visible calendar (distinct from the
+  `DxDatePicker` popup) built on a new `CalendarPrimitive`: single or range selection
+  (`SelectionMode`, with a range hover preview), `Min`/`Max` bounds, an `IsDateDisabled` predicate,
+  a `MarkedDates` dot layer, and a per-day `DayTemplate`. The week starts on the culture's first day;
+  it is a real ARIA `grid` with 2-D arrow / Home/End / PageUp/Down (Shift = year) keyboard navigation
+  and a polite month live region.
 - **Scheduler recurrence (`DxScheduler` / `SchedulerPrimitive`).** `SchedulerEvent` gains an
   optional RRULE-style `Recurrence` rule — `Daily` / `Weekly` / `Monthly` with `Interval`,
   `Count`, `Until`, and weekly `ByWeekday`. Seeds are expanded into concrete occurrences for the

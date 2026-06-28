@@ -193,6 +193,22 @@
         <member name="P:BlazorDX.Components.DxButtonGroup.Class">
             <summary>Extra CSS classes appended to the group.</summary>
         </member>
+        <member name="T:BlazorDX.Components.DxCalendar">
+            <summary>
+            Tier 2 styled inline calendar built on <see cref="T:BlazorDX.Primitives.Inputs.CalendarPrimitive"/>: an always-visible month
+            grid with previous/next/today navigation, single or range date selection (with a range hover
+            preview), per-day marker dots, and an optional <see cref="P:BlazorDX.Components.DxCalendar.DayTemplate"/>. The month is a real
+            ARIA <c>grid</c> (<c>row</c> → <c>gridcell</c>) with 2-D arrow-key navigation, a focus-visible
+            active day surfaced via <c>aria-activedescendant</c>, and a polite live region announcing month
+            changes. Styling is token-driven (see dx-calendar.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxCalendar.DayTemplate">
+            <summary>Optional content rendered inside each day cell (below the day number).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxCalendar.Label">
+            <summary>Accessible label for the grid (default "Calendar").</summary>
+        </member>
         <member name="T:BlazorDX.Components.Candle">
             <summary>One OHLC candle for <see cref="T:BlazorDX.Components.DxCandlestickChart"/>.</summary>
         </member>
