@@ -229,7 +229,13 @@ app.Run();
 /// </summary>
 internal static class PlaygroundSample
 {
-    private const string SampleUrl = "https://playgroundbe-bck-1.azurewebsites.net/Reports/SampleReport?type=sample";
+    // The playground's own page (https://playground.powerbi.com/sampleReportEmbed) GETs this to mint
+    // a short-lived embed token + URL for its public sample report, then calls powerbi.embed with
+    // tokenType=Embed. We mirror it exactly. It is an unofficial endpoint and may change again (the
+    // previous backend host was retired); any failure surfaces as a 502 and the component shows its
+    // accessible error state.
+    private const string SampleUrl =
+        "https://wabi-us-east-a-primary-redirect.analysis.windows.net/playground/report/45ce895e-0693-46c7-b984-c849948414e1/GenerateToken";
 
     public static async Task<object> FetchAsync(IHttpClientFactory factory, CancellationToken ct)
     {
@@ -243,13 +249,14 @@ internal static class PlaygroundSample
         using System.Text.Json.JsonDocument doc = await System.Text.Json.JsonDocument.ParseAsync(stream, default, ct);
         System.Text.Json.JsonElement root = doc.RootElement;
 
-        string embedUrl = Str(root, "EmbedUrl", "embedUrl")
-            ?? throw new InvalidOperationException("the playground response had no EmbedUrl.");
+        string embedUrl = Str(root, "embedUrl", "EmbedUrl")
+            ?? throw new InvalidOperationException("the playground response had no embedUrl.");
         string embedToken = Token(root)
-            ?? throw new InvalidOperationException("the playground response had no EmbedToken.");
-        string reportId = Str(root, "Id", "ReportId", "reportId") ?? string.Empty;
+            ?? throw new InvalidOperationException("the playground response had no embed token.");
+        string reportId = Str(root, "id", "Id", "reportId", "ReportId") ?? string.Empty;
 
-        return new { embedUrl, embedToken, reportId };
+        // The playground appends this flag to the embed URL for its demo presentation; match it.
+        return new { embedUrl = embedUrl + "&embeddedDemo=true", embedToken, reportId };
     }
 
     private static string? Str(System.Text.Json.JsonElement el, params string[] names)
@@ -269,7 +276,7 @@ internal static class PlaygroundSample
     // The embed token may be a bare string or an object { Token: "..." }.
     private static string? Token(System.Text.Json.JsonElement root)
     {
-        foreach (string name in new[] { "EmbedToken", "embedToken", "Token", "accessToken" })
+        foreach (string name in new[] { "token", "embedToken", "EmbedToken", "Token", "accessToken" })
         {
             if (!root.TryGetProperty(name, out System.Text.Json.JsonElement v))
             {
