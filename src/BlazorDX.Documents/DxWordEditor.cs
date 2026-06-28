@@ -197,6 +197,8 @@ public sealed partial class DxWordEditor : ComponentBase
             ToolbarButton(builder, 70, "+ Col", "Insert table column", () => TableEditAsync(TableOp.InsertColumn), false);
             ToolbarButton(builder, 80, "− Col", "Delete table column", () => TableEditAsync(TableOp.DeleteColumn), false);
 
+            ToolbarButton(builder, 90, "Insert image", "Insert an image", InsertImageAsync, false);
+
             builder.CloseElement();
         }
 

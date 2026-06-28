@@ -835,6 +835,37 @@ public sealed class DxWordEditorTests : TestContext
             Assert.All(changed!.Blocks.OfType<WordParagraph>().Single().Runs, r => Assert.False(r.Bold)));
     }
 
+    [Fact]
+    public void Insert_image_adds_a_WordImage_block_after_the_caret_block()
+    {
+        // A valid 1×1 PNG.
+        const string png =
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+        FakeRichTextInterop fake = new() { SelectionRange = "0,0,0", ImageData = $"image/png|{png}" };
+        Services.AddScoped<IRichTextInterop>(_ => fake);
+
+        WordDocument? changed = null;
+        WordDocument doc = new(
+        [
+            new WordHeading(1, [new WordRun("Title")]),  // container 0 (caret here)
+            new WordParagraph([new WordRun("Body")]),    // container 1
+        ]);
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, doc)
+            .Add(e => e.DocumentChanged, EventCallback.Factory.Create<WordDocument>(this, d => changed = d)));
+
+        editor.Find("[aria-label='Insert an image']").Click();
+
+        editor.WaitForAssertion(() =>
+        {
+            Assert.NotNull(changed);
+            Assert.Equal(3, changed!.Blocks.Count);
+            WordImage img = Assert.IsType<WordImage>(changed!.Blocks[1]); // inserted after the heading
+            Assert.Equal("image/png", img.ContentType);
+            Assert.NotEmpty(img.Data);
+        });
+    }
+
     private sealed class FakeRichTextInterop : IRichTextInterop
     {
         public string TableCell { get; init; } = string.Empty;
@@ -861,6 +892,9 @@ public sealed class DxWordEditorTests : TestContext
             RestoredSelection = (container, start, end);
             return ValueTask.CompletedTask;
         }
+
+        public string ImageData { get; init; } = string.Empty; // "mime|base64" returned by the picker
+        public ValueTask<string> PickImageAsync() => ValueTask.FromResult(ImageData);
 
         public ValueTask<string> GetHtmlAsync(string e) => ValueTask.FromResult(string.Empty);
         public ValueTask SetHtmlAsync(string e, string h) => ValueTask.CompletedTask;

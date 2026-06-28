@@ -75,6 +75,12 @@ public sealed partial class RichTextInterop : IRichTextInterop
         SetSelectionRange(elementId, containerIndex, start, end);
     }
 
+    public async ValueTask<string> PickImageAsync()
+    {
+        await EnsureLoadedAsync();
+        return await PickImage();
+    }
+
     public async ValueTask<string> GetHtmlAsync(string elementId)
     {
         await EnsureLoadedAsync();
@@ -122,6 +128,9 @@ public sealed partial class RichTextInterop : IRichTextInterop
 
     [JSImport("setSelectionRange", ModuleName)]
     private static partial void SetSelectionRange(string elementId, int containerIndex, int start, int end);
+
+    [JSImport("pickImage", ModuleName)]
+    private static partial Task<string> PickImage();
 
     [JSImport("getHtml", ModuleName)]
     private static partial string GetHtml(string elementId);

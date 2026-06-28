@@ -192,6 +192,51 @@ export function findInEditor(
   return idx + 1;
 }
 
+// Opens a native file picker for an image and resolves with "mimeType|base64", or "" if the
+// user cancels or the file isn't a supported image. The .NET side turns this into a WordImage
+// and inserts it into the document model.
+export function pickImage(): Promise<string> {
+  return new Promise((resolve) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/png,image/jpeg,image/gif,image/webp";
+    input.style.display = "none";
+    document.body.appendChild(input);
+
+    let settled = false;
+    const finish = (value: string) => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      input.remove();
+      resolve(value);
+    };
+
+    input.addEventListener("change", () => {
+      const file = input.files && input.files[0];
+      if (!file) {
+        finish("");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const match = /^data:([^;]+);base64,(.*)$/.exec(String(reader.result ?? ""));
+        finish(match ? `${match[1]}|${match[2]}` : "");
+      };
+      reader.onerror = () => finish("");
+      reader.readAsDataURL(file);
+    });
+
+    // There is no cancel event for a file dialog; when focus returns without a selection, resolve
+    // empty after a tick so the awaiting .NET task never hangs.
+    window.addEventListener("focus", () => setTimeout(() => finish(""), 600), { once: true });
+    input.click();
+  });
+}
+
 // Reports the caret's position within a table as "tableIndex,rowIndex,colIndex" (all
 // 0-based, the table index among the editor's tables in document order), or "" when the
 // caret is not inside a table. Lets table edits target the right cell in the model.

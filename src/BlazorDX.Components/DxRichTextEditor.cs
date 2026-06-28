@@ -225,6 +225,10 @@ public sealed class DxRichTextEditor : ComponentBase
     /// the model-driven host then sets the link itself.</summary>
     public ValueTask<string> PromptLinkAsync() => Interop.PromptLinkAsync();
 
+    /// <summary>Opens an image file picker and returns <c>"mimeType|base64"</c>, or empty on
+    /// cancel — the host turns it into a model image block.</summary>
+    public ValueTask<string> PickImageAsync() => Interop.PickImageAsync();
+
     /// <summary>The current owned selection as <c>"containerIndex,start,end"</c> (see
     /// <see cref="IRichTextInterop.GetSelectionRangeAsync"/>), or empty if unaddressable.</summary>
     public ValueTask<string> GetSelectionRangeAsync() => Interop.GetSelectionRangeAsync(editorId);

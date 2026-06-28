@@ -60,6 +60,12 @@ public interface IRichTextInterop
     /// </summary>
     ValueTask SetSelectionRangeAsync(string elementId, int containerIndex, int start, int end);
 
+    /// <summary>
+    /// Opens a native image file picker and returns <c>"mimeType|base64"</c> for the chosen
+    /// image, or an empty string if the user cancels or the file is not a supported image.
+    /// </summary>
+    ValueTask<string> PickImageAsync();
+
     /// <summary>Returns the current inner HTML of the editor element.</summary>
     ValueTask<string> GetHtmlAsync(string elementId);
 
