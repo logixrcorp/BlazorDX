@@ -87,6 +87,10 @@ public sealed partial class DxWordEditor
         {
             "bold" or "italic" or "underline" or "strikeThrough" when start < end =>
                 ToggleInline(Current, container, start, end, MapFormat(command)!.Value),
+            "superscript" when start < end =>
+                ToggleVertical(Current, container, start, end, WordVerticalAlign.Superscript),
+            "subscript" when start < end =>
+                ToggleVertical(Current, container, start, end, WordVerticalAlign.Subscript),
             "removeFormat" when start < end =>
                 ClearInline(Current, container, start, end),
             "justifyLeft" or "justifyCenter" or "justifyRight" or "justifyFull" =>
@@ -123,6 +127,36 @@ public sealed partial class DxWordEditor
 
         bool highlight = args.Command == "hiliteColor";
         await CommitModelEditAsync(SetColor(Current, container, start, end, args.Color, highlight), range);
+    }
+
+    // Handles the font family / size dropdowns in the model-driven core: set the chosen value on
+    // the selected run range. A no-op for an empty selection or an unparseable size.
+    private async Task HandleModelValueAsync(ValueCommandArgs args)
+    {
+        if (_rte is null)
+        {
+            return;
+        }
+
+        string range = await _rte.GetSelectionRangeAsync();
+        if (!TryParseRange(range, out int container, out int start, out int end) || start >= end)
+        {
+            return;
+        }
+
+        WordDocument? updated = args.Command switch
+        {
+            "fontName" => SetFontFamily(Current, container, start, end, args.Value),
+            "fontSize" when double.TryParse(args.Value,
+                System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture,
+                out double pt) && pt > 0 => SetFontSize(Current, container, start, end, pt),
+            _ => null,
+        };
+
+        if (updated is not null)
+        {
+            await CommitModelEditAsync(updated, range);
+        }
     }
 
     // A #RRGGBB color, the only shape the native color input produces and the model stores.
@@ -191,6 +225,48 @@ public sealed partial class DxWordEditor
         WordDocument document, int containerIndex, int start, int end, string href) =>
         EditContainer(document, containerIndex, runs => ApplyToRange(runs, start, end,
             run => run with { Href = href }));
+
+    private static WordDocument SetFontFamily(
+        WordDocument document, int containerIndex, int start, int end, string? family)
+    {
+        string? value = string.IsNullOrWhiteSpace(family) ? null : family.Trim();
+        return EditContainer(document, containerIndex, runs => ApplyToRange(runs, start, end,
+            run => run with { FontFamily = value }));
+    }
+
+    private static WordDocument SetFontSize(
+        WordDocument document, int containerIndex, int start, int end, double points) =>
+        EditContainer(document, containerIndex, runs => ApplyToRange(runs, start, end,
+            run => run with { FontSizePoints = points }));
+
+    // Toggles a vertical alignment (super/subscript) over the range: if the whole selection
+    // already carries it, clears back to baseline; otherwise sets it.
+    private static WordDocument ToggleVertical(
+        WordDocument document, int containerIndex, int start, int end, WordVerticalAlign target) =>
+        EditContainer(document, containerIndex, runs =>
+        {
+            WordVerticalAlign value = AllVertical(runs, start, end, target) ? WordVerticalAlign.Baseline : target;
+            return ApplyToRange(runs, start, end, run => run with { VerticalAlign = value });
+        });
+
+    private static bool AllVertical(
+        IReadOnlyList<WordRun> runs, int start, int end, WordVerticalAlign target)
+    {
+        int pos = 0;
+        foreach (WordRun run in runs)
+        {
+            int runStart = pos;
+            int runEnd = pos + run.Text.Length;
+            pos = runEnd;
+
+            if (Math.Max(start, runStart) < Math.Min(end, runEnd) && run.VerticalAlign != target)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     // Toggles the block owning the target run-container between a paragraph and a level-2
     // heading, preserving its runs and alignment. The toolbar's only formatBlock value is
@@ -356,6 +432,9 @@ public sealed partial class DxWordEditor
             Strike = false,
             Color = null,
             Highlight = null,
+            FontFamily = null,
+            FontSizePoints = null,
+            VerticalAlign = WordVerticalAlign.Baseline,
         });
 
     // Splits runs at the [start, end) boundaries and applies a transform to the slice, then
@@ -472,5 +551,7 @@ public sealed partial class DxWordEditor
 
     private static bool SameFormat(WordRun a, WordRun b) =>
         a.Bold == b.Bold && a.Italic == b.Italic && a.Underline == b.Underline && a.Strike == b.Strike
-        && a.Href == b.Href && a.Color == b.Color && a.Highlight == b.Highlight;
+        && a.Href == b.Href && a.Color == b.Color && a.Highlight == b.Highlight
+        && a.FontFamily == b.FontFamily && a.FontSizePoints == b.FontSizePoints
+        && a.VerticalAlign == b.VerticalAlign;
 }

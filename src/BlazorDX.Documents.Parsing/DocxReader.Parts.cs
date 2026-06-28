@@ -272,7 +272,9 @@ public static partial class DocxReader
             if (next.Bold == current.Bold && next.Italic == current.Italic
                 && next.Underline == current.Underline && next.Strike == current.Strike
                 && next.Href == current.Href
-                && next.Color == current.Color && next.Highlight == current.Highlight)
+                && next.Color == current.Color && next.Highlight == current.Highlight
+                && next.FontFamily == current.FontFamily && next.FontSizePoints == current.FontSizePoints
+                && next.VerticalAlign == current.VerticalAlign)
             {
                 current = current with { Text = current.Text + next.Text };
             }

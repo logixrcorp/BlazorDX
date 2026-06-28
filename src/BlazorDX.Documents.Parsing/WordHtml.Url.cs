@@ -55,10 +55,18 @@ public static partial class WordHtml
     // Returns null for unsupported (named colors) or absent values.
     private static string? ParseCssColor(string rawTag, string property)
     {
+        string? raw = ReadCssValue(rawTag, property);
+        return raw is null ? null : NormalizeColor(raw);
+    }
+
+    // Returns the raw value of a CSS declaration in a style attribute (e.g. "12pt" for
+    // "font-size"), or null. The start-of-declaration boundary stops "color" matching inside
+    // "background-color" and "font-size" matching inside other properties.
+    private static string? ReadCssValue(string rawTag, string property)
+    {
         int idx = 0;
         while ((idx = rawTag.IndexOf(property, idx, System.StringComparison.OrdinalIgnoreCase)) >= 0)
         {
-            // Start-of-declaration boundary so "color" doesn't match inside "background-color".
             bool boundary = idx == 0 || rawTag[idx - 1] is ' ' or ';' or '"' or '\'' or '{' or '>';
             int p = idx + property.Length;
             while (p < rawTag.Length && rawTag[p] == ' ')
@@ -80,13 +88,59 @@ public static partial class WordHtml
                     end++;
                 }
 
-                return NormalizeColor(rawTag.Substring(p, end - p).Trim());
+                return rawTag.Substring(p, end - p).Trim();
             }
 
             idx = p;
         }
 
         return null;
+    }
+
+    // The first declared font family, unquoted (e.g. font-family:"Times New Roman",serif -> Times New Roman).
+    private static string? ParseCssFontFamily(string rawTag)
+    {
+        string? raw = ReadCssValue(rawTag, "font-family");
+        if (string.IsNullOrEmpty(raw))
+        {
+            return null;
+        }
+
+        int comma = raw.IndexOf(',');
+        string first = (comma >= 0 ? raw[..comma] : raw).Trim().Trim('"', '\'').Trim();
+        return first.Length == 0 ? null : first;
+    }
+
+    // Font size in points from "12pt" (as-is) or "16px" (px*0.75); relative units are ignored.
+    private static double? ParseCssFontSizePoints(string rawTag)
+    {
+        string? raw = ReadCssValue(rawTag, "font-size");
+        if (string.IsNullOrEmpty(raw))
+        {
+            return null;
+        }
+
+        double factor;
+        string num;
+        if (raw.EndsWith("pt", System.StringComparison.OrdinalIgnoreCase))
+        {
+            num = raw[..^2];
+            factor = 1.0;
+        }
+        else if (raw.EndsWith("px", System.StringComparison.OrdinalIgnoreCase))
+        {
+            num = raw[..^2];
+            factor = 0.75;
+        }
+        else
+        {
+            return null; // em/%/keywords are not mapped to an absolute point size
+        }
+
+        return double.TryParse(num.Trim(), System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out double v) && v > 0
+            ? System.Math.Round(v * factor, 2)
+            : null;
     }
 
     // Normalizes #rgb / #rrggbb / rgb(r,g,b[,a]) to lowercase #rrggbb; null otherwise.

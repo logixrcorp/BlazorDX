@@ -212,6 +212,10 @@ public static partial class WordHtml
         private string? _href;
         private string? _color;
         private string? _highlight;
+        private string? _fontFamily;
+        private double? _fontSizePoints;
+        private int _sup;
+        private int _sub;
         private WordAlignment _alignment;
 
         // Current block context.
@@ -277,6 +281,9 @@ public static partial class WordHtml
             bool italic = _italic > 0;
             bool underline = _underline > 0;
             bool strike = _strike > 0;
+            WordVerticalAlign vertAlign = _sup > 0 ? WordVerticalAlign.Superscript
+                : _sub > 0 ? WordVerticalAlign.Subscript
+                : WordVerticalAlign.Baseline;
 
             // Coalesce with the previous run when formatting matches (mirrors the .docx
             // reader, keeping the model compact and the round-trip stable).
@@ -285,14 +292,17 @@ public static partial class WordHtml
                 WordRun last = _runs[^1];
                 if (last.Bold == bold && last.Italic == italic
                     && last.Underline == underline && last.Strike == strike
-                    && last.Href == _href && last.Color == _color && last.Highlight == _highlight)
+                    && last.Href == _href && last.Color == _color && last.Highlight == _highlight
+                    && last.FontFamily == _fontFamily && last.FontSizePoints == _fontSizePoints
+                    && last.VerticalAlign == vertAlign)
                 {
                     _runs[^1] = last with { Text = last.Text + text };
                     return;
                 }
             }
 
-            _runs.Add(new WordRun(text, bold, italic, underline, strike, _href, _color, _highlight));
+            _runs.Add(new WordRun(text, bold, italic, underline, strike, _href, _color, _highlight,
+                _fontFamily, _fontSizePoints, vertAlign));
         }
 
         private void HandleTag(Token tag)
@@ -359,6 +369,36 @@ public static partial class WordHtml
 
                     break;
 
+                case "sup":
+                    if (tag.IsClose)
+                    {
+                        if (_sup > 0)
+                        {
+                            _sup--;
+                        }
+                    }
+                    else if (!tag.SelfClose)
+                    {
+                        _sup++;
+                    }
+
+                    break;
+
+                case "sub":
+                    if (tag.IsClose)
+                    {
+                        if (_sub > 0)
+                        {
+                            _sub--;
+                        }
+                    }
+                    else if (!tag.SelfClose)
+                    {
+                        _sub++;
+                    }
+
+                    break;
+
                 case "a":
                     if (tag.IsClose)
                     {
@@ -374,18 +414,22 @@ public static partial class WordHtml
                     break;
 
                 case "span" or "font":
-                    // Color via CSS (color / background-color) or a legacy <font color>.
-                    // Single-level: a closing span/font clears the colors (execCommand's
-                    // output isn't deeply nested). text-align on a styled span is ignored.
+                    // Color/font via CSS (color / background-color / font-family / font-size) or a
+                    // legacy <font color>. Single-level: a closing span/font clears them
+                    // (execCommand's output isn't deeply nested). text-align on a span is ignored.
                     if (tag.IsClose)
                     {
                         _color = null;
                         _highlight = null;
+                        _fontFamily = null;
+                        _fontSizePoints = null;
                     }
                     else if (!tag.SelfClose)
                     {
                         _color = ParseCssColor(tag.Text, "color");
                         _highlight = ParseCssColor(tag.Text, "background-color");
+                        _fontFamily = ParseCssFontFamily(tag.Text);
+                        _fontSizePoints = ParseCssFontSizePoints(tag.Text);
                     }
 
                     break;
@@ -579,6 +623,10 @@ public static partial class WordHtml
             _href = null;
             _color = null;
             _highlight = null;
+            _fontFamily = null;
+            _fontSizePoints = null;
+            _sup = 0;
+            _sub = 0;
             _alignment = WordAlignment.Start;
         }
 

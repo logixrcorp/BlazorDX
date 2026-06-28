@@ -46,6 +46,21 @@
   outline-offset: 1px;
 }
 
+.dx-rte-select {
+  height: 30px;
+  padding: 0 4px;
+  background: var(--dx-surface, #ffffff);
+  color: var(--dx-text, #1e293b);
+  border: 1px solid var(--dx-border, #cbd5e1);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.dx-rte-select:focus-visible {
+  outline: 2px solid var(--dx-accent, #2563eb);
+  outline-offset: 1px;
+}
+
 .dx-rte-surface {
   min-height: 9rem;
   max-height: 24rem;

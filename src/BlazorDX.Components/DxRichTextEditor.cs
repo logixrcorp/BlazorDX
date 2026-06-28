@@ -11,6 +11,11 @@ namespace BlazorDX.Components;
 /// <see cref="DxRichTextEditor.OnColorCommand"/>.</summary>
 public readonly record struct ColorCommandArgs(string Command, string Color);
 
+/// <summary>A value-carrying toolbar command: <c>fontName</c> (family) or <c>fontSize</c>
+/// (points) paired with the chosen value. Passed to a model-driven host via
+/// <see cref="DxRichTextEditor.OnValueCommand"/>.</summary>
+public readonly record struct ValueCommandArgs(string Command, string Value);
+
 /// <summary>
 /// A WYSIWYG rich-text editor over a <c>contentEditable</c> region with a
 /// formatting toolbar. Edited HTML is read back from the DOM and routed through an
@@ -62,6 +67,13 @@ public sealed class DxRichTextEditor : ComponentBase
     /// </summary>
     [Parameter] public EventCallback<ColorCommandArgs> OnColorCommand { get; set; }
 
+    /// <summary>
+    /// Optional interceptor for the value dropdowns (<c>fontName</c> family, <c>fontSize</c>
+    /// points). When set, choosing a value invokes this instead of touching the DOM, so a
+    /// model-driven host owns the edit (ADR-0015).
+    /// </summary>
+    [Parameter] public EventCallback<ValueCommandArgs> OnValueCommand { get; set; }
+
     [Inject] private IRichTextInterop Interop { get; set; } = default!;
 
     private HtmlSanitizer ActiveSanitizer => Sanitizer ?? InertSanitizer;
@@ -72,6 +84,8 @@ public sealed class DxRichTextEditor : ComponentBase
         ("italic", "", "I", "Italic"),
         ("underline", "", "U", "Underline"),
         ("strikeThrough", "", "S", "Strikethrough"),
+        ("superscript", "", "x²", "Superscript"),
+        ("subscript", "", "x₂", "Subscript"),
         ("formatBlock", "<h2>", "H", "Heading"),
         ("insertUnorderedList", "", "•", "Bullet list"),
         ("insertOrderedList", "", "1.", "Numbered list"),
@@ -82,6 +96,12 @@ public sealed class DxRichTextEditor : ComponentBase
         ("createLink", "", "🔗", "Insert link"),
         ("removeFormat", "", "⌫", "Clear formatting"),
     ];
+
+    private static readonly string[] FontFamilies =
+        ["Arial", "Calibri", "Courier New", "Georgia", "Times New Roman", "Verdana"];
+
+    private static readonly string[] FontSizes =
+        ["8", "9", "10", "11", "12", "14", "16", "18", "24", "36"];
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
@@ -113,6 +133,10 @@ public sealed class DxRichTextEditor : ComponentBase
         // restores the editor selection before applying, so clicking the swatch is safe.
         BuildColorInput(builder, 20, "foreColor", "Text color", "#000000");
         BuildColorInput(builder, 30, "hiliteColor", "Highlight color", "#ffff00");
+
+        // Font family / size dropdowns (value commands).
+        BuildFontSelect(builder, 40, "fontName", "Font family", "Font", FontFamilies);
+        BuildFontSelect(builder, 60, "fontSize", "Font size", "Size", FontSizes);
 
         builder.CloseElement();
 
@@ -194,6 +218,35 @@ public sealed class DxRichTextEditor : ComponentBase
         builder.CloseElement();
     }
 
+    // A labeled <select> of values; the first (empty) option is a placeholder. Choosing a value
+    // routes through CommandValueAsync (model-driven host or, as a fallback, execCommand).
+    private void BuildFontSelect(
+        RenderTreeBuilder builder, int seq, string command, string label, string placeholder, string[] values)
+    {
+        builder.OpenElement(seq, "select");
+        builder.AddAttribute(seq + 1, "class", "dx-rte-select");
+        builder.AddAttribute(seq + 2, "aria-label", label);
+        builder.AddAttribute(seq + 3, "title", label);
+        builder.AddAttribute(seq + 4, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(
+            this, e => CommandValueAsync(command, e.Value?.ToString() ?? string.Empty)));
+
+        builder.OpenElement(seq + 5, "option");
+        builder.AddAttribute(seq + 6, "value", string.Empty);
+        builder.AddContent(seq + 7, placeholder);
+        builder.CloseElement();
+
+        foreach (string value in values)
+        {
+            builder.OpenElement(seq + 8, "option");
+            builder.SetKey(value);
+            builder.AddAttribute(seq + 9, "value", value);
+            builder.AddContent(seq + 10, value);
+            builder.CloseElement();
+        }
+
+        builder.CloseElement();
+    }
+
     private async Task CommandAsync(string command, string value)
     {
         // Model-driven host owns the basic inline formats: hand off and let it edit + re-seed.
@@ -218,6 +271,7 @@ public sealed class DxRichTextEditor : ComponentBase
 
     private static bool IsModelCommand(string command) =>
         command is "bold" or "italic" or "underline" or "strikeThrough" or "removeFormat"
+            or "superscript" or "subscript"
             or "formatBlock" or "insertUnorderedList" or "insertOrderedList" or "createLink"
             or "justifyLeft" or "justifyCenter" or "justifyRight" or "justifyFull";
 
@@ -258,6 +312,23 @@ public sealed class DxRichTextEditor : ComponentBase
         }
 
         await Interop.ApplyColorAsync(command, color);
+        await SyncFromDomAsync();
+    }
+
+    private async Task CommandValueAsync(string command, string value)
+    {
+        if (OnValueCommand.HasDelegate)
+        {
+            await OnValueCommand.InvokeAsync(new ValueCommandArgs(command, value));
+            return; // model-driven host owns the edit
+        }
+
+        // Legacy fallback: execCommand (fontName works; fontSize uses a 1-7 scale, best-effort).
+        if (value.Length > 0)
+        {
+            await Interop.ExecAsync(command, value);
+        }
+
         await SyncFromDomAsync();
     }
 

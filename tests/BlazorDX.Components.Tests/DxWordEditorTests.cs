@@ -148,9 +148,9 @@ public sealed class DxWordEditorTests : TestContext
         Assert.Equal("toolbar", toolbar.GetAttribute("role"));
         Assert.Equal("Formatting", toolbar.GetAttribute("aria-label"));
 
-        // The reused formatting tools (B/I/U/S, heading, lists, align ×4, link, clear) are labeled.
+        // The reused formatting tools (B/I/U/S, super/sub, heading, lists, align ×4, link, clear) are labeled.
         IRefreshableElementCollection<IElement> tools = editor.FindAll(".dx-rte-tool");
-        Assert.Equal(13, tools.Count);
+        Assert.Equal(15, tools.Count);
         Assert.All(tools, t => Assert.False(string.IsNullOrEmpty(t.GetAttribute("aria-label"))));
     }
 
@@ -864,6 +864,52 @@ public sealed class DxWordEditorTests : TestContext
             Assert.Equal("image/png", img.ContentType);
             Assert.NotEmpty(img.Data);
         });
+    }
+
+    [Fact]
+    public void ModelDriven_superscript_and_font_controls_edit_the_selected_run()
+    {
+        FakeRichTextInterop fake = new() { SelectionRange = "0,0,5" }; // "Hello"
+        Services.AddScoped<IRichTextInterop>(_ => fake);
+
+        WordDocument? changed = null;
+        WordDocument doc = new([new WordParagraph([new WordRun("Hello world")])]);
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, doc) // model-driven is the default core now
+            .Add(e => e.DocumentChanged, EventCallback.Factory.Create<WordDocument>(this, d => changed = d)));
+
+        static WordRun First(WordDocument? d) => d!.Blocks.OfType<WordParagraph>().Single().Runs[0];
+
+        editor.Find("[aria-label='Superscript']").Click();
+        Assert.Equal(WordVerticalAlign.Superscript, First(changed).VerticalAlign);
+        Assert.Equal("Hello", First(changed).Text);
+
+        editor.Find("[aria-label='Font family']").Change("Arial");
+        Assert.Equal("Arial", First(changed).FontFamily);
+
+        editor.Find("[aria-label='Font size']").Change("18");
+        Assert.Equal(18d, First(changed).FontSizePoints);
+    }
+
+    [Fact]
+    public void Typography_round_trips_through_html()
+    {
+        WordDocument doc = new(
+        [
+            new WordParagraph(
+            [
+                new WordRun("E=mc", FontFamily: "Arial", FontSizePoints: 14),
+                new WordRun("2", VerticalAlign: WordVerticalAlign.Superscript),
+            ]),
+        ]);
+
+        WordDocument round = WordHtml.FromHtml(WordHtml.ToHtml(doc));
+        WordParagraph para = round.Blocks.OfType<WordParagraph>().Single();
+
+        Assert.Equal("Arial", para.Runs[0].FontFamily);
+        Assert.Equal(14d, para.Runs[0].FontSizePoints);
+        Assert.Equal(WordVerticalAlign.Superscript, para.Runs[^1].VerticalAlign);
+        Assert.Equal("E=mc2", string.Concat(para.Runs.Select(r => r.Text)));
     }
 
     private sealed class FakeRichTextInterop : IRichTextInterop

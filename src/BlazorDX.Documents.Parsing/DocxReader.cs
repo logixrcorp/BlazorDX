@@ -451,7 +451,7 @@ public static partial class DocxReader
         if (text is { Length: > 0 })
         {
             runs.Add(new WordRun(text.ToString(), fmt.Bold, fmt.Italic, fmt.Underline, fmt.Strike,
-                Href: null, fmt.Color, fmt.Highlight));
+                Href: null, fmt.Color, fmt.Highlight, fmt.FontFamily, fmt.FontSizePoints, fmt.VerticalAlign));
         }
     }
 
@@ -517,7 +517,8 @@ public static partial class DocxReader
             : 0;
 
     private readonly record struct RunFormat(
-        bool Bold, bool Italic, bool Underline, bool Strike, string? Color, string? Highlight);
+        bool Bold, bool Italic, bool Underline, bool Strike, string? Color, string? Highlight,
+        string? FontFamily, double? FontSizePoints, WordVerticalAlign VerticalAlign);
 
     // Reads <w:rPr>: bold/italic/strike toggles, the w:u underline style, w:color (text),
     // and the highlight from w:shd's fill or a named w:highlight.
@@ -535,6 +536,9 @@ public static partial class DocxReader
         bool strike = false;
         string? color = null;
         string? highlight = null;
+        string? fontFamily = null;
+        double? fontSizePoints = null;
+        WordVerticalAlign vertAlign = WordVerticalAlign.Baseline;
 
         while (reader.Read())
         {
@@ -575,10 +579,35 @@ public static partial class DocxReader
                 case "highlight":
                     highlight = NamedHighlight(reader.GetAttribute("val", WordprocessingMl)) ?? highlight;
                     break;
+                case "rFonts":
+                    string? ascii = reader.GetAttribute("ascii", WordprocessingMl)
+                        ?? reader.GetAttribute("hAnsi", WordprocessingMl);
+                    if (!string.IsNullOrWhiteSpace(ascii))
+                    {
+                        fontFamily = ascii;
+                    }
+
+                    break;
+                case "sz":
+                    if (int.TryParse(reader.GetAttribute("val", WordprocessingMl), out int half) && half > 0)
+                    {
+                        fontSizePoints = half / 2.0; // OOXML w:sz is half-points
+                    }
+
+                    break;
+                case "vertAlign":
+                    vertAlign = reader.GetAttribute("val", WordprocessingMl) switch
+                    {
+                        "superscript" => WordVerticalAlign.Superscript,
+                        "subscript" => WordVerticalAlign.Subscript,
+                        _ => WordVerticalAlign.Baseline,
+                    };
+                    break;
             }
         }
 
-        return new RunFormat(bold, italic, underline, strike, color, highlight);
+        return new RunFormat(bold, italic, underline, strike, color, highlight,
+            fontFamily, fontSizePoints, vertAlign);
     }
 
     // An OOXML RRGGBB value -> "#rrggbb"; "auto"/"none"/empty -> null.

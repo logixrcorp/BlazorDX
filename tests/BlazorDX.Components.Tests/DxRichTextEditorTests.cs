@@ -22,7 +22,7 @@ public sealed class DxRichTextEditorTests : TestContext
         IRenderedComponent<DxRichTextEditor> editor = RenderComponent<DxRichTextEditor>(parameters => parameters
             .Add(e => e.AriaLabel, "Body"));
 
-        Assert.Equal(13, editor.FindAll(".dx-rte-tool").Count);  // B I U S H • 1. ⇤↔⇥≡ link clear
+        Assert.Equal(15, editor.FindAll(".dx-rte-tool").Count);  // B I U S x² x₂ H • 1. ⇤↔⇥≡ link clear
         var surface = editor.Find(".dx-rte-surface");
         Assert.Equal("true", surface.GetAttribute("contenteditable"));
         Assert.Equal("textbox", surface.GetAttribute("role"));
@@ -43,9 +43,9 @@ public sealed class DxRichTextEditorTests : TestContext
     {
         IRenderedComponent<DxRichTextEditor> editor = RenderComponent<DxRichTextEditor>();
 
-        // Two native color inputs, distinct from the 13 command tools.
+        // Two native color inputs, distinct from the 15 command tools.
         Assert.Equal(2, editor.FindAll(".dx-rte-color").Count);
-        Assert.Equal(13, editor.FindAll(".dx-rte-tool").Count);
+        Assert.Equal(15, editor.FindAll(".dx-rte-tool").Count);
         Assert.Single(editor.FindAll("[aria-label='Text color']"));
         Assert.Single(editor.FindAll("[aria-label='Highlight color']"));
 

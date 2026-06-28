@@ -1206,6 +1206,16 @@
             (highlight) paired with a CSS color. Passed to a model-driven host via
             <see cref="P:BlazorDX.Components.DxRichTextEditor.OnColorCommand"/>.</summary>
         </member>
+        <member name="T:BlazorDX.Components.ValueCommandArgs">
+            <summary>A value-carrying toolbar command: <c>fontName</c> (family) or <c>fontSize</c>
+            (points) paired with the chosen value. Passed to a model-driven host via
+            <see cref="P:BlazorDX.Components.DxRichTextEditor.OnValueCommand"/>.</summary>
+        </member>
+        <member name="M:BlazorDX.Components.ValueCommandArgs.#ctor(System.String,System.String)">
+            <summary>A value-carrying toolbar command: <c>fontName</c> (family) or <c>fontSize</c>
+            (points) paired with the chosen value. Passed to a model-driven host via
+            <see cref="P:BlazorDX.Components.DxRichTextEditor.OnValueCommand"/>.</summary>
+        </member>
         <member name="T:BlazorDX.Components.DxRichTextEditor">
             <summary>
             A WYSIWYG rich-text editor over a <c>contentEditable</c> region with a
@@ -1242,6 +1252,13 @@
             Optional interceptor for the color inputs (<c>foreColor</c> text, <c>hiliteColor</c>
             highlight). When set, picking a color invokes this callback instead of applying the
             color through the browser, so a model-driven host owns the edit (ADR-0015).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxRichTextEditor.OnValueCommand">
+            <summary>
+            Optional interceptor for the value dropdowns (<c>fontName</c> family, <c>fontSize</c>
+            points). When set, choosing a value invokes this instead of touching the DOM, so a
+            model-driven host owns the edit (ADR-0015).
             </summary>
         </member>
         <member name="M:BlazorDX.Components.DxRichTextEditor.PromptLinkAsync">

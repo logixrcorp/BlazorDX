@@ -403,9 +403,22 @@ public static class DocxWriter
         sb.Append("<w:r>");
         bool hasColor = !string.IsNullOrEmpty(run.Color);
         bool hasHighlight = !string.IsNullOrEmpty(run.Highlight);
-        if (run.Bold || run.Italic || run.Underline || run.Strike || hasColor || hasHighlight)
+        bool hasFont = !string.IsNullOrEmpty(run.FontFamily);
+        bool hasSize = run.FontSizePoints is > 0;
+        bool hasScript = run.VerticalAlign != WordVerticalAlign.Baseline;
+        if (run.Bold || run.Italic || run.Underline || run.Strike || hasColor || hasHighlight
+            || hasFont || hasSize || hasScript)
         {
             sb.Append("<w:rPr>");
+            if (hasFont)
+            {
+                sb.Append("<w:rFonts w:ascii=\"");
+                AppendEscaped(sb, run.FontFamily!);
+                sb.Append("\" w:hAnsi=\"");
+                AppendEscaped(sb, run.FontFamily!);
+                sb.Append("\"/>");
+            }
+
             if (run.Bold)
             {
                 sb.Append("<w:b/>");
@@ -431,11 +444,25 @@ public static class DocxWriter
                 sb.Append("<w:color w:val=\"").Append(HexValue(run.Color!)).Append("\"/>");
             }
 
+            if (hasSize)
+            {
+                // OOXML w:sz is in half-points.
+                int halfPoints = (int)Math.Round(run.FontSizePoints!.Value * 2);
+                sb.Append("<w:sz w:val=\"").Append(halfPoints.ToString(CultureInfo.InvariantCulture)).Append("\"/>");
+            }
+
             if (hasHighlight)
             {
                 // Arbitrary background via shading fill (w:highlight only allows named colors).
                 sb.Append("<w:shd w:val=\"clear\" w:color=\"auto\" w:fill=\"")
                   .Append(HexValue(run.Highlight!)).Append("\"/>");
+            }
+
+            if (hasScript)
+            {
+                sb.Append("<w:vertAlign w:val=\"")
+                  .Append(run.VerticalAlign == WordVerticalAlign.Superscript ? "superscript" : "subscript")
+                  .Append("\"/>");
             }
 
             sb.Append("</w:rPr>");

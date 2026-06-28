@@ -184,6 +184,12 @@ public static partial class WordHtml
             bool underline = run.Underline;
             bool strike = run.Strike;
             bool link = !string.IsNullOrEmpty(run.Href);
+            string? scriptTag = run.VerticalAlign switch
+            {
+                WordVerticalAlign.Superscript => "sup",
+                WordVerticalAlign.Subscript => "sub",
+                _ => null,
+            };
 
             if (link)
             {
@@ -212,8 +218,14 @@ public static partial class WordHtml
                 sb.Append("<s>");
             }
 
-            bool colored = !string.IsNullOrEmpty(run.Color) || !string.IsNullOrEmpty(run.Highlight);
-            if (colored)
+            if (scriptTag is not null)
+            {
+                sb.Append('<').Append(scriptTag).Append('>');
+            }
+
+            bool styled = !string.IsNullOrEmpty(run.Color) || !string.IsNullOrEmpty(run.Highlight)
+                || !string.IsNullOrEmpty(run.FontFamily) || run.FontSizePoints is > 0;
+            if (styled)
             {
                 sb.Append("<span style=\"");
                 if (!string.IsNullOrEmpty(run.Color))
@@ -226,14 +238,29 @@ public static partial class WordHtml
                     sb.Append("background-color:").Append(run.Highlight).Append(';');
                 }
 
+                if (!string.IsNullOrEmpty(run.FontFamily))
+                {
+                    sb.Append("font-family:").Append(run.FontFamily).Append(';');
+                }
+
+                if (run.FontSizePoints is > 0 and double pt)
+                {
+                    sb.Append("font-size:").Append(pt.ToString(CultureInfo.InvariantCulture)).Append("pt;");
+                }
+
                 sb.Append("\">");
             }
 
             AppendEscaped(sb, run.Text ?? string.Empty);
 
-            if (colored)
+            if (styled)
             {
                 sb.Append("</span>");
+            }
+
+            if (scriptTag is not null)
+            {
+                sb.Append("</").Append(scriptTag).Append('>');
             }
 
             if (strike)

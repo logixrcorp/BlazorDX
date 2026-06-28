@@ -287,6 +287,12 @@ public sealed class DxWordViewer : ComponentBase
             string? href = SafeHref(run.Href);
             bool link = href is not null;
             string? colorStyle = ColorStyle(run);
+            string? scriptTag = run.VerticalAlign switch
+            {
+                WordVerticalAlign.Superscript => "sup",
+                WordVerticalAlign.Subscript => "sub",
+                _ => null,
+            };
 
             if (link)
             {
@@ -315,6 +321,11 @@ public sealed class DxWordViewer : ComponentBase
                 builder.OpenElement(66, "s");
             }
 
+            if (scriptTag is not null)
+            {
+                builder.OpenElement(70, scriptTag);
+            }
+
             if (colorStyle is not null)
             {
                 builder.OpenElement(67, "span");
@@ -324,6 +335,11 @@ public sealed class DxWordViewer : ComponentBase
             builder.AddContent(69, run.Text);
 
             if (colorStyle is not null)
+            {
+                builder.CloseElement();
+            }
+
+            if (scriptTag is not null)
             {
                 builder.CloseElement();
             }
@@ -359,13 +375,17 @@ public sealed class DxWordViewer : ComponentBase
     {
         bool color = !string.IsNullOrEmpty(run.Color);
         bool highlight = !string.IsNullOrEmpty(run.Highlight);
-        if (!color && !highlight)
+        bool family = !string.IsNullOrEmpty(run.FontFamily);
+        bool size = run.FontSizePoints is > 0;
+        if (!color && !highlight && !family && !size)
         {
             return null;
         }
 
         return (color ? $"color:{run.Color};" : string.Empty)
-            + (highlight ? $"background-color:{run.Highlight};" : string.Empty);
+            + (highlight ? $"background-color:{run.Highlight};" : string.Empty)
+            + (family ? $"font-family:{run.FontFamily};" : string.Empty)
+            + (size ? $"font-size:{run.FontSizePoints!.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}pt;" : string.Empty);
     }
 
     // Only http/https/mailto URLs are clickable; anything else is dropped (rendered as

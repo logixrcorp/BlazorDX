@@ -231,6 +231,8 @@ public sealed partial class DxWordEditor : ComponentBase
                 EventCallback.Factory.Create<string>(this, HandleModelCommandAsync));
             builder.AddComponentParameter(29, nameof(DxRichTextEditor.OnColorCommand),
                 EventCallback.Factory.Create<ColorCommandArgs>(this, HandleModelColorAsync));
+            builder.AddComponentParameter(31, nameof(DxRichTextEditor.OnValueCommand),
+                EventCallback.Factory.Create<ValueCommandArgs>(this, HandleModelValueAsync));
         }
 
         builder.AddComponentReferenceCapture(30, rte => _rte = (DxRichTextEditor)rte);

@@ -124,6 +124,9 @@ public sealed record WordImage(
 /// </param>
 /// <param name="Color">Text color as <c>#RRGGBB</c> (<c>&lt;w:color&gt;</c> / CSS <c>color</c>), or null.</param>
 /// <param name="Highlight">Highlight/background as <c>#RRGGBB</c> (<c>&lt;w:shd&gt;</c> / CSS <c>background-color</c>), or null.</param>
+/// <param name="FontFamily">Font family, e.g. <c>Arial</c> (<c>&lt;w:rFonts&gt;</c> / CSS <c>font-family</c>), or null for the default.</param>
+/// <param name="FontSizePoints">Font size in points, e.g. <c>12</c> (<c>&lt;w:sz&gt;</c> half-points / CSS <c>font-size:…pt</c>), or null.</param>
+/// <param name="VerticalAlign">Baseline (default), superscript, or subscript (<c>&lt;w:vertAlign&gt;</c> / <c>&lt;sup&gt;</c>/<c>&lt;sub&gt;</c>).</param>
 public sealed record WordRun(
     string Text,
     bool Bold = false,
@@ -132,4 +135,20 @@ public sealed record WordRun(
     bool Strike = false,
     string? Href = null,
     string? Color = null,
-    string? Highlight = null);
+    string? Highlight = null,
+    string? FontFamily = null,
+    double? FontSizePoints = null,
+    WordVerticalAlign VerticalAlign = WordVerticalAlign.Baseline);
+
+/// <summary>Baseline (normal), superscript, or subscript positioning of a run's text.</summary>
+public enum WordVerticalAlign
+{
+    /// <summary>Normal baseline (the default; emits no markup).</summary>
+    Baseline,
+
+    /// <summary>Raised, smaller text (<c>&lt;sup&gt;</c> / <c>w:vertAlign="superscript"</c>).</summary>
+    Superscript,
+
+    /// <summary>Lowered, smaller text (<c>&lt;sub&gt;</c> / <c>w:vertAlign="subscript"</c>).</summary>
+    Subscript,
+}
