@@ -255,8 +255,18 @@ public sealed class DxWordViewer : ComponentBase
         builder.SetKey("head");
         foreach (WordTableCell cell in rows[0].Cells)
         {
+            if (cell.ColSpan == 0)
+            {
+                continue; // covered by a merge to its left
+            }
+
             builder.OpenElement(44, "th");
             builder.AddAttribute(45, "scope", "col");
+            if (cell.ColSpan > 1)
+            {
+                builder.AddAttribute(51, "colspan", cell.ColSpan);
+            }
+
             if (!string.IsNullOrEmpty(cell.Shading))
             {
                 builder.AddAttribute(49, "style", $"background-color:{cell.Shading};");
@@ -278,7 +288,17 @@ public sealed class DxWordViewer : ComponentBase
                 builder.SetKey(r);
                 foreach (WordTableCell cell in rows[r].Cells)
                 {
+                    if (cell.ColSpan == 0)
+                    {
+                        continue; // covered by a merge to its left
+                    }
+
                     builder.OpenElement(48, "td");
+                    if (cell.ColSpan > 1)
+                    {
+                        builder.AddAttribute(52, "colspan", cell.ColSpan);
+                    }
+
                     if (!string.IsNullOrEmpty(cell.Shading))
                     {
                         builder.AddAttribute(50, "style", $"background-color:{cell.Shading};");

@@ -46,4 +46,27 @@ public sealed class DxWordRoundTripTests
         Assert.Equal(1.5, viaDocx.LineSpacing);
         Assert.Equal(2, viaDocx.IndentLevel);
     }
+
+    [Fact]
+    public void Merged_cell_colspan_round_trips_through_html_and_docx()
+    {
+        // Row 0: a colspan-2 anchor + its covered cell; row 1: two normal cells.
+        WordDocument doc = new(
+        [
+            new WordTable(
+            [
+                new WordTableRow([new WordTableCell([new WordRun("Merged")], null, 2), new WordTableCell([], null, 0)]),
+                new WordTableRow([new WordTableCell([new WordRun("A")]), new WordTableCell([new WordRun("B")])]),
+            ]),
+        ]);
+
+        foreach (WordDocument rt in new[] { WordHtml.FromHtml(WordHtml.ToHtml(doc)), DocxReader.Read(DocxWriter.Write(doc)) })
+        {
+            WordTable table = rt.Blocks.OfType<WordTable>().Single();
+            Assert.Equal(2, table.Rows[0].Cells[0].ColSpan); // anchor span preserved
+            Assert.Equal(0, table.Rows[0].Cells[1].ColSpan); // covered cell re-synthesized (rows stay rectangular)
+            Assert.Equal("Merged", Text(table.Rows[0].Cells[0].Runs));
+            Assert.Equal(2, table.Rows[1].Cells.Count);      // the unmerged row is intact
+        }
+    }
 }

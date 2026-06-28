@@ -42,6 +42,133 @@ public sealed partial class DxWordEditor
             && int.TryParse(parts[2], out col);
     }
 
+    private async Task MergeCellRightAsync()
+    {
+        if (_rte is not null && TryParseCell(await _rte.GetTableCellAsync(), out int t, out int r, out int c))
+        {
+            await CommitModelEditAsync(MergeCellRight(Current, t, r, c));
+        }
+    }
+
+    private async Task SplitCellAsync()
+    {
+        if (_rte is not null && TryParseCell(await _rte.GetTableCellAsync(), out int t, out int r, out int c))
+        {
+            await CommitModelEditAsync(UnmergeCell(Current, t, r, c));
+        }
+    }
+
+    // Merges the caret cell with the next visible cell to its right (horizontal merge): the anchor
+    // absorbs the neighbour's span and content; the row stays rectangular via covered cells. The
+    // column is a VISUAL index (covered cells aren't rendered), mapped back to the model.
+    private static WordDocument MergeCellRight(WordDocument document, int tableIndex, int row, int visualCol) =>
+        MapTable(document, tableIndex, table =>
+        {
+            if (row < 0 || row >= table.Rows.Count)
+            {
+                return table;
+            }
+
+            var cells = table.Rows[row].Cells.ToList();
+            int a = VisibleToModel(cells, visualCol);
+            int b = a < 0 ? -1 : NextVisible(cells, a + 1);
+            if (b < 0)
+            {
+                return table; // nothing to the right
+            }
+
+            int newSpan = cells[a].ColSpan + cells[b].ColSpan;
+            cells[a] = cells[a] with { ColSpan = newSpan, Runs = cells[a].Runs.Concat(cells[b].Runs).ToList() };
+            for (int i = a + 1; i < a + newSpan && i < cells.Count; i++)
+            {
+                cells[i] = new WordTableCell([], null, 0);
+            }
+
+            return ReplaceRow(table, row, cells);
+        });
+
+    // Splits a merged cell back into individual cells (anchor ColSpan -> 1, covered cells restored).
+    private static WordDocument UnmergeCell(WordDocument document, int tableIndex, int row, int visualCol) =>
+        MapTable(document, tableIndex, table =>
+        {
+            if (row < 0 || row >= table.Rows.Count)
+            {
+                return table;
+            }
+
+            var cells = table.Rows[row].Cells.ToList();
+            int a = VisibleToModel(cells, visualCol);
+            if (a < 0 || cells[a].ColSpan <= 1)
+            {
+                return table;
+            }
+
+            int span = cells[a].ColSpan;
+            cells[a] = cells[a] with { ColSpan = 1 };
+            for (int i = a + 1; i < a + span && i < cells.Count; i++)
+            {
+                cells[i] = new WordTableCell([]);
+            }
+
+            return ReplaceRow(table, row, cells);
+        });
+
+    private static WordTable ReplaceRow(WordTable table, int row, List<WordTableCell> cells)
+    {
+        var rows = table.Rows.ToArray();
+        rows[row] = new WordTableRow(cells);
+        return new WordTable(rows);
+    }
+
+    // The model index of the visualCol-th rendered (non-covered) cell, or -1.
+    private static int VisibleToModel(List<WordTableCell> cells, int visualCol)
+    {
+        int visible = -1;
+        for (int i = 0; i < cells.Count; i++)
+        {
+            if (cells[i].ColSpan != 0 && ++visible == visualCol)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private static int NextVisible(List<WordTableCell> cells, int from)
+    {
+        for (int i = from; i < cells.Count; i++)
+        {
+            if (cells[i].ColSpan != 0)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    // Applies a transform to the tableIndex-th table (document order); other blocks pass through.
+    private static WordDocument MapTable(WordDocument document, int tableIndex, Func<WordTable, WordTable> map)
+    {
+        var blocks = new WordBlock[document.Blocks.Count];
+        int seen = -1;
+        for (int i = 0; i < document.Blocks.Count; i++)
+        {
+            if (document.Blocks[i] is WordTable table)
+            {
+                seen++;
+                blocks[i] = seen == tableIndex ? map(table) : table;
+            }
+            else
+            {
+                blocks[i] = document.Blocks[i];
+            }
+        }
+
+        return new WordDocument(blocks);
+    }
+
     // Returns a copy of the document with the given cell of the tableIndex-th table shaded.
     // Out-of-range targets are a no-op.
     private static WordDocument SetCellShading(WordDocument document, int tableIndex, int row, int col, string color)

@@ -781,7 +781,14 @@ public static partial class DocxReader
                 && reader.LocalName == "tc"
                 && reader.NamespaceURI == WordprocessingMl)
             {
-                cells.Add(ReadTableCell(reader, linkRels));
+                WordTableCell cell = ReadTableCell(reader, linkRels);
+                cells.Add(cell);
+
+                // A gridSpan-N cell maps to one anchor + N-1 covered cells, keeping rows rectangular.
+                for (int s = 1; s < cell.ColSpan; s++)
+                {
+                    cells.Add(new WordTableCell([], null, 0));
+                }
             }
         }
 
@@ -800,6 +807,7 @@ public static partial class DocxReader
         int cellDepth = reader.Depth;
         List<WordRun> runs = [];
         string? shading = null;
+        int colSpan = 1;
 
         while (reader.Read())
         {
@@ -810,14 +818,16 @@ public static partial class DocxReader
                 break;
             }
 
-            // The cell's own <w:tcPr> (direct child) carries shading; run-level <w:shd> inside
-            // paragraphs is a separate highlight and is read elsewhere.
+            // The cell's own <w:tcPr> (direct child) carries shading + grid span; run-level
+            // <w:shd> inside paragraphs is a separate highlight and is read elsewhere.
             if (reader.NodeType == XmlNodeType.Element
                 && reader.LocalName == "tcPr"
                 && reader.Depth == cellDepth + 1
                 && reader.NamespaceURI == WordprocessingMl)
             {
-                shading = ReadCellShading(reader) ?? shading;
+                (string? fill, int span) = ReadCellProperties(reader);
+                shading = fill ?? shading;
+                colSpan = span;
                 continue;
             }
 
@@ -837,20 +847,21 @@ public static partial class DocxReader
             }
         }
 
-        return new WordTableCell(CoalesceRuns(runs), shading);
+        return new WordTableCell(CoalesceRuns(runs), shading, colSpan);
     }
 
-    // Reads a cell's <w:tcPr>, returning its shading fill as #RRGGBB (or null). Positioned on
-    // the tcPr start element; consumes through its end.
-    private static string? ReadCellShading(XmlReader reader)
+    // Reads a cell's <w:tcPr>, returning its shading fill (#RRGGBB or null) and grid span
+    // (>=1). Positioned on the tcPr start element; consumes through its end.
+    private static (string? Shading, int ColSpan) ReadCellProperties(XmlReader reader)
     {
         if (reader.IsEmptyElement)
         {
-            return null;
+            return (null, 1);
         }
 
         int depth = reader.Depth;
         string? fill = null;
+        int colSpan = 1;
         while (reader.Read())
         {
             if (reader.NodeType == XmlNodeType.EndElement && reader.Depth == depth && reader.LocalName == "tcPr")
@@ -858,14 +869,24 @@ public static partial class DocxReader
                 break;
             }
 
-            if (reader.NodeType == XmlNodeType.Element && reader.LocalName == "shd"
-                && reader.NamespaceURI == WordprocessingMl)
+            if (reader.NodeType != XmlNodeType.Element || reader.NamespaceURI != WordprocessingMl)
+            {
+                continue;
+            }
+
+            if (reader.LocalName == "shd")
             {
                 fill = HexColor(reader.GetAttribute("fill", WordprocessingMl)) ?? fill;
             }
+            else if (reader.LocalName == "gridSpan"
+                && int.TryParse(reader.GetAttribute("val", WordprocessingMl),
+                    NumberStyles.Integer, CultureInfo.InvariantCulture, out int span) && span > 1)
+            {
+                colSpan = span;
+            }
         }
 
-        return fill;
+        return (fill, colSpan);
     }
 
 }

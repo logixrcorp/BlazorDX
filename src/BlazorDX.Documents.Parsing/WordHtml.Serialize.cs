@@ -169,16 +169,24 @@ public static partial class WordHtml
             string cellTag = r == 0 ? "th" : "td";
             foreach (WordTableCell cell in rows[r].Cells)
             {
+                if (cell.ColSpan == 0)
+                {
+                    continue; // covered by a merge to its left — not a real DOM cell
+                }
+
                 string shade = string.IsNullOrEmpty(cell.Shading)
                     ? string.Empty
                     : " style=\"background-color:" + cell.Shading + ";\"";
+                string span = cell.ColSpan > 1
+                    ? " colspan=\"" + cell.ColSpan.ToString(CultureInfo.InvariantCulture) + "\""
+                    : string.Empty;
                 if (r == 0)
                 {
-                    sb.Append("<th scope=\"col\"").Append(shade).Append('>');
+                    sb.Append("<th scope=\"col\"").Append(span).Append(shade).Append('>');
                 }
                 else
                 {
-                    sb.Append("<td").Append(shade).Append('>');
+                    sb.Append("<td").Append(span).Append(shade).Append('>');
                 }
 
                 AppendRuns(sb, cell.Runs);

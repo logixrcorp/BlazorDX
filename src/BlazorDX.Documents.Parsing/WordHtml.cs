@@ -236,6 +236,7 @@ public static partial class WordHtml
         private List<WordTableCell>? _rowCells;
         private bool _inCell;
         private string? _cellShading;
+        private int _cellColSpan = 1;
 
         public List<WordBlock> Parse()
         {
@@ -599,6 +600,7 @@ public static partial class WordHtml
                         _rowCells ??= [];
                         _inCell = true;
                         _cellShading = ParseCssColor(tag.Text, "background-color");
+                        _cellColSpan = Math.Clamp(ParseLeadingInt(ReadAttribute(tag.Text, "colspan")), 1, 64);
                         ResetRuns();
                     }
 
@@ -714,9 +716,17 @@ public static partial class WordHtml
             }
 
             _rowCells ??= [];
-            _rowCells.Add(new WordTableCell(Snapshot(), _cellShading));
+            _rowCells.Add(new WordTableCell(Snapshot(), _cellShading, _cellColSpan));
+
+            // Keep the row rectangular: a colspan-N cell is followed by N-1 covered cells.
+            for (int s = 1; s < _cellColSpan; s++)
+            {
+                _rowCells.Add(new WordTableCell([], null, 0));
+            }
+
             _inCell = false;
             _cellShading = null;
+            _cellColSpan = 1;
             ResetRuns();
         }
 

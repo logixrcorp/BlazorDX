@@ -502,11 +502,29 @@ public static class DocxWriter
             sb.Append("<w:tr>");
             foreach (WordTableCell cell in row.Cells)
             {
-                sb.Append("<w:tc>");
-                if (!string.IsNullOrEmpty(cell.Shading))
+                if (cell.ColSpan == 0)
                 {
-                    sb.Append("<w:tcPr><w:shd w:val=\"clear\" w:color=\"auto\" w:fill=\"")
-                      .Append(HexValue(cell.Shading!)).Append("\"/></w:tcPr>");
+                    continue; // covered cell: gridSpan on the anchor accounts for these columns
+                }
+
+                sb.Append("<w:tc>");
+                bool hasShade = !string.IsNullOrEmpty(cell.Shading);
+                if (hasShade || cell.ColSpan > 1)
+                {
+                    sb.Append("<w:tcPr>");
+                    if (cell.ColSpan > 1)
+                    {
+                        sb.Append("<w:gridSpan w:val=\"")
+                          .Append(cell.ColSpan.ToString(CultureInfo.InvariantCulture)).Append("\"/>");
+                    }
+
+                    if (hasShade)
+                    {
+                        sb.Append("<w:shd w:val=\"clear\" w:color=\"auto\" w:fill=\"")
+                          .Append(HexValue(cell.Shading!)).Append("\"/>");
+                    }
+
+                    sb.Append("</w:tcPr>");
                 }
 
                 // A cell is a paragraph of runs (the reader gathers paragraph runs).

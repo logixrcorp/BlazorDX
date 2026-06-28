@@ -104,7 +104,13 @@ public sealed record WordTableRow(IReadOnlyList<WordTableCell> Cells);
 /// <summary>One table cell: the inline runs of its (first) paragraph's text.</summary>
 /// <param name="Runs">The inline runs making up the cell text.</param>
 /// <param name="Shading">Cell background as <c>#RRGGBB</c> (<c>&lt;w:tcPr&gt;&lt;w:shd&gt;</c> / CSS <c>background-color</c>), or null.</param>
-public sealed record WordTableCell(IReadOnlyList<WordRun> Runs, string? Shading = null);
+/// <param name="ColSpan">
+/// Horizontal span: <c>1</c> = a normal cell, <c>N &gt; 1</c> = a merge anchor spanning N grid
+/// columns (<c>&lt;w:gridSpan&gt;</c> / <c>colspan</c>), <c>0</c> = a covered cell hidden by a merge to
+/// its left. Rows stay rectangular (covered cells are kept) so row/column edits remain simple; the
+/// serializers skip covered cells and emit the span on the anchor.
+/// </param>
+public sealed record WordTableCell(IReadOnlyList<WordRun> Runs, string? Shading = null, int ColSpan = 1);
 
 /// <summary>
 /// An embedded image (block-level). Carries the raw bytes and media type so it can be
