@@ -56,9 +56,15 @@ public sealed class PowerBiEmbedE2ETests(PlaywrightFixture fx)
         await page.GotoAsync($"{fx.BaseUrl}/powerbi",
             new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle, Timeout = 60_000 });
 
-        // Wait until the stub recorded the embed config the wrapper passed it. This
-        // proves the loop ran: server got the embed token from the mock REST
-        // GenerateToken -> returned config to the client -> wrapper called embed().
+        // Gate on the WASM runtime being live first (NetworkIdle covers downloads, not the
+        // post-download boot), so a slow cold-boot on a 2-core webkit runner doesn't eat into the
+        // embed wait below. Mirrors Powerbi_page_hydrates_without_console_errors.
+        await page.WaitForFunctionAsync("() => !!window.DotNet", null,
+            new PageWaitForFunctionOptions { Timeout = 60_000 });
+
+        // Then wait until the stub recorded the embed config the wrapper passed it. This proves the
+        // loop ran: server got the embed token from the mock REST GenerateToken -> returned config
+        // to the client -> wrapper called embed().
         await page.WaitForFunctionAsync("() => !!window.__lastEmbed",
             null, new PageWaitForFunctionOptions { Timeout = 45_000 });
 
