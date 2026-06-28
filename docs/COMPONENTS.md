@@ -70,7 +70,7 @@ sample app (`samples/BlazorDX.Demo`).
 
 | Component | What it does | Demo |
 |---|---|---|
-| `DxScheduler` | Week calendar with time-positioned event blocks | `/scheduler` |
+| `DxScheduler` | Week / Month / Day calendar with time-positioned event blocks, RRULE-style recurrence, and pointer drag-to-move / drag-to-create | `/scheduler` |
 | `DxGantt` | Task timeline bars with progress fills | `/gantt` |
 
 ## Editors, files & AI
@@ -80,7 +80,7 @@ sample app (`samples/BlazorDX.Demo`).
 | `DxMarkdown` / `DxMarkdownEditor` | Safe Markdown renderer (encode-then-format) + live editor | `/markdown` |
 | `DxRichTextEditor` | WYSIWYG over contentEditable, routed through an **injected** sanitizer | `/richtext` |
 | `DxChat` | AI chat surface (assistant turns render via `DxMarkdown`) | `/chat` |
-| `DxFileManager` | Two-pane folder tree + contents with breadcrumb | `/files` |
+| `DxFileManager` | Two-pane folder tree + contents with breadcrumb, hybrid drag-and-drop, and opt-in two-sided SHA-256 upload integrity verification | `/files` |
 
 ## Documents & reporting
 

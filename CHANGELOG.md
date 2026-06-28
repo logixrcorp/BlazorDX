@@ -7,6 +7,36 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 > **Beta.** BlazorDX is pre-1.0 and built with substantial AI assistance. Breaking
 > changes can land in any minor release until 1.0.
 
+## [Unreleased]
+
+### Added
+
+- **Scheduler recurrence (`DxScheduler` / `SchedulerPrimitive`).** `SchedulerEvent` gains an
+  optional RRULE-style `Recurrence` rule — `Daily` / `Weekly` / `Monthly` with `Interval`,
+  `Count`, `Until`, and weekly `ByWeekday`. Seeds are expanded into concrete occurrences for the
+  visible window only (never an unbounded series); `Count` is measured from the seed, so paging
+  the view never shifts the dates a rule produces. Pure C#, AOT/trim-safe, bounded by a safety cap.
+- **Scheduler drag-to-move / drag-to-create** on the Week/Day time grid. A thin TypeScript pointer
+  bridge (`scheduler.ts` via the new `ISchedulerInterop`) snaps the gesture to the day column and
+  half-hour, shows a move ghost / create preview, and auto-scrolls near the grid edges; all date
+  math, index re-validation, and clamping stay in C# (`ApplyMoveAsync` / `ApplyCreateAsync` raising
+  `OnEventMoved` / `OnRangeCreated`). Recurrence occurrences are not directly draggable. Drag is a
+  progressive enhancement — keyboard navigation and click-to-select are unchanged, and the server
+  uses a no-op bridge.
+- **File-upload integrity verification (`DxFileManager`).** Opt-in `VerifyIntegrity` hashes each
+  uploaded file in the browser with Web Crypto, then re-hashes the received `IBrowserFile` stream
+  and compares, raising a per-file `FileIntegrityResult` via `OnUploadVerified` so corruption in
+  transit is caught before the host writes anything. The receiving-side verifier (`FileHasher`) is
+  streaming (`IncrementalHash`, never fully buffers) and constant-time; **SHA-256 by default**
+  (SHA-1 is supported but never the default — a broken primitive). New client bridge
+  `IFileHashInterop` / `file-hash.ts`.
+
+### Fixed
+
+- **Demo:** the Power BI playground sample embed (`/powerbi` in production) returned 502 — the
+  upstream playground backend host was retired. Repointed at the playground's current
+  `GenerateToken` endpoint and fixed the (now lowercase) JSON key parsing.
+
 ## [0.3.7] — 2026-06-26
 
 ### Added

@@ -50,6 +50,8 @@ builder.Services.AddScoped<MyAppStore>();
 <link rel="stylesheet" href="_content/BlazorDX.Components/dx-form.css" />
 <link rel="stylesheet" href="_content/BlazorDX.Components/dx-chart.css" />
 <link rel="stylesheet" href="_content/BlazorDX.Components/dx-display.css" />
+<link rel="stylesheet" href="_content/BlazorDX.Components/dx-scheduler.css" />   <!-- DxScheduler / DxGantt -->
+<link rel="stylesheet" href="_content/BlazorDX.Components/dx-filemanager.css" /> <!-- DxFileManager -->
 ```
 
 ### Render modes & usings
@@ -194,6 +196,56 @@ read the columns to persist.
 <DxAlert Severity="warning">Heads up.</DxAlert>
 <DxSpinner /> <DxProgress Value="65" /> <DxSkeleton Width="70%" Height="1rem" />
 ```
+
+### DxScheduler (Week / Month / Day calendar)
+`SchedulerEvent(Title, Start, End, Color?, Category?, Recurrence?)`. Bind `WeekStart` and `View`.
+Set a `Recurrence` to repeat an event; the scheduler expands it for the visible window. On the
+time grid, drag an event to move it and drag empty grid to create — handle the results and mutate
+your own event list (a recurrence occurrence is not directly draggable). Category renders as text,
+never colour alone.
+```razor
+@using BlazorDX.Primitives.Scheduling
+<DxScheduler Events="events" @bind-WeekStart="weekStart" @bind-View="view"
+             StartHour="8" EndHour="18"
+             OnEventMoved="OnMoved" OnRangeCreated="OnCreated" OnEventSelected="OnSel" />
+@code {
+    private DateOnly weekStart = DateOnly.FromDateTime(DateTime.Today);
+    private SchedulerView view = SchedulerView.Week;
+    // The seed's time-of-day + duration anchor every occurrence; ByWeekday picks the days.
+    private readonly List<SchedulerEvent> events = new()
+    {
+        new SchedulerEvent("Standup",
+            DateTime.Today.AddHours(9), DateTime.Today.AddHours(9.5), Category: "Meeting",
+            Recurrence: new Recurrence(RecurrenceFrequency.Weekly,
+                ByWeekday: new[] { DayOfWeek.Monday, DayOfWeek.Wednesday, DayOfWeek.Friday })),
+    };
+    private void OnMoved(SchedulerEventMove m)   // move an existing (non-recurring) event
+    {
+        int i = events.IndexOf(m.Original);
+        if (i >= 0) events[i] = m.Original with { Start = m.NewStart, End = m.NewEnd };
+    }
+    private void OnCreated(SchedulerRange r) => events.Add(new SchedulerEvent("New", r.Start, r.End));
+    private void OnSel(SchedulerEvent e) { /* open/edit */ }
+}
+```
+
+### DxFileManager (two-pane tree + upload, optional integrity)
+Drag-and-drop is a hybrid enhancement with keyboard-equivalent paths. `OnUpload` gives real
+`IBrowserFile` streams. Set `VerifyIntegrity="true"` to hash each upload in the browser (Web
+Crypto, SHA-256 default) and re-hash it server-side, reporting a per-file `FileIntegrityResult`
+through `OnUploadVerified` — refuse to write a file whose `Verified` is false.
+```razor
+<DxFileManager Roots="roots" VerifyIntegrity="true"
+               OnUpload="OnUpload" OnUploadVerified="OnVerified" OnItemMove="OnMove" />
+@code {
+    private void OnVerified(IReadOnlyList<FileIntegrityResult> results)
+    {
+        foreach (var r in results.Where(x => !x.Verified)) { /* reject r.Name; do not persist */ }
+    }
+}
+```
+Server-side, re-hash any stream with the same primitive: `BlazorDX.Primitives.Files.FileHasher`
+(`ComputeHexAsync` / `VerifyAsync`) — streaming `IncrementalHash`, constant-time compare.
 
 ---
 

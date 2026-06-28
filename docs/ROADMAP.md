@@ -126,7 +126,10 @@ the differentiator. Where it makes sense, we expose clean integration seams inst
 - Report **designer** (authoring RDL/RDLC), not just viewing
 - Document **generation engines** beyond the existing export (`.xlsx` / PDF / CSV)
 - Mapping / GIS
-- Outlook-depth recurring scheduler, diagram/flowchart engine
+- *Outlook-depth* recurring scheduler (full RRULE: exceptions/EXDATE, per-occurrence edits,
+  timezone rules). `DxScheduler` ships core recurrence — daily/weekly/monthly with
+  interval/count/until and weekly by-weekday — plus drag-to-move/create; the deep cases above
+  stay out of scope. Diagram/flowchart engine.
 
 ## Sequencing
 
