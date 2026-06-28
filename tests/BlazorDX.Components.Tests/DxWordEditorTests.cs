@@ -804,6 +804,37 @@ public sealed class DxWordEditorTests : TestContext
         Assert.Null(para.Runs[^1].Href);                        // " world" untouched
     }
 
+    [Fact]
+    public void Keyboard_shortcut_bold_edits_the_model_and_undo_shortcut_reverts()
+    {
+        FakeRichTextInterop fake = new() { SelectionRange = "0,0,5" }; // selection over "Hello"
+        Services.AddScoped<IRichTextInterop>(_ => fake);
+
+        WordDocument? changed = null;
+        WordDocument doc = new([new WordParagraph([new WordRun("Hello world")])]);
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, doc)
+            .Add(e => e.EditingCore, EditingCore.ModelDriven)
+            .Add(e => e.DocumentChanged, EventCallback.Factory.Create<WordDocument>(this, d => changed = d)));
+
+        Assert.NotNull(fake.Shortcut); // the editor subscribed its shortcut handler on first render
+
+        // Ctrl+B → model-driven bold over the selection (not the browser's execCommand).
+        editor.InvokeAsync(() => fake.Shortcut!("bold"));
+        editor.WaitForAssertion(() =>
+        {
+            WordParagraph para = changed!.Blocks.OfType<WordParagraph>().Single();
+            Assert.True(para.Runs[0].Bold);
+            Assert.Equal("Hello", para.Runs[0].Text);
+        });
+        Assert.True(editor.Instance.CanUndo);
+
+        // Ctrl+Z → our model history undo (not the browser's contentEditable undo).
+        editor.InvokeAsync(() => fake.Shortcut!("undo"));
+        editor.WaitForAssertion(() =>
+            Assert.All(changed!.Blocks.OfType<WordParagraph>().Single().Runs, r => Assert.False(r.Bold)));
+    }
+
     private sealed class FakeRichTextInterop : IRichTextInterop
     {
         public string TableCell { get; init; } = string.Empty;
@@ -834,6 +865,14 @@ public sealed class DxWordEditorTests : TestContext
         public ValueTask<string> GetHtmlAsync(string e) => ValueTask.FromResult(string.Empty);
         public ValueTask SetHtmlAsync(string e, string h) => ValueTask.CompletedTask;
         public ValueTask FocusAsync(string e) => ValueTask.CompletedTask;
+
+        // Captures the keyboard-shortcut callback so a test can fire a shortcut without JS.
+        public Action<string>? Shortcut { get; private set; }
+        public ValueTask SubscribeShortcutsAsync(string e, Action<string> onShortcut)
+        {
+            Shortcut = onShortcut;
+            return ValueTask.CompletedTask;
+        }
     }
 
     private static string Text(IReadOnlyList<WordRun> runs) =>

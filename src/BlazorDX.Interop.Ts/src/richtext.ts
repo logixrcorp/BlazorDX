@@ -90,6 +90,38 @@ export function focusEditor(elementId: string): void {
   document.getElementById(elementId)?.focus();
 }
 
+// Wires Ctrl/Cmd keyboard shortcuts on the editor surface to .NET, mapping each to a command
+// string: B/I/U -> bold/italic/underline, K -> createLink, Z -> undo (Shift+Z or Y -> redo).
+// preventDefault() is selective — only for handled shortcuts — so normal typing is untouched
+// and the browser's own contentEditable bold/undo (which would bypass a model-driven editor)
+// never fires. The handler is GC'd with the element on navigation.
+export function subscribeShortcuts(elementId: string, onShortcut: (command: string) => void): void {
+  const el = document.getElementById(elementId);
+  if (el === null) {
+    return;
+  }
+
+  el.addEventListener("keydown", (e: KeyboardEvent) => {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) {
+      return;
+    }
+
+    let command = "";
+    switch (e.key.toLowerCase()) {
+      case "b": command = "bold"; break;
+      case "i": command = "italic"; break;
+      case "u": command = "underline"; break;
+      case "k": command = "createLink"; break;
+      case "z": command = e.shiftKey ? "redo" : "undo"; break;
+      case "y": command = "redo"; break;
+      default: return;
+    }
+
+    e.preventDefault();
+    onShortcut(command);
+  });
+}
+
 // Selects the next/previous occurrence of `query` in the editor (wrapping at the ends) and
 // scrolls it into view, relative to the current caret. Returns the 1-based index of the
 // selected match, or 0 if there are none. Search runs over the live text nodes, so it owns

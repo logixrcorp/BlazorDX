@@ -93,6 +93,12 @@ public sealed partial class RichTextInterop : IRichTextInterop
         FocusEditor(elementId);
     }
 
+    public async ValueTask SubscribeShortcutsAsync(string elementId, Action<string> onShortcut)
+    {
+        await EnsureLoadedAsync();
+        SubscribeShortcuts(elementId, onShortcut);
+    }
+
     [JSImport("exec", ModuleName)]
     private static partial void Exec(string command, string value);
 
@@ -125,4 +131,9 @@ public sealed partial class RichTextInterop : IRichTextInterop
 
     [JSImport("focusEditor", ModuleName)]
     private static partial void FocusEditor(string elementId);
+
+    [JSImport("subscribeShortcuts", ModuleName)]
+    private static partial void SubscribeShortcuts(
+        string elementId,
+        [JSMarshalAs<JSType.Function<JSType.String>>] Action<string> onShortcut);
 }

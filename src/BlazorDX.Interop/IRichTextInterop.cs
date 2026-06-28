@@ -68,4 +68,12 @@ public interface IRichTextInterop
 
     /// <summary>Moves focus into the editor element.</summary>
     ValueTask FocusAsync(string elementId);
+
+    /// <summary>
+    /// Wires Ctrl/Cmd keyboard shortcuts on the editor element to <paramref name="onShortcut"/>,
+    /// which receives the mapped command (<c>bold</c>/<c>italic</c>/<c>underline</c>/
+    /// <c>createLink</c>/<c>undo</c>/<c>redo</c>). The bridge calls <c>preventDefault</c> only for
+    /// handled shortcuts, so the browser's own contentEditable commands never bypass the model.
+    /// </summary>
+    ValueTask SubscribeShortcutsAsync(string elementId, Action<string> onShortcut);
 }

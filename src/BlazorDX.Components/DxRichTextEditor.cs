@@ -48,6 +48,13 @@ public sealed class DxRichTextEditor : ComponentBase
     /// </summary>
     [Parameter] public EventCallback<string> OnCommand { get; set; }
 
+    /// <summary>Invoked for the undo keyboard shortcut (Ctrl/Cmd+Z), so a host can drive its
+    /// own history instead of the browser's contentEditable undo.</summary>
+    [Parameter] public EventCallback OnUndo { get; set; }
+
+    /// <summary>Invoked for the redo keyboard shortcut (Ctrl/Cmd+Y or Shift+Ctrl/Cmd+Z).</summary>
+    [Parameter] public EventCallback OnRedo { get; set; }
+
     /// <summary>
     /// Optional interceptor for the color inputs (<c>foreColor</c> text, <c>hiliteColor</c>
     /// highlight). When set, picking a color invokes this callback instead of applying the
@@ -130,10 +137,47 @@ public sealed class DxRichTextEditor : ComponentBase
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && !string.IsNullOrEmpty(Value))
+        if (!firstRender)
+        {
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(Value))
         {
             lastEmitted = ActiveSanitizer.Sanitize(Value).Value;
             await Interop.SetHtmlAsync(editorId, lastEmitted);
+        }
+
+        // Ctrl/Cmd keyboard shortcuts route through the same command/history path as the
+        // toolbar, with the bridge suppressing the browser's native (model-bypassing) defaults.
+        await Interop.SubscribeShortcutsAsync(editorId, OnShortcut);
+    }
+
+    // The bridge calls this (off the JS keydown) with a mapped command; marshal back onto the
+    // renderer's context and run it through the normal command/history path.
+    private void OnShortcut(string command) => _ = InvokeAsync(() => HandleShortcutAsync(command));
+
+    private async Task HandleShortcutAsync(string command)
+    {
+        switch (command)
+        {
+            case "undo":
+                if (OnUndo.HasDelegate)
+                {
+                    await OnUndo.InvokeAsync();
+                }
+
+                break;
+            case "redo":
+                if (OnRedo.HasDelegate)
+                {
+                    await OnRedo.InvokeAsync();
+                }
+
+                break;
+            default:
+                await CommandAsync(command, string.Empty);
+                break;
         }
     }
 

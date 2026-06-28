@@ -217,16 +217,21 @@ public sealed partial class DxWordEditor : ComponentBase
         builder.AddComponentParameter(23, nameof(DxRichTextEditor.Sanitizer), Sanitizer);
         builder.AddComponentParameter(24, nameof(DxRichTextEditor.AriaLabel), Label);
         builder.AddComponentParameter(25, nameof(DxRichTextEditor.Class), "dx-word-editor-surface");
+        // Keyboard undo/redo drive our model history (not the browser's), in both editing cores.
+        builder.AddComponentParameter(26, nameof(DxRichTextEditor.OnUndo),
+            EventCallback.Factory.Create(this, UndoAsync));
+        builder.AddComponentParameter(27, nameof(DxRichTextEditor.OnRedo),
+            EventCallback.Factory.Create(this, RedoAsync));
         if (EditingCore == EditingCore.ModelDriven)
         {
             // Intercept the formatting buttons + color inputs so they edit the model, not the DOM.
-            builder.AddComponentParameter(26, nameof(DxRichTextEditor.OnCommand),
+            builder.AddComponentParameter(28, nameof(DxRichTextEditor.OnCommand),
                 EventCallback.Factory.Create<string>(this, HandleModelCommandAsync));
-            builder.AddComponentParameter(27, nameof(DxRichTextEditor.OnColorCommand),
+            builder.AddComponentParameter(29, nameof(DxRichTextEditor.OnColorCommand),
                 EventCallback.Factory.Create<ColorCommandArgs>(this, HandleModelColorAsync));
         }
 
-        builder.AddComponentReferenceCapture(28, rte => _rte = (DxRichTextEditor)rte);
+        builder.AddComponentReferenceCapture(30, rte => _rte = (DxRichTextEditor)rte);
         builder.CloseComponent();
 
         if (ShowStatus)

@@ -31,4 +31,6 @@ public sealed class NullRichTextInterop : IRichTextInterop
     public ValueTask SetHtmlAsync(string elementId, string html) => ValueTask.CompletedTask;
 
     public ValueTask FocusAsync(string elementId) => ValueTask.CompletedTask;
+
+    public ValueTask SubscribeShortcutsAsync(string elementId, Action<string> onShortcut) => ValueTask.CompletedTask;
 }
