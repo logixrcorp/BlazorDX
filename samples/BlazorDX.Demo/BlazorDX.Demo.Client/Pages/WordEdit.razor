@@ -43,11 +43,11 @@
 
 <p class="dx-demo-meta">
     <label>
-        <input type="checkbox" @bind="modelDriven" />
-        <strong>Model-driven core</strong> (ADR-0015, preview): bold / italic / underline /
-        strikethrough edit the <code>WordDocument</code> directly over an owned selection and
-        re-render from the model — no <code>execCommand</code>. Select text, then use those four
-        buttons.
+        <input type="checkbox" @bind="legacyCore" />
+        Use the <strong>legacy <code>execCommand</code> core</strong>. Off by default: the editor
+        now runs on the <strong>model-driven core</strong> (ADR-0015) — every toolbar command and
+        keyboard shortcut edits the <code>WordDocument</code> directly and re-renders from the
+        model, with no <code>execCommand</code>. Tick this to compare the deprecated path.
     </label>
 </p>
 
@@ -55,7 +55,7 @@
               Sanitizer="sanitizer"
               Label="Quarterly report body"
               DownloadFileName="quarterly-report.docx"
-              EditingCore="@(modelDriven ? EditingCore.ModelDriven : EditingCore.ContentEditable)"
+              EditingCore="@(legacyCore ? EditingCore.ContentEditable : EditingCore.ModelDriven)"
               OnSave="OnSave" />
 
 <p class="dx-demo-meta" aria-live="polite">
@@ -73,7 +73,7 @@
 
 @code {
     private WordDocument document = BuildSample();
-    private bool modelDriven;
+    private bool legacyCore; // off = the default model-driven core
     private int? savedSize;
 
     private void OnSave(byte[] docx) => savedSize = docx.Length;

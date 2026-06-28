@@ -7,17 +7,18 @@ namespace BlazorDX.Documents;
 public enum EditingCore
 {
     /// <summary>
-    /// The default: formatting goes through the browser's <c>contentEditable</c> +
-    /// <c>document.execCommand</c>, and the model is re-derived from the edited HTML.
-    /// </summary>
-    ContentEditable,
-
-    /// <summary>
-    /// The model-driven core (ADR-0015): formatting commands mutate the authoritative
-    /// <see cref="WordDocument"/> over an owned selection, the surface is re-rendered from
-    /// the model, and the selection is restored. No <c>execCommand</c>.
+    /// The default (ADR-0015): formatting commands mutate the authoritative
+    /// <see cref="WordDocument"/> over an owned selection, the surface is re-rendered from the
+    /// model, and the selection is restored. No <c>execCommand</c>.
     /// </summary>
     ModelDriven,
+
+    /// <summary>
+    /// Legacy: formatting goes through the browser's <c>contentEditable</c> +
+    /// the deprecated <c>document.execCommand</c>, and the model is re-derived from the edited
+    /// HTML. Retained as an escape hatch; prefer <see cref="ModelDriven"/>.
+    /// </summary>
+    ContentEditable,
 }
 
 /// <summary>
@@ -40,11 +41,13 @@ public sealed partial class DxWordEditor
     }
 
     /// <summary>
-    /// The editing engine for formatting. Defaults to <see cref="EditingCore.ContentEditable"/>;
-    /// opt into <see cref="EditingCore.ModelDriven"/> to drive the supported commands through
-    /// the model (ADR-0015): bold/italic/underline/strikethrough, clear formatting, alignment.
+    /// The editing engine for formatting. Defaults to <see cref="EditingCore.ModelDriven"/> — every
+    /// toolbar command (bold/italic/underline/strikethrough, clear, alignment, heading, lists,
+    /// links, color) and the keyboard shortcuts edit the authoritative <see cref="WordDocument"/>,
+    /// with no <c>execCommand</c>. Set <see cref="EditingCore.ContentEditable"/> for the legacy
+    /// execCommand path.
     /// </summary>
-    [Parameter] public EditingCore EditingCore { get; set; } = EditingCore.ContentEditable;
+    [Parameter] public EditingCore EditingCore { get; set; } = EditingCore.ModelDriven;
 
     // Handles an intercepted formatting command from the editor toolbar: read the owned
     // selection, apply the matching pure model transform, then commit (re-seed in place +
