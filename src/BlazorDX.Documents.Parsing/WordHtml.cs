@@ -235,6 +235,7 @@ public static partial class WordHtml
         private List<WordTableRow>? _tableRows;
         private List<WordTableCell>? _rowCells;
         private bool _inCell;
+        private string? _cellShading;
 
         public List<WordBlock> Parse()
         {
@@ -597,6 +598,7 @@ public static partial class WordHtml
                         CloseCell();
                         _rowCells ??= [];
                         _inCell = true;
+                        _cellShading = ParseCssColor(tag.Text, "background-color");
                         ResetRuns();
                     }
 
@@ -712,8 +714,9 @@ public static partial class WordHtml
             }
 
             _rowCells ??= [];
-            _rowCells.Add(new WordTableCell(Snapshot()));
+            _rowCells.Add(new WordTableCell(Snapshot(), _cellShading));
             _inCell = false;
+            _cellShading = null;
             ResetRuns();
         }
 

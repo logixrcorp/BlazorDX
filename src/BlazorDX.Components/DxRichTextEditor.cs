@@ -141,6 +141,7 @@ public sealed class DxRichTextEditor : ComponentBase
         // restores the editor selection before applying, so clicking the swatch is safe.
         BuildColorInput(builder, 20, "foreColor", "Text color", "#000000");
         BuildColorInput(builder, 30, "hiliteColor", "Highlight color", "#ffff00");
+        BuildColorInput(builder, 120, "cellShading", "Cell shading", "#fff2cc");
 
         // Paragraph style + font family / size dropdowns (value commands).
         BuildStyleSelect(builder, 40);

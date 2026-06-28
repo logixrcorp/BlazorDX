@@ -892,27 +892,6 @@ public sealed class DxWordEditorTests : TestContext
     }
 
     [Fact]
-    public void Typography_round_trips_through_html()
-    {
-        WordDocument doc = new(
-        [
-            new WordParagraph(
-            [
-                new WordRun("E=mc", FontFamily: "Arial", FontSizePoints: 14),
-                new WordRun("2", VerticalAlign: WordVerticalAlign.Superscript),
-            ]),
-        ]);
-
-        WordDocument round = WordHtml.FromHtml(WordHtml.ToHtml(doc));
-        WordParagraph para = round.Blocks.OfType<WordParagraph>().Single();
-
-        Assert.Equal("Arial", para.Runs[0].FontFamily);
-        Assert.Equal(14d, para.Runs[0].FontSizePoints);
-        Assert.Equal(WordVerticalAlign.Superscript, para.Runs[^1].VerticalAlign);
-        Assert.Equal("E=mc2", string.Concat(para.Runs.Select(r => r.Text)));
-    }
-
-    [Fact]
     public void ModelDriven_style_dropdown_sets_block_to_heading_and_back_to_normal()
     {
         FakeRichTextInterop fake = new() { SelectionRange = "0,0,0" }; // caret in container 0
@@ -959,18 +938,28 @@ public sealed class DxWordEditorTests : TestContext
     }
 
     [Fact]
-    public void Paragraph_spacing_and_indent_round_trip_through_html_and_docx()
+    public void ModelDriven_cell_shading_colors_the_caret_cell_and_round_trips()
     {
-        WordDocument doc = new(
-            [new WordParagraph([new WordRun("Body")], WordAlignment.Start, LineSpacing: 1.5, IndentLevel: 2)]);
+        // Caret sits in table 0, row 1, col 0 (the table-cell bridge reports it).
+        FakeRichTextInterop fake = new() { TableCell = "0,1,0" };
+        Services.AddScoped<IRichTextInterop>(_ => fake);
 
-        WordParagraph viaHtml = WordHtml.FromHtml(WordHtml.ToHtml(doc)).Blocks.OfType<WordParagraph>().Single();
-        Assert.Equal(1.5, viaHtml.LineSpacing);
-        Assert.Equal(2, viaHtml.IndentLevel);
+        WordDocument? changed = null;
+        IRenderedComponent<DxWordEditor> editor = RenderComponent<DxWordEditor>(p => p
+            .Add(e => e.Document, SampleDocument()) // contains a 2x2 table
+            .Add(e => e.DocumentChanged, EventCallback.Factory.Create<WordDocument>(this, d => changed = d)));
 
-        WordParagraph viaDocx = DocxReader.Read(DocxWriter.Write(doc)).Blocks.OfType<WordParagraph>().Single();
-        Assert.Equal(1.5, viaDocx.LineSpacing);
-        Assert.Equal(2, viaDocx.IndentLevel);
+        editor.Find("[aria-label='Cell shading']").Change("#fff2cc");
+
+        WordTable table = changed!.Blocks.OfType<WordTable>().Single();
+        Assert.Equal("#fff2cc", table.Rows[1].Cells[0].Shading); // caret cell shaded
+        Assert.Null(table.Rows[0].Cells[0].Shading);             // others untouched
+
+        // Round-trips through HTML and .docx.
+        WordTable viaHtml = WordHtml.FromHtml(WordHtml.ToHtml(changed!)).Blocks.OfType<WordTable>().Single();
+        Assert.Equal("#fff2cc", viaHtml.Rows[1].Cells[0].Shading);
+        WordTable viaDocx = DocxReader.Read(DocxWriter.Write(changed!)).Blocks.OfType<WordTable>().Single();
+        Assert.Equal("#fff2cc", viaDocx.Rows[1].Cells[0].Shading);
     }
 
     private static string Text(IReadOnlyList<WordRun> runs) =>

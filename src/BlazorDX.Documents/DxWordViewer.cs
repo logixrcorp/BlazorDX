@@ -257,6 +257,11 @@ public sealed class DxWordViewer : ComponentBase
         {
             builder.OpenElement(44, "th");
             builder.AddAttribute(45, "scope", "col");
+            if (!string.IsNullOrEmpty(cell.Shading))
+            {
+                builder.AddAttribute(49, "style", $"background-color:{cell.Shading};");
+            }
+
             BuildRuns(builder, cell.Runs);
             builder.CloseElement();
         }
@@ -274,6 +279,11 @@ public sealed class DxWordViewer : ComponentBase
                 foreach (WordTableCell cell in rows[r].Cells)
                 {
                     builder.OpenElement(48, "td");
+                    if (!string.IsNullOrEmpty(cell.Shading))
+                    {
+                        builder.AddAttribute(50, "style", $"background-color:{cell.Shading};");
+                    }
+
                     BuildRuns(builder, cell.Runs);
                     builder.CloseElement();
                 }

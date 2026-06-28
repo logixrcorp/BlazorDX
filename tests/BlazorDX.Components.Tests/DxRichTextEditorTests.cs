@@ -43,11 +43,12 @@ public sealed class DxRichTextEditorTests : TestContext
     {
         IRenderedComponent<DxRichTextEditor> editor = RenderComponent<DxRichTextEditor>();
 
-        // Two native color inputs, distinct from the 15 command tools.
-        Assert.Equal(2, editor.FindAll(".dx-rte-color").Count);
+        // Three native color inputs (text, highlight, cell shading), distinct from the command tools.
+        Assert.Equal(3, editor.FindAll(".dx-rte-color").Count);
         Assert.Equal(17, editor.FindAll(".dx-rte-tool").Count);
         Assert.Single(editor.FindAll("[aria-label='Text color']"));
         Assert.Single(editor.FindAll("[aria-label='Highlight color']"));
+        Assert.Single(editor.FindAll("[aria-label='Cell shading']"));
 
         // Changing a swatch routes through the (null) bridge without throwing.
         editor.Find("[aria-label='Text color']").Change("#ff0000");

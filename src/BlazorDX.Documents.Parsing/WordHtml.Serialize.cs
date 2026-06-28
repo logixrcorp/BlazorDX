@@ -169,13 +169,16 @@ public static partial class WordHtml
             string cellTag = r == 0 ? "th" : "td";
             foreach (WordTableCell cell in rows[r].Cells)
             {
+                string shade = string.IsNullOrEmpty(cell.Shading)
+                    ? string.Empty
+                    : " style=\"background-color:" + cell.Shading + ";\"";
                 if (r == 0)
                 {
-                    sb.Append("<th scope=\"col\">");
+                    sb.Append("<th scope=\"col\"").Append(shade).Append('>');
                 }
                 else
                 {
-                    sb.Append("<td>");
+                    sb.Append("<td").Append(shade).Append('>');
                 }
 
                 AppendRuns(sb, cell.Runs);

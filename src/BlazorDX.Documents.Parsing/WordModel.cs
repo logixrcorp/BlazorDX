@@ -103,7 +103,8 @@ public sealed record WordTableRow(IReadOnlyList<WordTableCell> Cells);
 
 /// <summary>One table cell: the inline runs of its (first) paragraph's text.</summary>
 /// <param name="Runs">The inline runs making up the cell text.</param>
-public sealed record WordTableCell(IReadOnlyList<WordRun> Runs);
+/// <param name="Shading">Cell background as <c>#RRGGBB</c> (<c>&lt;w:tcPr&gt;&lt;w:shd&gt;</c> / CSS <c>background-color</c>), or null.</param>
+public sealed record WordTableCell(IReadOnlyList<WordRun> Runs, string? Shading = null);
 
 /// <summary>
 /// An embedded image (block-level). Carries the raw bytes and media type so it can be

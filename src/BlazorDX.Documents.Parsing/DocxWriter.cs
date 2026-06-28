@@ -503,6 +503,12 @@ public static class DocxWriter
             foreach (WordTableCell cell in row.Cells)
             {
                 sb.Append("<w:tc>");
+                if (!string.IsNullOrEmpty(cell.Shading))
+                {
+                    sb.Append("<w:tcPr><w:shd w:val=\"clear\" w:color=\"auto\" w:fill=\"")
+                      .Append(HexValue(cell.Shading!)).Append("\"/></w:tcPr>");
+                }
+
                 // A cell is a paragraph of runs (the reader gathers paragraph runs).
                 AppendParagraph(sb, cell.Runs, pPr: null, links);
                 sb.Append("</w:tc>");

@@ -114,12 +114,24 @@ public sealed partial class DxWordEditor
         }
     }
 
-    // Handles the color inputs (text / highlight) in the model-driven core: set the chosen
-    // color on the selected run range. A no-op for an empty selection or a malformed color.
+    // Handles the color inputs in the model-driven core: text/highlight color on the selected
+    // run range, or cell shading on the caret's table cell. A no-op for a malformed color, or
+    // (for run color) an empty selection.
     private async Task HandleModelColorAsync(ColorCommandArgs args)
     {
         if (_rte is null || !IsHexColor(args.Color))
         {
+            return;
+        }
+
+        // Cell shading targets the caret's table cell, not a text selection.
+        if (args.Command == "cellShading")
+        {
+            if (TryParseCell(await _rte.GetTableCellAsync(), out int table, out int row, out int col))
+            {
+                await CommitModelEditAsync(SetCellShading(Current, table, row, col, args.Color));
+            }
+
             return;
         }
 

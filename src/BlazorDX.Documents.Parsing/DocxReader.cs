@@ -799,6 +799,7 @@ public static partial class DocxReader
 
         int cellDepth = reader.Depth;
         List<WordRun> runs = [];
+        string? shading = null;
 
         while (reader.Read())
         {
@@ -807,6 +808,17 @@ public static partial class DocxReader
                 && reader.LocalName == "tc")
             {
                 break;
+            }
+
+            // The cell's own <w:tcPr> (direct child) carries shading; run-level <w:shd> inside
+            // paragraphs is a separate highlight and is read elsewhere.
+            if (reader.NodeType == XmlNodeType.Element
+                && reader.LocalName == "tcPr"
+                && reader.Depth == cellDepth + 1
+                && reader.NamespaceURI == WordprocessingMl)
+            {
+                shading = ReadCellShading(reader) ?? shading;
+                continue;
             }
 
             if (reader.NodeType == XmlNodeType.Element
@@ -825,7 +837,35 @@ public static partial class DocxReader
             }
         }
 
-        return new WordTableCell(CoalesceRuns(runs));
+        return new WordTableCell(CoalesceRuns(runs), shading);
+    }
+
+    // Reads a cell's <w:tcPr>, returning its shading fill as #RRGGBB (or null). Positioned on
+    // the tcPr start element; consumes through its end.
+    private static string? ReadCellShading(XmlReader reader)
+    {
+        if (reader.IsEmptyElement)
+        {
+            return null;
+        }
+
+        int depth = reader.Depth;
+        string? fill = null;
+        while (reader.Read())
+        {
+            if (reader.NodeType == XmlNodeType.EndElement && reader.Depth == depth && reader.LocalName == "tcPr")
+            {
+                break;
+            }
+
+            if (reader.NodeType == XmlNodeType.Element && reader.LocalName == "shd"
+                && reader.NamespaceURI == WordprocessingMl)
+            {
+                fill = HexColor(reader.GetAttribute("fill", WordprocessingMl)) ?? fill;
+            }
+        }
+
+        return fill;
     }
 
 }

@@ -42,6 +42,42 @@ public sealed partial class DxWordEditor
             && int.TryParse(parts[2], out col);
     }
 
+    // Returns a copy of the document with the given cell of the tableIndex-th table shaded.
+    // Out-of-range targets are a no-op.
+    private static WordDocument SetCellShading(WordDocument document, int tableIndex, int row, int col, string color)
+    {
+        var blocks = new WordBlock[document.Blocks.Count];
+        int seen = -1;
+        for (int i = 0; i < document.Blocks.Count; i++)
+        {
+            if (document.Blocks[i] is WordTable table)
+            {
+                seen++;
+                blocks[i] = seen == tableIndex ? ShadeCell(table, row, col, color) : table;
+            }
+            else
+            {
+                blocks[i] = document.Blocks[i];
+            }
+        }
+
+        return new WordDocument(blocks);
+    }
+
+    private static WordTable ShadeCell(WordTable table, int row, int col, string color)
+    {
+        if (row < 0 || row >= table.Rows.Count || col < 0 || col >= table.Rows[row].Cells.Count)
+        {
+            return table;
+        }
+
+        var rows = table.Rows.ToArray();
+        var cells = rows[row].Cells.ToArray();
+        cells[col] = cells[col] with { Shading = color };
+        rows[row] = new WordTableRow(cells);
+        return new WordTable(rows);
+    }
+
     // Returns a copy of the document with the requested edit applied to the tableIndex-th
     // table (in document order). Out-of-range targets and last-row/last-column deletes are
     // no-ops. Pure and side-effect-free, so it is unit-testable without the editor.
