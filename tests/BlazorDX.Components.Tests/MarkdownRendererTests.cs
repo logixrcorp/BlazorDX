@@ -73,4 +73,16 @@ public sealed class MarkdownRendererTests
         MarkupString result = MarkdownRenderer.Render("# Hi");
         Assert.Contains("<h1>Hi</h1>", result.Value);
     }
+
+    [Fact]
+    public void Scheme_relative_links_are_treated_as_unsafe_but_real_relative_links_render()
+    {
+        // "//evil.com" looks relative but resolves off-site, so the link is dropped (text kept)...
+        string scheme = Render("[x](//evil.com)");
+        Assert.DoesNotContain("<a", scheme);
+        Assert.Contains("x", scheme);
+
+        // ...while a genuine relative path still renders a link.
+        Assert.Contains("<a href=\"/path\"", Render("[x](/path)"));
+    }
 }

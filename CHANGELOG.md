@@ -37,6 +37,20 @@ All notable changes to BlazorDX are documented here. The format is loosely based
   (SHA-1 is supported but never the default — a broken primitive). New client bridge
   `IFileHashInterop` / `file-hash.ts`.
 
+### Security
+
+- **Document-parser hardening (untrusted `.docx`/`.xlsx`).** A review of the document components
+  produced fixes for resource-exhaustion (DoS) vectors in the OOXML readers — no XSS/code-exec was
+  found (the existing XXE defenses and fail-closed URL allow-lists held):
+  - **Spreadsheet column-index amplification (high):** `XlsxReader` now clamps a cell's column to
+    Excel's maximum (16384) using overflow-safe math, so a few-byte crafted reference like
+    `r="AAAAAA1"` can no longer drive an enormous dense-row pre-pad. Added a per-sheet cell budget.
+  - **"Lying" zip-bomb (medium):** part reads are now wrapped in a length-limiting stream that caps
+    the bytes *actually* decompressed (not just the declared `ZipArchiveEntry.Length`), closing the
+    gap for binary image parts read via `CopyTo`. Added an aggregate image-bytes budget.
+  - **Hardening (low):** markdown rejects scheme-relative `//host` links; `data:` image content
+    types from untrusted documents are constrained to `image/*`.
+
 ### Fixed
 
 - **Demo:** the Power BI playground sample embed (`/powerbi` in production) returned 502 — the

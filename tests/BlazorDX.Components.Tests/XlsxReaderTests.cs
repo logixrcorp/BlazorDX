@@ -257,6 +257,35 @@ public sealed class XlsxReaderTests
         Assert.Equal("Hello", Assert.Single(workbook.Sheets).Rows[0][0]);
     }
 
+    [Fact]
+    public void A_hostile_column_reference_does_not_exhaust_memory()
+    {
+        // "AAAAAA1" encodes a column in the hundreds of millions; unclamped, the dense-row
+        // pre-pad would allocate that many cells. The reader must treat it as out of range and
+        // complete promptly — the test merely returning proves it neither OOMs nor hangs.
+        byte[] bytes = BuildWorkbook(
+            sharedStrings: [],
+            sheets: [("S", """<row r="1"><c r="AAAAAA1"><v>1</v></c></row>""")]);
+
+        Workbook workbook = XlsxReader.Read(bytes);
+        Worksheet sheet = Assert.Single(workbook.Sheets);
+        Assert.Equal(1, sheet.ColumnCount);          // the out-of-range cell appends, no giant pad
+        Assert.Equal("1", sheet.Rows[0][0]);         // its value still survives
+    }
+
+    [Fact]
+    public void The_last_valid_excel_column_XFD_is_still_accepted()
+    {
+        byte[] bytes = BuildWorkbook(
+            sharedStrings: [],
+            sheets: [("S", """<row r="1"><c r="XFD1"><v>9</v></c></row>""")]);
+
+        Workbook workbook = XlsxReader.Read(bytes);
+        Worksheet sheet = Assert.Single(workbook.Sheets);
+        Assert.Equal(16384, sheet.ColumnCount);      // XFD is column 16384, the legitimate maximum
+        Assert.Equal("9", sheet.Rows[0][16383]);     // value lands at the last column
+    }
+
     // Builds a valid single-sheet package, then overwrites one part with a stream of
     // `uncompressedLength` space characters so its ZipArchiveEntry.Length exceeds the cap
     // while the stored (compressed) size stays small.

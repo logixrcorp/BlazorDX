@@ -58,6 +58,10 @@ public static partial class DocxReader
     // memory. 64 MiB is far above any legitimate single OOXML part.
     private const long MaxPartBytes = 64L * 1024 * 1024;
 
+    // Aggregate cap across all decompressed image media parts. Each part is bounded individually,
+    // but a document with many media parts still sums up; this bounds the total cleanly.
+    private const long MaxTotalImageBytes = 128L * 1024 * 1024;
+
     private static readonly XmlReaderSettings ReaderSettings = new()
     {
         // Trim-/AOT-safe and untrusting: no DTD processing, no external entity
@@ -84,7 +88,9 @@ public static partial class DocxReader
                 $"docx part '{entry.FullName}' exceeds the {MaxPartBytes}-byte size limit and was rejected.");
         }
 
-        return entry.Open();
+        // The declared Length above is a cheap early-out, but a crafted zip can understate it and
+        // inflate further; the wrapper bounds the bytes actually read (the true zip-bomb guard).
+        return new LengthLimitingStream(entry.Open(), MaxPartBytes, entry.FullName);
     }
 
     /// <summary>

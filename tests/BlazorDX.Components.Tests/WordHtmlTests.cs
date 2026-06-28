@@ -450,6 +450,18 @@ public sealed class WordHtmlTests
         Assert.Equal(["x", "1"], table.Rows[1].Cells.Select(c => PlainText(c.Runs)));
     }
 
+    [Fact]
+    public void FromHtml_coerces_a_non_image_data_uri_content_type_to_image()
+    {
+        // An untrusted document must not carry a non-image media type (e.g. text/html) through to
+        // the data: URL the viewer re-emits into an <img src>.
+        string b64 = System.Convert.ToBase64String(Encoding.ASCII.GetBytes("<html>x</html>"));
+        WordDocument doc = WordHtml.FromHtml($"<img src=\"data:text/html;base64,{b64}\" alt=\"x\">");
+
+        WordImage image = Assert.IsType<WordImage>(Assert.Single(doc.Blocks));
+        Assert.Equal("image/png", image.ContentType);   // coerced away from text/html
+    }
+
     // ------------------------------------------------------------------
     // helpers
     // ------------------------------------------------------------------

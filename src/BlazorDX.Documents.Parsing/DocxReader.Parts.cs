@@ -67,6 +67,7 @@ public static partial class DocxReader
         }
 
         Dictionary<string, ImagePart> map = new(StringComparer.Ordinal);
+        long totalImageBytes = 0;
         foreach ((string id, string target) in targets)
         {
             ZipArchiveEntry? media = zip.GetEntry("word/" + target.TrimStart('/'));
@@ -75,10 +76,19 @@ public static partial class DocxReader
                 continue;
             }
 
+            // Each part is bounded by OpenChecked (actual bytes), but many media parts still sum up;
+            // an aggregate budget fails a "thousand images" amplification cleanly.
             using Stream ms = OpenChecked(media);
             using MemoryStream buffer = new();
             ms.CopyTo(buffer);
             byte[] data = buffer.ToArray();
+            totalImageBytes += data.Length;
+            if (totalImageBytes > MaxTotalImageBytes)
+            {
+                throw new InvalidDataException(
+                    $"docx images exceed the {MaxTotalImageBytes}-byte aggregate limit and were rejected.");
+            }
+
             if (data.Length > 0)
             {
                 map[id] = new ImagePart(data, ContentTypeForFile(target));

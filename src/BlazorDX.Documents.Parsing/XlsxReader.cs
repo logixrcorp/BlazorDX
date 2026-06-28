@@ -45,6 +45,17 @@ public static class XlsxReader
     // memory. 64 MiB is far above any legitimate single OOXML part.
     private const long MaxPartBytes = 64L * 1024 * 1024;
 
+    // Excel's hard maximum column count (the last column is "XFD"). A cell reference encoding a
+    // column beyond this is malformed or hostile — a handful of letters can encode billions, and
+    // the dense row would pre-pad that many cells — so such a reference is treated as invalid.
+    private const int MaxColumns = 16384;
+
+    // Upper bound on cells materialized for one sheet. With columns clamped to MaxColumns a single
+    // row can't blow up, but rows × up-to-16384 still multiplies; this fails a hostile sheet cleanly
+    // rather than exhausting memory. ~16M cells is generous for a viewer and bounds the backing
+    // arrays to tens of MB.
+    private const long MaxCellsPerSheet = 16L * 1024 * 1024;
+
     private static readonly XmlReaderSettings ReaderSettings = new()
     {
         // Trim-/AOT-safe and untrusting: no DTD processing, no external entity
@@ -71,7 +82,9 @@ public static class XlsxReader
                 $"xlsx part '{entry.FullName}' exceeds the {MaxPartBytes}-byte size limit and was rejected.");
         }
 
-        return entry.Open();
+        // The declared Length above is a cheap early-out, but a crafted zip can understate it and
+        // inflate further; the wrapper bounds the bytes actually read (the true zip-bomb guard).
+        return new LengthLimitingStream(entry.Open(), MaxPartBytes, entry.FullName);
     }
 
     /// <summary>
@@ -277,6 +290,7 @@ public static class XlsxReader
 
         // Read every <row> as a dense, left-anchored list of cell strings.
         List<List<string>> rows = [];
+        long totalCells = 0;
 
         using Stream content = OpenChecked(entry);
         using XmlReader reader = XmlReader.Create(content, ReaderSettings);
@@ -290,7 +304,15 @@ public static class XlsxReader
                 continue;
             }
 
-            rows.Add(ReadRow(reader, sharedStrings));
+            List<string> row = ReadRow(reader, sharedStrings);
+            totalCells += row.Count;
+            if (totalCells > MaxCellsPerSheet)
+            {
+                throw new InvalidDataException(
+                    $"xlsx sheet '{name}' exceeds the {MaxCellsPerSheet}-cell limit and was rejected.");
+            }
+
+            rows.Add(row);
         }
 
         // Trim to the TRUE used range. Excel commonly persists styled-but-empty trailing
@@ -552,7 +574,10 @@ public static class XlsxReader
     // Returns -1 when the reference has no column letters.
     private static int ColumnIndex(string cellRef)
     {
-        int column = 0;
+        // Accumulate in long and bail the moment we pass Excel's last column, so a crafted reference
+        // (e.g. "AAAAAA1") can neither overflow nor drive an enormous row pre-pad. Beyond range = -1
+        // ("invalid"), which ReadRow treats as "append at the next position".
+        long column = 0;
         int i = 0;
         while (i < cellRef.Length)
         {
@@ -570,9 +595,14 @@ public static class XlsxReader
                 break;
             }
 
+            if (column > MaxColumns)
+            {
+                return -1;
+            }
+
             i++;
         }
 
-        return column == 0 ? -1 : column - 1;
+        return column == 0 ? -1 : (int)(column - 1);
     }
 }

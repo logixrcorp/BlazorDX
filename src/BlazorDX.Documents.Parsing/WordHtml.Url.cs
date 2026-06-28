@@ -322,6 +322,14 @@ public static partial class WordHtml
         int semi = meta.IndexOf(';');
         string contentType = (semi >= 0 ? meta[..semi] : meta).Trim();
 
+        // Constrain the content type to image/* (defense in depth): a data: URL is re-emitted into
+        // an <img src> by the viewer, and while a browser won't execute e.g. data:text/html there,
+        // we refuse to carry a non-image media type from an untrusted document.
+        if (contentType.Length > 0 && !contentType.StartsWith("image/", System.StringComparison.OrdinalIgnoreCase))
+        {
+            contentType = "image/png";
+        }
+
         byte[] data;
         try
         {

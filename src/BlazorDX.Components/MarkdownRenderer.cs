@@ -177,6 +177,14 @@ public static class MarkdownRenderer
     private static bool IsSafeHref(string href)
     {
         string trimmed = href.TrimStart();
+
+        // Scheme-relative ("//host" or the "/\" variant browsers also accept) resolves to an
+        // off-site URL despite looking relative — exclude it before the relative allowance below.
+        if (trimmed.StartsWith("//", StringComparison.Ordinal) || trimmed.StartsWith("/\\", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
         if (trimmed.StartsWith('/') || trimmed.StartsWith('#') || trimmed.StartsWith("./", StringComparison.Ordinal))
         {
             return true;
