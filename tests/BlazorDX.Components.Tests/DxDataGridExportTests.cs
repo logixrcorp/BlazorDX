@@ -138,6 +138,63 @@ public sealed class DxDataGridExportTests : TestContext
         Assert.Equal("Name,Quantity\r\n\"A,\"\"B\"\"\",1\r\n", dom.Content);
     }
 
+    [Theory]
+    [InlineData("=HYPERLINK(0)")]
+    [InlineData("+1+1")]
+    [InlineData("@SUM(A1)")]
+    [InlineData("-2+3")]            // leading '-' but NOT a plain number -> a formula
+    public void Csv_export_neutralizes_formula_injection(string hostile)
+    {
+        var rows = new List<WidgetRow> { new() { Name = hostile, Quantity = 1 } };
+        IRenderedComponent<DxDataGrid<WidgetRow>> grid = Render(rows);
+
+        grid.Find(".dx-grid-export").Click();
+
+        // The cell is prefixed with a single quote so the spreadsheet treats it as text.
+        Assert.Contains($"\r\n'{hostile},1\r\n", dom.Content);
+    }
+
+    [Fact]
+    public void Csv_export_preserves_legitimate_negative_numbers()
+    {
+        // A signed number must NOT be mangled — only non-numeric +/- values are neutralized.
+        var rows = new List<WidgetRow> { new() { Name = "ok", Quantity = -5 } };
+        IRenderedComponent<DxDataGrid<WidgetRow>> grid = Render(rows);
+
+        grid.Find(".dx-grid-export").Click();
+
+        Assert.Equal("Name,Quantity\r\nok,-5\r\n", dom.Content);   // "-5" stays "-5"
+    }
+
+    [Fact]
+    public void Csv_export_can_opt_out_of_formula_sanitization()
+    {
+        var rows = new List<WidgetRow> { new() { Name = "=1+1", Quantity = 1 } };
+        IRenderedComponent<DxDataGrid<WidgetRow>> grid = RenderComponent<DxDataGrid<WidgetRow>>(parameters => parameters
+            .Add(g => g.Items, rows)
+            .Add(g => g.Accessor, new WidgetRowGridAccessor())
+            .Add(g => g.ShowExport, true)
+            .Add(g => g.SanitizeExportFormulas, false));
+
+        grid.Find(".dx-grid-export").Click();
+
+        Assert.Contains("\r\n=1+1,1\r\n", dom.Content);   // verbatim when opted out
+    }
+
+    [Fact]
+    public void Clipboard_tsv_also_neutralizes_formula_injection()
+    {
+        var rows = new List<WidgetRow> { new() { Name = "=2+2", Quantity = 1 } };
+        IRenderedComponent<DxDataGrid<WidgetRow>> grid = RenderComponent<DxDataGrid<WidgetRow>>(parameters => parameters
+            .Add(g => g.Items, rows)
+            .Add(g => g.Accessor, new WidgetRowGridAccessor())
+            .Add(g => g.ShowClipboard, true));
+
+        grid.Find(".dx-grid-export").Click();
+
+        Assert.Contains("'=2+2\t", dom.Clipboard);
+    }
+
     [Fact]
     public void Export_respects_the_active_filter()
     {

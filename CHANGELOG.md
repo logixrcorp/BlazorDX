@@ -50,6 +50,11 @@ All notable changes to BlazorDX are documented here. The format is loosely based
     gap for binary image parts read via `CopyTo`. Added an aggregate image-bytes budget.
   - **Hardening (low):** markdown rejects scheme-relative `//host` links; `data:` image content
     types from untrusted documents are constrained to `image/*`.
+  - **CSV/Formula injection on export (CWE-1236):** `DxDataGrid` CSV/TSV export now neutralizes
+    cells beginning with `= + - @`, tab, or a line break by prefixing a single quote, so an exported
+    file can't execute a formula/command when opened in a spreadsheet. A leading `+`/`-` on a genuine
+    number is preserved. New `SanitizeExportFormulas` parameter (default true) opts out for
+    non-spreadsheet consumers. (XLSX export was already safe — it writes typed string cells.)
 
 ### Fixed
 

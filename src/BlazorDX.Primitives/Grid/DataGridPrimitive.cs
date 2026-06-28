@@ -88,6 +88,14 @@ public partial class DataGridPrimitive<TRow> : ComponentBase, IAsyncDisposable
     /// <summary>File name used for the CSV export.</summary>
     [Parameter] public string ExportFileName { get; set; } = "grid.csv";
 
+    /// <summary>
+    /// When true (the default), CSV/TSV export neutralizes cells that begin with a character a
+    /// spreadsheet would treat as a formula/command (<c>= + - @</c>, tab, or a line break) by
+    /// prefixing a single quote — defeating CSV/formula injection (CWE-1236). Set false only when
+    /// exporting to a non-spreadsheet consumer that must receive the bytes verbatim.
+    /// </summary>
+    [Parameter] public bool SanitizeExportFormulas { get; set; } = true;
+
     /// <summary>When true, an "Export Excel" action produces a real .xlsx workbook.</summary>
     [Parameter] public bool ShowExcelExport { get; set; }
 

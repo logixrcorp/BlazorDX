@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using BlazorDX.Primitives.Diagnostics;
 
@@ -50,10 +51,40 @@ public partial class DataGridPrimitive<TRow>
             }
 
             first = false;
-            csv.Append(EscapeCsv(cell(display)));
+            csv.Append(EscapeCsv(Field(cell(display))));
         }
 
         csv.Append("\r\n");
+    }
+
+    // Applies formula-injection neutralization (when enabled) before any CSV/TSV quoting.
+    private string Field(string value) => SanitizeExportFormulas ? NeutralizeFormula(value) : value;
+
+    // CSV/Formula injection (CWE-1236): when a spreadsheet opens a CSV/TSV, a cell whose first
+    // character is one of these is evaluated as a formula or command. Prefixing a single quote
+    // forces the cell to text and defeats it, while leaving the visible value otherwise intact.
+    private static string NeutralizeFormula(string value)
+    {
+        if (value.Length == 0)
+        {
+            return value;
+        }
+
+        char first = value[0];
+        if (first is not ('=' or '+' or '-' or '@' or '\t' or '\r' or '\n'))
+        {
+            return value;
+        }
+
+        // A leading + or - on an otherwise-numeric value is a signed number, not a formula — don't
+        // mangle legitimate data. '=', '@', and the control characters are never valid leading data.
+        if (first is '+' or '-'
+            && double.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out _))
+        {
+            return value;
+        }
+
+        return "'" + value;
     }
 
     private static string EscapeCsv(string value)
@@ -115,7 +146,7 @@ public partial class DataGridPrimitive<TRow>
             }
 
             first = false;
-            tsv.Append(cell(display).Replace('\t', ' ').Replace('\n', ' ').Replace('\r', ' '));
+            tsv.Append(Field(cell(display)).Replace('\t', ' ').Replace('\n', ' ').Replace('\r', ' '));
         }
 
         tsv.Append('\n');
