@@ -15,6 +15,46 @@ public enum SchedulerView
     Day,
 }
 
+/// <summary>How often a recurring event repeats.</summary>
+public enum RecurrenceFrequency
+{
+    /// <summary>Every <c>Interval</c> days.</summary>
+    Daily,
+
+    /// <summary>Every <c>Interval</c> weeks, on each <c>ByWeekday</c> (or the seed's weekday).</summary>
+    Weekly,
+
+    /// <summary>Every <c>Interval</c> months, on the seed's day-of-month (clamped to month length).</summary>
+    Monthly,
+}
+
+/// <summary>
+/// A compact RRULE-style repeat rule for a <see cref="SchedulerEvent"/>. It is expanded into
+/// concrete dated occurrences for the visible window only — the model never materialises an
+/// unbounded series. Each occurrence keeps the seed event's duration, colour, and category.
+/// </summary>
+/// <param name="Frequency">Daily, weekly, or monthly cadence.</param>
+/// <param name="Interval">
+/// Spacing between repeats in units of <paramref name="Frequency"/> (every 1 = each, 2 = every other…).
+/// Values below 1 are treated as 1.
+/// </param>
+/// <param name="Count">
+/// Total number of occurrences in the series counting from the seed (0 = unbounded, limited only by
+/// <paramref name="Until"/> and the visible window). Occurrences are counted from the series start, so
+/// scrolling the calendar never changes which dates the rule produces.
+/// </param>
+/// <param name="Until">Inclusive last date an occurrence may start on (null = no end date).</param>
+/// <param name="ByWeekday">
+/// Weekly only: the weekdays each active week repeats on (e.g. Mon/Wed/Fri). Null or empty falls back
+/// to the seed event's own weekday. Ignored for daily and monthly frequencies.
+/// </param>
+public readonly record struct Recurrence(
+    RecurrenceFrequency Frequency,
+    int Interval = 1,
+    int Count = 0,
+    DateOnly? Until = null,
+    IReadOnlyList<DayOfWeek>? ByWeekday = null);
+
 /// <summary>A scheduled event placed on the calendar.</summary>
 /// <param name="Title">Event label.</param>
 /// <param name="Start">Start timestamp.</param>
@@ -28,25 +68,50 @@ public enum SchedulerView
 /// Optional category/status label. Conveyed as text (never color alone) so the
 /// distinction survives for colour-blind and high-contrast users (WCAG 1.4.1).
 /// </param>
+/// <param name="Recurrence">
+/// Optional repeat rule. When set, this event is a <em>seed</em>: the scheduler expands it into
+/// concrete dated occurrences across the visible window (the seed itself is the first occurrence).
+/// Null means a single one-off interval.
+/// </param>
 /// <remarks>
-/// DEFERRED: RRULE-style recurrence is not yet modelled — every event is a single
-/// concrete interval. Drag-to-move / drag-to-create editing is not implemented, and
-/// the overlap-lane layout is computed in pure C# (the planned Rust overlap-lane
-/// kernel is not wired up).
+/// The overlap-lane layout is computed in pure C# (the planned Rust overlap-lane kernel is not
+/// wired up; the date math does not need it).
 /// </remarks>
 public readonly record struct SchedulerEvent(
     string Title,
     DateTime Start,
     DateTime End,
     string? Color = null,
-    string? Category = null);
+    string? Category = null,
+    Recurrence? Recurrence = null);
+
+/// <summary>An event drag-to-move result: the seed occurrence and its proposed new interval.</summary>
+/// <param name="Original">The concrete occurrence the user dragged.</param>
+/// <param name="NewStart">Proposed new start (the duration is preserved).</param>
+/// <param name="NewEnd">Proposed new end.</param>
+public readonly record struct SchedulerEventMove(SchedulerEvent Original, DateTime NewStart, DateTime NewEnd);
+
+/// <summary>A drag-to-create result: the time range the user swept out on an empty day column.</summary>
+/// <param name="Start">Proposed start.</param>
+/// <param name="End">Proposed end.</param>
+public readonly record struct SchedulerRange(DateTime Start, DateTime End);
 
 /// <summary>One event laid out within a day column.</summary>
 /// <param name="Event">The source event.</param>
 /// <param name="DayIndex">Zero-based day column.</param>
 /// <param name="OffsetHours">Hours from the view's start hour to the block's top.</param>
 /// <param name="LengthHours">Block height in hours (clamped to the visible range).</param>
-public readonly record struct ScheduledBlock(SchedulerEvent Event, int DayIndex, double OffsetHours, double LengthHours);
+/// <param name="SourceIndex">
+/// Index of this block's event in <see cref="SchedulerPrimitive.Events"/>, or -1 for an expanded
+/// recurrence occurrence (which has no single source row). Drag-to-move keys off this: only blocks
+/// with a real index are directly movable.
+/// </param>
+public readonly record struct ScheduledBlock(
+    SchedulerEvent Event,
+    int DayIndex,
+    double OffsetHours,
+    double LengthHours,
+    int SourceIndex);
 
 /// <summary>
 /// Tier 1 headless scheduler. Computes the visible cells for the Week, Month, and
@@ -78,6 +143,12 @@ public class SchedulerPrimitive : ComponentBase
     [Parameter] public EventCallback<SchedulerView> ViewChanged { get; set; }
 
     [Parameter] public EventCallback<SchedulerEvent> OnEventSelected { get; set; }
+
+    /// <summary>Raised when an event is dragged to a new time slot (the host applies the move).</summary>
+    [Parameter] public EventCallback<SchedulerEventMove> OnEventMoved { get; set; }
+
+    /// <summary>Raised when the user drags out a new time range on an empty day column.</summary>
+    [Parameter] public EventCallback<SchedulerRange> OnRangeCreated { get; set; }
 
     /// <summary>The active cell's row (time-grid row or month week), or -1 when none.</summary>
     protected int ActiveRow { get; private set; } = -1;
@@ -157,17 +228,185 @@ public class SchedulerPrimitive : ComponentBase
     /// <summary>Whether <paramref name="day"/> falls inside the displayed month.</summary>
     protected bool IsInDisplayedMonth(DateOnly day) => day.Month == WeekStart.Month && day.Year == WeekStart.Year;
 
+    // ---- Recurrence expansion ----
+
+    // One concrete occurrence plus a back-reference to the row it came from in Events
+    // (-1 for an expanded recurrence, which is not a single editable row).
+    private readonly record struct VisibleEvent(SchedulerEvent Event, int SourceIndex);
+
+    // Bounds a recurring series so a rule whose seed is far in the past (or unbounded)
+    // can never spin forever: ~11 years of daily steps is far past any visible window.
+    private const int OccurrenceSafetyCap = 4000;
+
+    // The window the styled layer can actually show, as a half-open [start, end) date range:
+    // the seven (or DayCount) day columns, or the whole month grid.
+    private DateOnly WindowStart => ViewStart;
+
+    private DateOnly WindowEnd =>
+        ViewStart.AddDays(View == SchedulerView.Month ? MonthWeekCount * 7 : ViewDayCount);
+
+    /// <summary>
+    /// The seed events expanded into concrete occurrences that touch the visible window. Non-recurring
+    /// events pass through unchanged (with their row index); a recurring seed yields one entry per
+    /// in-window occurrence (with index -1). Built lazily per render via <see cref="Visible"/>.
+    /// </summary>
+    private IEnumerable<VisibleEvent> ExpandVisible()
+    {
+        DateOnly windowStart = WindowStart;
+        DateOnly windowEnd = WindowEnd;
+
+        for (int i = 0; i < Events.Count; i++)
+        {
+            SchedulerEvent ev = Events[i];
+            if (ev.Recurrence is null)
+            {
+                yield return new VisibleEvent(ev, i);
+                continue;
+            }
+
+            foreach (SchedulerEvent occ in ExpandOccurrences(ev, windowStart, windowEnd))
+            {
+                yield return new VisibleEvent(occ, -1);
+            }
+        }
+    }
+
+    // Expands one recurring seed into the concrete occurrences whose [start..end] date range
+    // intersects [windowStart, windowEnd). Count is measured from the seed (so paging the view
+    // never shifts the series), Until is an inclusive end date, and the safety cap is the final
+    // backstop. The occurrence stream is chronological, so once a start passes the window we stop.
+    private IEnumerable<SchedulerEvent> ExpandOccurrences(SchedulerEvent seed, DateOnly windowStart, DateOnly windowEnd)
+    {
+        TimeSpan duration = seed.End - seed.Start;
+        if (duration <= TimeSpan.Zero)
+        {
+            yield break;
+        }
+
+        Recurrence rule = seed.Recurrence!.Value;
+        int produced = 0;
+        int steps = 0;
+
+        foreach (DateTime occStart in OccurrenceStarts(seed, rule))
+        {
+            if (++steps > OccurrenceSafetyCap)
+            {
+                yield break;
+            }
+
+            if (rule.Count > 0 && produced >= rule.Count)
+            {
+                yield break;
+            }
+
+            DateOnly occStartDay = DateOnly.FromDateTime(occStart);
+            if (rule.Until is DateOnly until && occStartDay > until)
+            {
+                yield break;
+            }
+
+            produced++;   // counts toward Count whether or not this occurrence is on-screen
+
+            // Past the right edge of the window: every later occurrence is later still.
+            if (occStartDay >= windowEnd)
+            {
+                yield break;
+            }
+
+            DateTime occEnd = occStart + duration;
+            if (DateOnly.FromDateTime(occEnd) < windowStart)
+            {
+                continue;   // ends before the window opens — not visible yet
+            }
+
+            yield return seed with { Start = occStart, End = occEnd, Recurrence = null };
+        }
+    }
+
+    // The (infinite) chronological stream of occurrence start times for a rule. The caller bounds it.
+    private static IEnumerable<DateTime> OccurrenceStarts(SchedulerEvent seed, Recurrence rule)
+    {
+        int interval = Math.Max(1, rule.Interval);
+        DateTime start = seed.Start;
+
+        if (rule.Frequency == RecurrenceFrequency.Weekly && rule.ByWeekday is { Count: > 0 })
+        {
+            DayOfWeek[] days = NormalizeWeekdays(rule.ByWeekday);
+            DateOnly seedDay = DateOnly.FromDateTime(start);
+            DateOnly anchorMonday = seedDay.AddDays(-(((int)seedDay.DayOfWeek + 6) % 7));
+            TimeOnly timeOfDay = TimeOnly.FromDateTime(start);
+
+            for (int week = 0; ; week += interval)
+            {
+                DateOnly weekStart = anchorMonday.AddDays(week * 7);
+                foreach (DayOfWeek day in days)
+                {
+                    DateOnly date = weekStart.AddDays(((int)day + 6) % 7);   // Mon=0 … Sun=6
+                    if (date < seedDay)
+                    {
+                        continue;   // skip the part of the seed's own week before it began
+                    }
+
+                    yield return date.ToDateTime(timeOfDay);
+                }
+            }
+        }
+        else
+        {
+            for (int n = 0; ; n++)
+            {
+                yield return rule.Frequency switch
+                {
+                    RecurrenceFrequency.Daily => start.AddDays((long)n * interval),
+                    RecurrenceFrequency.Weekly => start.AddDays((long)n * 7 * interval),
+                    RecurrenceFrequency.Monthly => start.AddMonths(n * interval),
+                    _ => start,
+                };
+            }
+        }
+    }
+
+    // Distinct weekdays in week order (Mon→Sun) so by-day expansion is stable and chronological.
+    private static DayOfWeek[] NormalizeWeekdays(IReadOnlyList<DayOfWeek> input)
+    {
+        List<DayOfWeek> ordered = new(input.Count);
+        foreach (DayOfWeek day in input)
+        {
+            if (!ordered.Contains(day))
+            {
+                ordered.Add(day);
+            }
+        }
+
+        ordered.Sort(static (a, b) => (((int)a + 6) % 7).CompareTo(((int)b + 6) % 7));
+        return ordered.ToArray();
+    }
+
+    // Per-render materialisation of ExpandVisible(): EventsOn() is called once per month cell
+    // (up to 42×), so the expansion is computed once and reused rather than re-run each call.
+    private List<VisibleEvent>? visibleCache;
+
+    private IReadOnlyList<VisibleEvent> Visible => visibleCache ??= ExpandVisible().ToList();
+
+    /// <summary>
+    /// Drops the cached occurrence expansion so the next access rebuilds it. The styled layer calls
+    /// this once per render before laying out, since the window or event set may have changed.
+    /// </summary>
+    protected void InvalidateOccurrences() => visibleCache = null;
+
     /// <summary>
     /// Lays every event into one block per visible day it touches (Week/Day). A
     /// multi-day or midnight-crossing event yields a separate block on each day
     /// column it overlaps, with start/end clamped to that day's visible hour range.
+    /// Recurring seeds are expanded into their visible occurrences first.
     /// </summary>
     protected IEnumerable<ScheduledBlock> Blocks()
     {
         DateOnly first = ViewStart;
         int dayCount = ViewDayCount;
-        foreach (SchedulerEvent ev in Events)
+        foreach (VisibleEvent visible in Visible)
         {
+            SchedulerEvent ev = visible.Event;
             if (ev.End <= ev.Start)
             {
                 continue;
@@ -196,7 +435,7 @@ public class SchedulerPrimitive : ComponentBase
                     continue;   // this day's portion is entirely outside the visible hours
                 }
 
-                yield return new ScheduledBlock(ev, dayIndex, top - StartHour, bottom - top);
+                yield return new ScheduledBlock(ev, dayIndex, top - StartHour, bottom - top, visible.SourceIndex);
             }
         }
     }
@@ -204,13 +443,14 @@ public class SchedulerPrimitive : ComponentBase
     /// <summary>
     /// Events that touch <paramref name="day"/> — i.e. whose [Start..End] date range
     /// includes it — ordered by start time (Month cells). A multi-day event therefore
-    /// appears in every spanned cell.
+    /// appears in every spanned cell. Recurring seeds are expanded first.
     /// </summary>
     protected IEnumerable<SchedulerEvent> EventsOn(DateOnly day)
     {
         List<SchedulerEvent> matches = new();
-        foreach (SchedulerEvent ev in Events)
+        foreach (VisibleEvent visible in Visible)
         {
+            SchedulerEvent ev = visible.Event;
             DateOnly start = DateOnly.FromDateTime(ev.Start);
             DateOnly end = DateOnly.FromDateTime(ev.End);
             if (start <= day && day <= end)
@@ -225,6 +465,58 @@ public class SchedulerPrimitive : ComponentBase
 
     protected Task SelectAsync(SchedulerEvent ev) =>
         OnEventSelected.HasDelegate ? OnEventSelected.InvokeAsync(ev) : Task.CompletedTask;
+
+    /// <summary>
+    /// Applies a drag-to-move result reported by the bridge: resolves the dragged event by its row
+    /// index, moves it to <paramref name="dayIndex"/> at <paramref name="startHour"/> (preserving the
+    /// duration), and raises <see cref="OnEventMoved"/>. Out-of-range indices or recurrence rows
+    /// (index -1) are ignored, so a stale or malformed payload can never mutate the wrong event.
+    /// </summary>
+    protected Task ApplyMoveAsync(int sourceIndex, int dayIndex, double startHour)
+    {
+        if (sourceIndex < 0 || sourceIndex >= Events.Count || dayIndex < 0 || dayIndex >= ViewDayCount)
+        {
+            return Task.CompletedTask;
+        }
+
+        SchedulerEvent original = Events[sourceIndex];
+        TimeSpan duration = original.End - original.Start;
+        double clampedHour = Math.Clamp(startHour, StartHour, EndHour);
+        DateTime newStart = WeekStart.AddDays(dayIndex).ToDateTime(TimeOnly.MinValue).AddHours(clampedHour);
+        DateTime newEnd = newStart + duration;
+
+        return OnEventMoved.HasDelegate
+            ? OnEventMoved.InvokeAsync(new SchedulerEventMove(original, newStart, newEnd))
+            : Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Applies a drag-to-create result reported by the bridge: turns the swept day column and hour
+    /// span into a concrete time range and raises <see cref="OnRangeCreated"/>. The range is clamped
+    /// to the visible day and hour bounds and ordered, so an inverted or out-of-range sweep is safe.
+    /// </summary>
+    protected Task ApplyCreateAsync(int dayIndex, double startHour, double endHour)
+    {
+        if (dayIndex < 0 || dayIndex >= ViewDayCount)
+        {
+            return Task.CompletedTask;
+        }
+
+        double lo = Math.Clamp(Math.Min(startHour, endHour), StartHour, EndHour);
+        double hi = Math.Clamp(Math.Max(startHour, endHour), StartHour, EndHour);
+        if (hi <= lo)
+        {
+            return Task.CompletedTask;   // a zero-length sweep is a click, not a create
+        }
+
+        DateOnly day = WeekStart.AddDays(dayIndex);
+        DateTime start = day.ToDateTime(TimeOnly.MinValue).AddHours(lo);
+        DateTime end = day.ToDateTime(TimeOnly.MinValue).AddHours(hi);
+
+        return OnRangeCreated.HasDelegate
+            ? OnRangeCreated.InvokeAsync(new SchedulerRange(start, end))
+            : Task.CompletedTask;
+    }
 
     /// <summary>Switches the active view, resetting the active cell to the origin.</summary>
     protected Task SetViewAsync(SchedulerView view)

@@ -2115,6 +2115,87 @@
         <member name="F:BlazorDX.Primitives.Scheduling.SchedulerView.Day">
             <summary>A single-day time grid.</summary>
         </member>
+        <member name="T:BlazorDX.Primitives.Scheduling.RecurrenceFrequency">
+            <summary>How often a recurring event repeats.</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Scheduling.RecurrenceFrequency.Daily">
+            <summary>Every <c>Interval</c> days.</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Scheduling.RecurrenceFrequency.Weekly">
+            <summary>Every <c>Interval</c> weeks, on each <c>ByWeekday</c> (or the seed's weekday).</summary>
+        </member>
+        <member name="F:BlazorDX.Primitives.Scheduling.RecurrenceFrequency.Monthly">
+            <summary>Every <c>Interval</c> months, on the seed's day-of-month (clamped to month length).</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Scheduling.Recurrence">
+            <summary>
+            A compact RRULE-style repeat rule for a <see cref="T:BlazorDX.Primitives.Scheduling.SchedulerEvent"/>. It is expanded into
+            concrete dated occurrences for the visible window only — the model never materialises an
+            unbounded series. Each occurrence keeps the seed event's duration, colour, and category.
+            </summary>
+            <param name="Frequency">Daily, weekly, or monthly cadence.</param>
+            <param name="Interval">
+            Spacing between repeats in units of <paramref name="Frequency"/> (every 1 = each, 2 = every other…).
+            Values below 1 are treated as 1.
+            </param>
+            <param name="Count">
+            Total number of occurrences in the series counting from the seed (0 = unbounded, limited only by
+            <paramref name="Until"/> and the visible window). Occurrences are counted from the series start, so
+            scrolling the calendar never changes which dates the rule produces.
+            </param>
+            <param name="Until">Inclusive last date an occurrence may start on (null = no end date).</param>
+            <param name="ByWeekday">
+            Weekly only: the weekdays each active week repeats on (e.g. Mon/Wed/Fri). Null or empty falls back
+            to the seed event's own weekday. Ignored for daily and monthly frequencies.
+            </param>
+        </member>
+        <member name="M:BlazorDX.Primitives.Scheduling.Recurrence.#ctor(BlazorDX.Primitives.Scheduling.RecurrenceFrequency,System.Int32,System.Int32,System.Nullable{System.DateOnly},System.Collections.Generic.IReadOnlyList{System.DayOfWeek})">
+            <summary>
+            A compact RRULE-style repeat rule for a <see cref="T:BlazorDX.Primitives.Scheduling.SchedulerEvent"/>. It is expanded into
+            concrete dated occurrences for the visible window only — the model never materialises an
+            unbounded series. Each occurrence keeps the seed event's duration, colour, and category.
+            </summary>
+            <param name="Frequency">Daily, weekly, or monthly cadence.</param>
+            <param name="Interval">
+            Spacing between repeats in units of <paramref name="Frequency"/> (every 1 = each, 2 = every other…).
+            Values below 1 are treated as 1.
+            </param>
+            <param name="Count">
+            Total number of occurrences in the series counting from the seed (0 = unbounded, limited only by
+            <paramref name="Until"/> and the visible window). Occurrences are counted from the series start, so
+            scrolling the calendar never changes which dates the rule produces.
+            </param>
+            <param name="Until">Inclusive last date an occurrence may start on (null = no end date).</param>
+            <param name="ByWeekday">
+            Weekly only: the weekdays each active week repeats on (e.g. Mon/Wed/Fri). Null or empty falls back
+            to the seed event's own weekday. Ignored for daily and monthly frequencies.
+            </param>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.Recurrence.Frequency">
+            <summary>Daily, weekly, or monthly cadence.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.Recurrence.Interval">
+            <summary>
+            Spacing between repeats in units of <paramref name="Frequency"/> (every 1 = each, 2 = every other…).
+            Values below 1 are treated as 1.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.Recurrence.Count">
+            <summary>
+            Total number of occurrences in the series counting from the seed (0 = unbounded, limited only by
+            <paramref name="Until"/> and the visible window). Occurrences are counted from the series start, so
+            scrolling the calendar never changes which dates the rule produces.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.Recurrence.Until">
+            <summary>Inclusive last date an occurrence may start on (null = no end date).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.Recurrence.ByWeekday">
+            <summary>
+            Weekly only: the weekdays each active week repeats on (e.g. Mon/Wed/Fri). Null or empty falls back
+            to the seed event's own weekday. Ignored for daily and monthly frequencies.
+            </summary>
+        </member>
         <member name="T:BlazorDX.Primitives.Scheduling.SchedulerEvent">
             <summary>A scheduled event placed on the calendar.</summary>
             <param name="Title">Event label.</param>
@@ -2129,14 +2210,17 @@
             Optional category/status label. Conveyed as text (never color alone) so the
             distinction survives for colour-blind and high-contrast users (WCAG 1.4.1).
             </param>
+            <param name="Recurrence">
+            Optional repeat rule. When set, this event is a <em>seed</em>: the scheduler expands it into
+            concrete dated occurrences across the visible window (the seed itself is the first occurrence).
+            Null means a single one-off interval.
+            </param>
             <remarks>
-            DEFERRED: RRULE-style recurrence is not yet modelled — every event is a single
-            concrete interval. Drag-to-move / drag-to-create editing is not implemented, and
-            the overlap-lane layout is computed in pure C# (the planned Rust overlap-lane
-            kernel is not wired up).
+            The overlap-lane layout is computed in pure C# (the planned Rust overlap-lane kernel is not
+            wired up; the date math does not need it).
             </remarks>
         </member>
-        <member name="M:BlazorDX.Primitives.Scheduling.SchedulerEvent.#ctor(System.String,System.DateTime,System.DateTime,System.String,System.String)">
+        <member name="M:BlazorDX.Primitives.Scheduling.SchedulerEvent.#ctor(System.String,System.DateTime,System.DateTime,System.String,System.String,System.Nullable{BlazorDX.Primitives.Scheduling.Recurrence})">
             <summary>A scheduled event placed on the calendar.</summary>
             <param name="Title">Event label.</param>
             <param name="Start">Start timestamp.</param>
@@ -2150,11 +2234,14 @@
             Optional category/status label. Conveyed as text (never color alone) so the
             distinction survives for colour-blind and high-contrast users (WCAG 1.4.1).
             </param>
+            <param name="Recurrence">
+            Optional repeat rule. When set, this event is a <em>seed</em>: the scheduler expands it into
+            concrete dated occurrences across the visible window (the seed itself is the first occurrence).
+            Null means a single one-off interval.
+            </param>
             <remarks>
-            DEFERRED: RRULE-style recurrence is not yet modelled — every event is a single
-            concrete interval. Drag-to-move / drag-to-create editing is not implemented, and
-            the overlap-lane layout is computed in pure C# (the planned Rust overlap-lane
-            kernel is not wired up).
+            The overlap-lane layout is computed in pure C# (the planned Rust overlap-lane kernel is not
+            wired up; the date math does not need it).
             </remarks>
         </member>
         <member name="P:BlazorDX.Primitives.Scheduling.SchedulerEvent.Title">
@@ -2179,19 +2266,73 @@
             distinction survives for colour-blind and high-contrast users (WCAG 1.4.1).
             </summary>
         </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerEvent.Recurrence">
+            <summary>
+            Optional repeat rule. When set, this event is a <em>seed</em>: the scheduler expands it into
+            concrete dated occurrences across the visible window (the seed itself is the first occurrence).
+            Null means a single one-off interval.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Scheduling.SchedulerEventMove">
+            <summary>An event drag-to-move result: the seed occurrence and its proposed new interval.</summary>
+            <param name="Original">The concrete occurrence the user dragged.</param>
+            <param name="NewStart">Proposed new start (the duration is preserved).</param>
+            <param name="NewEnd">Proposed new end.</param>
+        </member>
+        <member name="M:BlazorDX.Primitives.Scheduling.SchedulerEventMove.#ctor(BlazorDX.Primitives.Scheduling.SchedulerEvent,System.DateTime,System.DateTime)">
+            <summary>An event drag-to-move result: the seed occurrence and its proposed new interval.</summary>
+            <param name="Original">The concrete occurrence the user dragged.</param>
+            <param name="NewStart">Proposed new start (the duration is preserved).</param>
+            <param name="NewEnd">Proposed new end.</param>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerEventMove.Original">
+            <summary>The concrete occurrence the user dragged.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerEventMove.NewStart">
+            <summary>Proposed new start (the duration is preserved).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerEventMove.NewEnd">
+            <summary>Proposed new end.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Scheduling.SchedulerRange">
+            <summary>A drag-to-create result: the time range the user swept out on an empty day column.</summary>
+            <param name="Start">Proposed start.</param>
+            <param name="End">Proposed end.</param>
+        </member>
+        <member name="M:BlazorDX.Primitives.Scheduling.SchedulerRange.#ctor(System.DateTime,System.DateTime)">
+            <summary>A drag-to-create result: the time range the user swept out on an empty day column.</summary>
+            <param name="Start">Proposed start.</param>
+            <param name="End">Proposed end.</param>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerRange.Start">
+            <summary>Proposed start.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerRange.End">
+            <summary>Proposed end.</summary>
+        </member>
         <member name="T:BlazorDX.Primitives.Scheduling.ScheduledBlock">
             <summary>One event laid out within a day column.</summary>
             <param name="Event">The source event.</param>
             <param name="DayIndex">Zero-based day column.</param>
             <param name="OffsetHours">Hours from the view's start hour to the block's top.</param>
             <param name="LengthHours">Block height in hours (clamped to the visible range).</param>
+            <param name="SourceIndex">
+            Index of this block's event in <see cref="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.Events"/>, or -1 for an expanded
+            recurrence occurrence (which has no single source row). Drag-to-move keys off this: only blocks
+            with a real index are directly movable.
+            </param>
         </member>
-        <member name="M:BlazorDX.Primitives.Scheduling.ScheduledBlock.#ctor(BlazorDX.Primitives.Scheduling.SchedulerEvent,System.Int32,System.Double,System.Double)">
+        <member name="M:BlazorDX.Primitives.Scheduling.ScheduledBlock.#ctor(BlazorDX.Primitives.Scheduling.SchedulerEvent,System.Int32,System.Double,System.Double,System.Int32)">
             <summary>One event laid out within a day column.</summary>
             <param name="Event">The source event.</param>
             <param name="DayIndex">Zero-based day column.</param>
             <param name="OffsetHours">Hours from the view's start hour to the block's top.</param>
             <param name="LengthHours">Block height in hours (clamped to the visible range).</param>
+            <param name="SourceIndex">
+            Index of this block's event in <see cref="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.Events"/>, or -1 for an expanded
+            recurrence occurrence (which has no single source row). Drag-to-move keys off this: only blocks
+            with a real index are directly movable.
+            </param>
         </member>
         <member name="P:BlazorDX.Primitives.Scheduling.ScheduledBlock.Event">
             <summary>The source event.</summary>
@@ -2204,6 +2345,13 @@
         </member>
         <member name="P:BlazorDX.Primitives.Scheduling.ScheduledBlock.LengthHours">
             <summary>Block height in hours (clamped to the visible range).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.ScheduledBlock.SourceIndex">
+            <summary>
+            Index of this block's event in <see cref="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.Events"/>, or -1 for an expanded
+            recurrence occurrence (which has no single source row). Drag-to-move keys off this: only blocks
+            with a real index are directly movable.
+            </summary>
         </member>
         <member name="T:BlazorDX.Primitives.Scheduling.SchedulerPrimitive">
             <summary>
@@ -2225,6 +2373,12 @@
         </member>
         <member name="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.View">
             <summary>The active calendar view.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.OnEventMoved">
+            <summary>Raised when an event is dragged to a new time slot (the host applies the move).</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.OnRangeCreated">
+            <summary>Raised when the user drags out a new time range on an empty day column.</summary>
         </member>
         <member name="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.ActiveRow">
             <summary>The active cell's row (time-grid row or month week), or -1 when none.</summary>
@@ -2256,18 +2410,47 @@
         <member name="M:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.IsInDisplayedMonth(System.DateOnly)">
             <summary>Whether <paramref name="day"/> falls inside the displayed month.</summary>
         </member>
+        <member name="M:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.ExpandVisible">
+            <summary>
+            The seed events expanded into concrete occurrences that touch the visible window. Non-recurring
+            events pass through unchanged (with their row index); a recurring seed yields one entry per
+            in-window occurrence (with index -1). Built lazily per render via <see cref="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.Visible"/>.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.InvalidateOccurrences">
+            <summary>
+            Drops the cached occurrence expansion so the next access rebuilds it. The styled layer calls
+            this once per render before laying out, since the window or event set may have changed.
+            </summary>
+        </member>
         <member name="M:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.Blocks">
             <summary>
             Lays every event into one block per visible day it touches (Week/Day). A
             multi-day or midnight-crossing event yields a separate block on each day
             column it overlaps, with start/end clamped to that day's visible hour range.
+            Recurring seeds are expanded into their visible occurrences first.
             </summary>
         </member>
         <member name="M:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.EventsOn(System.DateOnly)">
             <summary>
             Events that touch <paramref name="day"/> — i.e. whose [Start..End] date range
             includes it — ordered by start time (Month cells). A multi-day event therefore
-            appears in every spanned cell.
+            appears in every spanned cell. Recurring seeds are expanded first.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.ApplyMoveAsync(System.Int32,System.Int32,System.Double)">
+            <summary>
+            Applies a drag-to-move result reported by the bridge: resolves the dragged event by its row
+            index, moves it to <paramref name="dayIndex"/> at <paramref name="startHour"/> (preserving the
+            duration), and raises <see cref="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.OnEventMoved"/>. Out-of-range indices or recurrence rows
+            (index -1) are ignored, so a stale or malformed payload can never mutate the wrong event.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.ApplyCreateAsync(System.Int32,System.Double,System.Double)">
+            <summary>
+            Applies a drag-to-create result reported by the bridge: turns the swept day column and hour
+            span into a concrete time range and raises <see cref="P:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.OnRangeCreated"/>. The range is clamped
+            to the visible day and hour bounds and ordered, so an inverted or out-of-range sweep is safe.
             </summary>
         </member>
         <member name="M:BlazorDX.Primitives.Scheduling.SchedulerPrimitive.SetViewAsync(BlazorDX.Primitives.Scheduling.SchedulerView)">

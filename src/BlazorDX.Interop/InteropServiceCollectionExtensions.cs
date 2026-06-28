@@ -21,6 +21,7 @@ public static class InteropServiceCollectionExtensions
             services.AddScoped<IHotkeyInterop, HotkeyInterop>();
             services.AddScoped<IImageEditorInterop, ImageEditorInterop>();
             services.AddScoped<IFileDndInterop, FileDndInterop>();
+            services.AddScoped<ISchedulerInterop, SchedulerInterop>();
             services.AddScoped<IDocumentViewerInterop, DocumentViewerInterop>();
         }
         else
@@ -35,6 +36,7 @@ public static class InteropServiceCollectionExtensions
             services.AddScoped<IHotkeyInterop, NullHotkeyInterop>();
             services.AddScoped<IImageEditorInterop, NullImageEditorInterop>();
             services.AddScoped<IFileDndInterop, NullFileDndInterop>();
+            services.AddScoped<ISchedulerInterop, NullSchedulerInterop>();
             services.AddScoped<IDocumentViewerInterop, NullDocumentViewerInterop>();
         }
 

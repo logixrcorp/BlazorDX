@@ -1321,9 +1321,11 @@
             token-driven (see dx-scheduler.css).
             </summary>
             <remarks>
-            DEFERRED: RRULE-style recurring events, drag-to-move / drag-to-create editing,
-            and the planned Rust overlap-lane layout kernel are not yet implemented. The
-            current overlap layout is computed in pure C#.
+            RRULE-style recurring events are expanded in C# (see <see cref="T:BlazorDX.Primitives.Scheduling.SchedulerPrimitive"/>), and the
+            time grid supports pointer drag-to-move / drag-to-create via a thin TypeScript bridge
+            (<see cref="T:BlazorDX.Interop.ISchedulerInterop"/>) with edge auto-scroll — all date math and state stay in C#.
+            The overlap layout is computed in pure C# (the once-planned Rust overlap-lane kernel is not
+            wired up and the date math does not need it).
             </remarks>
         </member>
         <member name="P:BlazorDX.Components.DxScheduler.HourHeight">

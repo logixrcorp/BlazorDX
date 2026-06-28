@@ -1,8 +1,10 @@
 using AngleSharp.Dom;
 using BlazorDX.Components;
+using BlazorDX.Interop;
 using BlazorDX.Primitives.Scheduling;
 using Bunit;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace BlazorDX.Components.Tests;
@@ -11,6 +13,12 @@ namespace BlazorDX.Components.Tests;
 public sealed class DxSchedulerTests : TestContext
 {
     private static readonly DateOnly Week = new(2026, 6, 15);
+
+    public DxSchedulerTests()
+    {
+        // DxScheduler injects the drag bridge; off-browser it is the no-op implementation.
+        Services.AddScoped<ISchedulerInterop, NullSchedulerInterop>();
+    }
 
     private static SchedulerEvent At(int dayOffset, double startHour, double endHour, string title = "E") =>
         new(title,
@@ -506,5 +514,227 @@ public sealed class DxSchedulerTests : TestContext
 
         string range = sched.Find(".dx-sched-range").TextContent;
         Assert.DoesNotContain("2026", range);
+    }
+
+    // ---- Recurrence expansion ----
+
+    private static SchedulerEvent Recurring(int dayOffset, double start, double end, Recurrence rule, string title = "R") =>
+        At(dayOffset, start, end, title) with { Recurrence = rule };
+
+    [Fact]
+    public void Weekly_byweekday_expands_to_each_listed_day()
+    {
+        // Seeded Monday, repeating Mon/Wed/Fri => three occurrences this week (cols 0,2,4).
+        SchedulerEvent standup = Recurring(0, 9, 9.5,
+            new Recurrence(RecurrenceFrequency.Weekly,
+                ByWeekday: [DayOfWeek.Monday, DayOfWeek.Wednesday, DayOfWeek.Friday]),
+            "Standup");
+
+        IRenderedComponent<DxScheduler> sched = Render(standup);
+
+        var cols = sched.FindAll(".dx-sched-col");
+        Assert.Single(cols[0].QuerySelectorAll(".dx-sched-event"));   // Mon
+        Assert.Empty(cols[1].QuerySelectorAll(".dx-sched-event"));    // Tue
+        Assert.Single(cols[2].QuerySelectorAll(".dx-sched-event"));   // Wed
+        Assert.Single(cols[4].QuerySelectorAll(".dx-sched-event"));   // Fri
+        Assert.Equal(3, sched.FindAll(".dx-sched-event").Count);
+    }
+
+    [Fact]
+    public void Daily_recurrence_fills_every_day_in_the_week()
+    {
+        SchedulerEvent daily = Recurring(0, 9, 10, new Recurrence(RecurrenceFrequency.Daily), "Daily");
+
+        IRenderedComponent<DxScheduler> sched = Render(daily);
+
+        Assert.Equal(7, sched.FindAll(".dx-sched-event").Count);   // one per day column
+    }
+
+    [Fact]
+    public void Recurrence_count_caps_the_number_of_occurrences()
+    {
+        // Daily but only 2 occurrences total (counted from the seed): Mon + Tue.
+        SchedulerEvent capped = Recurring(0, 9, 10, new Recurrence(RecurrenceFrequency.Daily, Count: 2), "Capped");
+
+        IRenderedComponent<DxScheduler> sched = Render(capped);
+
+        Assert.Equal(2, sched.FindAll(".dx-sched-event").Count);
+    }
+
+    [Fact]
+    public void Recurrence_until_stops_at_the_end_date_inclusive()
+    {
+        // Daily through Wednesday inclusive => Mon, Tue, Wed = 3.
+        SchedulerEvent bounded = Recurring(0, 9, 10,
+            new Recurrence(RecurrenceFrequency.Daily, Until: Week.AddDays(2)), "Bounded");
+
+        IRenderedComponent<DxScheduler> sched = Render(bounded);
+
+        Assert.Equal(3, sched.FindAll(".dx-sched-event").Count);
+    }
+
+    [Fact]
+    public void Recurrence_is_windowed_to_the_viewed_week_not_the_seed_week()
+    {
+        // A weekly event seeded the prior week still appears when the next week is viewed.
+        SchedulerEvent weekly = Recurring(0, 9, 10, new Recurrence(RecurrenceFrequency.Weekly), "Weekly");
+
+        IRenderedComponent<DxScheduler> sched = RenderComponent<DxScheduler>(parameters => parameters
+            .Add(s => s.WeekStart, Week.AddDays(7))   // the week AFTER the seed
+            .Add(s => s.Events, new[] { weekly })
+            .Add(s => s.StartHour, 8)
+            .Add(s => s.EndHour, 18)
+            .Add(s => s.HourHeight, 44));
+
+        var cols = sched.FindAll(".dx-sched-col");
+        Assert.Single(cols[0].QuerySelectorAll(".dx-sched-event"));   // Monday of the next week
+    }
+
+    [Fact]
+    public void Monthly_recurrence_shows_the_occurrence_in_a_later_month()
+    {
+        // Seeded Jun 15, monthly => the Jul 15 occurrence is visible in the July month grid.
+        SchedulerEvent monthly = new("Monthly",
+            new DateTime(2026, 6, 15, 9, 0, 0),
+            new DateTime(2026, 6, 15, 10, 0, 0),
+            Recurrence: new Recurrence(RecurrenceFrequency.Monthly));
+
+        IRenderedComponent<DxScheduler> sched = RenderComponent<DxScheduler>(parameters => parameters
+            .Add(s => s.WeekStart, new DateOnly(2026, 7, 15))
+            .Add(s => s.View, SchedulerView.Month)
+            .Add(s => s.Events, new[] { monthly }));
+
+        var events = sched.FindAll(".dx-sched-month-event");
+        Assert.Single(events);
+        Assert.Contains("Monthly", events[0].GetAttribute("aria-label"));
+    }
+
+    [Fact]
+    public void One_off_events_are_draggable_but_recurrence_occurrences_are_not()
+    {
+        // Events[0] recurs (occurrences carry no row key); Events[1] is a one-off (stamped key "1").
+        SchedulerEvent daily = Recurring(0, 9, 10, new Recurrence(RecurrenceFrequency.Daily), "Daily");
+        SchedulerEvent once = At(1, 14, 15, "Once");
+
+        IRenderedComponent<DxScheduler> sched = RenderComponent<DxScheduler>(parameters => parameters
+            .Add(s => s.WeekStart, Week)
+            .Add(s => s.Events, new[] { daily, once })
+            .Add(s => s.StartHour, 8)
+            .Add(s => s.EndHour, 18));
+
+        var keyed = sched.FindAll(".dx-sched-event[data-dx-key]");
+        Assert.Single(keyed);                                  // only the one-off
+        Assert.Equal("1", keyed[0].GetAttribute("data-dx-key"));
+        Assert.Contains("Once", keyed[0].GetAttribute("aria-label"));
+    }
+
+    // ---- Drag-to-move / drag-to-create result handling (the C# half of the bridge) ----
+
+    // SchedulerPrimitive's drag appliers are protected; a tiny probe exposes them so the
+    // pointer-geometry-to-model logic is testable without driving real pointer events.
+    private sealed class Probe : SchedulerPrimitive
+    {
+        public Task MoveAsync(int sourceIndex, int dayIndex, double startHour) =>
+            ApplyMoveAsync(sourceIndex, dayIndex, startHour);
+
+        public Task CreateAsync(int dayIndex, double startHour, double endHour) =>
+            ApplyCreateAsync(dayIndex, startHour, endHour);
+    }
+
+    private IRenderedComponent<Probe> RenderProbe(
+        Action<SchedulerEventMove>? onMoved,
+        Action<SchedulerRange>? onCreated,
+        params SchedulerEvent[] events) =>
+        RenderComponent<Probe>(parameters =>
+        {
+            parameters
+                .Add(s => s.WeekStart, Week)
+                .Add(s => s.StartHour, 8)
+                .Add(s => s.EndHour, 18)
+                .Add(s => s.Events, events);
+            if (onMoved is not null)
+            {
+                parameters.Add(s => s.OnEventMoved, onMoved);
+            }
+
+            if (onCreated is not null)
+            {
+                parameters.Add(s => s.OnRangeCreated, onCreated);
+            }
+        });
+
+    [Fact]
+    public async Task ApplyMove_moves_to_the_new_slot_preserving_duration()
+    {
+        SchedulerEventMove? moved = null;
+        IRenderedComponent<Probe> probe = RenderProbe(m => moved = m, null, At(0, 9, 10, "Move me"));
+
+        await probe.InvokeAsync(() => probe.Instance.MoveAsync(sourceIndex: 0, dayIndex: 2, startHour: 13.5));
+
+        Assert.NotNull(moved);
+        Assert.Equal("Move me", moved!.Value.Original.Title);
+        Assert.Equal(Week.AddDays(2).ToDateTime(new TimeOnly(13, 30)), moved.Value.NewStart);
+        Assert.Equal(Week.AddDays(2).ToDateTime(new TimeOnly(14, 30)), moved.Value.NewEnd);   // 1h preserved
+    }
+
+    [Theory]
+    [InlineData(5)]    // index past the end
+    [InlineData(-1)]   // recurrence sentinel — not a real row
+    public async Task ApplyMove_ignores_an_out_of_range_source_index(int index)
+    {
+        bool raised = false;
+        IRenderedComponent<Probe> probe = RenderProbe(_ => raised = true, null, At(0, 9, 10));
+
+        await probe.InvokeAsync(() => probe.Instance.MoveAsync(index, 0, 9));
+
+        Assert.False(raised);
+    }
+
+    [Fact]
+    public async Task ApplyMove_ignores_a_day_column_outside_the_view()
+    {
+        bool raised = false;
+        IRenderedComponent<Probe> probe = RenderProbe(_ => raised = true, null, At(0, 9, 10));
+
+        await probe.InvokeAsync(() => probe.Instance.MoveAsync(0, dayIndex: 9, startHour: 9));   // only 7 columns
+
+        Assert.False(raised);
+    }
+
+    [Fact]
+    public async Task ApplyCreate_orders_an_inverted_sweep_into_a_valid_range()
+    {
+        SchedulerRange? created = null;
+        IRenderedComponent<Probe> probe = RenderProbe(null, r => created = r);
+
+        await probe.InvokeAsync(() => probe.Instance.CreateAsync(dayIndex: 1, startHour: 15, endHour: 11));
+
+        Assert.NotNull(created);
+        Assert.Equal(Week.AddDays(1).ToDateTime(new TimeOnly(11, 0)), created!.Value.Start);
+        Assert.Equal(Week.AddDays(1).ToDateTime(new TimeOnly(15, 0)), created.Value.End);
+    }
+
+    [Fact]
+    public async Task ApplyCreate_clamps_the_range_to_the_visible_hours()
+    {
+        SchedulerRange? created = null;
+        IRenderedComponent<Probe> probe = RenderProbe(null, r => created = r);
+
+        await probe.InvokeAsync(() => probe.Instance.CreateAsync(0, startHour: 6, endHour: 25));
+
+        Assert.NotNull(created);
+        Assert.Equal(Week.ToDateTime(new TimeOnly(8, 0)), created!.Value.Start);    // clamped up to StartHour
+        Assert.Equal(Week.ToDateTime(new TimeOnly(18, 0)), created.Value.End);      // clamped down to EndHour
+    }
+
+    [Fact]
+    public async Task ApplyCreate_ignores_a_zero_length_sweep()
+    {
+        bool raised = false;
+        IRenderedComponent<Probe> probe = RenderProbe(null, _ => raised = true);
+
+        await probe.InvokeAsync(() => probe.Instance.CreateAsync(0, 10, 10));
+
+        Assert.False(raised);
     }
 }

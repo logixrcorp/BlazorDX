@@ -15,7 +15,15 @@
     view or to the first/last hour in a time view). Events are buttons whose names include
     the date, time, title, and category; the category is shown as text, never colour
     alone. Use ‹ / › to change period, Today to return.
-    Last selected: <strong>@lastSelected</strong>.
+</p>
+
+<p class="dx-demo-meta">
+    <strong>Drag editing (time views).</strong> Drag an event block to move it to another
+    day or time; drag across empty grid to create a new event. The pointer snaps to the
+    half-hour and the grid auto-scrolls near its edges. Dragging is a progressive
+    enhancement — keyboard navigation and click-to-select work without it. The recurring
+    standup is generated from a repeat rule, so its occurrences aren't individually
+    draggable. Last action: <strong>@lastAction</strong>.
 </p>
 
 <DxScheduler Events="events"
@@ -23,26 +31,55 @@
              @bind-View="view"
              StartHour="8"
              EndHour="18"
-             OnEventSelected="OnSelected" />
+             OnEventSelected="OnSelected"
+             OnEventMoved="OnMoved"
+             OnRangeCreated="OnCreated" />
 
 @code {
     private DateOnly weekStart = MondayOf(DateOnly.FromDateTime(DateTime.Today));
     private SchedulerView view = SchedulerView.Week;
-    private string lastSelected = "(none)";
+    private string lastAction = "(none)";
+    private int created;
 
-    private void OnSelected(SchedulerEvent ev) => lastSelected = ev.Title;
+    private List<SchedulerEvent> events = new();
+
+    protected override void OnInitialized() => events = BuildEvents(weekStart);
+
+    private void OnSelected(SchedulerEvent ev) => lastAction = $"Selected \"{ev.Title}\"";
+
+    private void OnMoved(SchedulerEventMove move)
+    {
+        // The Original is the exact value from the list, so value equality locates it.
+        int i = events.IndexOf(move.Original);
+        if (i >= 0)
+        {
+            events[i] = move.Original with { Start = move.NewStart, End = move.NewEnd };
+            lastAction = $"Moved \"{move.Original.Title}\" to {move.NewStart:ddd HH:mm}";
+        }
+    }
+
+    private void OnCreated(SchedulerRange range)
+    {
+        created++;
+        events.Add(new SchedulerEvent($"New event {created}", range.Start, range.End, Category: "New"));
+        lastAction = $"Created event {created} at {range.Start:ddd HH:mm}–{range.End:HH:mm}";
+    }
 
     private static DateOnly MondayOf(DateOnly date) =>
         date.AddDays(-((int)date.DayOfWeek + 6) % 7);
 
-    private IReadOnlyList<SchedulerEvent> events => BuildEvents(weekStart);
-
-    private static IReadOnlyList<SchedulerEvent> BuildEvents(DateOnly week)
+    private static List<SchedulerEvent> BuildEvents(DateOnly week)
     {
         DateTime monday = week.ToDateTime(TimeOnly.MinValue);
         return
         [
-            new SchedulerEvent("Standup", monday.AddHours(9), monday.AddHours(9.5), Category: "Meeting"),
+            // A weekly recurring standup on Mon/Wed/Fri — expanded by the engine, so it shows
+            // in every week you navigate to (its occurrences are generated, not draggable).
+            new SchedulerEvent("Standup", monday.AddHours(9), monday.AddHours(9.5), Category: "Meeting",
+                Recurrence: new Recurrence(
+                    RecurrenceFrequency.Weekly,
+                    ByWeekday: [DayOfWeek.Monday, DayOfWeek.Wednesday, DayOfWeek.Friday])),
+            // One-off events (drag these to move them).
             new SchedulerEvent("Design review", monday.AddDays(1).AddHours(11), monday.AddDays(1).AddHours(12.5), "#16a34a", "Confirmed"),
             new SchedulerEvent("1:1", monday.AddDays(2).AddHours(14), monday.AddDays(2).AddHours(15), Category: "Meeting"),
             new SchedulerEvent("Release", monday.AddDays(3).AddHours(10), monday.AddDays(3).AddHours(13), "#d97706", "Tentative"),

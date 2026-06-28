@@ -1,4 +1,5 @@
 using System.Globalization;
+using BlazorDX.Interop;
 using BlazorDX.Primitives.Scheduling;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
@@ -17,21 +18,28 @@ namespace BlazorDX.Components;
 /// token-driven (see dx-scheduler.css).
 /// </summary>
 /// <remarks>
-/// DEFERRED: RRULE-style recurring events, drag-to-move / drag-to-create editing,
-/// and the planned Rust overlap-lane layout kernel are not yet implemented. The
-/// current overlap layout is computed in pure C#.
+/// RRULE-style recurring events are expanded in C# (see <see cref="SchedulerPrimitive"/>), and the
+/// time grid supports pointer drag-to-move / drag-to-create via a thin TypeScript bridge
+/// (<see cref="ISchedulerInterop"/>) with edge auto-scroll — all date math and state stay in C#.
+/// The overlap layout is computed in pure C# (the once-planned Rust overlap-lane kernel is not
+/// wired up and the date math does not need it).
 /// </remarks>
-public sealed class DxScheduler : SchedulerPrimitive
+public sealed class DxScheduler : SchedulerPrimitive, IAsyncDisposable
 {
     /// <summary>Pixel height of one hour row (Week/Day time grid).</summary>
     [Parameter] public int HourHeight { get; set; } = 44;
 
     [Parameter] public string? Class { get; set; }
 
+    [Inject] private ISchedulerInterop Drag { get; set; } = default!;
+
     private static readonly string[] WeekdayNames =
         ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
     private readonly string gridId = $"dx-sched-{Guid.NewGuid():N}";
+
+    // Whether the time-grid drag bridge is currently wired to gridId (only in time views).
+    private bool dragWired;
 
     private string Columns => $"grid-template-columns:56px repeat({ViewDayCount},minmax(0,1fr));";
 
@@ -43,6 +51,10 @@ public sealed class DxScheduler : SchedulerPrimitive
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
+        // Rebuild the recurrence expansion for the window being rendered (events or date may
+        // have changed since the last pass).
+        InvalidateOccurrences();
+
         builder.OpenElement(0, "div");
         builder.AddAttribute(1, "class", $"dx-sched {Class}".TrimEnd());
 
@@ -278,6 +290,14 @@ public sealed class DxScheduler : SchedulerPrimitive
         builder.SetKey(ev);
         builder.AddAttribute(121, "type", "button");
         builder.AddAttribute(122, "class", "dx-sched-event");
+
+        // Drag-to-move keys off this: only concrete (non-recurring) events carry a row index,
+        // so an expanded occurrence (SourceIndex -1) is selectable but not directly draggable.
+        if (block.SourceIndex >= 0)
+        {
+            builder.AddAttribute(1221, "data-dx-key", block.SourceIndex);
+        }
+
         builder.AddAttribute(123, "style",
             string.Create(CultureInfo.InvariantCulture,
                 $"top:{top:0.#}px;height:{height:0.#}px;{EventAccent(ev.Color)}"));
@@ -452,6 +472,59 @@ public sealed class DxScheduler : SchedulerPrimitive
         }
 
         await Task.CompletedTask;
+    }
+
+    // ---- Drag-to-move / drag-to-create bridge ----
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Drag lives on the time grid only (Week/Day); the Month grid keeps click-to-select.
+        // RegisterTimeGrid is idempotent, so re-wiring every render keeps the geometry
+        // (day count, hours, row height) in sync as the view changes. Off-browser this is a
+        // no-op via NullSchedulerInterop.
+        if (View == SchedulerView.Month)
+        {
+            if (dragWired)
+            {
+                await Drag.UnregisterAsync(gridId);
+                dragWired = false;
+            }
+
+            return;
+        }
+
+        await Drag.RegisterTimeGridAsync(gridId, ViewDayCount, StartHour, EndHour, HourHeight, OnDragResult);
+        dragWired = true;
+    }
+
+    // Applies a completed pointer drag reported by the bridge. The result is untrusted pointer
+    // geometry, so the primitive re-validates the index and clamps the day/hour before raising
+    // OnEventMoved / OnRangeCreated; we marshal back onto the renderer and re-render afterwards.
+    private void OnDragResult(SchedulerDragResult result)
+    {
+        _ = InvokeAsync(async () =>
+        {
+            if (result.Kind == SchedulerDragKind.Create)
+            {
+                await ApplyCreateAsync(result.DayIndex, result.StartHour, result.EndHour);
+            }
+            else
+            {
+                await ApplyMoveAsync(result.SourceIndex, result.DayIndex, result.StartHour);
+            }
+
+            StateHasChanged();
+        });
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (dragWired)
+        {
+            await Drag.UnregisterAsync(gridId);
+        }
+
+        await Drag.DisposeAsync();
     }
 
     // ---- Styling ----

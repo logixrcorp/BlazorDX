@@ -8,8 +8,9 @@
 A calendar scheduler with Week / Month / Day views. Week and Day render a time grid
 with absolutely positioned event blocks; Month renders a date grid with per-day
 event buttons. All views are keyboard-navigable in 2-D and announce view/date
-changes. (Recurring events and drag-to-edit are explicitly deferred — see the
-`<remarks>` on the class.)
+changes. Recurring events (RRULE-style) are expanded in C#, and the time grid
+supports pointer drag-to-move / drag-to-create through a thin TypeScript bridge with
+edge auto-scroll — both layered on without disturbing the keyboard model.
 
 ## Code
 
@@ -27,6 +28,16 @@ changes. (Recurring events and drag-to-edit are explicitly deferred — see the
 - **Overlap layout** is computed in pure C# today (the Rust lane kernel is deferred);
   events are positioned in [`DxScheduler.cs:271`](../../src/BlazorDX.Components/DxScheduler.cs)
   (`BuildEvent`).
+- **Recurrence** is expanded for the visible window only (bounded, no unbounded
+  series) in [`SchedulerPrimitive.cs`](../../src/BlazorDX.Primitives/Scheduling/SchedulerPrimitive.cs)
+  (`ExpandOccurrences` / `OccurrenceStarts`); `Count` is measured from the seed so paging
+  the view never shifts the dates a rule produces.
+- **Drag-to-move / drag-to-create** is a thin pointer bridge
+  ([`scheduler.ts`](../../src/BlazorDX.Interop.Ts/src/scheduler.ts) via
+  [`ISchedulerInterop`](../../src/BlazorDX.Interop/ISchedulerInterop.cs)): JS only snaps the
+  gesture to the day/half-hour and auto-scrolls at the edges, then reports one result; the
+  move/create math and validation stay in C# (`ApplyMoveAsync` / `ApplyCreateAsync`). Only
+  concrete events are draggable — recurrence occurrences carry no row key.
 
 ## Why (accessibility + non-negotiables)
 
