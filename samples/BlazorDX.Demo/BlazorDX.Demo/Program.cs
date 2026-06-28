@@ -76,6 +76,9 @@ builder.Services.AddBlazorDXPowerBi(o =>
     o.WorkspaceId = PowerBiWorkspaceId;
 }).UseTokenProvider(new StaticPowerBiTokenProvider("demo-aad-token"));
 
+// Used (Production / PowerBI:PlaygroundSample) to fetch the Power BI playground sample config.
+builder.Services.AddHttpClient();
+
 var app = builder.Build();
 
 // Must run before UseHttpsRedirection so the forwarded https scheme is applied first.
@@ -131,8 +134,26 @@ app.MapMockPowerBiApi("/v1.0/myorg");
 // reportId. The AAD token never appears in this response. The default report id is
 // one the mock recognises so the demo works zero-config.
 const string DemoReportId = "11111111-1111-1111-1111-111111111111";
-app.MapGet("/powerbi/embedconfig", async (HttpContext http, IPowerBiEmbedService embed) =>
+app.MapGet("/powerbi/embedconfig",
+    async (HttpContext http, IPowerBiEmbedService embed, IConfiguration cfg, IHttpClientFactory httpFactory) =>
 {
+    // Live mode (Production): embed the Power BI playground's public sample report by fetching
+    // its embed config (EmbedUrl + EmbedToken) from Microsoft's public playground backend.
+    if (cfg.GetValue<bool>("PowerBI:PlaygroundSample"))
+    {
+        try
+        {
+            return Results.Json(await PlaygroundSample.FetchAsync(httpFactory, http.RequestAborted));
+        }
+        catch (Exception ex)
+        {
+            return Results.Json(
+                new { error = "Could not load the Power BI playground sample report: " + ex.Message },
+                statusCode: StatusCodes.Status502BadGateway);
+        }
+    }
+
+    // Default: the in-process mock (no tenant; deterministic for tests/axe).
     string reportId = http.Request.Query.TryGetValue("reportId", out var v) && v.Count > 0
         ? v[0]!
         : DemoReportId;
@@ -198,3 +219,76 @@ app.MapPost("/mcp", async (HttpContext http) =>
 }).DisableAntiforgery();
 
 app.Run();
+
+/// <summary>
+/// Fetches the Power BI <em>playground</em> sample report's embed config (EmbedUrl + EmbedToken)
+/// from Microsoft's public playground backend, shaped for <c>DxPowerBiReport</c>. Best-effort and
+/// defensive: the backend is an unofficial public endpoint whose JSON shape may vary, so the
+/// fields are read case-insensitively and any failure surfaces as a 502 (the component then shows
+/// its accessible error state). Used only when <c>PowerBI:PlaygroundSample</c> is on.
+/// </summary>
+internal static class PlaygroundSample
+{
+    private const string SampleUrl = "https://playgroundbe-bck-1.azurewebsites.net/Reports/SampleReport?type=sample";
+
+    public static async Task<object> FetchAsync(IHttpClientFactory factory, CancellationToken ct)
+    {
+        System.Net.Http.HttpClient client = factory.CreateClient();
+        client.Timeout = TimeSpan.FromSeconds(10);
+
+        using System.Net.Http.HttpResponseMessage resp = await client.GetAsync(SampleUrl, ct);
+        resp.EnsureSuccessStatusCode();
+
+        await using Stream stream = await resp.Content.ReadAsStreamAsync(ct);
+        using System.Text.Json.JsonDocument doc = await System.Text.Json.JsonDocument.ParseAsync(stream, default, ct);
+        System.Text.Json.JsonElement root = doc.RootElement;
+
+        string embedUrl = Str(root, "EmbedUrl", "embedUrl")
+            ?? throw new InvalidOperationException("the playground response had no EmbedUrl.");
+        string embedToken = Token(root)
+            ?? throw new InvalidOperationException("the playground response had no EmbedToken.");
+        string reportId = Str(root, "Id", "ReportId", "reportId") ?? string.Empty;
+
+        return new { embedUrl, embedToken, reportId };
+    }
+
+    private static string? Str(System.Text.Json.JsonElement el, params string[] names)
+    {
+        foreach (string name in names)
+        {
+            if (el.TryGetProperty(name, out System.Text.Json.JsonElement v)
+                && v.ValueKind == System.Text.Json.JsonValueKind.String)
+            {
+                return v.GetString();
+            }
+        }
+
+        return null;
+    }
+
+    // The embed token may be a bare string or an object { Token: "..." }.
+    private static string? Token(System.Text.Json.JsonElement root)
+    {
+        foreach (string name in new[] { "EmbedToken", "embedToken", "Token", "accessToken" })
+        {
+            if (!root.TryGetProperty(name, out System.Text.Json.JsonElement v))
+            {
+                continue;
+            }
+
+            if (v.ValueKind == System.Text.Json.JsonValueKind.String)
+            {
+                return v.GetString();
+            }
+
+            if (v.ValueKind == System.Text.Json.JsonValueKind.Object
+                && v.TryGetProperty("Token", out System.Text.Json.JsonElement t)
+                && t.ValueKind == System.Text.Json.JsonValueKind.String)
+            {
+                return t.GetString();
+            }
+        }
+
+        return null;
+    }
+}

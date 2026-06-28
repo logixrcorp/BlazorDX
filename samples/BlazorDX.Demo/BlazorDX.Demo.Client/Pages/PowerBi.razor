@@ -17,11 +17,13 @@
 </p>
 
 <p class="dx-demo-meta">
-    In production the wrapper lazy-loads the real <code>powerbi-client</code> SDK from
-    a CDN and calls the genuine <code>powerbi.embed(...)</code> (which needs a live
-    Azure tenant). This demo instead loads a tiny <strong>stub</strong>
-    (<code>powerbi-stub.js</code>) that records the embed config and renders a
-    placeholder — so the full loop is provable with no tenant and no console errors.
+    The wrapper lazy-loads the real <code>powerbi-client</code> SDK from a CDN and calls the
+    genuine <code>powerbi.embed(...)</code>. The <strong>deployed site</strong> embeds the live
+    <a href="https://playground.powerbi.com/sampleReportEmbed">Power BI playground sample report</a>
+    — its embed config (embed URL + token) is fetched from Microsoft's public playground backend by
+    the server-side <code>/powerbi/embedconfig</code> endpoint. Locally and in tests the demo
+    instead loads a tiny <strong>stub</strong> (<code>powerbi-stub.js</code>) over the in-process
+    mock, so the full loop is provable with no tenant — selected by <code>PowerBI:PlaygroundSample</code>.
 </p>
 
 <DxPowerBiReport ConfigEndpoint="/powerbi/embedconfig"

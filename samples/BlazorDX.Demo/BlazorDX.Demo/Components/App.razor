@@ -1,4 +1,5 @@
 ﻿@inject NavigationManager Nav
+@inject IConfiguration Configuration
 <!DOCTYPE html>
 <html lang="en">
 
@@ -81,11 +82,14 @@
     <link rel="stylesheet" href="_content/BlazorDX.Htmx/dx-htmxdoc.css" />
     <link rel="stylesheet" href="_content/BlazorDX.Integrations.Reporting/dx-report.css" />
     <link rel="stylesheet" href="_content/BlazorDX.Integrations.PowerBI/dx-powerbi.css" />
-    @* DEMO/TEST ONLY: a stub window.powerbi loaded before Blazor, so dx-powerbi.js
-       uses it instead of fetching the real SDK from the CDN (no tenant needed). It
-       records the embed config on window.__lastEmbed for the E2E. Production ships
-       NO such stub — the wrapper loads the real powerbi-client SDK. *@
-    <script src="powerbi-stub.js"></script>
+    @* A stub window.powerbi loaded before Blazor, so dx-powerbi.js uses it instead of
+       fetching the real SDK from the CDN (no tenant needed); it records the embed config
+       on window.__lastEmbed for the E2E. Skipped when PlaygroundSample is on (Production),
+       where the wrapper loads the real powerbi-client SDK and embeds the live sample. *@
+    @if (!Configuration.GetValue<bool>("PowerBI:PlaygroundSample"))
+    {
+        <script src="powerbi-stub.js"></script>
+    }
     <script src="https://unpkg.com/htmx.org@2.0.3" integrity="sha384-0895/pl2MU10Hqc6jd4RvrthNlDiE9U1tWmX7WRESftEDRosgxNsQG/Ze9YMRzHq" crossorigin="anonymous"></script>
     <ImportMap />
     <HeadOutlet />
