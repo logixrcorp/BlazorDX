@@ -1,0 +1,269 @@
+@page "/ecm"
+@layout EcmLayout
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@using BlazorDX.Primitives.Grid
+@inject EcmStore Store
+@inject ToastService Toasts
+
+<PageTitle>ContentVault — @FolderName</PageTitle>
+<DxToastHost />
+
+<div class="ecm-workspace">
+    <aside class="ecm-folders" aria-label="Folders">
+        <h2>Repository</h2>
+        @foreach (EcmFolder folder in Store.Folders)
+        {
+            <button type="button"
+                    class="ecm-folder @(folder.Path == selectedFolder ? "ecm-folder-on" : "")"
+                    style="padding-left:@(10 + folder.Depth * 16)px"
+                    @onclick="() => SelectFolder(folder.Path)">
+                <span class="ecm-folder-ico">@(folder.Path == "/" ? "🗃" : "📁")</span>
+                <span class="ecm-folder-name">@folder.Name</span>
+                <span class="ecm-folder-count">@Store.InFolder(folder.Path).Count</span>
+            </button>
+        }
+    </aside>
+
+    <section class="ecm-content">
+        <div class="ecm-stats">
+            <div class="ecm-stat"><span class="ecm-stat-n">@Store.Total</span><span class="ecm-stat-l">Documents</span></div>
+            <div class="ecm-stat"><span class="ecm-stat-n">@Store.CountByStatus(DocStatus.Published)</span><span class="ecm-stat-l">Published</span></div>
+            <div class="ecm-stat"><span class="ecm-stat-n">@Store.CountByStatus(DocStatus.InReview)</span><span class="ecm-stat-l">In review</span></div>
+            <div class="ecm-stat"><span class="ecm-stat-n">@Store.CheckedOutCount</span><span class="ecm-stat-l">Checked out</span></div>
+        </div>
+
+        <div class="ecm-grid-head">
+            <h1>@FolderName</h1>
+            <p>BlazorDX DataGrid — sort, filter, choose columns, export to CSV / Excel. Select a row to manage the document.</p>
+        </div>
+
+        <DxDataGrid TRow="DocumentRow"
+                    Items="rows"
+                    Accessor="accessor"
+                    Selectable="true"
+                    Filterable="true"
+                    ShowColumnChooser="true"
+                    ShowFilterMenu="true"
+                    ShowExport="true"
+                    ExportFileName="documents.csv"
+                    ShowExcelExport="true"
+                    ExcelFileName="documents.xlsx"
+                    ShowClipboard="true"
+                    KeyboardNavigation="true"
+                    PinnedColumns="1"
+                    SelectionChanged="OnSelectionChanged"
+                    RowHeight="34"
+                    ViewportHeight="460" />
+    </section>
+</div>
+
+<DxDialog @bind-Open="detailOpen" AriaLabel="Document details">
+    @if (selected is not null)
+    {
+        <div class="ecm-detail">
+            <div class="ecm-detail-head">
+                <div>
+                    <h2>@selected.Name</h2>
+                    <div class="ecm-detail-meta">
+                        @selected.Folder · @selected.Extension.ToUpperInvariant() · @EcmUi.FormatSize(selected.Size) · v@selected.VersionLabel
+                    </div>
+                </div>
+                <div class="ecm-detail-badges">
+                    <DxBadge Variant="@EcmUi.StatusVariant(selected.Status)" Text="@EcmUi.StatusLabel(selected.Status)" />
+                    <DxBadge Variant="@EcmUi.ClassificationVariant(selected.Classification)" Text="@selected.Classification.ToString()" />
+                    @if (selected.IsCheckedOut)
+                    {
+                        <DxBadge Variant="warning" Text="@($"🔒 {selected.CheckedOutBy}")" />
+                    }
+                </div>
+            </div>
+
+            <div class="ecm-actions" role="group" aria-label="Document lifecycle">
+                @if (!selected.IsCheckedOut)
+                {
+                    <button type="button" class="ecm-btn" @onclick="CheckOut">Check out</button>
+                }
+                else
+                {
+                    <input class="ecm-note" placeholder="Check-in note" @bind="checkInNote" @bind:event="oninput" aria-label="Check-in note" />
+                    <button type="button" class="ecm-btn ecm-btn-primary" @onclick="CheckIn">Check in</button>
+                }
+                @if (NextStatus is DocStatus next)
+                {
+                    <button type="button" class="ecm-btn" @onclick="() => Advance(next)">@NextStatusLabel</button>
+                }
+            </div>
+
+            <div class="ecm-tabs" role="tablist">
+                <button type="button" role="tab" aria-selected="@(tab == DetailTab.Metadata)"
+                        class="ecm-tab @(tab == DetailTab.Metadata ? "ecm-tab-on" : "")" @onclick="() => tab = DetailTab.Metadata">Metadata</button>
+                <button type="button" role="tab" aria-selected="@(tab == DetailTab.Versions)"
+                        class="ecm-tab @(tab == DetailTab.Versions ? "ecm-tab-on" : "")" @onclick="() => tab = DetailTab.Versions">Versions (@selected.Versions.Count)</button>
+                <button type="button" role="tab" aria-selected="@(tab == DetailTab.Governance)"
+                        class="ecm-tab @(tab == DetailTab.Governance ? "ecm-tab-on" : "")" @onclick="() => tab = DetailTab.Governance">Governance</button>
+            </div>
+
+            <div class="ecm-tabpanel">
+                @if (tab == DetailTab.Metadata)
+                {
+                    <DxForm TModel="DocumentMetadata" Model="meta" Descriptor="metaDescriptor"
+                            ValidateOnChange="true" OnValidSubmit="SaveMetadata" SubmitText="Save metadata">
+                        <DxFormSection Title="Document">
+                            <DxFormField Name="Name" />
+                            <DxFormGrid Columns="2">
+                                <DxFormField Name="Classification" />
+                                <DxFormField Name="Status" />
+                                <DxFormField Name="Owner" />
+                                <DxFormField Name="Tags" />
+                            </DxFormGrid>
+                            <DxFormField Name="Summary" />
+                        </DxFormSection>
+                    </DxForm>
+                }
+                else if (tab == DetailTab.Versions)
+                {
+                    <ol class="ecm-versions">
+                        @foreach (DocVersion v in Enumerable.Reverse(selected.Versions))
+                        {
+                            <li>
+                                <span class="ecm-ver-label">v@v.Label</span>
+                                <span class="ecm-ver-note">@v.Note</span>
+                                <span class="ecm-ver-meta">@v.Author · @v.At.ToString("MMM d, yyyy HH:mm")</span>
+                            </li>
+                        }
+                    </ol>
+                }
+                else
+                {
+                    <dl class="ecm-gov">
+                        <dt>Owner</dt><dd>@selected.Owner</dd>
+                        <dt>Classification</dt><dd>@selected.Classification</dd>
+                        <dt>Retention until</dt><dd>@(selected.RetentionUntil?.ToString("MMMM d, yyyy") ?? "—")</dd>
+                        <dt>Tags</dt><dd>@(selected.Tags.Count > 0 ? string.Join(", ", selected.Tags) : "—")</dd>
+                        <dt>Summary</dt><dd>@(string.IsNullOrWhiteSpace(selected.Summary) ? "—" : selected.Summary)</dd>
+                    </dl>
+                }
+            </div>
+        </div>
+    }
+</DxDialog>
+
+@code {
+    private enum DetailTab { Metadata, Versions, Governance }
+
+    private readonly DocumentRowGridAccessor accessor = new();
+    private readonly DocumentMetadataFormModel metaDescriptor = new();
+
+    private string selectedFolder = "/";
+    private IReadOnlyList<DocumentRow> rows = [];
+
+    private EcmDocument? selected;
+    private DocumentMetadata meta = new();
+    private bool detailOpen;
+    private DetailTab tab = DetailTab.Metadata;
+    private string checkInNote = string.Empty;
+
+    private string FolderName => Store.Folders.FirstOrDefault(f => f.Path == selectedFolder)?.Name ?? "All documents";
+
+    private DocStatus? NextStatus => selected?.Status switch
+    {
+        DocStatus.Draft => DocStatus.InReview,
+        DocStatus.InReview => DocStatus.Approved,
+        DocStatus.Approved => DocStatus.Published,
+        DocStatus.Published => DocStatus.Archived,
+        _ => null,
+    };
+
+    private string NextStatusLabel => NextStatus switch
+    {
+        DocStatus.InReview => "Submit for review",
+        DocStatus.Approved => "Approve",
+        DocStatus.Published => "Publish",
+        DocStatus.Archived => "Archive",
+        _ => string.Empty,
+    };
+
+    protected override void OnInitialized() => Refresh();
+
+    private void SelectFolder(string path)
+    {
+        selectedFolder = path;
+        Refresh();
+    }
+
+    private void Refresh() => rows = Store.InFolder(selectedFolder).Select(d => d.ToRow()).ToList();
+
+    private void OnSelectionChanged(IReadOnlyList<DocumentRow> sel)
+    {
+        if (sel.Count == 0)
+        {
+            return;
+        }
+
+        selected = Store.Get(sel[^1].Id);
+        if (selected is not null)
+        {
+            meta = EcmStore.MetadataOf(selected);
+            tab = DetailTab.Metadata;
+            checkInNote = string.Empty;
+            detailOpen = true;
+        }
+    }
+
+    private void CheckOut()
+    {
+        if (selected is null)
+        {
+            return;
+        }
+
+        Store.CheckOut(selected, "you");
+        Toasts.Show($"Checked out \"{selected.Name}\".", "success");
+        AfterChange();
+    }
+
+    private void CheckIn()
+    {
+        if (selected is null)
+        {
+            return;
+        }
+
+        Store.CheckIn(selected, checkInNote);
+        Toasts.Show($"Checked in as v{selected.VersionLabel}.", "success");
+        checkInNote = string.Empty;
+        AfterChange();
+    }
+
+    private void Advance(DocStatus next)
+    {
+        if (selected is null)
+        {
+            return;
+        }
+
+        Store.SetStatus(selected, next);
+        Toasts.Show($"\"{selected.Name}\" → {EcmUi.StatusLabel(next)}.", "success");
+        AfterChange();
+    }
+
+    private void SaveMetadata(DocumentMetadata edited)
+    {
+        if (selected is null)
+        {
+            return;
+        }
+
+        Store.ApplyMetadata(selected, edited);
+        meta = EcmStore.MetadataOf(selected);
+        Toasts.Show("Metadata saved.", "success");
+        AfterChange();
+    }
+
+    private void AfterChange()
+    {
+        Refresh();
+        StateHasChanged();
+    }
+}

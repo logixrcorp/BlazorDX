@@ -40,6 +40,10 @@ builder.Services.AddScoped<BlazorDX.Components.ToastService>();
 // TicketDesk demo data — Scoped, registered server-side too so /app pages prerender.
 builder.Services.AddScoped<BlazorDX.Demo.Client.TicketDesk.TicketStore>();
 
+// ContentVault (ECM) + Mailbox example-app data — also server-side so /ecm and /mail prerender.
+builder.Services.AddScoped<BlazorDX.Demo.Client.Ecm.EcmStore>();
+builder.Services.AddScoped<BlazorDX.Demo.Client.Mail.MailStore>();
+
 // Same observability sink registered server-side so the /errors page prerenders.
 builder.Services.AddScoped<BlazorDX.Demo.Client.DemoDiagnosticsLog>();
 builder.Services.AddScoped<BlazorDX.Primitives.Diagnostics.IDxDiagnostics>(

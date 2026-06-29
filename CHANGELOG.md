@@ -11,6 +11,14 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ### Added
 
+- **Two new example apps in the demo.** Joining TicketDesk: **ContentVault** (`/ecm`), an enterprise
+  content-management workspace — folder tree, document DataGrid (sort/filter/export), and a detail
+  dialog with a source-generated metadata `DxForm`, version history, classification/status badges,
+  and check-out/check-in + review/approve/publish lifecycle; and **Mailbox** (`/mail`), a three-pane
+  email client — folders with unread badges, message list with search/star/read state, a reading
+  pane that renders message bodies through an injected sanitizer, and compose (`DxRichTextEditor` in
+  a `DxSheet`). Both use Scoped in-memory stores.
+
 - **`DxCalendar` — inline month calendar.** A standalone, always-visible calendar (distinct from the
   `DxDatePicker` popup) built on a new `CalendarPrimitive`: single or range selection
   (`SelectionMode`, with a range hover preview), `Min`/`Max` bounds, an `IsDateDisabled` predicate,

@@ -27,6 +27,10 @@ builder.Services.AddScoped<BlazorDX.Components.ToastService>();
 // TicketDesk demo data — Scoped for the same state-isolation reason.
 builder.Services.AddScoped<BlazorDX.Demo.Client.TicketDesk.TicketStore>();
 
+// ContentVault (ECM) and Mailbox example-app data — Scoped, same isolation rule.
+builder.Services.AddScoped<BlazorDX.Demo.Client.Ecm.EcmStore>();
+builder.Services.AddScoped<BlazorDX.Demo.Client.Mail.MailStore>();
+
 // Demo observability sink: BlazorDX components report failures here (the /errors page shows them).
 builder.Services.AddScoped<BlazorDX.Demo.Client.DemoDiagnosticsLog>();
 builder.Services.AddScoped<BlazorDX.Primitives.Diagnostics.IDxDiagnostics>(
