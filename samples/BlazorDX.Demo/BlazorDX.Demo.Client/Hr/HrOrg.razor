@@ -1,0 +1,33 @@
+@page "/hr/org"
+@layout HrLayout
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@using BlazorDX.Primitives.Grid
+@inject HrStore Store
+
+<PageTitle>PeopleHub — Org chart</PageTitle>
+
+<div class="hr-page">
+    <div class="hr-head">
+        <div>
+            <h1>Org chart</h1>
+            <p>BlazorDX TreeGrid: the reporting hierarchy, flattened and virtualized. Expand a ▸ twisty,
+               or focus a row and press <kbd>→</kbd>/<kbd>←</kbd>.</p>
+        </div>
+    </div>
+
+    <DxTreeGrid TRow="OrgNode"
+                Items="roots"
+                Accessor="accessor"
+                ChildrenSelector="@(n => n.Children)"
+                InitiallyExpanded="true"
+                RowHeight="34"
+                ViewportHeight="560" />
+</div>
+
+@code {
+    private readonly OrgNodeGridAccessor accessor = new();
+    private IReadOnlyList<OrgNode> roots = [];
+
+    protected override void OnInitialized() => roots = Store.OrgRoots();
+}

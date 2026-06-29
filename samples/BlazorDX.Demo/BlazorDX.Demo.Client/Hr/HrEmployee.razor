@@ -1,0 +1,122 @@
+@page "/hr/employee/{Id:int}"
+@layout HrLayout
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@inject HrStore Store
+@inject ToastService Toasts
+
+<PageTitle>PeopleHub — @(employee?.Name ?? "Employee")</PageTitle>
+<DxToastHost />
+
+<div class="hr-page">
+    <a class="hr-crumb" href="/hr/directory">← Directory</a>
+
+    @if (employee is null)
+    {
+        <p class="hr-empty">Employee not found.</p>
+    }
+    else
+    {
+        <div class="hr-profile-head">
+            <span class="hr-avatar" aria-hidden="true">@employee.Initials</span>
+            <div class="hr-profile-id">
+                <h1>@employee.Name</h1>
+                <div class="hr-profile-sub">@employee.Title · @employee.Department · @employee.Location</div>
+            </div>
+            <DxBadge Variant="@HrUi.StatusVariant(employee.Status)" Text="@HrUi.StatusLabel(employee.Status)" />
+        </div>
+
+        <div class="hr-tabs" role="tablist">
+            <button type="button" role="tab" aria-selected="@(tab == Tab.Profile)"
+                    class="hr-tab @(tab == Tab.Profile ? "hr-tab-on" : "")" @onclick="() => tab = Tab.Profile">Profile</button>
+            <button type="button" role="tab" aria-selected="@(tab == Tab.Compensation)"
+                    class="hr-tab @(tab == Tab.Compensation ? "hr-tab-on" : "")" @onclick="() => tab = Tab.Compensation">Compensation</button>
+            <button type="button" role="tab" aria-selected="@(tab == Tab.Reporting)"
+                    class="hr-tab @(tab == Tab.Reporting ? "hr-tab-on" : "")" @onclick="() => tab = Tab.Reporting">Reporting</button>
+        </div>
+
+        <div class="hr-tabpanel">
+            @if (tab == Tab.Profile)
+            {
+                <DxForm TModel="EmployeeProfile" Model="profile" Descriptor="descriptor"
+                        ValidateOnChange="true" OnValidSubmit="Save" SubmitText="Save profile">
+                    <DxFormSection Title="Profile">
+                        <DxFormGrid Columns="2">
+                            <DxFormField Name="Name" />
+                            <DxFormField Name="Title" />
+                            <DxFormField Name="Department" />
+                            <DxFormField Name="EmploymentType" />
+                            <DxFormField Name="Email" />
+                            <DxFormField Name="Location" />
+                        </DxFormGrid>
+                    </DxFormSection>
+                </DxForm>
+            }
+            else if (tab == Tab.Compensation)
+            {
+                <dl class="hr-dl">
+                    <dt>Base salary</dt><dd>@employee.Salary.ToString("C0")</dd>
+                    <dt>Employment type</dt><dd>@HrUi.TypeLabel(employee.EmploymentType)</dd>
+                    <dt>PTO balance</dt><dd>@employee.PtoBalanceDays days</dd>
+                    <dt>Hire date</dt><dd>@employee.HireDate.ToString("MMMM d, yyyy")</dd>
+                    <dt>Tenure</dt><dd>@employee.TenureYears.ToString("0.0") years</dd>
+                </dl>
+            }
+            else
+            {
+                <dl class="hr-dl">
+                    <dt>Manager</dt><dd>@Store.ManagerName(employee)</dd>
+                    <dt>Department</dt><dd>@employee.Department</dd>
+                </dl>
+                <h3 class="hr-reports-h">Direct reports</h3>
+                @if (reports.Count == 0)
+                {
+                    <p class="hr-muted">No direct reports.</p>
+                }
+                else
+                {
+                    <ul class="hr-reports">
+                        @foreach (Employee r in reports)
+                        {
+                            <li><a href="/hr/employee/@r.Id"><span class="hr-avatar hr-avatar-sm">@r.Initials</span> @r.Name <span class="hr-muted">· @r.Title</span></a></li>
+                        }
+                    </ul>
+                }
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private enum Tab { Profile, Compensation, Reporting }
+
+    [Parameter] public int Id { get; set; }
+
+    private readonly EmployeeProfileFormModel descriptor = new();
+    private Employee? employee;
+    private EmployeeProfile profile = new();
+    private IReadOnlyList<Employee> reports = [];
+    private Tab tab = Tab.Profile;
+
+    protected override void OnParametersSet()
+    {
+        employee = Store.Get(Id);
+        if (employee is not null)
+        {
+            profile = HrStore.ProfileOf(employee);
+            reports = Store.All().Where(e => e.ManagerId == employee.Id).ToList();
+        }
+    }
+
+    private void Save(EmployeeProfile edited)
+    {
+        if (employee is null)
+        {
+            return;
+        }
+
+        Store.UpdateProfile(employee, edited);
+        profile = HrStore.ProfileOf(employee);
+        Toasts.Show("Profile saved.", "success");
+    }
+}

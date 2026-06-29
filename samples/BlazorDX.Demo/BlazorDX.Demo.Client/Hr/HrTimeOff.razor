@@ -1,0 +1,95 @@
+@page "/hr/timeoff"
+@layout HrLayout
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@using BlazorDX.Primitives.Inputs
+@inject HrStore Store
+
+<PageTitle>PeopleHub — Time off</PageTitle>
+
+<div class="hr-page">
+    <div class="hr-head">
+        <div>
+            <h1>Time off</h1>
+            <p>Approved leave is dotted on the BlazorDX calendar; approve or deny pending requests below.</p>
+        </div>
+    </div>
+
+    <div class="hr-timeoff">
+        <section class="hr-card">
+            <h2>Team calendar</h2>
+            <DxCalendar @bind-Value="picked" MarkedDates="leaveDates" OnDateSelected="OnPick" />
+            <div class="hr-onday">
+                <strong>@(picked?.ToString("MMMM d, yyyy") ?? "Pick a day")</strong>
+                @if (picked is not null)
+                {
+                    @if (onDay.Count == 0)
+                    {
+                        <span class="hr-muted"> — nobody on leave.</span>
+                    }
+                    else
+                    {
+                        <ul class="hr-onday-list">
+                            @foreach (LeaveRequest l in onDay)
+                            {
+                                <li>@l.EmployeeName <span class="hr-muted">· @l.Type</span></li>
+                            }
+                        </ul>
+                    }
+                }
+            </div>
+        </section>
+
+        <section class="hr-card hr-card-grow">
+            <h2>Requests</h2>
+            <ul class="hr-leave">
+                @foreach (LeaveRequest l in requests)
+                {
+                    <li class="hr-leave-row">
+                        <span class="hr-leave-who">@l.EmployeeName</span>
+                        <span class="hr-leave-when">@l.Type · @l.Start.ToString("MMM d")–@l.End.ToString("MMM d") · @l.Days d</span>
+                        <DxBadge Variant="@HrUi.LeaveVariant(l.Status)" Text="@l.Status.ToString()" />
+                        @if (l.Status == LeaveStatus.Pending)
+                        {
+                            <span class="hr-leave-actions">
+                                <button type="button" class="hr-btn hr-btn-primary" @onclick="() => Decide(l, LeaveStatus.Approved)">Approve</button>
+                                <button type="button" class="hr-btn" @onclick="() => Decide(l, LeaveStatus.Denied)">Deny</button>
+                            </span>
+                        }
+                    </li>
+                }
+            </ul>
+        </section>
+    </div>
+</div>
+
+@code {
+    private DateOnly? picked;
+    private IReadOnlyCollection<DateOnly> leaveDates = [];
+    private IReadOnlyList<LeaveRequest> requests = [];
+    private IReadOnlyList<LeaveRequest> onDay = [];
+
+    protected override void OnInitialized() => Refresh();
+
+    private void OnPick(DateOnly day)
+    {
+        picked = day;
+        onDay = Store.LeaveOn(day);
+    }
+
+    private void Decide(LeaveRequest l, LeaveStatus decision)
+    {
+        Store.Decide(l, decision);
+        Refresh();
+        if (picked is DateOnly d)
+        {
+            onDay = Store.LeaveOn(d);
+        }
+    }
+
+    private void Refresh()
+    {
+        requests = Store.AllLeave();
+        leaveDates = Store.ApprovedLeaveDates();
+    }
+}

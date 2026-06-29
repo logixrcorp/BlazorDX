@@ -1,0 +1,69 @@
+@page "/hr/onboarding"
+@layout HrLayout
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@inject HrStore Store
+
+<PageTitle>PeopleHub — Onboarding</PageTitle>
+
+<div class="hr-page">
+    <div class="hr-head">
+        <div>
+            <h1>Onboarding</h1>
+            <p>New hires move across stages on a BlazorDX Kanban board — drag a card or use
+               Ctrl+←/→. Status: <strong>@status</strong>.</p>
+        </div>
+    </div>
+
+    @if (columns.Sum(c => c.Cards.Count) == 0)
+    {
+        <p class="hr-empty">No one is currently onboarding.</p>
+    }
+    else
+    {
+        <DxKanban Columns="columns" OnChange="OnBoardChange" />
+    }
+</div>
+
+@code {
+    private static readonly OnboardingStage[] StageOrder =
+        [OnboardingStage.Offer, OnboardingStage.Paperwork, OnboardingStage.Equipment, OnboardingStage.Orientation];
+
+    private readonly List<KanbanColumn> columns = new();
+    private readonly Dictionary<KanbanCard, int> cardToEmpId = new(ReferenceEqualityComparer.Instance);
+    private string status = "drag a card to advance a hire";
+
+    protected override void OnInitialized()
+    {
+        foreach ((OnboardingStage stage, IReadOnlyList<Employee> people) in Store.OnboardingByStage())
+        {
+            KanbanColumn col = new(stage.ToString());
+            foreach (Employee e in people)
+            {
+                KanbanCard card = new(e.Name, e.Department.ToString());
+                cardToEmpId[card] = e.Id;
+                col.Cards.Add(card);
+            }
+
+            columns.Add(col);
+        }
+    }
+
+    // The board mutates the columns in place; reconcile each card's column back to the
+    // employee's onboarding stage (cards mapped to ids by reference identity).
+    private void OnBoardChange()
+    {
+        for (int i = 0; i < columns.Count && i < StageOrder.Length; i++)
+        {
+            foreach (KanbanCard card in columns[i].Cards)
+            {
+                if (cardToEmpId.TryGetValue(card, out int empId) && Store.Get(empId) is Employee e)
+                {
+                    e.OnboardingStage = StageOrder[i];
+                }
+            }
+        }
+
+        status = "stages updated";
+    }
+}

@@ -30,6 +30,7 @@ builder.Services.AddScoped<BlazorDX.Demo.Client.TicketDesk.TicketStore>();
 // ContentVault (ECM) and Mailbox example-app data — Scoped, same isolation rule.
 builder.Services.AddScoped<BlazorDX.Demo.Client.Ecm.EcmStore>();
 builder.Services.AddScoped<BlazorDX.Demo.Client.Mail.MailStore>();
+builder.Services.AddScoped<BlazorDX.Demo.Client.Hr.HrStore>();
 
 // Demo observability sink: BlazorDX components report failures here (the /errors page shows them).
 builder.Services.AddScoped<BlazorDX.Demo.Client.DemoDiagnosticsLog>();

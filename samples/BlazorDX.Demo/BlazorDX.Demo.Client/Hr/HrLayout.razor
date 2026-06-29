@@ -1,0 +1,19 @@
+@inherits LayoutComponentBase
+
+<div class="hr-shell">
+    <aside class="hr-sidebar">
+        <div class="hr-brand">
+            <a class="hr-brand-name" href="/hr">👥 PeopleHub</a>
+            <span class="hr-brand-sub">HRIS on <strong>BlazorDX</strong></span>
+        </div>
+        <nav class="hr-nav">
+            <NavLink class="hr-nav-link" href="/hr" Match="NavLinkMatch.All"><span class="hr-ico">▦</span> Dashboard</NavLink>
+            <NavLink class="hr-nav-link" href="/hr/directory"><span class="hr-ico">👤</span> Directory</NavLink>
+            <NavLink class="hr-nav-link" href="/hr/org"><span class="hr-ico">🌳</span> Org chart</NavLink>
+            <NavLink class="hr-nav-link" href="/hr/timeoff"><span class="hr-ico">🏖</span> Time off</NavLink>
+            <NavLink class="hr-nav-link" href="/hr/onboarding"><span class="hr-ico">🚀</span> Onboarding</NavLink>
+        </nav>
+        <a class="hr-back" href="/">← Back to component demos</a>
+    </aside>
+    <main class="hr-main">@Body</main>
+</div>

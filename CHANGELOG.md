@@ -11,6 +11,12 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ### Added
 
+- **PeopleHub HRIS example app** (`/hr`) — a six-module HR platform on a Scoped store: a
+  **dashboard** (headcount/type/hiring charts + an average-tenure gauge), an employee **directory**
+  (`DxDataGrid`), an employee **profile** with a source-generated `DxForm` and tabs, an **org chart**
+  (`DxTreeGrid` reporting hierarchy), **time off** (`DxCalendar` with leave markers + an approve/deny
+  request queue), and **onboarding** (`DxKanban` of new hires by stage). Showcases DataGrid,
+  TreeGrid, Form, Charts, Calendar, and Kanban composed in one app.
 - **Two new example apps in the demo.** Joining TicketDesk: **ContentVault** (`/ecm`), an enterprise
   content-management workspace — folder tree, document DataGrid (sort/filter/export), and a detail
   dialog with a source-generated metadata `DxForm`, version history, classification/status badges,

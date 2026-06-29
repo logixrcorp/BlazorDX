@@ -1,0 +1,59 @@
+@page "/hr"
+@layout HrLayout
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@inject HrStore Store
+
+<PageTitle>PeopleHub — Dashboard</PageTitle>
+
+<div class="hr-page">
+    <div class="hr-head">
+        <div>
+            <h1>People dashboard</h1>
+            <p>Headcount, hiring, and time-off at a glance — every chart is a BlazorDX SVG component.</p>
+        </div>
+        <a class="hr-btn hr-btn-primary" href="/hr/directory">Open directory →</a>
+    </div>
+
+    <div class="hr-stats">
+        <div class="hr-stat"><span class="hr-stat-n">@Store.Headcount</span><span class="hr-stat-l">Headcount</span></div>
+        <div class="hr-stat"><span class="hr-stat-n">@Store.OnboardingCount</span><span class="hr-stat-l">Onboarding</span></div>
+        <div class="hr-stat"><span class="hr-stat-n">@Store.OnLeaveCount</span><span class="hr-stat-l">On leave</span></div>
+        <div class="hr-stat hr-stat-cta"><span class="hr-stat-n">@Store.PendingLeaveCount</span><span class="hr-stat-l">Pending approvals</span></div>
+    </div>
+
+    <div class="hr-cards">
+        <section class="hr-card hr-card-wide">
+            <h2>Headcount by department</h2>
+            <DxBarChart Bars="byDept" Width="640" Height="240" />
+        </section>
+
+        <section class="hr-card">
+            <h2>By employment type</h2>
+            <DxPieChart Slices="byType" Donut="true" />
+        </section>
+
+        <section class="hr-card">
+            <h2>Hires (last 6 months)</h2>
+            <DxBarChart Bars="hires" Width="360" Height="220" />
+        </section>
+
+        <section class="hr-card hr-card-gauge">
+            <h2>Average tenure</h2>
+            <DxRadialGauge Value="@Store.AverageTenureYears" Max="10" Label="years" Color="#2563eb" Format="0.0" />
+        </section>
+    </div>
+</div>
+
+@code {
+    private IReadOnlyList<ChartBar> byDept = [];
+    private IReadOnlyList<ChartBar> byType = [];
+    private IReadOnlyList<ChartBar> hires = [];
+
+    protected override void OnInitialized()
+    {
+        byDept = Store.HeadcountByDepartment().Select(d => new ChartBar(d.Label, d.Count)).ToList();
+        byType = Store.HeadcountByType().Select(t => new ChartBar(t.Label, t.Count)).ToList();
+        hires = Store.HiresLastSixMonths().Select(h => new ChartBar(h.Label, h.Count)).ToList();
+    }
+}

@@ -1,0 +1,51 @@
+@page "/hr/directory"
+@layout HrLayout
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@using BlazorDX.Primitives.Grid
+@inject HrStore Store
+@inject NavigationManager Nav
+
+<PageTitle>PeopleHub — Directory</PageTitle>
+
+<div class="hr-page">
+    <div class="hr-head">
+        <div>
+            <h1>Employee directory</h1>
+            <p>BlazorDX DataGrid: sort, filter, choose columns, export to CSV / Excel. Select a row to open the profile.</p>
+        </div>
+    </div>
+
+    <DxDataGrid TRow="EmployeeRow"
+                Items="rows"
+                Accessor="accessor"
+                Selectable="true"
+                Filterable="true"
+                ShowColumnChooser="true"
+                ShowFilterMenu="true"
+                ShowExport="true"
+                ExportFileName="employees.csv"
+                ShowExcelExport="true"
+                ExcelFileName="employees.xlsx"
+                ShowClipboard="true"
+                KeyboardNavigation="true"
+                PinnedColumns="1"
+                SelectionChanged="OnSelectionChanged"
+                RowHeight="34"
+                ViewportHeight="540" />
+</div>
+
+@code {
+    private readonly EmployeeRowGridAccessor accessor = new();
+    private IReadOnlyList<EmployeeRow> rows = [];
+
+    protected override void OnInitialized() => rows = Store.DirectoryRows();
+
+    private void OnSelectionChanged(IReadOnlyList<EmployeeRow> selected)
+    {
+        if (selected.Count > 0)
+        {
+            Nav.NavigateTo($"/hr/employee/{selected[^1].Id}");
+        }
+    }
+}

@@ -43,6 +43,7 @@ builder.Services.AddScoped<BlazorDX.Demo.Client.TicketDesk.TicketStore>();
 // ContentVault (ECM) + Mailbox example-app data — also server-side so /ecm and /mail prerender.
 builder.Services.AddScoped<BlazorDX.Demo.Client.Ecm.EcmStore>();
 builder.Services.AddScoped<BlazorDX.Demo.Client.Mail.MailStore>();
+builder.Services.AddScoped<BlazorDX.Demo.Client.Hr.HrStore>();
 
 // Same observability sink registered server-side so the /errors page prerenders.
 builder.Services.AddScoped<BlazorDX.Demo.Client.DemoDiagnosticsLog>();
