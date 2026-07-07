@@ -24,12 +24,12 @@
 <div class="td-grid2">
     <div class="td-card">
         <h2>Open by priority</h2>
-        <DxBarChart Bars="priorityBars" Width="420" Height="220" />
+        <DxBarChart Points="priorityBars" Width="420" Height="220" />
     </div>
     <div class="td-card">
         <h2>Records by practice</h2>
         <div style="display:flex; gap:24px; align-items:center; flex-wrap:wrap">
-            <DxPieChart Slices="typeBars" Donut="true" />
+            <DxPieChart Points="typeBars" Donut="true" />
             <DxRadialGauge Value="@Store.SlaCompliance" Label="SLA %" Size="120" Color="#16a34a" Format="0" />
         </div>
     </div>
@@ -61,12 +61,12 @@
 </div>
 
 @code {
-    private IReadOnlyList<ChartBar> priorityBars = [];
-    private IReadOnlyList<ChartBar> typeBars = [];
+    private IReadOnlyList<ChartPoint> priorityBars = [];
+    private IReadOnlyList<ChartPoint> typeBars = [];
 
     protected override void OnInitialized()
     {
-        priorityBars = ItilUi.Priorities.Select(p => new ChartBar(ItilUi.PriorityLabel(p), Store.Count(p))).ToList();
-        typeBars = ItilUi.Types.Select(t => new ChartBar(ItilUi.TypeLabel(t), Store.OpenOfType(t))).ToList();
+        priorityBars = ItilUi.Priorities.Select(p => new ChartPoint(Category: ItilUi.PriorityLabel(p), Y: Store.Count(p))).ToList();
+        typeBars = ItilUi.Types.Select(t => new ChartPoint(Category: ItilUi.TypeLabel(t), Y: Store.OpenOfType(t))).ToList();
     }
 }

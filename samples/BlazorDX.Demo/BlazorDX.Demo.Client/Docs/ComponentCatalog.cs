@@ -307,10 +307,10 @@ public static class ComponentCatalog
             <DxAlert Severity="error" Title="Build failed" Dismissible="true" />
             """,
         ["barchart"] = """
-            <DxBarChart Bars="bars" />
+            <DxBarChart Points="bars" />
 
             @code {
-                private IReadOnlyList<ChartBar> bars = [new("Mon", 12), new("Tue", 18)];
+                private IReadOnlyList<ChartPoint> bars = [new(Category: "Mon", Y: 12), new(Category: "Tue", Y: 18)];
             }
             """,
         ["qrcode"] = """

@@ -12,14 +12,14 @@
     hundred points. The caption shows the active compute backend.
 </p>
 
-<DxLineChart X="x" Y="y" Threshold="400" Width="720" Height="240" />
+<DxLineChart Points="lineData" Threshold="400" Width="720" Height="240" />
 
 <h2 style="margin-top:32px">Area chart</h2>
 <p class="dx-demo-meta">A filled series, also Rust-downsampled.</p>
-<DxAreaChart Values="area" Threshold="300" Width="720" Height="200" />
+<DxAreaChart Points="areaData" Threshold="300" Width="720" Height="200" />
 
 <h2 style="margin-top:32px">Bar chart</h2>
-<DxBarChart Bars="bars" Width="720" Height="240" />
+<DxBarChart Points="bars" Width="720" Height="240" />
 
 <h2 style="margin-top:32px">Histogram (Rust binning)</h2>
 <p class="dx-demo-meta">
@@ -30,16 +30,16 @@
 
 <h2 style="margin-top:32px">Pie &amp; donut</h2>
 <div style="display:flex; gap:32px; flex-wrap:wrap">
-    <DxPieChart Slices="slices" />
-    <DxPieChart Slices="slices" Donut="true" />
+    <DxPieChart Points="slices" />
+    <DxPieChart Points="slices" Donut="true" />
 </div>
 
 <h2 style="margin-top:32px">Sparklines</h2>
 <table style="border-collapse:collapse">
     <tr>
         <td style="padding:6px 14px">Revenue</td>
-        <td style="padding:6px 14px"><DxSparkline Values="spark" /></td>
-        <td style="padding:6px 14px"><DxSparkline Values="spark" Variant="bar" /></td>
+        <td style="padding:6px 14px"><DxSparkline Points="spark" /></td>
+        <td style="padding:6px 14px"><DxSparkline Points="spark" Variant="bar" /></td>
     </tr>
 </table>
 
@@ -50,11 +50,11 @@
 <div style="display:flex; gap:32px; flex-wrap:wrap">
     <div>
         <p class="dx-demo-meta">Stacked</p>
-        <DxStackedBarChart Categories="quarters" Series="seriesData" Width="340" Height="240" />
+        <DxStackedBarChart Categories="quarters" Points="stackedPoints" Width="340" Height="240" />
     </div>
     <div>
         <p class="dx-demo-meta">Grouped</p>
-        <DxStackedBarChart Categories="quarters" Series="seriesData" Stacked="false" Width="340" Height="240" />
+        <DxStackedBarChart Categories="quarters" Points="stackedPoints" Stacked="false" Width="340" Height="240" />
     </div>
 </div>
 
@@ -70,33 +70,36 @@
 </div>
 
 <h2 style="margin-top:32px">Radar</h2>
-<DxRadarChart Axes="radarAxes" Series="radarSeries" Width="340" Height="340" />
+<DxRadarChart Axes="radarAxes" Points="radarPoints" Width="340" Height="340" />
 
 <h2 style="margin-top:32px">Funnel</h2>
-<DxFunnelChart Stages="funnelStages" Width="380" Height="240" />
+<DxFunnelChart Points="funnelStages" Width="380" Height="240" />
 
 <h2 style="margin-top:32px">Candlestick</h2>
-<DxCandlestickChart Candles="candles" Width="640" Height="260" />
+<DxCandlestickChart Points="candles" Width="640" Height="260" />
 
 @code {
     private readonly double[] points = new double[6000];
-    private double[] x = [];
-    private double[] y = [];
-    private double[] area = [];
+    private IReadOnlyList<ChartPoint> lineData = [];
+    private IReadOnlyList<ChartPoint> areaData = [];
     private double[] sample = [];
 
-    private readonly IReadOnlyList<ChartBar> bars =
+    private readonly IReadOnlyList<ChartPoint> bars =
     [
-        new ChartBar("Mon", 18),
-        new ChartBar("Tue", 32),
-        new ChartBar("Wed", 27),
-        new ChartBar("Thu", 41),
-        new ChartBar("Fri", 36),
-        new ChartBar("Sat", 12),
-        new ChartBar("Sun", 9),
+        new(Category: "Mon", Y: 18),
+        new(Category: "Tue", Y: 32),
+        new(Category: "Wed", Y: 27),
+        new(Category: "Thu", Y: 41),
+        new(Category: "Fri", Y: 36),
+        new(Category: "Sat", Y: 12),
+        new(Category: "Sun", Y: 9),
     ];
 
-    private readonly double[] spark = [4, 7, 5, 9, 6, 11, 8, 13, 10, 15, 12, 17];
+    private readonly IReadOnlyList<ChartPoint> spark =
+    [
+        new(Y: 4), new(Y: 7), new(Y: 5), new(Y: 9), new(Y: 6), new(Y: 11),
+        new(Y: 8), new(Y: 13), new(Y: 10), new(Y: 15), new(Y: 12), new(Y: 17),
+    ];
 
     private readonly IReadOnlyList<ChartPoint> scatter = BuildScatter();
 
@@ -116,11 +119,15 @@
 
     private readonly IReadOnlyList<string> quarters = ["Q1", "Q2", "Q3", "Q4"];
 
-    private readonly IReadOnlyList<ChartSeries> seriesData =
+    // Flattened: one ChartPoint per (series, category) pair, tagged via Series + Category.
+    private readonly IReadOnlyList<ChartPoint> stackedPoints =
     [
-        new ChartSeries("Direct", [18, 24, 30, 28]),
-        new ChartSeries("Search", [12, 16, 14, 22]),
-        new ChartSeries("Social", [8, 6, 11, 9]),
+        new(Category: "Q1", Y: 18, Series: "Direct"), new(Category: "Q2", Y: 24, Series: "Direct"),
+        new(Category: "Q3", Y: 30, Series: "Direct"), new(Category: "Q4", Y: 28, Series: "Direct"),
+        new(Category: "Q1", Y: 12, Series: "Search"), new(Category: "Q2", Y: 16, Series: "Search"),
+        new(Category: "Q3", Y: 14, Series: "Search"), new(Category: "Q4", Y: 22, Series: "Search"),
+        new(Category: "Q1", Y: 8, Series: "Social"), new(Category: "Q2", Y: 6, Series: "Social"),
+        new(Category: "Q3", Y: 11, Series: "Social"), new(Category: "Q4", Y: 9, Series: "Social"),
     ];
 
     private readonly IReadOnlyList<GaugeZone> zones =
@@ -132,56 +139,63 @@
 
     private readonly IReadOnlyList<string> radarAxes = ["Speed", "Power", "Range", "Agility", "Defense"];
 
-    private readonly IReadOnlyList<ChartSeries> radarSeries =
+    private readonly IReadOnlyList<ChartPoint> radarPoints =
     [
-        new ChartSeries("Model A", [80, 55, 70, 60, 90]),
-        new ChartSeries("Model B", [60, 85, 50, 75, 65]),
+        new(Category: "Speed", Y: 80, Series: "Model A"), new(Category: "Power", Y: 55, Series: "Model A"),
+        new(Category: "Range", Y: 70, Series: "Model A"), new(Category: "Agility", Y: 60, Series: "Model A"),
+        new(Category: "Defense", Y: 90, Series: "Model A"),
+        new(Category: "Speed", Y: 60, Series: "Model B"), new(Category: "Power", Y: 85, Series: "Model B"),
+        new(Category: "Range", Y: 50, Series: "Model B"), new(Category: "Agility", Y: 75, Series: "Model B"),
+        new(Category: "Defense", Y: 65, Series: "Model B"),
     ];
 
-    private readonly IReadOnlyList<ChartBar> funnelStages =
+    private readonly IReadOnlyList<ChartPoint> funnelStages =
     [
-        new ChartBar("Visited", 12000),
-        new ChartBar("Signed up", 4800),
-        new ChartBar("Activated", 2100),
-        new ChartBar("Purchased", 720),
+        new(Category: "Visited", Y: 12000),
+        new(Category: "Signed up", Y: 4800),
+        new(Category: "Activated", Y: 2100),
+        new(Category: "Purchased", Y: 720),
     ];
 
-    private readonly IReadOnlyList<Candle> candles =
+    private readonly IReadOnlyList<ChartPoint> candles =
     [
-        new Candle("Mon", 100, 112, 96, 108),
-        new Candle("Tue", 108, 114, 103, 105),
-        new Candle("Wed", 105, 118, 104, 116),
-        new Candle("Thu", 116, 120, 110, 112),
-        new Candle("Fri", 112, 122, 108, 121),
+        new(Category: "Mon", Y: 100, Y2: 112, Y3: 96, Y4: 108),
+        new(Category: "Tue", Y: 108, Y2: 114, Y3: 103, Y4: 105),
+        new(Category: "Wed", Y: 105, Y2: 118, Y3: 104, Y4: 116),
+        new(Category: "Thu", Y: 116, Y2: 120, Y3: 110, Y4: 112),
+        new(Category: "Fri", Y: 112, Y2: 122, Y3: 108, Y4: 121),
     ];
 
-    private readonly IReadOnlyList<ChartBar> slices =
+    private readonly IReadOnlyList<ChartPoint> slices =
     [
-        new ChartBar("Direct", 42),
-        new ChartBar("Search", 28),
-        new ChartBar("Social", 18),
-        new ChartBar("Email", 12),
+        new(Category: "Direct", Y: 42),
+        new(Category: "Search", Y: 28),
+        new(Category: "Social", Y: 18),
+        new(Category: "Email", Y: 12),
     ];
 
     protected override void OnInitialized()
     {
         // A noisy multi-frequency wave: lots of detail LTTB must preserve.
         Random random = new(20260617);
-        x = new double[points.Length];
-        y = new double[points.Length];
+        ChartPoint[] line = new ChartPoint[points.Length];
         for (int i = 0; i < points.Length; i++)
         {
-            x[i] = i;
             double wave = (Math.Sin(i / 120.0) * 80) + (Math.Sin(i / 17.0) * 18);
-            y[i] = wave + ((random.NextDouble() - 0.5) * 24);
+            double y = wave + ((random.NextDouble() - 0.5) * 24);
+            line[i] = new ChartPoint(X: i, Y: y);
         }
 
+        lineData = line;
+
         // Area: a smoother positive series.
-        area = new double[1500];
+        ChartPoint[] area = new ChartPoint[1500];
         for (int i = 0; i < area.Length; i++)
         {
-            area[i] = 50 + (Math.Sin(i / 90.0) * 30) + (Math.Sin(i / 23.0) * 10);
+            area[i] = new ChartPoint(Y: 50 + (Math.Sin(i / 90.0) * 30) + (Math.Sin(i / 23.0) * 10));
         }
+
+        areaData = area;
 
         // Histogram: 20k normal-ish samples (sum of uniforms → bell curve).
         sample = new double[20000];

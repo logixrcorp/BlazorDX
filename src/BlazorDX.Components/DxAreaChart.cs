@@ -20,7 +20,12 @@ public sealed class DxAreaChart : ComponentBase
     private int[] selected = [];
     private object? lastSeries;
 
-    [Parameter, EditorRequired] public IReadOnlyList<double> Values { get; set; } = [];
+    /// <summary>
+    /// The series to plot, in order. Only <see cref="ChartPoint.Y"/> is read — points are laid
+    /// out evenly by index (matching the prior Values-only behavior), so <see cref="ChartPoint.X"/>
+    /// is ignored.
+    /// </summary>
+    [Parameter, EditorRequired] public IReadOnlyList<ChartPoint> Points { get; set; } = [];
 
     /// <summary>Approximate number of points to draw.</summary>
     [Parameter] public int Threshold { get; set; } = 300;
@@ -35,14 +40,15 @@ public sealed class DxAreaChart : ComponentBase
 
     protected override async Task OnParametersSetAsync()
     {
-        if (!ReferenceEquals(lastSeries, Values))
+        if (!ReferenceEquals(lastSeries, Points))
         {
-            lastSeries = Values;
-            yValues = Values.ToArray();
-            double[] xs = new double[yValues.Length];
+            lastSeries = Points;
+            yValues = new double[Points.Count];
+            double[] xs = new double[Points.Count];
             for (int i = 0; i < xs.Length; i++)
             {
                 xs[i] = i;
+                yValues[i] = Points[i].Y;
             }
 
             selected = yValues.Length > 0
@@ -82,7 +88,7 @@ public sealed class DxAreaChart : ComponentBase
 
         builder.OpenElement(16, "div");
         builder.AddAttribute(17, "class", "dx-chart-caption");
-        builder.AddContent(18, $"{selected.Length:N0} of {Values.Count:N0} points · {Compute.Backend}");
+        builder.AddContent(18, $"{selected.Length:N0} of {Points.Count:N0} points · {Compute.Backend}");
         builder.CloseElement();
 
         builder.CloseElement();

@@ -11,7 +11,7 @@ public sealed class DxGaugesTests : TestContext
     public void Sparkline_line_renders_a_polyline_with_a_point_per_value()
     {
         IRenderedComponent<DxSparkline> spark = RenderComponent<DxSparkline>(parameters => parameters
-            .Add(s => s.Values, new double[] { 1, 3, 2, 5 }));
+            .Add(s => s.Points, new[] { new ChartPoint(Y: 1), new ChartPoint(Y: 3), new ChartPoint(Y: 2), new ChartPoint(Y: 5) }));
 
         string[] points = spark.Find("polyline").GetAttribute("points")!
             .Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -22,7 +22,7 @@ public sealed class DxGaugesTests : TestContext
     public void Sparkline_bar_renders_a_rect_per_value()
     {
         IRenderedComponent<DxSparkline> spark = RenderComponent<DxSparkline>(parameters => parameters
-            .Add(s => s.Values, new double[] { 1, 3, 2 })
+            .Add(s => s.Points, new[] { new ChartPoint(Y: 1), new ChartPoint(Y: 3), new ChartPoint(Y: 2) })
             .Add(s => s.Variant, "bar"));
 
         Assert.Equal(3, spark.FindAll("rect.dx-sparkline-bar").Count);

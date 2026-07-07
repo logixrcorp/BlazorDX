@@ -4,17 +4,17 @@ using Microsoft.AspNetCore.Components.Rendering;
 
 namespace BlazorDX.Components;
 
-/// <summary>One OHLC candle for <see cref="DxCandlestickChart"/>.</summary>
-public readonly record struct Candle(string Label, double Open, double High, double Low, double Close);
-
 /// <summary>
 /// A candlestick (OHLC) chart: a high-low wick and an open-close body per candle,
-/// coloured up or down. Pure SVG; styling via dx-chart.css.
+/// coloured up or down. Reuses the shared <see cref="ChartPoint"/> model: <see cref="ChartPoint.Category"/>
+/// is the candle's label and <see cref="ChartPoint.Y"/>/<see cref="ChartPoint.Y2"/>/
+/// <see cref="ChartPoint.Y3"/>/<see cref="ChartPoint.Y4"/> are Open/High/Low/Close. Pure SVG;
+/// styling via dx-chart.css.
 /// </summary>
 public sealed class DxCandlestickChart : ComponentBase
 {
     /// <summary>The candles, left to right.</summary>
-    [Parameter, EditorRequired] public IReadOnlyList<Candle> Candles { get; set; } = [];
+    [Parameter, EditorRequired] public IReadOnlyList<ChartPoint> Points { get; set; } = [];
 
     [Parameter] public int Width { get; set; } = 640;
 
@@ -30,15 +30,22 @@ public sealed class DxCandlestickChart : ComponentBase
 
     private const double Pad = 12;
 
+    // Open/High/Low/Close for a point, with High/Low/Close defensively falling back to Open so a
+    // malformed candle (e.g. constructed with only Y set) degenerates to a flat doji rather than
+    // producing a nonsensical wick.
+    private static (double Open, double High, double Low, double Close) Ohlc(ChartPoint p) =>
+        (p.Y, p.Y2 ?? p.Y, p.Y3 ?? p.Y, p.Y4 ?? p.Y);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
-        int n = Candles.Count;
+        int n = Points.Count;
         double min = double.MaxValue;
         double max = double.MinValue;
-        foreach (Candle c in Candles)
+        foreach (ChartPoint p in Points)
         {
-            min = Math.Min(min, c.Low);
-            max = Math.Max(max, c.High);
+            (_, double high, double low, _) = Ohlc(p);
+            min = Math.Min(min, low);
+            max = Math.Max(max, high);
         }
 
         if (n == 0)
@@ -63,24 +70,24 @@ public sealed class DxCandlestickChart : ComponentBase
 
         for (int i = 0; i < n; i++)
         {
-            Candle c = Candles[i];
+            (double open, double high, double low, double close) = Ohlc(Points[i]);
             double x = Pad + (i * slot) + (slot / 2);
-            bool up = c.Close >= c.Open;
+            bool up = close >= open;
             string color = up ? UpColor : DownColor;
 
             // Wick (high → low).
             builder.OpenElement(6, "line");
             builder.SetKey(i);
             builder.AddAttribute(7, "x1", Inv($"{x:0.#}"));
-            builder.AddAttribute(8, "y1", Inv($"{Y(c.High):0.#}"));
+            builder.AddAttribute(8, "y1", Inv($"{Y(high):0.#}"));
             builder.AddAttribute(9, "x2", Inv($"{x:0.#}"));
-            builder.AddAttribute(10, "y2", Inv($"{Y(c.Low):0.#}"));
+            builder.AddAttribute(10, "y2", Inv($"{Y(low):0.#}"));
             builder.AddAttribute(11, "stroke", color);
             builder.CloseElement();
 
             // Body (open ↔ close); ensure a minimum height so dojis stay visible.
-            double top = Y(Math.Max(c.Open, c.Close));
-            double bottom = Y(Math.Min(c.Open, c.Close));
+            double top = Y(Math.Max(open, close));
+            double bottom = Y(Math.Min(open, close));
             double h = Math.Max(1, bottom - top);
             builder.OpenElement(12, "rect");
             builder.AddAttribute(13, "x", Inv($"{x - (bodyW / 2):0.#}"));

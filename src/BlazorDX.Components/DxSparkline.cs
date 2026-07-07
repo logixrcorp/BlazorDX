@@ -14,7 +14,11 @@ public sealed class DxSparkline : ComponentBase
 {
     private const double Pad = 2;
 
-    [Parameter, EditorRequired] public IReadOnlyList<double> Values { get; set; } = [];
+    /// <summary>
+    /// The trend points, in order. Only <see cref="ChartPoint.Y"/> is read — a sparkline lays its
+    /// points out evenly by index, so <see cref="ChartPoint.X"/> is ignored.
+    /// </summary>
+    [Parameter, EditorRequired] public IReadOnlyList<ChartPoint> Points { get; set; } = [];
 
     /// <summary>"line" (default) or "bar".</summary>
     [Parameter] public string Variant { get; set; } = "line";
@@ -34,9 +38,9 @@ public sealed class DxSparkline : ComponentBase
         builder.AddAttribute(4, "height", Height);
         builder.AddAttribute(5, "preserveAspectRatio", "none");
         builder.AddAttribute(6, "role", "img");
-        builder.AddAttribute(7, "aria-label", $"Sparkline of {Values.Count} points");
+        builder.AddAttribute(7, "aria-label", $"Sparkline of {Points.Count} points");
 
-        if (Values.Count > 0)
+        if (Points.Count > 0)
         {
             if (Variant == "bar")
             {
@@ -53,16 +57,16 @@ public sealed class DxSparkline : ComponentBase
 
     private void BuildLine(RenderTreeBuilder builder)
     {
-        double min = Values.Min();
-        double max = Values.Max();
+        double min = Points.Min(p => p.Y);
+        double max = Points.Max(p => p.Y);
         double span = max - min == 0 ? 1 : max - min;
-        double stepX = Values.Count > 1 ? (Width - (2 * Pad)) / (Values.Count - 1) : 0;
+        double stepX = Points.Count > 1 ? (Width - (2 * Pad)) / (Points.Count - 1) : 0;
 
-        StringBuilder points = new(Values.Count * 10);
-        for (int i = 0; i < Values.Count; i++)
+        StringBuilder points = new(Points.Count * 10);
+        for (int i = 0; i < Points.Count; i++)
         {
             double x = Pad + (i * stepX);
-            double y = (Height - Pad) - ((Values[i] - min) / span * (Height - (2 * Pad)));
+            double y = (Height - Pad) - ((Points[i].Y - min) / span * (Height - (2 * Pad)));
             points.Append(F(x)).Append(',').Append(F(y)).Append(' ');
         }
 
@@ -76,13 +80,13 @@ public sealed class DxSparkline : ComponentBase
 
     private void BuildBars(RenderTreeBuilder builder)
     {
-        double max = Math.Max(1e-9, Values.Max(v => Math.Abs(v)));
-        double slot = (double)Width / Values.Count;
+        double max = Math.Max(1e-9, Points.Max(p => Math.Abs(p.Y)));
+        double slot = (double)Width / Points.Count;
         double barWidth = Math.Max(1, slot - 1);
 
-        for (int i = 0; i < Values.Count; i++)
+        for (int i = 0; i < Points.Count; i++)
         {
-            double h = Math.Abs(Values[i]) / max * (Height - Pad);
+            double h = Math.Abs(Points[i].Y) / max * (Height - Pad);
             double x = i * slot;
             double y = Height - h;
 

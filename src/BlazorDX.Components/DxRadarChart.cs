@@ -6,19 +6,21 @@ using Microsoft.AspNetCore.Components.Rendering;
 namespace BlazorDX.Components;
 
 /// <summary>
-/// A radar (spider) chart: one polygon per <see cref="ChartSeries"/> over a shared
-/// set of <see cref="Axes"/>. Pure SVG, no JS or DI; styling via dx-chart.css.
+/// A radar (spider) chart: one polygon per series over a shared set of <see cref="Axes"/>.
+/// Reuses the shared <see cref="ChartPoint"/> model: each point's <see cref="ChartPoint.Category"/>
+/// matches one of <see cref="Axes"/> and its <see cref="ChartPoint.Series"/> groups it into a
+/// named series. Pure SVG, no JS or DI; styling via dx-chart.css.
 /// </summary>
 public sealed class DxRadarChart : ComponentBase
 {
     private static readonly string[] Palette =
         ["#2563eb", "#16a34a", "#d97706", "#dc2626", "#7c3aed", "#0891b2", "#db2777", "#65a30d"];
 
-    /// <summary>Axis labels (one per spoke); series values align to these by index.</summary>
+    /// <summary>Axis labels (one per spoke); points align to these by <see cref="ChartPoint.Category"/>.</summary>
     [Parameter, EditorRequired] public IReadOnlyList<string> Axes { get; set; } = [];
 
-    /// <summary>The series to plot; each must have one value per axis.</summary>
-    [Parameter, EditorRequired] public IReadOnlyList<ChartSeries> Series { get; set; } = [];
+    /// <summary>The points to plot; grouped by <see cref="ChartPoint.Series"/>, placed by <see cref="ChartPoint.Category"/>.</summary>
+    [Parameter, EditorRequired] public IReadOnlyList<ChartPoint> Points { get; set; } = [];
 
     /// <summary>Axis maximum; 0 (default) auto-scales to the largest value.</summary>
     [Parameter] public double Max { get; set; }
@@ -35,6 +37,7 @@ public sealed class DxRadarChart : ComponentBase
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         int n = Axes.Count;
+        IReadOnlyList<string> names = SeriesNames();
         double cx = Width / 2.0;
         double cy = Height / 2.0;
         double radius = (Math.Min(Width, Height) / 2.0) - 44;   // leave room for labels
@@ -45,7 +48,7 @@ public sealed class DxRadarChart : ComponentBase
         builder.AddAttribute(2, "class", $"dx-chart-svg dx-radar {Class}".TrimEnd());
         builder.AddAttribute(3, "viewBox", Inv($"0 0 {Width} {Height}"));
         builder.AddAttribute(4, "role", "img");
-        builder.AddAttribute(5, "aria-label", $"Radar chart of {Series.Count} series over {n} axes");
+        builder.AddAttribute(5, "aria-label", $"Radar chart of {names.Count} series over {n} axes");
 
         if (n >= 3)
         {
@@ -66,27 +69,66 @@ public sealed class DxRadarChart : ComponentBase
             }
 
             // Series polygons.
-            for (int s = 0; s < Series.Count; s++)
+            for (int s = 0; s < names.Count; s++)
             {
-                string color = Series[s].Color ?? Palette[s % Palette.Length];
-                Polygon(builder, 20, SeriesPoints(cx, cy, radius, max, Series[s], n), color, color, 2, 0.18);
+                string color = ColorOf(s, names[s]);
+                Polygon(builder, 20, SeriesPoints(cx, cy, radius, max, names[s], n), color, color, 2, 0.18);
             }
         }
 
         builder.CloseElement();
 
-        BuildLegend(builder);
+        BuildLegend(builder, names);
+    }
+
+    // Distinct series names in first-seen order — drives colour assignment and the legend.
+    private IReadOnlyList<string> SeriesNames()
+    {
+        List<string> names = [];
+        HashSet<string> seen = new(StringComparer.Ordinal);
+        foreach (ChartPoint p in Points)
+        {
+            if (p.Series is { Length: > 0 } s && seen.Add(s))
+            {
+                names.Add(s);
+            }
+        }
+
+        return names;
+    }
+
+    private double ValueAt(string series, string axis)
+    {
+        foreach (ChartPoint p in Points)
+        {
+            if (p.Series == series && p.Category == axis)
+            {
+                return p.Y;
+            }
+        }
+
+        return 0;
+    }
+
+    private string ColorOf(int seriesIndex, string series)
+    {
+        foreach (ChartPoint p in Points)
+        {
+            if (p.Series == series && p.Color is not null)
+            {
+                return p.Color;
+            }
+        }
+
+        return Palette[seriesIndex % Palette.Length];
     }
 
     private double MaxValue()
     {
         double max = 0;
-        foreach (ChartSeries series in Series)
+        foreach (ChartPoint p in Points)
         {
-            foreach (double v in series.Values)
-            {
-                max = Math.Max(max, v);
-            }
+            max = Math.Max(max, p.Y);
         }
 
         return max;
@@ -110,12 +152,12 @@ public sealed class DxRadarChart : ComponentBase
         return sb.ToString().TrimEnd();
     }
 
-    private static string SeriesPoints(double cx, double cy, double radius, double max, ChartSeries series, int n)
+    private string SeriesPoints(double cx, double cy, double radius, double max, string series, int n)
     {
         StringBuilder sb = new();
         for (int i = 0; i < n; i++)
         {
-            double value = i < series.Values.Count ? series.Values[i] : 0;
+            double value = ValueAt(series, Axes[i]);
             (double x, double y) = Point(cx, cy, radius * value / max, i, n);
             Append(sb, x, y);
         }
@@ -161,13 +203,13 @@ public sealed class DxRadarChart : ComponentBase
         builder.CloseElement();
     }
 
-    private void BuildLegend(RenderTreeBuilder builder)
+    private void BuildLegend(RenderTreeBuilder builder, IReadOnlyList<string> names)
     {
         builder.OpenElement(40, "div");
         builder.AddAttribute(41, "class", "dx-pie-legend");
-        for (int s = 0; s < Series.Count; s++)
+        for (int s = 0; s < names.Count; s++)
         {
-            string color = Series[s].Color ?? Palette[s % Palette.Length];
+            string color = ColorOf(s, names[s]);
             builder.OpenElement(42, "span");
             builder.SetKey(s);
             builder.AddAttribute(43, "class", "dx-pie-legend-item");
@@ -175,7 +217,7 @@ public sealed class DxRadarChart : ComponentBase
             builder.AddAttribute(45, "class", "dx-pie-legend-swatch");
             builder.AddAttribute(46, "style", $"background:{color}");
             builder.CloseElement();
-            builder.AddContent(47, Series[s].Name);
+            builder.AddContent(47, names[s]);
             builder.CloseElement();
         }
 

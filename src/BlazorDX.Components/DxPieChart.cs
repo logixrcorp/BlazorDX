@@ -5,13 +5,13 @@ using Microsoft.AspNetCore.Components.Rendering;
 namespace BlazorDX.Components;
 
 /// <summary>
-/// A pie or donut chart rendered as SVG arc segments with a legend. Reuses the
-/// <see cref="ChartBar"/> category model. Set <see cref="Donut"/> for a donut.
-/// Styling is token-driven (see dx-chart.css).
+/// A pie or donut chart rendered as SVG arc segments with a legend. Reuses the shared
+/// <see cref="ChartPoint"/> data model (<see cref="ChartPoint.Category"/> + <see cref="ChartPoint.Y"/>).
+/// Set <see cref="Donut"/> for a donut. Styling is token-driven (see dx-chart.css).
 /// </summary>
 public sealed class DxPieChart : ComponentBase
 {
-    [Parameter, EditorRequired] public IReadOnlyList<ChartBar> Slices { get; set; } = [];
+    [Parameter, EditorRequired] public IReadOnlyList<ChartPoint> Points { get; set; } = [];
 
     [Parameter] public bool Donut { get; set; }
 
@@ -27,7 +27,7 @@ public sealed class DxPieChart : ComponentBase
         builder.OpenElement(0, "div");
         builder.AddAttribute(1, "class", $"dx-chart dx-pie-chart {Class}".TrimEnd());
 
-        double total = Slices.Sum(s => Math.Max(0, s.Value));
+        double total = Points.Sum(s => Math.Max(0, s.Y));
         double cx = Size / 2.0;
         double cy = Size / 2.0;
         double r = (Size / 2.0) - 4;
@@ -38,7 +38,7 @@ public sealed class DxPieChart : ComponentBase
         builder.AddAttribute(5, "width", Size);
         builder.AddAttribute(6, "height", Size);
         builder.AddAttribute(7, "role", "img");
-        builder.AddAttribute(8, "aria-label", $"Pie chart with {Slices.Count} slices");
+        builder.AddAttribute(8, "aria-label", $"Pie chart with {Points.Count} slices");
 
         if (total <= 0)
         {
@@ -48,19 +48,19 @@ public sealed class DxPieChart : ComponentBase
         }
 
         double angle = -Math.PI / 2; // start at 12 o'clock
-        for (int i = 0; i < Slices.Count; i++)
+        for (int i = 0; i < Points.Count; i++)
         {
-            double fraction = Math.Max(0, Slices[i].Value) / total;
+            double fraction = Math.Max(0, Points[i].Y) / total;
             double sweep = fraction * 2 * Math.PI;
             double end = angle + sweep;
-            string color = Slices[i].Color ?? Palette[i % Palette.Length];
+            string color = Points[i].Color ?? Palette[i % Palette.Length];
 
             builder.OpenElement(10, "path");
             builder.AddAttribute(11, "class", "dx-pie-slice");
             builder.AddAttribute(12, "d", Arc(cx, cy, r, angle, end, fraction));
             builder.AddAttribute(13, "fill", color);
             builder.OpenElement(14, "title");
-            builder.AddContent(15, $"{Slices[i].Label}: {Pct(fraction)}");
+            builder.AddContent(15, $"{Points[i].Category}: {Pct(fraction)}");
             builder.CloseElement();
             builder.CloseElement();
 
@@ -88,9 +88,9 @@ public sealed class DxPieChart : ComponentBase
     {
         builder.OpenElement(30, "ul");
         builder.AddAttribute(31, "class", "dx-pie-legend");
-        for (int i = 0; i < Slices.Count; i++)
+        for (int i = 0; i < Points.Count; i++)
         {
-            string color = Slices[i].Color ?? Palette[i % Palette.Length];
+            string color = Points[i].Color ?? Palette[i % Palette.Length];
             builder.OpenElement(32, "li");
             builder.SetKey(i);
             builder.AddAttribute(33, "class", "dx-pie-legend-item");
@@ -101,7 +101,7 @@ public sealed class DxPieChart : ComponentBase
             builder.AddAttribute(37, "aria-hidden", "true");
             builder.CloseElement();
 
-            builder.AddContent(38, $"{Slices[i].Label} — {Pct(Math.Max(0, Slices[i].Value) / total)}");
+            builder.AddContent(38, $"{Points[i].Category} — {Pct(Math.Max(0, Points[i].Y) / total)}");
             builder.CloseElement();
         }
 

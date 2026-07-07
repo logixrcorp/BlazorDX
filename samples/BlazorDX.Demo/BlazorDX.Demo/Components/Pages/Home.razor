@@ -36,7 +36,7 @@
             </div>
             <div class="dx-preview-card">
                 <span class="dx-preview-label">Bar chart</span>
-                <DxBarChart Bars="heroBars" Width="180" Height="92" />
+                <DxBarChart Points="heroBars" Width="180" Height="92" />
             </div>
             <div class="dx-preview-card">
                 <span class="dx-preview-label">Radial gauge</span>
@@ -44,7 +44,7 @@
             </div>
             <div class="dx-preview-card">
                 <span class="dx-preview-label">Sparkline</span>
-                <DxSparkline Values="heroSpark" Width="150" Height="46" />
+                <DxSparkline Points="heroSpark" Width="150" Height="46" />
                 <DxRating Value="4" ReadOnly="true" />
             </div>
         </div>
@@ -151,11 +151,11 @@
 </section>
 
 @code {
-    private readonly IReadOnlyList<ChartBar> heroBars =
-        [new("M", 12), new("T", 18), new("W", 9), new("T", 22), new("F", 16)];
+    private readonly IReadOnlyList<ChartPoint> heroBars =
+        [new(Category: "M", Y: 12), new(Category: "T", Y: 18), new(Category: "W", Y: 9), new(Category: "T", Y: 22), new(Category: "F", Y: 16)];
 
-    private readonly IReadOnlyList<double> heroSpark =
-        [3, 7, 4, 8, 6, 11, 9, 14, 12, 16, 13, 18];
+    private readonly IReadOnlyList<ChartPoint> heroSpark =
+        [new(Y: 3), new(Y: 7), new(Y: 4), new(Y: 8), new(Y: 6), new(Y: 11), new(Y: 9), new(Y: 14), new(Y: 12), new(Y: 16), new(Y: 13), new(Y: 18)];
 
     private const string InstallCode = """
         dotnet add package BlazorDX.Components
@@ -566,17 +566,17 @@
         [
             new("DxLineChart / DxAreaChart", "Series charts, LTTB-downsampled by Rust/wasm.", "/charts",
                 """
-                <DxLineChart X="xs" Y="ys" Threshold="400" Width="720" Height="240" />
-                <DxAreaChart Values="series" Threshold="300" />
+                <DxLineChart Points="series" Threshold="400" Width="720" Height="240" />
+                <DxAreaChart Points="series" Threshold="300" />
                 """),
             new("DxBarChart / DxPieChart", "Categorical bars (V/H) and pie/donut with legend.", "/charts",
                 """
-                <DxBarChart Bars="bars" />
-                <DxPieChart Slices="slices" Donut="true" />
+                <DxBarChart Points="bars" />
+                <DxPieChart Points="bars" Donut="true" />
 
                 @code {
-                    private IReadOnlyList<ChartBar> bars =
-                        [new("Mon", 12), new("Tue", 18), new("Wed", 9)];
+                    private IReadOnlyList<ChartPoint> bars =
+                        [new(Category: "Mon", Y: 12), new(Category: "Tue", Y: 18), new(Category: "Wed", Y: 9)];
                 }
                 """),
             new("DxHistogram", "Bins values via the Rust histogram kernel.", "/charts",
@@ -585,8 +585,8 @@
                 """),
             new("DxSparkline", "Inline line/bar trend, no axes.", "/charts",
                 """
-                <DxSparkline Values="trend" Variant="line" />
-                <DxSparkline Values="trend" Variant="bar" />
+                <DxSparkline Points="trend" Variant="line" />
+                <DxSparkline Points="trend" Variant="bar" />
                 """),
             new("DxRadialGauge / DxLinearGauge", "270° arc meter and zoned bar meter.", "/charts",
                 """
@@ -598,25 +598,29 @@
                         [new(50, "#16a34a"), new(80, "#d97706"), new(100, "#dc2626")];
                 }
                 """),
-            new("DxScatterChart / DxStackedBarChart", "XY scatter and stacked/grouped series bars.", "/charts",
+            new("DxScatterChart / DxStackedBarChart", "XY scatter and stacked/grouped series bars — one shared ChartPoint model.", "/charts",
                 """
                 <DxScatterChart Points="points" Width="720" Height="260" />
-                <DxStackedBarChart Categories="quarters" Series="series" />
+                <DxStackedBarChart Categories="quarters" Points="points" />
 
                 @code {
-                    private IReadOnlyList<ChartSeries> series =
-                        [new("Direct", [18, 24, 30]), new("Search", [12, 16, 14])];
+                    // Points" Series groups it into a named series; Category places it on the axis.
+                    private IReadOnlyList<ChartPoint> points =
+                        [new(Category: "Q1", Y: 18, Series: "Direct"), new(Category: "Q2", Y: 24, Series: "Direct"),
+                         new(Category: "Q1", Y: 12, Series: "Search"), new(Category: "Q2", Y: 16, Series: "Search")];
                 }
                 """),
             new("DxRadarChart / DxFunnelChart / DxCandlestickChart", "Spider chart, conversion funnel, and OHLC candlesticks — all pure SVG.", "/charts",
                 """
-                <DxRadarChart Axes="axes" Series="series" />
-                <DxFunnelChart Stages="stages" />
-                <DxCandlestickChart Candles="candles" />
+                <DxRadarChart Axes="axes" Points="points" />
+                <DxFunnelChart Points="stages" />
+                <DxCandlestickChart Points="candles" />
 
                 @code {
-                    private IReadOnlyList<Candle> candles =
-                        [new("Mon", 100, 112, 96, 108), new("Tue", 108, 114, 103, 105)];
+                    // Y/Y2/Y3/Y4 = Open/High/Low/Close.
+                    private IReadOnlyList<ChartPoint> candles =
+                        [new(Category: "Mon", Y: 100, Y2: 112, Y3: 96, Y4: 108),
+                         new(Category: "Tue", Y: 108, Y2: 114, Y3: 103, Y4: 105)];
                 }
                 """),
         ]),

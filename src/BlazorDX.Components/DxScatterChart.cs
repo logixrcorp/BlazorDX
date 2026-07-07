@@ -4,12 +4,10 @@ using Microsoft.AspNetCore.Components.Rendering;
 
 namespace BlazorDX.Components;
 
-/// <summary>An (x, y) point for a scatter plot.</summary>
-public readonly record struct ChartPoint(double X, double Y);
-
 /// <summary>
 /// A scatter plot: each (x, y) point is drawn as a dot, scaled to the data's
-/// bounds. Pure SVG. Styling is token-driven (see dx-chart.css).
+/// bounds. Reuses the shared <see cref="ChartPoint"/> model (<see cref="ChartPoint.X"/> +
+/// <see cref="ChartPoint.Y"/>). Pure SVG. Styling is token-driven (see dx-chart.css).
 /// </summary>
 public sealed class DxScatterChart : ComponentBase
 {

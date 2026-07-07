@@ -4,12 +4,6 @@ using Microsoft.AspNetCore.Components.Rendering;
 
 namespace BlazorDX.Components;
 
-/// <summary>A single category in a bar or pie chart.</summary>
-/// <param name="Label">Category name.</param>
-/// <param name="Value">Magnitude (non-negative).</param>
-/// <param name="Color">Optional CSS color override; otherwise a palette color is used.</param>
-public readonly record struct ChartBar(string Label, double Value, string? Color = null);
-
 /// <summary>
 /// A categorical bar chart rendered as scaled SVG rectangles with value and
 /// category labels. Vertical columns by default; set <see cref="Horizontal"/> for
@@ -19,7 +13,7 @@ public sealed class DxBarChart : ComponentBase
 {
     private const double Gap = 8;
 
-    [Parameter, EditorRequired] public IReadOnlyList<ChartBar> Bars { get; set; } = [];
+    [Parameter, EditorRequired] public IReadOnlyList<ChartPoint> Points { get; set; } = [];
 
     [Parameter] public bool Horizontal { get; set; }
 
@@ -41,9 +35,9 @@ public sealed class DxBarChart : ComponentBase
         builder.AddAttribute(3, "class", "dx-chart-svg");
         builder.AddAttribute(4, "viewBox", $"0 0 {Width} {Height}");
         builder.AddAttribute(5, "role", "img");
-        builder.AddAttribute(6, "aria-label", $"Bar chart with {Bars.Count} categories");
+        builder.AddAttribute(6, "aria-label", $"Bar chart with {Points.Count} categories");
 
-        double max = Bars.Count == 0 ? 1 : Math.Max(1e-9, Bars.Max(b => b.Value));
+        double max = Points.Count == 0 ? 1 : Math.Max(1e-9, Points.Max(b => b.Y));
         if (Horizontal)
         {
             BuildHorizontal(builder, max);
@@ -60,39 +54,41 @@ public sealed class DxBarChart : ComponentBase
     private void BuildVertical(RenderTreeBuilder builder, double max)
     {
         double axis = Height - 22;        // leave room for category labels
-        double slot = (double)Width / Math.Max(1, Bars.Count);
+        double slot = (double)Width / Math.Max(1, Points.Count);
         double barWidth = Math.Max(1, slot - Gap);
 
-        for (int i = 0; i < Bars.Count; i++)
+        for (int i = 0; i < Points.Count; i++)
         {
-            ChartBar bar = Bars[i];
-            double h = bar.Value / max * (axis - 16);
+            ChartPoint bar = Points[i];
+            double h = bar.Y / max * (axis - 16);
             double x = (i * slot) + (Gap / 2);
             double y = axis - h;
             string color = bar.Color ?? Palette[i % Palette.Length];
+            string label = bar.Category ?? string.Empty;
 
-            Rect(builder, x, y, barWidth, h, color, $"{bar.Label}: {Num(bar.Value)}");
-            Text(builder, x + (barWidth / 2), y - 4, "dx-bar-value", Num(bar.Value), "middle");
-            Text(builder, x + (barWidth / 2), Height - 6, "dx-bar-label", bar.Label, "middle");
+            Rect(builder, x, y, barWidth, h, color, $"{label}: {Num(bar.Y)}");
+            Text(builder, x + (barWidth / 2), y - 4, "dx-bar-value", Num(bar.Y), "middle");
+            Text(builder, x + (barWidth / 2), Height - 6, "dx-bar-label", label, "middle");
         }
     }
 
     private void BuildHorizontal(RenderTreeBuilder builder, double max)
     {
         double labelW = 96;
-        double slot = (double)Height / Math.Max(1, Bars.Count);
+        double slot = (double)Height / Math.Max(1, Points.Count);
         double barHeight = Math.Max(1, slot - Gap);
 
-        for (int i = 0; i < Bars.Count; i++)
+        for (int i = 0; i < Points.Count; i++)
         {
-            ChartBar bar = Bars[i];
-            double w = bar.Value / max * (Width - labelW - 40);
+            ChartPoint bar = Points[i];
+            double w = bar.Y / max * (Width - labelW - 40);
             double y = (i * slot) + (Gap / 2);
             string color = bar.Color ?? Palette[i % Palette.Length];
+            string label = bar.Category ?? string.Empty;
 
-            Text(builder, labelW - 6, y + (barHeight / 2) + 4, "dx-bar-label", bar.Label, "end");
-            Rect(builder, labelW, y, w, barHeight, color, $"{bar.Label}: {Num(bar.Value)}");
-            Text(builder, labelW + w + 4, y + (barHeight / 2) + 4, "dx-bar-value", Num(bar.Value), "start");
+            Text(builder, labelW - 6, y + (barHeight / 2) + 4, "dx-bar-label", label, "end");
+            Rect(builder, labelW, y, w, barHeight, color, $"{label}: {Num(bar.Y)}");
+            Text(builder, labelW + w + 4, y + (barHeight / 2) + 4, "dx-bar-value", Num(bar.Y), "start");
         }
     }
 

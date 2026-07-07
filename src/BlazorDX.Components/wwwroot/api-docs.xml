@@ -4,6 +4,89 @@
         <name>BlazorDX.Components</name>
     </assembly>
     <members>
+        <member name="T:BlazorDX.Components.ChartPoint">
+            <summary>
+            The single, generic data point every BlazorDX chart accepts — replacing the previous per-chart
+            bespoke shapes (<c>ChartBar</c>, parallel <c>X</c>/<c>Y</c> lists, a bare <c>Values</c> list, and
+            per-series <c>ChartSeries</c> arrays). Not every field applies to every chart: a
+            bar/pie/funnel/sparkline chart reads <see cref="P:BlazorDX.Components.ChartPoint.Category"/> + <see cref="P:BlazorDX.Components.ChartPoint.Y"/>; a
+            line/area/scatter chart reads <see cref="P:BlazorDX.Components.ChartPoint.X"/> + <see cref="P:BlazorDX.Components.ChartPoint.Y"/>; a stacked-bar/radar chart also
+            reads <see cref="P:BlazorDX.Components.ChartPoint.Series"/> to group points onto a shared category/axis list; a candlestick
+            chart reads <see cref="P:BlazorDX.Components.ChartPoint.Y"/>..<see cref="P:BlazorDX.Components.ChartPoint.Y4"/> as Open/High/Low/Close. A field a given chart
+            type doesn't use is simply ignored. Plain record struct — no reflection, no per-consumer mapping
+            step (a <c>[ChartRow]</c> source generator for projecting an existing domain type onto this
+            shape is planned as a follow-up).
+            </summary>
+            <param name="X">X-axis value (line/area/scatter charts).</param>
+            <param name="Y">
+            The primary value: bar/pie/funnel/sparkline magnitude, an XY chart's Y, or a candlestick's Open.
+            </param>
+            <param name="Category">
+            Category / axis-label key: the bar/pie/funnel/sparkline label, the stacked-bar/radar
+            category-or-axis key, or the candlestick's label.
+            </param>
+            <param name="Y2">Candlestick High.</param>
+            <param name="Y3">Candlestick Low.</param>
+            <param name="Y4">Candlestick Close.</param>
+            <param name="Series">Series name, for charts with more than one series (stacked bar, radar).</param>
+            <param name="Color">Optional CSS color override for this point/series; otherwise a palette color is used.</param>
+        </member>
+        <member name="M:BlazorDX.Components.ChartPoint.#ctor(System.Double,System.Double,System.String,System.Nullable{System.Double},System.Nullable{System.Double},System.Nullable{System.Double},System.String,System.String)">
+            <summary>
+            The single, generic data point every BlazorDX chart accepts — replacing the previous per-chart
+            bespoke shapes (<c>ChartBar</c>, parallel <c>X</c>/<c>Y</c> lists, a bare <c>Values</c> list, and
+            per-series <c>ChartSeries</c> arrays). Not every field applies to every chart: a
+            bar/pie/funnel/sparkline chart reads <see cref="P:BlazorDX.Components.ChartPoint.Category"/> + <see cref="P:BlazorDX.Components.ChartPoint.Y"/>; a
+            line/area/scatter chart reads <see cref="P:BlazorDX.Components.ChartPoint.X"/> + <see cref="P:BlazorDX.Components.ChartPoint.Y"/>; a stacked-bar/radar chart also
+            reads <see cref="P:BlazorDX.Components.ChartPoint.Series"/> to group points onto a shared category/axis list; a candlestick
+            chart reads <see cref="P:BlazorDX.Components.ChartPoint.Y"/>..<see cref="P:BlazorDX.Components.ChartPoint.Y4"/> as Open/High/Low/Close. A field a given chart
+            type doesn't use is simply ignored. Plain record struct — no reflection, no per-consumer mapping
+            step (a <c>[ChartRow]</c> source generator for projecting an existing domain type onto this
+            shape is planned as a follow-up).
+            </summary>
+            <param name="X">X-axis value (line/area/scatter charts).</param>
+            <param name="Y">
+            The primary value: bar/pie/funnel/sparkline magnitude, an XY chart's Y, or a candlestick's Open.
+            </param>
+            <param name="Category">
+            Category / axis-label key: the bar/pie/funnel/sparkline label, the stacked-bar/radar
+            category-or-axis key, or the candlestick's label.
+            </param>
+            <param name="Y2">Candlestick High.</param>
+            <param name="Y3">Candlestick Low.</param>
+            <param name="Y4">Candlestick Close.</param>
+            <param name="Series">Series name, for charts with more than one series (stacked bar, radar).</param>
+            <param name="Color">Optional CSS color override for this point/series; otherwise a palette color is used.</param>
+        </member>
+        <member name="P:BlazorDX.Components.ChartPoint.X">
+            <summary>X-axis value (line/area/scatter charts).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.ChartPoint.Y">
+            <summary>
+            The primary value: bar/pie/funnel/sparkline magnitude, an XY chart's Y, or a candlestick's Open.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.ChartPoint.Category">
+            <summary>
+            Category / axis-label key: the bar/pie/funnel/sparkline label, the stacked-bar/radar
+            category-or-axis key, or the candlestick's label.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.ChartPoint.Y2">
+            <summary>Candlestick High.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.ChartPoint.Y3">
+            <summary>Candlestick Low.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.ChartPoint.Y4">
+            <summary>Candlestick Close.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.ChartPoint.Series">
+            <summary>Series name, for charts with more than one series (stacked bar, radar).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.ChartPoint.Color">
+            <summary>Optional CSS color override for this point/series; otherwise a palette color is used.</summary>
+        </member>
         <member name="T:BlazorDX.Components.DxAccordion">
             <summary>
             Tier 2 styled accordion. Inherits all behavior from
@@ -23,6 +106,13 @@
             top edge. Like <see cref="T:BlazorDX.Components.DxLineChart"/> it offloads LTTB downsampling to the
             compute backend (Rust in the browser) so a huge series draws as a few hundred
             points. Styling is token-driven (see dx-chart.css).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxAreaChart.Points">
+            <summary>
+            The series to plot, in order. Only <see cref="P:BlazorDX.Components.ChartPoint.Y"/> is read — points are laid
+            out evenly by index (matching the prior Values-only behavior), so <see cref="P:BlazorDX.Components.ChartPoint.X"/>
+            is ignored.
             </summary>
         </member>
         <member name="P:BlazorDX.Components.DxAreaChart.Threshold">
@@ -70,27 +160,6 @@
         </member>
         <member name="P:BlazorDX.Components.DxBadge.Class">
             <summary>Extra CSS classes appended to the badge.</summary>
-        </member>
-        <member name="T:BlazorDX.Components.ChartBar">
-            <summary>A single category in a bar or pie chart.</summary>
-            <param name="Label">Category name.</param>
-            <param name="Value">Magnitude (non-negative).</param>
-            <param name="Color">Optional CSS color override; otherwise a palette color is used.</param>
-        </member>
-        <member name="M:BlazorDX.Components.ChartBar.#ctor(System.String,System.Double,System.String)">
-            <summary>A single category in a bar or pie chart.</summary>
-            <param name="Label">Category name.</param>
-            <param name="Value">Magnitude (non-negative).</param>
-            <param name="Color">Optional CSS color override; otherwise a palette color is used.</param>
-        </member>
-        <member name="P:BlazorDX.Components.ChartBar.Label">
-            <summary>Category name.</summary>
-        </member>
-        <member name="P:BlazorDX.Components.ChartBar.Value">
-            <summary>Magnitude (non-negative).</summary>
-        </member>
-        <member name="P:BlazorDX.Components.ChartBar.Color">
-            <summary>Optional CSS color override; otherwise a palette color is used.</summary>
         </member>
         <member name="T:BlazorDX.Components.DxBarChart">
             <summary>
@@ -209,19 +278,16 @@
         <member name="P:BlazorDX.Components.DxCalendar.Label">
             <summary>Accessible label for the grid (default "Calendar").</summary>
         </member>
-        <member name="T:BlazorDX.Components.Candle">
-            <summary>One OHLC candle for <see cref="T:BlazorDX.Components.DxCandlestickChart"/>.</summary>
-        </member>
-        <member name="M:BlazorDX.Components.Candle.#ctor(System.String,System.Double,System.Double,System.Double,System.Double)">
-            <summary>One OHLC candle for <see cref="T:BlazorDX.Components.DxCandlestickChart"/>.</summary>
-        </member>
         <member name="T:BlazorDX.Components.DxCandlestickChart">
             <summary>
             A candlestick (OHLC) chart: a high-low wick and an open-close body per candle,
-            coloured up or down. Pure SVG; styling via dx-chart.css.
+            coloured up or down. Reuses the shared <see cref="T:BlazorDX.Components.ChartPoint"/> model: <see cref="P:BlazorDX.Components.ChartPoint.Category"/>
+            is the candle's label and <see cref="P:BlazorDX.Components.ChartPoint.Y"/>/<see cref="P:BlazorDX.Components.ChartPoint.Y2"/>/
+            <see cref="P:BlazorDX.Components.ChartPoint.Y3"/>/<see cref="P:BlazorDX.Components.ChartPoint.Y4"/> are Open/High/Low/Close. Pure SVG;
+            styling via dx-chart.css.
             </summary>
         </member>
-        <member name="P:BlazorDX.Components.DxCandlestickChart.Candles">
+        <member name="P:BlazorDX.Components.DxCandlestickChart.Points">
             <summary>The candles, left to right.</summary>
         </member>
         <member name="P:BlazorDX.Components.DxCandlestickChart.UpColor">
@@ -801,11 +867,12 @@
         <member name="T:BlazorDX.Components.DxFunnelChart">
             <summary>
             A funnel chart: stacked, centered trapezoids whose widths are proportional to each
-            stage's value (reusing <see cref="T:BlazorDX.Components.ChartBar"/>). Pure SVG; styling via dx-chart.css.
+            stage's value (reusing the shared <see cref="T:BlazorDX.Components.ChartPoint"/> model). Pure SVG; styling
+            via dx-chart.css.
             </summary>
         </member>
-        <member name="P:BlazorDX.Components.DxFunnelChart.Stages">
-            <summary>The funnel stages, top to bottom.</summary>
+        <member name="P:BlazorDX.Components.DxFunnelChart.Points">
+            <summary>The funnel stages, top to bottom (<see cref="P:BlazorDX.Components.ChartPoint.Category"/> + <see cref="P:BlazorDX.Components.ChartPoint.Y"/>).</summary>
         </member>
         <member name="T:BlazorDX.Components.DxGantt">
             <summary>
@@ -992,6 +1059,9 @@
             driven (see dx-layout.css).
             </summary>
         </member>
+        <member name="P:BlazorDX.Components.DxLineChart.Points">
+            <summary>The series to plot, reading <see cref="P:BlazorDX.Components.ChartPoint.X"/> + <see cref="P:BlazorDX.Components.ChartPoint.Y"/>.</summary>
+        </member>
         <member name="P:BlazorDX.Components.DxLineChart.Threshold">
             <summary>Approximate number of points to draw.</summary>
         </member>
@@ -1109,9 +1179,9 @@
         </member>
         <member name="T:BlazorDX.Components.DxPieChart">
             <summary>
-            A pie or donut chart rendered as SVG arc segments with a legend. Reuses the
-            <see cref="T:BlazorDX.Components.ChartBar"/> category model. Set <see cref="P:BlazorDX.Components.DxPieChart.Donut"/> for a donut.
-            Styling is token-driven (see dx-chart.css).
+            A pie or donut chart rendered as SVG arc segments with a legend. Reuses the shared
+            <see cref="T:BlazorDX.Components.ChartPoint"/> data model (<see cref="P:BlazorDX.Components.ChartPoint.Category"/> + <see cref="P:BlazorDX.Components.ChartPoint.Y"/>).
+            Set <see cref="P:BlazorDX.Components.DxPieChart.Donut"/> for a donut. Styling is token-driven (see dx-chart.css).
             </summary>
         </member>
         <member name="T:BlazorDX.Components.DxPivotGrid`1">
@@ -1172,15 +1242,17 @@
         </member>
         <member name="T:BlazorDX.Components.DxRadarChart">
             <summary>
-            A radar (spider) chart: one polygon per <see cref="T:BlazorDX.Components.ChartSeries"/> over a shared
-            set of <see cref="P:BlazorDX.Components.DxRadarChart.Axes"/>. Pure SVG, no JS or DI; styling via dx-chart.css.
+            A radar (spider) chart: one polygon per series over a shared set of <see cref="P:BlazorDX.Components.DxRadarChart.Axes"/>.
+            Reuses the shared <see cref="T:BlazorDX.Components.ChartPoint"/> model: each point's <see cref="P:BlazorDX.Components.ChartPoint.Category"/>
+            matches one of <see cref="P:BlazorDX.Components.DxRadarChart.Axes"/> and its <see cref="P:BlazorDX.Components.ChartPoint.Series"/> groups it into a
+            named series. Pure SVG, no JS or DI; styling via dx-chart.css.
             </summary>
         </member>
         <member name="P:BlazorDX.Components.DxRadarChart.Axes">
-            <summary>Axis labels (one per spoke); series values align to these by index.</summary>
+            <summary>Axis labels (one per spoke); points align to these by <see cref="P:BlazorDX.Components.ChartPoint.Category"/>.</summary>
         </member>
-        <member name="P:BlazorDX.Components.DxRadarChart.Series">
-            <summary>The series to plot; each must have one value per axis.</summary>
+        <member name="P:BlazorDX.Components.DxRadarChart.Points">
+            <summary>The points to plot; grouped by <see cref="P:BlazorDX.Components.ChartPoint.Series"/>, placed by <see cref="P:BlazorDX.Components.ChartPoint.Category"/>.</summary>
         </member>
         <member name="P:BlazorDX.Components.DxRadarChart.Max">
             <summary>Axis maximum; 0 (default) auto-scales to the largest value.</summary>
@@ -1362,16 +1434,11 @@
             table index in document order), or an empty string when the caret is not in a table.
             </summary>
         </member>
-        <member name="T:BlazorDX.Components.ChartPoint">
-            <summary>An (x, y) point for a scatter plot.</summary>
-        </member>
-        <member name="M:BlazorDX.Components.ChartPoint.#ctor(System.Double,System.Double)">
-            <summary>An (x, y) point for a scatter plot.</summary>
-        </member>
         <member name="T:BlazorDX.Components.DxScatterChart">
             <summary>
             A scatter plot: each (x, y) point is drawn as a dot, scaled to the data's
-            bounds. Pure SVG. Styling is token-driven (see dx-chart.css).
+            bounds. Reuses the shared <see cref="T:BlazorDX.Components.ChartPoint"/> model (<see cref="P:BlazorDX.Components.ChartPoint.X"/> +
+            <see cref="P:BlazorDX.Components.ChartPoint.Y"/>). Pure SVG. Styling is token-driven (see dx-chart.css).
             </summary>
         </member>
         <member name="T:BlazorDX.Components.DxScheduler">
@@ -1490,6 +1557,12 @@
             series are small by nature). Styling is token-driven (see dx-chart.css).
             </summary>
         </member>
+        <member name="P:BlazorDX.Components.DxSparkline.Points">
+            <summary>
+            The trend points, in order. Only <see cref="P:BlazorDX.Components.ChartPoint.Y"/> is read — a sparkline lays its
+            points out evenly by index, so <see cref="P:BlazorDX.Components.ChartPoint.X"/> is ignored.
+            </summary>
+        </member>
         <member name="P:BlazorDX.Components.DxSparkline.Variant">
             <summary>"line" (default) or "bar".</summary>
         </member>
@@ -1555,33 +1628,18 @@
         <member name="P:BlazorDX.Components.DxSplitter.Class">
             <summary>Extra CSS classes appended to the root.</summary>
         </member>
-        <member name="T:BlazorDX.Components.ChartSeries">
-            <summary>A named data series for a multi-series chart.</summary>
-            <param name="Name">Series label (shown in the legend).</param>
-            <param name="Values">One value per category, in category order.</param>
-            <param name="Color">Optional color override; otherwise a palette color.</param>
-        </member>
-        <member name="M:BlazorDX.Components.ChartSeries.#ctor(System.String,System.Collections.Generic.IReadOnlyList{System.Double},System.String)">
-            <summary>A named data series for a multi-series chart.</summary>
-            <param name="Name">Series label (shown in the legend).</param>
-            <param name="Values">One value per category, in category order.</param>
-            <param name="Color">Optional color override; otherwise a palette color.</param>
-        </member>
-        <member name="P:BlazorDX.Components.ChartSeries.Name">
-            <summary>Series label (shown in the legend).</summary>
-        </member>
-        <member name="P:BlazorDX.Components.ChartSeries.Values">
-            <summary>One value per category, in category order.</summary>
-        </member>
-        <member name="P:BlazorDX.Components.ChartSeries.Color">
-            <summary>Optional color override; otherwise a palette color.</summary>
-        </member>
         <member name="T:BlazorDX.Components.DxStackedBarChart">
             <summary>
             A multi-series bar chart, stacked by default or grouped side-by-side when
             <see cref="P:BlazorDX.Components.DxStackedBarChart.Stacked"/> is false. Categories run along the x axis; a legend names
-            the series. Pure SVG. Styling is token-driven (see dx-chart.css).
+            the series. Reuses the shared <see cref="T:BlazorDX.Components.ChartPoint"/> model: each point's
+            <see cref="P:BlazorDX.Components.ChartPoint.Category"/> places it on the category axis and its
+            <see cref="P:BlazorDX.Components.ChartPoint.Series"/> groups it into a named series. Pure SVG.
+            Styling is token-driven (see dx-chart.css).
             </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxStackedBarChart.Points">
+            <summary>The points to plot; grouped by <see cref="P:BlazorDX.Components.ChartPoint.Series"/>, placed by <see cref="P:BlazorDX.Components.ChartPoint.Category"/>.</summary>
         </member>
         <member name="P:BlazorDX.Components.DxStackedBarChart.Stacked">
             <summary>Stack the series (default) or draw them grouped side-by-side.</summary>

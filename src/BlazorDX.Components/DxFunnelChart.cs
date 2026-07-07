@@ -6,15 +6,16 @@ namespace BlazorDX.Components;
 
 /// <summary>
 /// A funnel chart: stacked, centered trapezoids whose widths are proportional to each
-/// stage's value (reusing <see cref="ChartBar"/>). Pure SVG; styling via dx-chart.css.
+/// stage's value (reusing the shared <see cref="ChartPoint"/> model). Pure SVG; styling
+/// via dx-chart.css.
 /// </summary>
 public sealed class DxFunnelChart : ComponentBase
 {
     private static readonly string[] Palette =
         ["#2563eb", "#16a34a", "#d97706", "#dc2626", "#7c3aed", "#0891b2", "#db2777", "#65a30d"];
 
-    /// <summary>The funnel stages, top to bottom.</summary>
-    [Parameter, EditorRequired] public IReadOnlyList<ChartBar> Stages { get; set; } = [];
+    /// <summary>The funnel stages, top to bottom (<see cref="ChartPoint.Category"/> + <see cref="ChartPoint.Y"/>).</summary>
+    [Parameter, EditorRequired] public IReadOnlyList<ChartPoint> Points { get; set; } = [];
 
     [Parameter] public int Width { get; set; } = 380;
 
@@ -24,11 +25,11 @@ public sealed class DxFunnelChart : ComponentBase
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
-        int n = Stages.Count;
+        int n = Points.Count;
         double max = 1e-9;
-        foreach (ChartBar stage in Stages)
+        foreach (ChartPoint stage in Points)
         {
-            max = Math.Max(max, stage.Value);
+            max = Math.Max(max, stage.Y);
         }
 
         double cx = Width / 2.0;
@@ -44,11 +45,11 @@ public sealed class DxFunnelChart : ComponentBase
 
         for (int i = 0; i < n; i++)
         {
-            double topW = Stages[i].Value / max * usable;
-            double botW = (i < n - 1 ? Stages[i + 1].Value : Stages[i].Value) / max * usable;
+            double topW = Points[i].Y / max * usable;
+            double botW = (i < n - 1 ? Points[i + 1].Y : Points[i].Y) / max * usable;
             double yTop = i * bandH;
             double yBot = (i + 1) * bandH;
-            string color = Stages[i].Color ?? Palette[i % Palette.Length];
+            string color = Points[i].Color ?? Palette[i % Palette.Length];
 
             string points = string.Create(CultureInfo.InvariantCulture,
                 $"{cx - topW / 2:0.#},{yTop:0.#} {cx + topW / 2:0.#},{yTop:0.#} {cx + botW / 2:0.#},{yBot:0.#} {cx - botW / 2:0.#},{yBot:0.#}");
@@ -67,7 +68,7 @@ public sealed class DxFunnelChart : ComponentBase
             builder.AddAttribute(14, "dominant-baseline", "middle");
             builder.AddAttribute(15, "font-size", "12");
             builder.AddAttribute(16, "fill", "#ffffff");
-            builder.AddContent(17, $"{Stages[i].Label}: {Stages[i].Value:0.##}");
+            builder.AddContent(17, $"{Points[i].Category}: {Points[i].Y:0.##}");
             builder.CloseElement();
         }
 

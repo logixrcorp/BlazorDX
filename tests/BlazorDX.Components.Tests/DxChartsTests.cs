@@ -16,18 +16,18 @@ public sealed class DxChartsTests : TestContext
         Services.AddScoped<IGridDomInterop, NullGridDomInterop>();
     }
 
-    private static IReadOnlyList<ChartBar> Bars() =>
+    private static IReadOnlyList<ChartPoint> Bars() =>
     [
-        new ChartBar("A", 10),
-        new ChartBar("B", 20),
-        new ChartBar("C", 5),
+        new(Category: "A", Y: 10),
+        new(Category: "B", Y: 20),
+        new(Category: "C", Y: 5),
     ];
 
     [Fact]
     public void BarChart_renders_a_rect_per_bar_with_labels()
     {
         IRenderedComponent<DxBarChart> chart = RenderComponent<DxBarChart>(parameters => parameters
-            .Add(c => c.Bars, Bars()));
+            .Add(c => c.Points, Bars()));
 
         Assert.Equal(3, chart.FindAll("rect.dx-bar-rect").Count);
         Assert.Equal(3, chart.FindAll("text.dx-bar-label").Count);
@@ -38,7 +38,7 @@ public sealed class DxChartsTests : TestContext
     public void BarChart_tallest_bar_has_greatest_height()
     {
         IRenderedComponent<DxBarChart> chart = RenderComponent<DxBarChart>(parameters => parameters
-            .Add(c => c.Bars, Bars()));
+            .Add(c => c.Points, Bars()));
 
         var rects = chart.FindAll("rect.dx-bar-rect");
         double hB = double.Parse(rects[1].GetAttribute("height")!, System.Globalization.CultureInfo.InvariantCulture);
@@ -49,9 +49,10 @@ public sealed class DxChartsTests : TestContext
     [Fact]
     public void AreaChart_renders_fill_polygon_and_line()
     {
-        double[] values = Enumerable.Range(0, 500).Select(i => Math.Sin(i / 30.0) + 2).ToArray();
+        IReadOnlyList<ChartPoint> values = Enumerable.Range(0, 500)
+            .Select(i => new ChartPoint(Y: Math.Sin(i / 30.0) + 2)).ToList();
         IRenderedComponent<DxAreaChart> chart = RenderComponent<DxAreaChart>(parameters => parameters
-            .Add(c => c.Values, values)
+            .Add(c => c.Points, values)
             .Add(c => c.Threshold, 60));
 
         Assert.NotNull(chart.Find("polygon.dx-area-fill").GetAttribute("points"));
@@ -63,7 +64,7 @@ public sealed class DxChartsTests : TestContext
     public void PieChart_renders_a_slice_and_legend_entry_per_category()
     {
         IRenderedComponent<DxPieChart> chart = RenderComponent<DxPieChart>(parameters => parameters
-            .Add(c => c.Slices, Bars()));
+            .Add(c => c.Points, Bars()));
 
         Assert.Equal(3, chart.FindAll("path.dx-pie-slice").Count);
         Assert.Equal(3, chart.FindAll(".dx-pie-legend-item").Count);
@@ -74,7 +75,7 @@ public sealed class DxChartsTests : TestContext
     public void PieChart_donut_adds_a_center_hole()
     {
         IRenderedComponent<DxPieChart> chart = RenderComponent<DxPieChart>(parameters => parameters
-            .Add(c => c.Slices, Bars())
+            .Add(c => c.Points, Bars())
             .Add(c => c.Donut, true));
 
         Assert.Single(chart.FindAll("circle.dx-pie-hole"));

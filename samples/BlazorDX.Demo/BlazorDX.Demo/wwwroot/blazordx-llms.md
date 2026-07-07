@@ -177,13 +177,18 @@ read the columns to persist.
 ```
 
 ### Charts (SVG, Rust-downsampled where relevant)
+Every chart accepts one shared, generic data shape — `IReadOnlyList<ChartPoint>` — instead of a
+bespoke type per chart (`ChartPoint(X, Y, Category, Y2, Y3, Y4, Series, Color)`; unused fields are
+simply ignored). A bar/pie/funnel/sparkline reads `Category` + `Y`; a line/area/scatter chart reads
+`X` + `Y`; a stacked-bar/radar chart also reads `Series`; a candlestick reads `Y`..`Y4` as
+Open/High/Low/Close.
 ```razor
-<DxBarChart Bars="bars" Width="420" Height="220" />     @* IReadOnlyList<ChartBar>: new ChartBar("Label", 18) *@
-<DxPieChart Slices="bars" Donut="true" />
-<DxLineChart X="xs" Y="ys" Threshold="400" Width="720" Height="240" />
+<DxBarChart Points="bars" Width="420" Height="220" />   @* new ChartPoint(Category: "Label", Y: 18) *@
+<DxPieChart Points="bars" Donut="true" />
+<DxLineChart Points="series" Threshold="400" Width="720" Height="240" />   @* new ChartPoint(X: i, Y: v) *@
 <DxRadialGauge Value="72" Label="CPU %" Size="120" Color="#16a34a" Format="0" />
-<DxStackedBarChart Categories="quarters" Series="series" />  @* ChartSeries(name, double[]) *@
-<DxSparkline Values="@(new double[]{4,7,5,9,6})" />
+<DxStackedBarChart Categories="quarters" Points="points" />   @* new ChartPoint(Category: "Q1", Y: 18, Series: "Direct") *@
+<DxSparkline Points="@(new[]{ new ChartPoint(Y: 4), new ChartPoint(Y: 7) })" />
 ```
 
 ### Overlays, inputs, feedback

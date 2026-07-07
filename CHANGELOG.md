@@ -9,6 +9,22 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ## [Unreleased]
 
+### Changed
+
+- **Unified chart data model — `ChartPoint`, replacing per-chart bespoke shapes (breaking).**
+  Every chart that plots a series (`DxBarChart`, `DxPieChart`, `DxFunnelChart`, `DxSparkline`,
+  `DxLineChart`, `DxAreaChart`, `DxScatterChart`, `DxStackedBarChart`, `DxRadarChart`,
+  `DxCandlestickChart`) now takes one `Points: IReadOnlyList<ChartPoint>` parameter instead of a
+  bespoke type per chart (`ChartBar`, parallel `X`/`Y` lists, a bare `Values` list, `ChartSeries`,
+  `Candle`). `ChartPoint(X, Y, Category, Y2, Y3, Y4, Series, Color)` is a superset shape — a
+  bar/pie/funnel/sparkline chart reads `Category` + `Y`; a line/area/scatter chart reads `X` + `Y`;
+  a stacked-bar/radar chart also reads `Series` to group points onto the existing `Categories`/`Axes`
+  axis list; a candlestick reads `Y`..`Y4` as Open/High/Low/Close. Unused fields are ignored per
+  chart type — a plain record struct, no reflection. `DxHistogram` (raw, unbinned samples) and the
+  two gauges (a single scalar `Value`) are unchanged by design — they aren't a plotted point series.
+  This is the first step (`ChartPoint` itself) of a planned `[ChartRow]`/`[ChartSeries]` source
+  generator for binding an existing domain type onto this shape with zero reflection.
+
 ### Added
 
 - **PeopleHub HRIS example app** (`/hr`) — a six-module HR platform on a Scoped store: a

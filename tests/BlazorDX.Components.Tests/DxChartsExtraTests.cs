@@ -32,10 +32,12 @@ public sealed class DxChartsExtraTests : TestContext
         Assert.True(cx1 > cx0);   // x=100 is to the right of x=0
     }
 
-    private static IReadOnlyList<ChartSeries> Series() =>
+    private static IReadOnlyList<ChartPoint> Points() =>
     [
-        new ChartSeries("A", [10, 20]),
-        new ChartSeries("B", [5, 5]),
+        new(Category: "Q1", Y: 10, Series: "A"),
+        new(Category: "Q2", Y: 20, Series: "A"),
+        new(Category: "Q1", Y: 5, Series: "B"),
+        new(Category: "Q2", Y: 5, Series: "B"),
     ];
 
     [Fact]
@@ -43,7 +45,7 @@ public sealed class DxChartsExtraTests : TestContext
     {
         IRenderedComponent<DxStackedBarChart> chart = RenderComponent<DxStackedBarChart>(parameters => parameters
             .Add(c => c.Categories, new[] { "Q1", "Q2" })
-            .Add(c => c.Series, Series()));
+            .Add(c => c.Points, Points()));
 
         Assert.Equal(4, chart.FindAll("rect.dx-bar-rect").Count);   // 2 series x 2 categories
         Assert.Equal(2, chart.FindAll(".dx-pie-legend-item").Count);
@@ -55,7 +57,7 @@ public sealed class DxChartsExtraTests : TestContext
     {
         IRenderedComponent<DxStackedBarChart> chart = RenderComponent<DxStackedBarChart>(parameters => parameters
             .Add(c => c.Categories, new[] { "Q1", "Q2" })
-            .Add(c => c.Series, Series())
+            .Add(c => c.Points, Points())
             .Add(c => c.Height, 200));
 
         // Q2 total (20+5=25) is the max stack -> its segments fill more than Q1's (10+5=15).
@@ -70,7 +72,7 @@ public sealed class DxChartsExtraTests : TestContext
     {
         IRenderedComponent<DxStackedBarChart> chart = RenderComponent<DxStackedBarChart>(parameters => parameters
             .Add(c => c.Categories, new[] { "Q1" })
-            .Add(c => c.Series, Series())
+            .Add(c => c.Points, Points())
             .Add(c => c.Stacked, false));
 
         Assert.Contains("Grouped bar chart", chart.Markup);

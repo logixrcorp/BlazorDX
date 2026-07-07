@@ -25,17 +25,17 @@
     <div class="hr-cards">
         <section class="hr-card hr-card-wide">
             <h2>Headcount by department</h2>
-            <DxBarChart Bars="byDept" Width="640" Height="240" />
+            <DxBarChart Points="byDept" Width="640" Height="240" />
         </section>
 
         <section class="hr-card">
             <h2>By employment type</h2>
-            <DxPieChart Slices="byType" Donut="true" />
+            <DxPieChart Points="byType" Donut="true" />
         </section>
 
         <section class="hr-card">
             <h2>Hires (last 6 months)</h2>
-            <DxBarChart Bars="hires" Width="360" Height="220" />
+            <DxBarChart Points="hires" Width="360" Height="220" />
         </section>
 
         <section class="hr-card hr-card-gauge">
@@ -46,14 +46,14 @@
 </div>
 
 @code {
-    private IReadOnlyList<ChartBar> byDept = [];
-    private IReadOnlyList<ChartBar> byType = [];
-    private IReadOnlyList<ChartBar> hires = [];
+    private IReadOnlyList<ChartPoint> byDept = [];
+    private IReadOnlyList<ChartPoint> byType = [];
+    private IReadOnlyList<ChartPoint> hires = [];
 
     protected override void OnInitialized()
     {
-        byDept = Store.HeadcountByDepartment().Select(d => new ChartBar(d.Label, d.Count)).ToList();
-        byType = Store.HeadcountByType().Select(t => new ChartBar(t.Label, t.Count)).ToList();
-        hires = Store.HiresLastSixMonths().Select(h => new ChartBar(h.Label, h.Count)).ToList();
+        byDept = Store.HeadcountByDepartment().Select(d => new ChartPoint(Category: d.Label, Y: d.Count)).ToList();
+        byType = Store.HeadcountByType().Select(t => new ChartPoint(Category: t.Label, Y: t.Count)).ToList();
+        hires = Store.HiresLastSixMonths().Select(h => new ChartPoint(Category: h.Label, Y: h.Count)).ToList();
     }
 }

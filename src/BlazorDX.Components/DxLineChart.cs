@@ -21,9 +21,8 @@ public sealed class DxLineChart : ComponentBase
     private int[] selected = [];
     private object? lastSeries;
 
-    [Parameter, EditorRequired] public IReadOnlyList<double> X { get; set; } = [];
-
-    [Parameter, EditorRequired] public IReadOnlyList<double> Y { get; set; } = [];
+    /// <summary>The series to plot, reading <see cref="ChartPoint.X"/> + <see cref="ChartPoint.Y"/>.</summary>
+    [Parameter, EditorRequired] public IReadOnlyList<ChartPoint> Points { get; set; } = [];
 
     /// <summary>Approximate number of points to draw.</summary>
     [Parameter] public int Threshold { get; set; } = 300;
@@ -38,12 +37,18 @@ public sealed class DxLineChart : ComponentBase
 
     protected override async Task OnParametersSetAsync()
     {
-        // Re-downsample only when the series changes (keyed on X's identity).
-        if (!ReferenceEquals(lastSeries, X))
+        // Re-downsample only when the series changes (keyed on Points's identity).
+        if (!ReferenceEquals(lastSeries, Points))
         {
-            lastSeries = X;
-            xValues = X.ToArray();
-            yValues = Y.ToArray();
+            lastSeries = Points;
+            xValues = new double[Points.Count];
+            yValues = new double[Points.Count];
+            for (int i = 0; i < Points.Count; i++)
+            {
+                xValues[i] = Points[i].X;
+                yValues[i] = Points[i].Y;
+            }
+
             selected = xValues.Length > 0
                 ? await Compute.DownsampleAsync(xValues, yValues, Threshold)
                 : [];
@@ -76,7 +81,7 @@ public sealed class DxLineChart : ComponentBase
 
         builder.OpenElement(15, "div");
         builder.AddAttribute(16, "class", "dx-chart-caption");
-        builder.AddContent(17, $"{selected.Length:N0} of {X.Count:N0} points · {Compute.Backend}");
+        builder.AddContent(17, $"{selected.Length:N0} of {Points.Count:N0} points · {Compute.Backend}");
         builder.CloseElement();
 
         builder.CloseElement();

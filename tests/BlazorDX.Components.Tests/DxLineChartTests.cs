@@ -19,12 +19,11 @@ public sealed class DxLineChartTests : TestContext
     [Fact]
     public void Renders_an_svg_polyline_with_about_threshold_points()
     {
-        double[] x = Enumerable.Range(0, 1000).Select(i => (double)i).ToArray();
-        double[] y = x.Select(v => Math.Sin(v / 40)).ToArray();
+        IReadOnlyList<ChartPoint> data = Enumerable.Range(0, 1000)
+            .Select(i => new ChartPoint(X: i, Y: Math.Sin(i / 40.0))).ToList();
 
         IRenderedComponent<DxLineChart> chart = RenderComponent<DxLineChart>(parameters => parameters
-            .Add(c => c.X, x)
-            .Add(c => c.Y, y)
+            .Add(c => c.Points, data)
             .Add(c => c.Threshold, 100));
 
         var polyline = chart.Find("polyline");
@@ -35,12 +34,11 @@ public sealed class DxLineChartTests : TestContext
     [Fact]
     public void Caption_reports_downsampled_and_total_counts()
     {
-        double[] x = Enumerable.Range(0, 500).Select(i => (double)i).ToArray();
-        double[] y = x.Select(v => v).ToArray();
+        IReadOnlyList<ChartPoint> data = Enumerable.Range(0, 500)
+            .Select(i => new ChartPoint(X: i, Y: i)).ToList();
 
         IRenderedComponent<DxLineChart> chart = RenderComponent<DxLineChart>(parameters => parameters
-            .Add(c => c.X, x)
-            .Add(c => c.Y, y)
+            .Add(c => c.Points, data)
             .Add(c => c.Threshold, 80));
 
         string caption = chart.Find(".dx-chart-caption").TextContent;

@@ -13,10 +13,14 @@ public sealed class ChartTypesTests : TestContext
         IRenderedComponent<DxRadarChart> radar = RenderComponent<DxRadarChart>(p => p
             .Add(r => r.Axes, new[] { "Speed", "Power", "Range" })
             .Add(r => r.Rings, 4)
-            .Add(r => r.Series, new List<ChartSeries>
+            .Add(r => r.Points, new List<ChartPoint>
             {
-                new("A", new double[] { 3, 5, 2 }),
-                new("B", new double[] { 4, 1, 5 }),
+                new(Category: "Speed", Y: 3, Series: "A"),
+                new(Category: "Power", Y: 5, Series: "A"),
+                new(Category: "Range", Y: 2, Series: "A"),
+                new(Category: "Speed", Y: 4, Series: "B"),
+                new(Category: "Power", Y: 1, Series: "B"),
+                new(Category: "Range", Y: 5, Series: "B"),
             }));
 
         // 4 ring polygons + 2 series polygons.
@@ -30,11 +34,11 @@ public sealed class ChartTypesTests : TestContext
     public void Funnel_draws_a_trapezoid_and_label_per_stage()
     {
         IRenderedComponent<DxFunnelChart> funnel = RenderComponent<DxFunnelChart>(p => p
-            .Add(f => f.Stages, new List<ChartBar>
+            .Add(f => f.Points, new List<ChartPoint>
             {
-                new("Visited", 1000),
-                new("Signed up", 400),
-                new("Purchased", 120),
+                new(Category: "Visited", Y: 1000),
+                new(Category: "Signed up", Y: 400),
+                new(Category: "Purchased", Y: 120),
             }));
 
         Assert.Equal(3, funnel.FindAll("polygon").Count);
@@ -48,10 +52,10 @@ public sealed class ChartTypesTests : TestContext
         IRenderedComponent<DxCandlestickChart> chart = RenderComponent<DxCandlestickChart>(p => p
             .Add(c => c.UpColor, "#16a34a")
             .Add(c => c.DownColor, "#dc2626")
-            .Add(c => c.Candles, new List<Candle>
+            .Add(c => c.Points, new List<ChartPoint>
             {
-                new("Mon", 10, 22, 8, 20),    // up (close >= open)
-                new("Tue", 20, 24, 9, 11),    // down
+                new(Category: "Mon", Y: 10, Y2: 22, Y3: 8, Y4: 20),    // up (close >= open)
+                new(Category: "Tue", Y: 20, Y2: 24, Y3: 9, Y4: 11),    // down
             }));
 
         Assert.Equal(2, chart.FindAll("line").Count);   // wicks
