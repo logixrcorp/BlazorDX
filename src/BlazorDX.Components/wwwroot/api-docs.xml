@@ -137,6 +137,53 @@
         <member name="P:BlazorDX.Components.ChartLegendToggledEventArgs.Visible">
             <summary>The entry's new visibility state.</summary>
         </member>
+        <member name="T:BlazorDX.Components.ChartField">
+            <summary>
+            Which <see cref="T:BlazorDX.Components.ChartPoint"/> field a <see cref="T:BlazorDX.Components.ChartValueAttribute"/>-tagged property maps
+            onto. <see cref="F:BlazorDX.Components.ChartField.Category"/>/<see cref="F:BlazorDX.Components.ChartField.Series"/>/<see cref="F:BlazorDX.Components.ChartField.Color"/> accept a property of any
+            type (stringified via <c>Convert.ToString</c>, so an <c>int</c> or <c>enum</c> category works
+            as-is); <see cref="F:BlazorDX.Components.ChartField.X"/>/<see cref="F:BlazorDX.Components.ChartField.Y"/>/<see cref="F:BlazorDX.Components.ChartField.Y2"/>/<see cref="F:BlazorDX.Components.ChartField.Y3"/>/<see cref="F:BlazorDX.Components.ChartField.Y4"/>
+            require a numeric-convertible property — a non-numeric property tagged with one of these is
+            silently not mapped (the field keeps its <see cref="T:BlazorDX.Components.ChartPoint"/> default), the same
+            non-numeric-columns-degrade-gracefully policy <c>[GridColumn]</c> already uses.
+            </summary>
+        </member>
+        <member name="F:BlazorDX.Components.ChartField.Category">
+            <summary>→ <see cref="P:BlazorDX.Components.ChartPoint.Category"/>.</summary>
+        </member>
+        <member name="F:BlazorDX.Components.ChartField.X">
+            <summary>→ <see cref="P:BlazorDX.Components.ChartPoint.X"/>.</summary>
+        </member>
+        <member name="F:BlazorDX.Components.ChartField.Y">
+            <summary>→ <see cref="P:BlazorDX.Components.ChartPoint.Y"/>.</summary>
+        </member>
+        <member name="F:BlazorDX.Components.ChartField.Y2">
+            <summary>→ <see cref="P:BlazorDX.Components.ChartPoint.Y2"/> (candlestick High).</summary>
+        </member>
+        <member name="F:BlazorDX.Components.ChartField.Y3">
+            <summary>→ <see cref="P:BlazorDX.Components.ChartPoint.Y3"/> (candlestick Low).</summary>
+        </member>
+        <member name="F:BlazorDX.Components.ChartField.Y4">
+            <summary>→ <see cref="P:BlazorDX.Components.ChartPoint.Y4"/> (candlestick Close).</summary>
+        </member>
+        <member name="F:BlazorDX.Components.ChartField.Series">
+            <summary>→ <see cref="P:BlazorDX.Components.ChartPoint.Series"/>.</summary>
+        </member>
+        <member name="F:BlazorDX.Components.ChartField.Color">
+            <summary>→ <see cref="P:BlazorDX.Components.ChartPoint.Color"/>.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.ChartRowAttribute">
+            <summary>
+            Marks a domain type as projectable onto <see cref="T:BlazorDX.Components.ChartPoint"/>. The <c>BlazorDX.SourceGen</c>
+            generator emits a <c>ToChartPoints()</c> extension for every type carrying this attribute (one
+            <see cref="T:BlazorDX.Components.ChartPoint"/> per row, built from its <see cref="T:BlazorDX.Components.ChartValueAttribute"/>-tagged
+            properties), so charts bind existing domain data with zero runtime reflection — the same
+            zero-reflection story <c>[GridRow]</c> already tells for the DataGrid.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.ChartValueAttribute">
+            <summary>Declares a property as the source of one <see cref="T:BlazorDX.Components.ChartPoint"/> field. See <see cref="T:BlazorDX.Components.ChartField"/>.</summary>
+        </member>
         <member name="T:BlazorDX.Components.DxAccordion">
             <summary>
             Tier 2 styled accordion. Inherits all behavior from

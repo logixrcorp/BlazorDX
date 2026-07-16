@@ -53,3 +53,63 @@ public readonly record struct ChartPointEventArgs(int Index, ChartPoint Point);
 /// <param name="Key">The toggled entry's key: a pie slice's <see cref="ChartPoint.Category"/>, or a stacked-bar/radar <see cref="ChartPoint.Series"/> name.</param>
 /// <param name="Visible">The entry's new visibility state.</param>
 public readonly record struct ChartLegendToggledEventArgs(string Key, bool Visible);
+
+/// <summary>
+/// Which <see cref="ChartPoint"/> field a <see cref="ChartValueAttribute"/>-tagged property maps
+/// onto. <see cref="Category"/>/<see cref="Series"/>/<see cref="Color"/> accept a property of any
+/// type (stringified via <c>Convert.ToString</c>, so an <c>int</c> or <c>enum</c> category works
+/// as-is); <see cref="X"/>/<see cref="Y"/>/<see cref="Y2"/>/<see cref="Y3"/>/<see cref="Y4"/>
+/// require a numeric-convertible property — a non-numeric property tagged with one of these is
+/// silently not mapped (the field keeps its <see cref="ChartPoint"/> default), the same
+/// non-numeric-columns-degrade-gracefully policy <c>[GridColumn]</c> already uses.
+/// </summary>
+public enum ChartField
+{
+    /// <summary>→ <see cref="ChartPoint.Category"/>.</summary>
+    Category,
+
+    /// <summary>→ <see cref="ChartPoint.X"/>.</summary>
+    X,
+
+    /// <summary>→ <see cref="ChartPoint.Y"/>.</summary>
+    Y,
+
+    /// <summary>→ <see cref="ChartPoint.Y2"/> (candlestick High).</summary>
+    Y2,
+
+    /// <summary>→ <see cref="ChartPoint.Y3"/> (candlestick Low).</summary>
+    Y3,
+
+    /// <summary>→ <see cref="ChartPoint.Y4"/> (candlestick Close).</summary>
+    Y4,
+
+    /// <summary>→ <see cref="ChartPoint.Series"/>.</summary>
+    Series,
+
+    /// <summary>→ <see cref="ChartPoint.Color"/>.</summary>
+    Color,
+}
+
+/// <summary>
+/// Marks a domain type as projectable onto <see cref="ChartPoint"/>. The <c>BlazorDX.SourceGen</c>
+/// generator emits a <c>ToChartPoints()</c> extension for every type carrying this attribute (one
+/// <see cref="ChartPoint"/> per row, built from its <see cref="ChartValueAttribute"/>-tagged
+/// properties), so charts bind existing domain data with zero runtime reflection — the same
+/// zero-reflection story <c>[GridRow]</c> already tells for the DataGrid.
+/// </summary>
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
+public sealed class ChartRowAttribute : Attribute
+{
+}
+
+/// <summary>Declares a property as the source of one <see cref="ChartPoint"/> field. See <see cref="ChartField"/>.</summary>
+[AttributeUsage(AttributeTargets.Property)]
+public sealed class ChartValueAttribute : Attribute
+{
+    public ChartValueAttribute(ChartField field)
+    {
+        Field = field;
+    }
+
+    public ChartField Field { get; }
+}

@@ -27,6 +27,18 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ### Added
 
+- **`[ChartRow]`/`[ChartValue]` source generator** — bind an existing domain type straight to a
+  chart with `rows.ToChartPoints()`, no manual `ChartPoint` construction, no reflection. Tag a class
+  or struct `[ChartRow]` and its properties `[ChartValue(ChartField.Category)]` /
+  `.X` / `.Y` / `.Y2` / `.Y3` / `.Y4` / `.Series` / `.Color`; `BlazorDX.SourceGen` emits a
+  `{Type}ChartExtensions.ToChartPoints()` extension at build time. `Category`/`Series`/`Color`
+  accept a property of any type (stringified via `Convert.ToString`, so an `int` or `enum` category
+  works as-is); the numeric fields require a numeric-convertible property — tagging a non-numeric
+  one is silently not mapped (degrades gracefully, mirroring `[GridColumn]`'s policy) rather than a
+  compile error. Mirrors `[GridRow]`/`[GridColumn]`'s zero-reflection story for the DataGrid; this
+  closes out the "Data" unification alongside `ChartPoint` above. `Charts.razor` demos it live via a
+  `SalesRecord` row type feeding a `DxBarChart`.
+
 - **Chart point selection, hover, and legend-toggle events** — a progressive-enhancement layer on
   the 7 discrete-mark charts (`DxBarChart`, `DxPieChart`, `DxFunnelChart`, `DxScatterChart`,
   `DxStackedBarChart`, `DxRadarChart`, `DxCandlestickChart`). Wiring `OnPointSelected` and/or
