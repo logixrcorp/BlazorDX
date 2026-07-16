@@ -27,6 +27,22 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ### Added
 
+- **Chart point selection, hover, and legend-toggle events** — a progressive-enhancement layer on
+  the 7 discrete-mark charts (`DxBarChart`, `DxPieChart`, `DxFunnelChart`, `DxScatterChart`,
+  `DxStackedBarChart`, `DxRadarChart`, `DxCandlestickChart`). Wiring `OnPointSelected` and/or
+  `OnPointHovered` turns a chart into a keyboard-navigable widget — `role="application"`, roving
+  `aria-activedescendant`, arrow-key navigation (Home/End, no wrap), Enter/Space to select — the
+  same active-cell pattern already used by the DataGrid, Scheduler, and Calendar, generalized to a
+  geometry-agnostic roving index (`ChartSelectionPrimitive`, new, in `BlazorDX.Primitives.Charts`).
+  With neither event wired, a chart renders exactly as it always has (`role="img"`, no tabindex) —
+  fully backward compatible. `DxPieChart`/`DxStackedBarChart`/`DxRadarChart`'s legends are always
+  click/keyboard-operable buttons that hide/restore a slice or series and raise `OnLegendToggled`,
+  independent of point-level interactivity. `DxLineChart`/`DxAreaChart` (continuous, LTTB-downsampled
+  to hundreds/thousands of points) and `DxSparkline` (explicitly decorative) are deliberately out of
+  scope for point-level selection — zoom/pan is the right future interaction there, not per-point
+  keyboard nav. `Charts.razor` demos both new events live (an interactive bar chart, a toggleable
+  pie legend).
+
 - **PeopleHub HRIS example app** (`/hr`) — a six-module HR platform on a Scoped store: a
   **dashboard** (headcount/type/hiring charts + an average-tenure gauge), an employee **directory**
   (`DxDataGrid`), an employee **profile** with a source-generated `DxForm` and tabs, an **org chart**

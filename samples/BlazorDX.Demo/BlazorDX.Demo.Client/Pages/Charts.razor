@@ -18,8 +18,12 @@
 <p class="dx-demo-meta">A filled series, also Rust-downsampled.</p>
 <DxAreaChart Points="areaData" Threshold="300" Width="720" Height="200" />
 
-<h2 style="margin-top:32px">Bar chart</h2>
-<DxBarChart Points="bars" Width="720" Height="240" />
+<h2 style="margin-top:32px">Bar chart (interactive)</h2>
+<p class="dx-demo-meta">
+    Wiring <code>OnPointSelected</code> turns the chart into a keyboard-navigable widget — click a
+    bar, or Tab to it and use arrow keys + Enter/Space. Selected: <strong>@selectedBar</strong>.
+</p>
+<DxBarChart Points="bars" Width="720" Height="240" OnPointSelected="OnBarSelected" />
 
 <h2 style="margin-top:32px">Histogram (Rust binning)</h2>
 <p class="dx-demo-meta">
@@ -28,10 +32,14 @@
 </p>
 <DxHistogram Values="sample" Bins="16" Width="720" Height="220" />
 
-<h2 style="margin-top:32px">Pie &amp; donut</h2>
+<h2 style="margin-top:32px">Pie &amp; donut (legend toggle)</h2>
+<p class="dx-demo-meta">
+    The legend is always click/keyboard-operable — toggle an entry to hide or restore that slice,
+    redistributing the circle over what remains. Legend: <strong>@legendStatus</strong>.
+</p>
 <div style="display:flex; gap:32px; flex-wrap:wrap">
-    <DxPieChart Points="slices" />
-    <DxPieChart Points="slices" Donut="true" />
+    <DxPieChart Points="slices" OnLegendToggled="OnPieLegendToggled" />
+    <DxPieChart Points="slices" Donut="true" OnLegendToggled="OnPieLegendToggled" />
 </div>
 
 <h2 style="margin-top:32px">Sparklines</h2>
@@ -83,6 +91,15 @@
     private IReadOnlyList<ChartPoint> lineData = [];
     private IReadOnlyList<ChartPoint> areaData = [];
     private double[] sample = [];
+
+    private string selectedBar = "(none)";
+    private string legendStatus = "(none)";
+
+    private void OnBarSelected(ChartPointEventArgs e) =>
+        selectedBar = $"{e.Point.Category} = {e.Point.Y:0.##}";
+
+    private void OnPieLegendToggled(ChartLegendToggledEventArgs e) =>
+        legendStatus = $"{e.Key} {(e.Visible ? "shown" : "hidden")}";
 
     private readonly IReadOnlyList<ChartPoint> bars =
     [

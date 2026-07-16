@@ -103,3 +103,68 @@
   fill: var(--dx-text-muted, #64748b);
   dominant-baseline: middle;
 }
+
+/* ---- Interactive marks (selection is opt-in — see each chart's remarks) ---- */
+
+/* The chart becomes a role="application" roving-tabindex widget once a selection/hover
+   callback is wired; give the container itself a visible focus ring, same treatment as
+   the Scheduler/Calendar's role="application"/"grid" surfaces. */
+.dx-chart-svg[role="application"]:focus-visible,
+.dx-pie-svg[role="application"]:focus-visible {
+  outline: 2px solid var(--dx-accent, #2563eb);
+  outline-offset: 2px;
+}
+
+/* The keyboard-focused mark (aria-activedescendant target): an outline so it reads
+   distinctly from a hovered mark even when both happen to coincide. */
+.dx-chart-mark-active {
+  outline: 2px solid var(--dx-accent, #2563eb);
+  outline-offset: 1px;
+}
+
+/* A pointer-hovered mark: a lift, not a colour change (colour alone must never be the
+   only signal — WCAG 1.4.1), so it reads the same regardless of the mark's own fill. */
+.dx-chart-mark-hovered {
+  filter: brightness(1.08);
+  cursor: pointer;
+}
+
+.dx-funnel-stage,
+.dx-candle,
+.dx-radar-vertex {
+  cursor: pointer;
+}
+.dx-radar-vertex {
+  fill: var(--dx-surface, #ffffff);
+  stroke-width: 1.5;
+}
+
+/* ---- Legend as a toggle (pie / stacked bar / radar) ---- */
+.dx-pie-legend-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.dx-pie-legend-btn:hover { background: var(--dx-surface-alt, #f1f5f9); }
+.dx-pie-legend-btn:focus-visible {
+  outline: 2px solid var(--dx-accent, #2563eb);
+  outline-offset: 1px;
+}
+/* A hidden series/slice is struck through, not just dimmed — the state survives for
+   colour-blind and high-contrast users, matching the rest of the library's "text, never
+   colour alone" rule. */
+.dx-pie-legend-hidden {
+  color: var(--dx-text-muted, #94a3b8);
+  text-decoration: line-through;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dx-chart-mark-hovered { filter: none; }
+}

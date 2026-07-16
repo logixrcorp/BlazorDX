@@ -290,6 +290,42 @@
             codewords via polynomial division — the remainder of data·x^ecCount ÷ generator.
             </summary>
         </member>
+        <member name="T:BlazorDX.Primitives.Charts.ChartSelectionPrimitive">
+            <summary>
+            Headless roving-index selection/focus state for a discrete-mark chart (one bar, slice, radar
+            series, candle, or scatter dot per index). Geometry-agnostic by design: it only knows a point
+            count, not layout — the same state machine serves a categorical bar chart, an angular pie
+            chart, and a polar radar chart alike, mirroring the WAI-ARIA roving-tabindex pattern already
+            used for the DataGrid, Scheduler, and Calendar active-cell models. Continuous/downsampled
+            charts (line, area) and the decorative sparkline are deliberately out of scope — thousands of
+            LTTB-selected points aren't discrete, keyboard-tabbable marks the way a bar or slice is; those
+            chart types are better served by a future zoom/pan interaction, not per-point selection.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Charts.ChartSelectionPrimitive.ActiveIndex">
+            <summary>The keyboard-focused point's index, or -1 when nothing has been focused yet.</summary>
+        </member>
+        <member name="P:BlazorDX.Primitives.Charts.ChartSelectionPrimitive.HoveredIndex">
+            <summary>The pointer-hovered point's index, or -1 when nothing is hovered.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Charts.ChartSelectionPrimitive.SetHovered(System.Int32)">
+            <summary>Sets the hovered point (or clears it with -1). Pure state — the caller re-renders.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Charts.ChartSelectionPrimitive.SetActive(System.Int32,System.Int32)">
+            <summary>Makes <paramref name="index"/> the active (focused) point directly, e.g. on click.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Charts.ChartSelectionPrimitive.ClampTo(System.Int32)">
+            <summary>Re-anchors the active index into range after the point count changes (e.g. new data).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Charts.ChartSelectionPrimitive.MoveActive(System.String,System.Int32)">
+            <summary>
+            Applies an arrow / Home / End key to the active index. Returns true when the key was a
+            navigation key (so the caller can re-render and prevent default); false for any other key
+            (including Enter/Space, which the caller handles separately via <see cref="P:BlazorDX.Primitives.Charts.ChartSelectionPrimitive.HasActive"/>).
+            The first navigation key seeds the active index at 0, matching the Scheduler/Calendar
+            pattern. No wrap at the ends.
+            </summary>
+        </member>
         <member name="T:BlazorDX.Primitives.Chat.ChatRole">
             <summary>Who authored a chat message.</summary>
         </member>

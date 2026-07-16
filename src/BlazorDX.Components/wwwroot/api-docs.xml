@@ -87,6 +87,56 @@
         <member name="P:BlazorDX.Components.ChartPoint.Color">
             <summary>Optional CSS color override for this point/series; otherwise a palette color is used.</summary>
         </member>
+        <member name="T:BlazorDX.Components.ChartPointEventArgs">
+            <summary>
+            The point a click, keyboard selection, or hover interaction occurred on, for the discrete-mark
+            charts (bar, pie, funnel, scatter, stacked bar, radar, candlestick). Continuous/downsampled
+            charts (line, area) and the decorative sparkline don't raise this — see
+            <see cref="T:BlazorDX.Primitives.Charts.ChartSelectionPrimitive"/>.
+            </summary>
+            <param name="Index">The point's index into the chart's <c>Points</c> list.</param>
+            <param name="Point">The point itself.</param>
+        </member>
+        <member name="M:BlazorDX.Components.ChartPointEventArgs.#ctor(System.Int32,BlazorDX.Components.ChartPoint)">
+            <summary>
+            The point a click, keyboard selection, or hover interaction occurred on, for the discrete-mark
+            charts (bar, pie, funnel, scatter, stacked bar, radar, candlestick). Continuous/downsampled
+            charts (line, area) and the decorative sparkline don't raise this — see
+            <see cref="T:BlazorDX.Primitives.Charts.ChartSelectionPrimitive"/>.
+            </summary>
+            <param name="Index">The point's index into the chart's <c>Points</c> list.</param>
+            <param name="Point">The point itself.</param>
+        </member>
+        <member name="P:BlazorDX.Components.ChartPointEventArgs.Index">
+            <summary>The point's index into the chart's <c>Points</c> list.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.ChartPointEventArgs.Point">
+            <summary>The point itself.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.ChartLegendToggledEventArgs">
+            <summary>
+            A legend entry's visibility was toggled on a multi-series chart (pie, stacked bar, radar). The
+            chart already hides/shows the corresponding slice or series itself when this fires — the event
+            is for a host that wants to react (e.g. update an external summary), not required plumbing.
+            </summary>
+            <param name="Key">The toggled entry's key: a pie slice's <see cref="P:BlazorDX.Components.ChartPoint.Category"/>, or a stacked-bar/radar <see cref="P:BlazorDX.Components.ChartPoint.Series"/> name.</param>
+            <param name="Visible">The entry's new visibility state.</param>
+        </member>
+        <member name="M:BlazorDX.Components.ChartLegendToggledEventArgs.#ctor(System.String,System.Boolean)">
+            <summary>
+            A legend entry's visibility was toggled on a multi-series chart (pie, stacked bar, radar). The
+            chart already hides/shows the corresponding slice or series itself when this fires — the event
+            is for a host that wants to react (e.g. update an external summary), not required plumbing.
+            </summary>
+            <param name="Key">The toggled entry's key: a pie slice's <see cref="P:BlazorDX.Components.ChartPoint.Category"/>, or a stacked-bar/radar <see cref="P:BlazorDX.Components.ChartPoint.Series"/> name.</param>
+            <param name="Visible">The entry's new visibility state.</param>
+        </member>
+        <member name="P:BlazorDX.Components.ChartLegendToggledEventArgs.Key">
+            <summary>The toggled entry's key: a pie slice's <see cref="P:BlazorDX.Components.ChartPoint.Category"/>, or a stacked-bar/radar <see cref="P:BlazorDX.Components.ChartPoint.Series"/> name.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.ChartLegendToggledEventArgs.Visible">
+            <summary>The entry's new visibility state.</summary>
+        </member>
         <member name="T:BlazorDX.Components.DxAccordion">
             <summary>
             Tier 2 styled accordion. Inherits all behavior from
@@ -167,6 +217,20 @@
             category labels. Vertical columns by default; set <see cref="P:BlazorDX.Components.DxBarChart.Horizontal"/> for
             a horizontal bar chart. Styling is token-driven (see dx-chart.css).
             </summary>
+            <remarks>
+            Selection is a progressive enhancement: wiring <see cref="P:BlazorDX.Components.DxBarChart.OnPointSelected"/> and/or
+            <see cref="P:BlazorDX.Components.DxBarChart.OnPointHovered"/> turns the chart into a keyboard-navigable widget
+            (<c>role="application"</c>, roving <c>aria-activedescendant</c>, arrow/Home/End, Enter/Space to
+            select) — mirroring the DataGrid/Scheduler/Calendar active-cell pattern via
+            <see cref="T:BlazorDX.Primitives.Charts.ChartSelectionPrimitive"/>. With neither wired, the chart stays exactly the
+            pre-existing decorative <c>role="img"</c> with no behavior change.
+            </remarks>
+        </member>
+        <member name="P:BlazorDX.Components.DxBarChart.OnPointSelected">
+            <summary>Raised on click or Enter/Space when a bar is the active (keyboard-focused) point.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxBarChart.OnPointHovered">
+            <summary>Raised when the pointer enters/leaves a bar (leaving reports index -1).</summary>
         </member>
         <member name="T:BlazorDX.Components.DxBarcode">
             <summary>
@@ -286,6 +350,8 @@
             <see cref="P:BlazorDX.Components.ChartPoint.Y3"/>/<see cref="P:BlazorDX.Components.ChartPoint.Y4"/> are Open/High/Low/Close. Pure SVG;
             styling via dx-chart.css.
             </summary>
+            <remarks>Selection is a progressive enhancement — see <see cref="T:BlazorDX.Components.DxBarChart"/>'s remarks; the
+            interactive mark is the whole wick+body group for a candle.</remarks>
         </member>
         <member name="P:BlazorDX.Components.DxCandlestickChart.Points">
             <summary>The candles, left to right.</summary>
@@ -870,6 +936,7 @@
             stage's value (reusing the shared <see cref="T:BlazorDX.Components.ChartPoint"/> model). Pure SVG; styling
             via dx-chart.css.
             </summary>
+            <remarks>Selection is a progressive enhancement — see <see cref="T:BlazorDX.Components.DxBarChart"/>'s remarks.</remarks>
         </member>
         <member name="P:BlazorDX.Components.DxFunnelChart.Points">
             <summary>The funnel stages, top to bottom (<see cref="P:BlazorDX.Components.ChartPoint.Category"/> + <see cref="P:BlazorDX.Components.ChartPoint.Y"/>).</summary>
@@ -1183,6 +1250,15 @@
             <see cref="T:BlazorDX.Components.ChartPoint"/> data model (<see cref="P:BlazorDX.Components.ChartPoint.Category"/> + <see cref="P:BlazorDX.Components.ChartPoint.Y"/>).
             Set <see cref="P:BlazorDX.Components.DxPieChart.Donut"/> for a donut. Styling is token-driven (see dx-chart.css).
             </summary>
+            <remarks>
+            Selection is a progressive enhancement (see <see cref="T:BlazorDX.Components.DxBarChart"/>'s remarks for the exact
+            model). The legend is always click/keyboard-operable — clicking an entry hides that slice
+            (redistributing the circle over what remains) and raises <see cref="P:BlazorDX.Components.DxPieChart.OnLegendToggled"/>; this
+            does not require wiring <see cref="P:BlazorDX.Components.DxPieChart.OnPointSelected"/>.
+            </remarks>
+        </member>
+        <member name="P:BlazorDX.Components.DxPieChart.OnLegendToggled">
+            <summary>Raised when a legend entry's visibility is toggled (the chart already hides the slice itself).</summary>
         </member>
         <member name="T:BlazorDX.Components.DxPivotGrid`1">
             <summary>
@@ -1247,6 +1323,13 @@
             matches one of <see cref="P:BlazorDX.Components.DxRadarChart.Axes"/> and its <see cref="P:BlazorDX.Components.ChartPoint.Series"/> groups it into a
             named series. Pure SVG, no JS or DI; styling via dx-chart.css.
             </summary>
+            <remarks>
+            Selection is a progressive enhancement (see <see cref="T:BlazorDX.Components.DxBarChart"/>'s remarks). A small vertex
+            dot is drawn at each (series, axis) intersection as the interactive mark once
+            <see cref="P:BlazorDX.Components.DxRadarChart.OnPointSelected"/> and/or <see cref="P:BlazorDX.Components.DxRadarChart.OnPointHovered"/> are wired. The legend is
+            always click/keyboard-operable — clicking a series name hides its polygon and vertices and
+            raises <see cref="P:BlazorDX.Components.DxRadarChart.OnLegendToggled"/>.
+            </remarks>
         </member>
         <member name="P:BlazorDX.Components.DxRadarChart.Axes">
             <summary>Axis labels (one per spoke); points align to these by <see cref="P:BlazorDX.Components.ChartPoint.Category"/>.</summary>
@@ -1440,6 +1523,7 @@
             bounds. Reuses the shared <see cref="T:BlazorDX.Components.ChartPoint"/> model (<see cref="P:BlazorDX.Components.ChartPoint.X"/> +
             <see cref="P:BlazorDX.Components.ChartPoint.Y"/>). Pure SVG. Styling is token-driven (see dx-chart.css).
             </summary>
+            <remarks>Selection is a progressive enhancement — see <see cref="T:BlazorDX.Components.DxBarChart"/>'s remarks.</remarks>
         </member>
         <member name="T:BlazorDX.Components.DxScheduler">
             <summary>
@@ -1637,6 +1721,11 @@
             <see cref="P:BlazorDX.Components.ChartPoint.Series"/> groups it into a named series. Pure SVG.
             Styling is token-driven (see dx-chart.css).
             </summary>
+            <remarks>
+            Selection is a progressive enhancement (see <see cref="T:BlazorDX.Components.DxBarChart"/>'s remarks). The legend is
+            always click/keyboard-operable — clicking a series name hides its bars across every category
+            and raises <see cref="P:BlazorDX.Components.DxStackedBarChart.OnLegendToggled"/>.
+            </remarks>
         </member>
         <member name="P:BlazorDX.Components.DxStackedBarChart.Points">
             <summary>The points to plot; grouped by <see cref="P:BlazorDX.Components.ChartPoint.Series"/>, placed by <see cref="P:BlazorDX.Components.ChartPoint.Category"/>.</summary>

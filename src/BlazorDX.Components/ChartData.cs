@@ -34,3 +34,22 @@ public readonly record struct ChartPoint(
     double? Y4 = null,
     string? Series = null,
     string? Color = null);
+
+/// <summary>
+/// The point a click, keyboard selection, or hover interaction occurred on, for the discrete-mark
+/// charts (bar, pie, funnel, scatter, stacked bar, radar, candlestick). Continuous/downsampled
+/// charts (line, area) and the decorative sparkline don't raise this — see
+/// <see cref="BlazorDX.Primitives.Charts.ChartSelectionPrimitive"/>.
+/// </summary>
+/// <param name="Index">The point's index into the chart's <c>Points</c> list.</param>
+/// <param name="Point">The point itself.</param>
+public readonly record struct ChartPointEventArgs(int Index, ChartPoint Point);
+
+/// <summary>
+/// A legend entry's visibility was toggled on a multi-series chart (pie, stacked bar, radar). The
+/// chart already hides/shows the corresponding slice or series itself when this fires — the event
+/// is for a host that wants to react (e.g. update an external summary), not required plumbing.
+/// </summary>
+/// <param name="Key">The toggled entry's key: a pie slice's <see cref="ChartPoint.Category"/>, or a stacked-bar/radar <see cref="ChartPoint.Series"/> name.</param>
+/// <param name="Visible">The entry's new visibility state.</param>
+public readonly record struct ChartLegendToggledEventArgs(string Key, bool Visible);

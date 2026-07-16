@@ -1,6 +1,8 @@
 using System.Globalization;
+using BlazorDX.Primitives.Charts;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace BlazorDX.Components;
 
@@ -9,8 +11,18 @@ namespace BlazorDX.Components;
 /// <see cref="ChartPoint"/> data model (<see cref="ChartPoint.Category"/> + <see cref="ChartPoint.Y"/>).
 /// Set <see cref="Donut"/> for a donut. Styling is token-driven (see dx-chart.css).
 /// </summary>
+/// <remarks>
+/// Selection is a progressive enhancement (see <see cref="DxBarChart"/>'s remarks for the exact
+/// model). The legend is always click/keyboard-operable — clicking an entry hides that slice
+/// (redistributing the circle over what remains) and raises <see cref="OnLegendToggled"/>; this
+/// does not require wiring <see cref="OnPointSelected"/>.
+/// </remarks>
 public sealed class DxPieChart : ComponentBase
 {
+    private readonly ChartSelectionPrimitive selection = new();
+    private readonly string chartId = $"dx-pie-{Guid.NewGuid():N}";
+    private readonly HashSet<string> hidden = new(StringComparer.Ordinal);
+
     [Parameter, EditorRequired] public IReadOnlyList<ChartPoint> Points { get; set; } = [];
 
     [Parameter] public bool Donut { get; set; }
@@ -19,15 +31,45 @@ public sealed class DxPieChart : ComponentBase
 
     [Parameter] public string? Class { get; set; }
 
+    [Parameter] public EventCallback<ChartPointEventArgs> OnPointSelected { get; set; }
+
+    [Parameter] public EventCallback<ChartPointEventArgs> OnPointHovered { get; set; }
+
+    /// <summary>Raised when a legend entry's visibility is toggled (the chart already hides the slice itself).</summary>
+    [Parameter] public EventCallback<ChartLegendToggledEventArgs> OnLegendToggled { get; set; }
+
+    private bool Interactive => OnPointSelected.HasDelegate || OnPointHovered.HasDelegate;
+
     private static readonly string[] Palette =
         ["#2563eb", "#16a34a", "#d97706", "#dc2626", "#7c3aed", "#0891b2", "#db2777", "#65a30d"];
 
+    protected override void OnParametersSet() => selection.ClampTo(Visible().Count);
+
+    // The slices actually drawn: everything not hidden via the legend, in original index order,
+    // paired with each entry's original Points index (selection/events report the real index).
+    private List<(int Index, ChartPoint Point)> Visible()
+    {
+        List<(int, ChartPoint)> visible = new(Points.Count);
+        for (int i = 0; i < Points.Count; i++)
+        {
+            if (Points[i].Category is not { } cat || !hidden.Contains(cat))
+            {
+                visible.Add((i, Points[i]));
+            }
+        }
+
+        return visible;
+    }
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
+        bool interactive = Interactive;
+        List<(int Index, ChartPoint Point)> visible = Visible();
+
         builder.OpenElement(0, "div");
         builder.AddAttribute(1, "class", $"dx-chart dx-pie-chart {Class}".TrimEnd());
 
-        double total = Points.Sum(s => Math.Max(0, s.Y));
+        double total = visible.Sum(s => Math.Max(0, s.Point.Y));
         double cx = Size / 2.0;
         double cy = Size / 2.0;
         double r = (Size / 2.0) - 4;
@@ -37,30 +79,68 @@ public sealed class DxPieChart : ComponentBase
         builder.AddAttribute(4, "viewBox", $"0 0 {Size} {Size}");
         builder.AddAttribute(5, "width", Size);
         builder.AddAttribute(6, "height", Size);
-        builder.AddAttribute(7, "role", "img");
-        builder.AddAttribute(8, "aria-label", $"Pie chart with {Points.Count} slices");
+        builder.AddAttribute(7, "role", interactive ? "application" : "img");
+        builder.AddAttribute(8, "aria-label", $"Pie chart with {visible.Count} slices");
+
+        if (interactive)
+        {
+            builder.AddAttribute(9, "tabindex", "0");
+            if (selection.HasActive)
+            {
+                builder.AddAttribute(10, "aria-activedescendant", PointId(selection.ActiveIndex));
+            }
+
+            builder.AddAttribute(11, "onkeydown", EventCallback.Factory.Create<KeyboardEventArgs>(this, OnKeyDownAsync));
+            builder.AddEventPreventDefaultAttribute(12, "onkeydown", true);
+        }
 
         if (total <= 0)
         {
             builder.CloseElement();
             builder.CloseElement();
+            BuildLegend(builder, 0);
+            builder.CloseElement();
             return;
         }
 
         double angle = -Math.PI / 2; // start at 12 o'clock
-        for (int i = 0; i < Points.Count; i++)
+        foreach ((int index, ChartPoint point) in visible)
         {
-            double fraction = Math.Max(0, Points[i].Y) / total;
+            double fraction = Math.Max(0, point.Y) / total;
             double sweep = fraction * 2 * Math.PI;
             double end = angle + sweep;
-            string color = Points[i].Color ?? Palette[i % Palette.Length];
+            string color = point.Color ?? Palette[index % Palette.Length];
+            string label = $"{point.Category}: {Pct(fraction)}";
 
-            builder.OpenElement(10, "path");
-            builder.AddAttribute(11, "class", "dx-pie-slice");
-            builder.AddAttribute(12, "d", Arc(cx, cy, r, angle, end, fraction));
-            builder.AddAttribute(13, "fill", color);
-            builder.OpenElement(14, "title");
-            builder.AddContent(15, $"{Points[i].Category}: {Pct(fraction)}");
+            string css = "dx-pie-slice";
+            if (interactive && selection.IsActive(index))
+            {
+                css += " dx-chart-mark-active";
+            }
+
+            if (interactive && selection.IsHovered(index))
+            {
+                css += " dx-chart-mark-hovered";
+            }
+
+            builder.OpenElement(20, "path");
+            builder.SetKey(index);
+            builder.AddAttribute(21, "class", css);
+            builder.AddAttribute(22, "d", Arc(cx, cy, r, angle, end, fraction));
+            builder.AddAttribute(23, "fill", color);
+
+            if (interactive)
+            {
+                int captured = index;
+                builder.AddAttribute(24, "id", PointId(index));
+                builder.AddAttribute(25, "aria-label", label);
+                builder.AddAttribute(26, "onclick", EventCallback.Factory.Create(this, () => SelectAsync(captured)));
+                builder.AddAttribute(27, "onmouseover", EventCallback.Factory.Create(this, () => HoverAsync(captured)));
+                builder.AddAttribute(28, "onmouseout", EventCallback.Factory.Create(this, () => HoverAsync(-1)));
+            }
+
+            builder.OpenElement(29, "title");
+            builder.AddContent(30, label);
             builder.CloseElement();
             builder.CloseElement();
 
@@ -69,11 +149,11 @@ public sealed class DxPieChart : ComponentBase
 
         if (Donut)
         {
-            builder.OpenElement(16, "circle");
-            builder.AddAttribute(17, "class", "dx-pie-hole");
-            builder.AddAttribute(18, "cx", F(cx));
-            builder.AddAttribute(19, "cy", F(cy));
-            builder.AddAttribute(20, "r", F(r * 0.58));
+            builder.OpenElement(31, "circle");
+            builder.AddAttribute(32, "class", "dx-pie-hole");
+            builder.AddAttribute(33, "cx", F(cx));
+            builder.AddAttribute(34, "cy", F(cy));
+            builder.AddAttribute(35, "r", F(r * 0.58));
             builder.CloseElement();
         }
 
@@ -86,22 +166,33 @@ public sealed class DxPieChart : ComponentBase
 
     private void BuildLegend(RenderTreeBuilder builder, double total)
     {
-        builder.OpenElement(30, "ul");
-        builder.AddAttribute(31, "class", "dx-pie-legend");
+        builder.OpenElement(40, "ul");
+        builder.AddAttribute(41, "class", "dx-pie-legend");
         for (int i = 0; i < Points.Count; i++)
         {
+            string category = Points[i].Category ?? string.Empty;
+            bool isHidden = hidden.Contains(category);
             string color = Points[i].Color ?? Palette[i % Palette.Length];
-            builder.OpenElement(32, "li");
-            builder.SetKey(i);
-            builder.AddAttribute(33, "class", "dx-pie-legend-item");
 
-            builder.OpenElement(34, "span");
-            builder.AddAttribute(35, "class", "dx-pie-swatch");
-            builder.AddAttribute(36, "style", $"background:{color}");
-            builder.AddAttribute(37, "aria-hidden", "true");
+            builder.OpenElement(42, "li");
+            builder.SetKey(i);
+            builder.AddAttribute(43, "class", isHidden ? "dx-pie-legend-item dx-pie-legend-hidden" : "dx-pie-legend-item");
+
+            builder.OpenElement(44, "button");
+            builder.AddAttribute(45, "type", "button");
+            builder.AddAttribute(46, "class", "dx-pie-legend-btn");
+            builder.AddAttribute(47, "aria-pressed", isHidden ? "false" : "true");
+            builder.AddAttribute(48, "onclick", EventCallback.Factory.Create(this, () => ToggleLegendAsync(category)));
+
+            builder.OpenElement(49, "span");
+            builder.AddAttribute(50, "class", "dx-pie-swatch");
+            builder.AddAttribute(51, "style", $"background:{color}");
+            builder.AddAttribute(52, "aria-hidden", "true");
             builder.CloseElement();
 
-            builder.AddContent(38, $"{Points[i].Category} — {Pct(Math.Max(0, Points[i].Y) / total)}");
+            string pct = !isHidden && total > 0 ? $" — {Pct(Math.Max(0, Points[i].Y) / total)}" : string.Empty;
+            builder.AddContent(53, $"{category}{pct}");
+            builder.CloseElement();
             builder.CloseElement();
         }
 
@@ -132,4 +223,57 @@ public sealed class DxPieChart : ComponentBase
 
     private static string Pct(double fraction) =>
         (fraction * 100).ToString("0.#", CultureInfo.InvariantCulture) + "%";
+
+    // ---- Interaction ----
+
+    private string PointId(int index) => $"{chartId}-p{index}";
+
+    private async Task OnKeyDownAsync(KeyboardEventArgs args)
+    {
+        int count = Visible().Count;
+        if (selection.MoveActive(args.Key, count))
+        {
+            StateHasChanged();
+            return;
+        }
+
+        if ((args.Key is "Enter" or " ") && selection.HasActive)
+        {
+            await SelectAsync(selection.ActiveIndex);
+        }
+    }
+
+    private Task SelectAsync(int index)
+    {
+        selection.SetActive(index, Points.Count);
+        return OnPointSelected.HasDelegate
+            ? OnPointSelected.InvokeAsync(new ChartPointEventArgs(index, Points[index]))
+            : Task.CompletedTask;
+    }
+
+    private Task HoverAsync(int index)
+    {
+        selection.SetHovered(index);
+        ChartPoint point = index >= 0 && index < Points.Count ? Points[index] : default;
+        return OnPointHovered.HasDelegate
+            ? OnPointHovered.InvokeAsync(new ChartPointEventArgs(index, point))
+            : Task.CompletedTask;
+    }
+
+    private Task ToggleLegendAsync(string category)
+    {
+        bool nowVisible = hidden.Contains(category);
+        if (nowVisible)
+        {
+            hidden.Remove(category);
+        }
+        else
+        {
+            hidden.Add(category);
+        }
+
+        return OnLegendToggled.HasDelegate
+            ? OnLegendToggled.InvokeAsync(new ChartLegendToggledEventArgs(category, nowVisible))
+            : Task.CompletedTask;
+    }
 }
