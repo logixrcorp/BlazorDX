@@ -93,7 +93,10 @@ public sealed class EphemeralChatE2ETests(PlaywrightFixture fx)
         IPage page = await fx.NewPageAsync();
         await OverrideRandomValuesWithFixedSeedAsync(page);
 
-        await page.GotoInteractiveAsync($"{fx.BaseUrl}{FixtureRoute}", $".{HostClass}");
+        // This fixture mounts a SecureEphemeralChat (and its EventSource) unconditionally on
+        // load, so the default networkidle wait would hang forever -- see GotoInteractiveAsync's
+        // waitUntil doc comment.
+        await page.GotoInteractiveAsync($"{fx.BaseUrl}{FixtureRoute}", $".{HostClass}", WaitUntilState.Load);
         await WaitForMountedAsync(page);
 
         MountProbe probe = await ProbeMountAsync(page);
@@ -131,7 +134,10 @@ public sealed class EphemeralChatE2ETests(PlaywrightFixture fx)
             });
         });
 
-        await page.GotoInteractiveAsync($"{fx.BaseUrl}{FixtureRoute}", $".{HostClass}");
+        // This fixture mounts a SecureEphemeralChat (and its EventSource) unconditionally on
+        // load, so the default networkidle wait would hang forever -- see GotoInteractiveAsync's
+        // waitUntil doc comment.
+        await page.GotoInteractiveAsync($"{fx.BaseUrl}{FixtureRoute}", $".{HostClass}", WaitUntilState.Load);
         await WaitForMountedAsync(page);
 
         // Confirm the shadow root really was attached before withdrawing, so the
