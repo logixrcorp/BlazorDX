@@ -1,0 +1,66 @@
+@page "/insights/blog/{Slug}"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<PageTitle>@(entry?.Title ?? "Not found") — Blog</PageTitle>
+
+@if (notFound)
+{
+    <div class="dx-editorial">
+        <header class="dx-editorial-hero">
+            <h1 class="dx-editorial-title">Post not found</h1>
+            <p class="dx-editorial-subtitle"><a href="/insights/blog">← Back to Blog</a></p>
+        </header>
+    </div>
+}
+else if (entry is not null)
+{
+    <EditorialLayout Kicker="Insights / Blog" Title="@entry.Title" Author="@entry.Author" Published="@entry.Published">
+        <div class="dx-editorial-body">
+            @if (markdown is null)
+            {
+                <p>Loading…</p>
+            }
+            else
+            {
+                <DxMarkdown Value="@markdown" />
+            }
+        </div>
+    </EditorialLayout>
+}
+
+@code {
+    [Parameter] public string Slug { get; set; } = "";
+
+    private InsightEntry? entry;
+    private string? markdown;
+    private bool notFound;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        entry = InsightsCatalog.Entries.FirstOrDefault(e => e.Category == InsightCategory.Blog && e.Slug == Slug);
+        if (entry is null)
+        {
+            notFound = true;
+            return;
+        }
+
+        notFound = false;
+        markdown = null;
+        try
+        {
+            // An absolute URI, built from NavigationManager.BaseUri, works both during the
+            // server-side prerender pass (where the injected HttpClient has no BaseAddress —
+            // AddHttpClient() registers a factory-created client, not a base-configured one)
+            // and once the WASM client takes over.
+            Uri absolute = new(new Uri(Nav.BaseUri), $"content/blog/{Slug}.md");
+            markdown = await Http.GetStringAsync(absolute);
+        }
+        catch (HttpRequestException)
+        {
+            notFound = true;
+        }
+    }
+}

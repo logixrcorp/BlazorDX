@@ -1,0 +1,17 @@
+@page "/insights/blog"
+@rendermode InteractiveWebAssembly
+
+<PageTitle>Blog — Insights</PageTitle>
+
+<div class="dx-editorial">
+    <header class="dx-editorial-hero">
+        <span class="dx-editorial-kicker">Insights / Blog</span>
+        <h1 class="dx-editorial-title">Blog</h1>
+        <p class="dx-editorial-subtitle">
+            Shorter, more frequent notes — authored as Markdown, rendered through <code>DxMarkdown</code>.
+        </p>
+    </header>
+
+    <InsightsCardGrid Entries="InsightsCatalog.ByCategory(InsightCategory.Blog)"
+                       EmptyMessage="No posts yet — check back soon." />
+</div>

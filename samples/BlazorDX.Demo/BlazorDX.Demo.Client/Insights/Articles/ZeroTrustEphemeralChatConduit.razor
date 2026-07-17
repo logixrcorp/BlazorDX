@@ -1,0 +1,163 @@
+@page "/insights/articles/zero-trust-ephemeral-chat-conduit"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Demo.Client.Insights
+
+<PageTitle>The Architecture of Silence — BlazorDX Insights</PageTitle>
+
+<EditorialLayout Kicker="Article" Title="The Architecture of Silence"
+                 Subtitle="Inside the Zero-Trust Ephemeral Chat Conduit: a server that never sees plaintext, a browser-sandboxed crypto core, and a closed room that tears itself down the moment it's disturbed."
+                 Published="new DateOnly(2026, 7, 17)" ReadingMinutes="7"
+                 FooterCards="footerCards">
+
+    <div class="dx-editorial-body">
+        <p>
+            Most chat features start from the same question: how do we store this conversation
+            safely? The Ephemeral Chat Conduit starts from a different one — what if, for certain
+            messages, the right answer is <em>we don't store it at all</em>? Not "we delete it
+            later." Not "we encrypt it at rest." We never hold a copy in the first place, and the
+            server that carries it never has the ability to read it.
+        </p>
+        <p>
+            That's a harder engineering problem than it sounds, because a server that routes a
+            message usually has to understand a little about it — who it's for, whether it's still
+            valid, when to stop delivering it. The Conduit's answer is to give up that
+            understanding entirely, and push everything that requires trust into two much smaller,
+            much more inspectable places: a browser-sandboxed decryption step, and a DOM node built
+            to notice when it's being tampered with.
+        </p>
+    </div>
+
+    <EditorialSidebar Title="What 'zero-trust' means here" Icon="🔒">
+        Not a marketing gloss — a structural claim. The server component,
+        <code>BlazorDX.Conduit</code>, documents itself as a <strong>blind router</strong>: every
+        payload and event it forwards is opaque bytes it never parses, inspects, or decrypts. If
+        the server is compromised, an attacker gets ciphertext they can't read — not because of a
+        policy, but because the code that would let them read it doesn't exist on that machine.
+        <span class="dx-editorial-sidebar-caveat">
+            This describes message confidentiality in transit through the router. It is not a
+            claim about authorization — see the sidebar further down.
+        </span>
+    </EditorialSidebar>
+
+    <EditorialScrollytelling Intro="Four steps, four trust boundaries. Scroll to follow one message through the pipeline.">
+        <EditorialScrollyStage Index="01" Title="A provider encrypts, once" Glyph="✉">
+            Before a message reaches BlazorDX at all, the MCP resource-provider that owns it
+            encrypts it. The Conduit never receives plaintext — there's no point in the pipeline
+            where it could, even if you wanted it to.
+        </EditorialScrollyStage>
+
+        <EditorialScrollyStage Index="02" Title="The Conduit relays blind" Glyph="↯">
+            <code>BlazorDX.Conduit</code> pushes the ciphertext to the browser over Server-Sent
+            Events — a <code>PAYLOAD</code> event, alongside <code>WITHDRAW</code> and
+            <code>REFRESH</code> for revocation and rotation. The relay is best-effort: if nobody's
+            listening when an event fires, it's simply gone. No queue, no replay, no guaranteed
+            delivery — a deliberate trade against ever holding state that could leak.
+        </EditorialScrollyStage>
+
+        <EditorialScrollyStage Index="03" Title="The browser decrypts, alone" Glyph="🔑">
+            A Rust crate compiled to WebAssembly (<code>dx_security</code>) runs the actual
+            handshake — P-256 ECDH, then AES-256-GCM — entirely inside the browser's own sandbox.
+            No hardware enclave, no secure element; this is an ordinary wasm module, isolated the
+            same way any browser tab is isolated from any other. The private key material never
+            crosses back to the server, and it never touches JavaScript's garbage-collected heap.
+        </EditorialScrollyStage>
+
+        <EditorialScrollyStage Index="04" Title="A closed room, self-aware" Glyph="◈">
+            The decrypted text is written — via <code>textContent</code>, never
+            <code>innerHTML</code> — into a <strong>closed-mode Shadow DOM</strong> node: a part of
+            the page that JavaScript outside that exact closure genuinely cannot read back out. A
+            <code>MutationObserver</code> watches it continuously; the instant something tries to
+            alter it from outside, the node tears itself down.
+        </EditorialScrollyStage>
+    </EditorialScrollytelling>
+
+    <div class="dx-editorial-body">
+        <p>
+            That last step is the one worth sitting with. A closed shadow root isn't a convention
+            or a lint rule — it's a real boundary the DOM API enforces: code holding a reference to
+            the host element cannot reach into a closed shadow tree. Combined with never using
+            <code>innerHTML</code> for the payload, the message text can't leak sideways into a
+            script that wasn't meant to see it, even a script running on the same page. This
+            specific property — no plaintext in the initial server-rendered HTML, no light-DOM
+            leak from a closed root — is something we didn't just design for. It's covered by an
+            end-to-end Playwright test that renders the real component and inspects the actual DOM.
+        </p>
+    </div>
+
+    <EditorialPullQuote Attribution="From the Conduit's own design notes">
+        A router that cannot read what it routes cannot be made to leak it — by policy, by bug, or
+        by subpoena.
+    </EditorialPullQuote>
+
+    <EditorialSidebar Title="The client-side state machine" Icon="◐">
+        <p>The Blazor component (<code>SecureEphemeralChat</code>) tracks a small, real FSM as the message moves through its life:</p>
+        <dl>
+            <dt>Decrypting</dt><dd>Handshake and AES-GCM decrypt in progress inside the wasm module.</dd>
+            <dt>Mounted</dt><dd>Plaintext is live in the closed shadow root.</dd>
+            <dt>Withdrawn</dt><dd>The provider revoked it, or the observer caught tampering — content is gone.</dd>
+            <dt>Failed</dt><dd>Handshake or decrypt failed; nothing was ever mounted.</dd>
+        </dl>
+    </EditorialSidebar>
+
+    <EditorialSidebar Title="What this doesn't claim" Icon="⚠">
+        <p>Two gaps worth naming plainly, because a "zero-trust" label invites exactly that kind of scrutiny:</p>
+        <p><strong>No authorization ships by default.</strong> Deciding who's allowed to open a
+        session is an explicit extension point (<code>IEphemeralSessionAuthorizer</code>) a host
+        application must implement — the Conduit doesn't gate access on its own out of the box.</p>
+        <p><strong>Delivery is best-effort, not guaranteed.</strong> The SSE transport has no
+        replay and no queuing. A disconnected client simply misses a <code>WITHDRAW</code> or
+        <code>REFRESH</code> event; there's no retry.</p>
+    </EditorialSidebar>
+
+    <EditorialScrollytelling Intro="One more stage — the moment a message stops existing.">
+        <EditorialScrollyStage Index="05" Title="Deliberate impermanence" Glyph="○">
+            When a session ends, the Rust module zeroizes the buffer holding the plaintext, and the
+            browser bridge overwrites the shadow-root text node before removing it. We're
+            deliberately not calling this a <em>proof</em> of anything. It's a best-effort erasure:
+            the code's own comments say plainly that overwriting a JavaScript string cannot
+            guarantee the original heap bytes are gone — the runtime doesn't give you that
+            guarantee to keep. What we can and do verify is narrower and more honest: that the
+            content is unreachable through the API surface a consumer of this component actually
+            has.
+            <EditorialDissipation AriaLabel="An illustration of a message's on-screen presence dissolving once its session ends." />
+        </EditorialScrollyStage>
+    </EditorialScrollytelling>
+
+    <div class="dx-editorial-body">
+        <h2>Why build it this way</h2>
+        <p>
+            None of this is about distrust of any particular server operator. It's about not
+            asking anyone to trust one at all for the specific, narrow case of a message that was
+            only ever meant to exist for a moment — an authorization code, a one-time credential, a
+            piece of context an AI agent needed once and shouldn't retain. The architecture doesn't
+            make a promise about the server's intentions. It makes the server unable to break the
+            promise, structurally, whatever its intentions turn out to be.
+        </p>
+        <p>
+            BlazorDX is a beta library with no production deployments yet, and this feature is one
+            of its newest, least battle-tested pieces — that's true of the whole project, and we'd
+            rather say it here than have you discover it. What's real today: the crypto primitives
+            are standard and auditable (P-256, AES-256-GCM), the blind-routing design is enforced
+            by what the server code can and can't do, and the closed-shadow-DOM isolation is
+            covered by a real, running end-to-end test — not just a design doc. What's still ahead:
+            authorization is a bring-your-own extension point, not a default; and a full production
+            deployment needs a real broker round-trip this repository doesn't yet implement end to
+            end.
+        </p>
+    </div>
+</EditorialLayout>
+
+@code {
+    private readonly IReadOnlyList<EditorialFooter.FooterCard> footerCards =
+    [
+        new("Verified", "What's actually E2E-tested",
+            "Closed shadow root, no light-DOM leak, tamper self-destruct — run in CI on every change.",
+            "https://github.com/logixrcorp/BlazorDX/blob/main/tests/BlazorDX.E2E.Tests/EphemeralChatE2ETests.cs", External: true),
+        new("Protocol", "Read the ADR",
+            "The full design record: architecture, crypto choices, and the gaps we documented on purpose.",
+            "https://github.com/logixrcorp/BlazorDX/blob/main/docs/adr/0016-zero-trust-ephemeral-chat-conduit.md", External: true),
+        new("Movement", "BlazorDX on GitHub",
+            "MIT-licensed, beta, built in the open. File an issue, open a PR, or just poke around.",
+            "https://github.com/logixrcorp/BlazorDX", External: true),
+    ];
+}

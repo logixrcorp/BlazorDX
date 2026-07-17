@@ -1,0 +1,35 @@
+@page "/insights"
+@rendermode InteractiveWebAssembly
+
+<PageTitle>Insights</PageTitle>
+
+<div class="dx-editorial">
+    <header class="dx-editorial-hero">
+        <span class="dx-editorial-kicker">Insights</span>
+        <h1 class="dx-editorial-title">Articles, blog, and whitepapers</h1>
+        <p class="dx-editorial-subtitle">
+            How BlazorDX is built, and why — from deep architecture pieces to short field notes.
+        </p>
+    </header>
+
+    <div class="dx-insights-grid" style="margin-bottom:48px">
+        <a class="dx-insights-card" href="/insights/articles">
+            <p class="dx-insights-card-category">Article</p>
+            <p class="dx-insights-card-title">Articles</p>
+            <p class="dx-insights-card-summary">Long-form, deeply-researched pieces on a single feature's architecture.</p>
+        </a>
+        <a class="dx-insights-card" href="/insights/blog">
+            <p class="dx-insights-card-category">Blog</p>
+            <p class="dx-insights-card-title">Blog</p>
+            <p class="dx-insights-card-summary">Shorter, more frequent notes from the team.</p>
+        </a>
+        <a class="dx-insights-card" href="/insights/whitepapers">
+            <p class="dx-insights-card-category">Whitepaper</p>
+            <p class="dx-insights-card-title">Whitepapers</p>
+            <p class="dx-insights-card-summary">Formal specifications and evaluations for procurement/security review.</p>
+        </a>
+    </div>
+
+    <h2 style="max-width:72rem;margin:0 auto 20px;padding:0 24px;font-size:1.1rem">Latest</h2>
+    <InsightsCardGrid Entries="InsightsCatalog.Entries.OrderByDescending(e => e.Published)" />
+</div>

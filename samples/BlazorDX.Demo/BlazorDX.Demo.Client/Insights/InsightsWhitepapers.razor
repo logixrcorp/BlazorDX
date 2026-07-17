@@ -1,0 +1,17 @@
+@page "/insights/whitepapers"
+@rendermode InteractiveWebAssembly
+
+<PageTitle>Whitepapers — Insights</PageTitle>
+
+<div class="dx-editorial">
+    <header class="dx-editorial-hero">
+        <span class="dx-editorial-kicker">Insights / Whitepapers</span>
+        <h1 class="dx-editorial-title">Whitepapers</h1>
+        <p class="dx-editorial-subtitle">
+            Formal specifications and evaluations, written for procurement and security review.
+        </p>
+    </header>
+
+    <InsightsCardGrid Entries="InsightsCatalog.ByCategory(InsightCategory.Whitepaper)"
+                       EmptyMessage="No whitepapers yet — check back soon." />
+</div>

@@ -1,0 +1,30 @@
+@* Three-tiered footer: a grid of cards with hover-state shadow/lift. Generic defaults (so
+   EditorialLayout always has something to show); pass Cards to customize per piece. *@
+
+<footer class="dx-editorial-footer">
+    <div class="dx-editorial-footer-grid">
+        @foreach (FooterCard card in Cards ?? DefaultCards)
+        {
+            <a class="dx-editorial-footer-card" href="@card.Href"
+               target="@(card.External ? "_blank" : null)" rel="@(card.External ? "noopener" : null)">
+                <p class="dx-editorial-footer-eyebrow">@card.Eyebrow</p>
+                <p class="dx-editorial-footer-card-title">@card.Title</p>
+                <p class="dx-editorial-footer-card-body">@card.Body</p>
+            </a>
+        }
+    </div>
+</footer>
+
+@code {
+    /// <summary>One footer card: an eyebrow label, a title, a one-line body, and where it links.</summary>
+    public readonly record struct FooterCard(string Eyebrow, string Title, string Body, string Href, bool External = false);
+
+    [Parameter] public IReadOnlyList<FooterCard>? Cards { get; set; }
+
+    private static readonly IReadOnlyList<FooterCard> DefaultCards =
+    [
+        new("Explore", "Component catalog", "108 components, headless primitives, zero runtime reflection.", "/docs"),
+        new("Read", "More from Insights", "Articles, blog posts, and whitepapers on how BlazorDX is built.", "/insights"),
+        new("Contribute", "BlazorDX on GitHub", "MIT-licensed. File an issue, open a PR, or just poke around.", "https://github.com/logixrcorp/BlazorDX", External: true),
+    ];
+}

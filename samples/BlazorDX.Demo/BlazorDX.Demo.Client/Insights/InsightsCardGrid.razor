@@ -1,0 +1,26 @@
+@* Shared card-grid renderer for the three Insights index pages — a grid of entries, or an
+   honest empty state (no fake placeholder content). *@
+
+@if (!Entries.Any())
+{
+    <p class="dx-insights-empty">@EmptyMessage</p>
+}
+else
+{
+    <div class="dx-insights-grid">
+        @foreach (InsightEntry entry in Entries)
+        {
+            <a class="dx-insights-card" href="@entry.Route">
+                <p class="dx-insights-card-category">@entry.Category</p>
+                <p class="dx-insights-card-title">@entry.Title</p>
+                <p class="dx-insights-card-summary">@entry.Summary</p>
+            </a>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public IEnumerable<InsightEntry> Entries { get; set; } = [];
+
+    [Parameter] public string EmptyMessage { get; set; } = "No entries yet — check back soon.";
+}

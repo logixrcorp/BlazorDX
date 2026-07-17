@@ -1,0 +1,28 @@
+@* One stage of the scrollytelling sequence — starts hidden/offset, then CSS-transitions in when
+   EditorialScrollytelling's observer marks it visible (see dx-editorial.css .is-visible). *@
+
+<div class="dx-editorial-scrolly-stage">
+    @if (!string.IsNullOrEmpty(Glyph))
+    {
+        <div class="dx-editorial-scrolly-glyph" aria-hidden="true">@Glyph</div>
+    }
+    <span class="dx-editorial-scrolly-stage-index">@Index</span>
+    <h3 class="dx-editorial-scrolly-stage-title">@Title</h3>
+    <div class="dx-editorial-scrolly-stage-body">@ChildContent</div>
+    @Visual
+</div>
+
+@code {
+    /// <summary>A short label, e.g. "01" or "Stage 1".</summary>
+    [Parameter, EditorRequired] public string Index { get; set; } = "";
+
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+
+    /// <summary>A single decorative character/emoji shown in a small glyph box (aria-hidden).</summary>
+    [Parameter] public string? Glyph { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Optional custom visual (e.g. <see cref="EditorialDissipation"/>) rendered below the body text.</summary>
+    [Parameter] public RenderFragment? Visual { get; set; }
+}

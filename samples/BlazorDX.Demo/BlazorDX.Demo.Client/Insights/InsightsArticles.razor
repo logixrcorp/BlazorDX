@@ -1,0 +1,17 @@
+@page "/insights/articles"
+@rendermode InteractiveWebAssembly
+
+<PageTitle>Articles — Insights</PageTitle>
+
+<div class="dx-editorial">
+    <header class="dx-editorial-hero">
+        <span class="dx-editorial-kicker">Insights / Articles</span>
+        <h1 class="dx-editorial-title">Articles</h1>
+        <p class="dx-editorial-subtitle">
+            Long-form, deeply-researched pieces — each one a single feature's architecture, told straight.
+        </p>
+    </header>
+
+    <InsightsCardGrid Entries="InsightsCatalog.ByCategory(InsightCategory.Article)"
+                       EmptyMessage="No articles yet — check back soon." />
+</div>

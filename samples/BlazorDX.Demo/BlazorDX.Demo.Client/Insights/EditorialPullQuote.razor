@@ -1,0 +1,15 @@
+@* A large, italicized, serif-accented pull-quote to punctuate the narrative. *@
+
+<div class="dx-editorial-pullquote">
+    <blockquote>@ChildContent</blockquote>
+    @if (!string.IsNullOrEmpty(Attribution))
+    {
+        <cite>@Attribution</cite>
+    }
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    [Parameter] public string? Attribution { get; set; }
+}

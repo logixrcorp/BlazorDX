@@ -11,6 +11,24 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ### Added
 
+- **An Articles/Blog/Whitepapers "Insights" content area** (`/insights`), with the demo's own
+  editorial design system — hero, pull-quotes, technical sidebars, a scroll-revealed narrative
+  section, a three-card footer — built entirely on the existing `dx-theme.css` tokens (no
+  Tailwind, no new build tooling). `InsightsCatalog` is the single source of truth for what's
+  published; Articles/Whitepapers are hand-built Razor pages using the shared `EditorialLayout`,
+  Blog posts are Markdown files rendered through `DxMarkdown` via a dynamic
+  `/insights/blog/{slug}` route. The scroll reveal is `IntersectionObserver`-only (never a
+  scroll-position listener, so nothing runs per scroll pixel) via a component-co-located
+  `EditorialScrollytelling.razor.js`, with a `MutationObserver` fallback for Blazor Web App's
+  prerender-then-hydrate timing (the initial module-load pass can end up watching DOM nodes the
+  WASM runtime later replaces).
+  Ships with one real piece — **"The Architecture of Silence"** (`/insights/articles/zero-trust-ephemeral-chat-conduit`),
+  a deep-dive on the Ephemeral Chat Conduit's actual architecture (blind-router relay, the
+  browser-sandboxed `dx_security` wasm crypto core, closed-shadow-DOM isolation) — written to
+  match what the feature actually guarantees, including its real limits (no authorization by
+  default, best-effort SSE delivery, best-effort rather than provable erasure). Blog and
+  Whitepapers ship as working, empty sections rather than seeded placeholder content.
+
 - **`DxGraph` — a single dynamic entry point over 18 chart kinds, switchable at runtime via a
   `Kind` (`GraphKind`) parameter.** A facade, not a rewrite: every `Kind` case opens the real
   underlying `Dx*Chart` component (`OpenComponent<TComponent>`) and forwards typed parameters —
