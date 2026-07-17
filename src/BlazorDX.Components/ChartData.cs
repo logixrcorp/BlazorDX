@@ -141,3 +141,14 @@ public readonly record struct BulletPoint(
 /// <param name="Index">The row's index into the chart's <c>Points</c> list.</param>
 /// <param name="Point">The row itself.</param>
 public readonly record struct BulletPointEventArgs(int Index, BulletPoint Point);
+
+/// <summary>
+/// One box (and, with <see cref="DxBoxPlot.Violin"/>, one density silhouette) for
+/// <see cref="DxBoxPlot"/>: a labeled group of raw samples. The five-number summary and outliers
+/// are computed by the chart itself (<see cref="Primitives.Charts.BoxPlotStatistics"/>), off the
+/// compute backend's sort — a caller supplies raw values, not pre-computed statistics.
+/// </summary>
+/// <param name="Label">The group's name.</param>
+/// <param name="Values">The raw samples; NaN values are ignored.</param>
+/// <param name="Color">Optional CSS color override; otherwise a palette color is used.</param>
+public readonly record struct BoxPlotGroup(string Label, IReadOnlyList<double> Values, string? Color = null);

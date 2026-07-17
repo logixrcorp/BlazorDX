@@ -290,6 +290,22 @@
             codewords via polynomial division — the remainder of data·x^ecCount ÷ generator.
             </summary>
         </member>
+        <member name="T:BlazorDX.Primitives.Charts.BoxPlotStats">
+            <summary>The five-number summary plus outliers for one box (Tukey's boxplot convention).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Charts.BoxPlotStats.#ctor(System.Double,System.Double,System.Double,System.Double,System.Double,System.Collections.Generic.IReadOnlyList{System.Double})">
+            <summary>The five-number summary plus outliers for one box (Tukey's boxplot convention).</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Charts.BoxPlotStatistics">
+            <summary>
+            Quartile/outlier computation for <c>DxBoxPlot</c>. Pure math over an already-sorted sample —
+            sorting itself is the only genuinely heavy step for a large sample, and that's already offloaded
+            via <see cref="M:BlazorDX.Compute.IGridCompute.SortAsync(System.Double[],System.Boolean)"/>; this class does not duplicate that.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Charts.BoxPlotStatistics.Compute(System.Collections.Generic.IReadOnlyList{System.Double})">
+            <param name="sortedValues">Ascending-sorted samples (NaN-free — filter before calling).</param>
+        </member>
         <member name="T:BlazorDX.Primitives.Charts.ChartSelectionPrimitive">
             <summary>
             Headless roving-index selection/focus state for a discrete-mark chart (one bar, slice, radar
@@ -324,6 +340,82 @@
             (including Enter/Space, which the caller handles separately via <see cref="P:BlazorDX.Primitives.Charts.ChartSelectionPrimitive.HasActive"/>).
             The first navigation key seeds the active index at 0, matching the Scheduler/Calendar
             pattern. No wrap at the ends.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Charts.SankeyNodeLayout">
+            <summary>One node's position and size after layout.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Charts.SankeyNodeLayout.#ctor(System.String,System.Double,System.Double,System.Double,System.Double,System.Int32)">
+            <summary>One node's position and size after layout.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Charts.SankeyLinkLayout">
+            <summary>
+            One link's endpoints after layout — a caller draws a cubic-bezier ribbon between the source and
+            target ports, at the given thickness.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Charts.SankeyLinkLayout.#ctor(System.Int32,System.Double,System.Double,System.Double,System.Double,System.Double)">
+            <summary>
+            One link's endpoints after layout — a caller draws a cubic-bezier ribbon between the source and
+            target ports, at the given thickness.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Charts.SankeyLinkInput">
+            <summary>A source/target/value triple, keyed by node id (before layout).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Charts.SankeyLinkInput.#ctor(System.String,System.String,System.Double)">
+            <summary>A source/target/value triple, keyed by node id (before layout).</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Charts.SankeyLayout">
+            <summary>
+            A layered ("Sugiyama-style") Sankey layout: each node's layer is its longest path from a source
+            (a node with no incoming links); nodes are stacked vertically within their layer's column,
+            sized proportionally to their total flow; each link is drawn as a ribbon between a proportional
+            slot on its source's outgoing side and its target's incoming side. This is a straightforward
+            layered layout, not full crossing-minimization (d3-sankey's iterative relaxation) — enough for
+            the moderate node/link counts a Sankey diagram realistically shows; ordering within a layer
+            falls back to <c>nodeIds</c>' own order.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Charts.SunburstSlice">
+            <summary>One item's angular slice within its parent's allotted sweep.</summary>
+            <param name="Index">The item's index into the <c>values</c> list passed to <see cref="M:BlazorDX.Primitives.Charts.SunburstLayout.Compute(System.Collections.Generic.IReadOnlyList{System.Double},System.Double,System.Double)"/>.</param>
+        </member>
+        <member name="M:BlazorDX.Primitives.Charts.SunburstSlice.#ctor(System.Int32,System.Double,System.Double)">
+            <summary>One item's angular slice within its parent's allotted sweep.</summary>
+            <param name="Index">The item's index into the <c>values</c> list passed to <see cref="M:BlazorDX.Primitives.Charts.SunburstLayout.Compute(System.Collections.Generic.IReadOnlyList{System.Double},System.Double,System.Double)"/>.</param>
+        </member>
+        <member name="P:BlazorDX.Primitives.Charts.SunburstSlice.Index">
+            <summary>The item's index into the <c>values</c> list passed to <see cref="M:BlazorDX.Primitives.Charts.SunburstLayout.Compute(System.Collections.Generic.IReadOnlyList{System.Double},System.Double,System.Double)"/>.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Charts.SunburstLayout">
+            <summary>
+            Radial partition layout for a sunburst chart: subdivides an angular sweep among items
+            proportionally to <c>values</c>. Single-level and geometry-agnostic, like
+            <see cref="T:BlazorDX.Primitives.Charts.TreemapLayout"/> — a caller recurses per ring, passing each item's own slice down as
+            the sweep for its children (ring radius is purely a per-depth rendering concern, not a layout
+            one).
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Charts.TreemapRect">
+            <summary>One item's laid-out rectangle within its parent's allotted area.</summary>
+            <param name="Index">The item's index into the <c>values</c> list passed to <see cref="M:BlazorDX.Primitives.Charts.TreemapLayout.Compute(System.Collections.Generic.IReadOnlyList{System.Double},System.Double,System.Double,System.Double,System.Double)"/>.</param>
+        </member>
+        <member name="M:BlazorDX.Primitives.Charts.TreemapRect.#ctor(System.Int32,System.Double,System.Double,System.Double,System.Double)">
+            <summary>One item's laid-out rectangle within its parent's allotted area.</summary>
+            <param name="Index">The item's index into the <c>values</c> list passed to <see cref="M:BlazorDX.Primitives.Charts.TreemapLayout.Compute(System.Collections.Generic.IReadOnlyList{System.Double},System.Double,System.Double,System.Double,System.Double)"/>.</param>
+        </member>
+        <member name="P:BlazorDX.Primitives.Charts.TreemapRect.Index">
+            <summary>The item's index into the <c>values</c> list passed to <see cref="M:BlazorDX.Primitives.Charts.TreemapLayout.Compute(System.Collections.Generic.IReadOnlyList{System.Double},System.Double,System.Double,System.Double,System.Double)"/>.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Charts.TreemapLayout">
+            <summary>
+            Squarified treemap layout (Bruls/Huizing/van Wijk 2000): subdivides a rectangle among items
+            sized proportionally to <c>values</c>, keeping each item's aspect ratio close to 1 instead of
+            the thin slivers a naive proportional-slice layout produces. Geometry-agnostic and single-level
+            by design — it operates on plain sizes and an index, not a tree type — so a caller builds a
+            full hierarchy (<see cref="!:BlazorDX.Components.TreeNode"/>) by recursing: lay out a node's
+            children in its own rect, then recurse into each child's own rect with its own children.
             </summary>
         </member>
         <member name="T:BlazorDX.Primitives.Chat.ChatRole">

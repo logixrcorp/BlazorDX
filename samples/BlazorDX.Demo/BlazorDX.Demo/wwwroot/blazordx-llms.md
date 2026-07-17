@@ -198,6 +198,20 @@ in left-to-right), and `DxBarChart`/`DxWaterfallChart` take an opt-in `Gradient`
 <DxBulletChart Points="rows" />   @* new BulletPoint("Revenue", Value: 84, Target: 90, Max: 100, Ranges: [40, 75]) — not a ChartPoint *@
 ```
 
+Four more don't fit the flat `ChartPoint` shape at all — a tree, a raw-sample group, and a node/link
+graph each get their own type, but reuse `OnPointSelected`-style opt-in selection where it applies:
+```razor
+<DxTreemap Root="tree" Width="640" Height="280" OnNodeSelected="OnNode" />
+<DxSunburst Root="tree" Size="320" />
+@* tree: new ChartTreeNode("All", Children: [new("Web", Children: [new("Search", Value: 40)]), new("Mobile", Value: 30)]) *@
+
+<DxBoxPlot Groups="groups" Width="640" Height="280" Violin="true" />
+@* groups: new BoxPlotGroup("Control", rawSamples) — Q1/median/Q3/outliers computed from raw values, not pre-aggregated *@
+
+<DxSankeyChart Nodes="nodes" Links="links" Width="640" Height="280" />
+@* nodes: new SankeyNode("a", "Visited"); links: new SankeyLink("a", "b", Value: 1000) — layered layout, longest-path-from-source *@
+```
+
 ### Overlays, inputs, feedback
 ```razor
 <DxDialog @bind-Open="open" Title="Confirm">…</DxDialog>
@@ -292,7 +306,8 @@ Server-side, re-hash any stream with the same primitive: `BlazorDX.Primitives.Fi
 - **Grids:** DxDataGrid<TRow>, DxTreeGrid<TRow>, DxPivotGrid<TRow>
 - **Charts:** DxLineChart, DxAreaChart, DxBarChart, DxPieChart, DxHistogram, DxSparkline,
   DxRadialGauge, DxLinearGauge, DxStackedBarChart, DxScatterChart, DxRadarChart, DxFunnelChart,
-  DxCandlestickChart, DxWaterfallChart, DxBubbleChart, DxHeatmap, DxBulletChart
+  DxCandlestickChart, DxWaterfallChart, DxBubbleChart, DxHeatmap, DxBulletChart, DxTreemap,
+  DxSunburst, DxBoxPlot, DxSankeyChart
 - **Scheduling:** DxCalendar, DxScheduler, DxGantt
 - **Editors/files/AI:** DxMarkdown, DxMarkdownEditor, DxRichTextEditor, DxChat, DxFileManager
 - **Documents & reporting:** DxDocumentViewer (core; PDF/embed), DxSpreadsheetViewer (Excel

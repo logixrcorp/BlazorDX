@@ -72,6 +72,9 @@ sample app (`samples/BlazorDX.Demo`).
 | `DxBubbleChart` | Scatter plot with a third dimension (`Y2`) encoded as radius | `/charts` |
 | `DxHeatmap` | Row (`Series`) x column (`Category`) grid, intensity via fill-opacity | `/charts` |
 | `DxBulletChart` | KPI vs. target vs. qualitative range bands (Stephen Few's bullet-graph design) | `/charts` |
+| `DxTreemap` / `DxSunburst` | Squarified nested rectangles / radial treemap, sized by `ChartTreeNode.Value` | `/charts` |
+| `DxBoxPlot` | Q1/median/Q3 box, whiskers, outliers beyond 1.5x IQR, optional violin density silhouette | `/charts` |
+| `DxSankeyChart` | Layered flow diagram; ribbon thickness scaled to `SankeyLink.Value` | `/charts` |
 
 ## Scheduling
 

@@ -177,6 +177,60 @@
 }
 .dx-bullet-row { cursor: default; }
 
+/* ---- Treemap ---- */
+.dx-treemap-cell {
+  stroke: var(--dx-surface, #ffffff);
+  stroke-width: 1.5;
+  transition: opacity 120ms ease;
+}
+.dx-treemap-cell:hover { opacity: 0.85; }
+.dx-treemap-label {
+  font-size: 11px;
+  fill: #ffffff;
+  pointer-events: none;
+}
+
+/* ---- Sunburst ---- */
+.dx-sunburst-arc {
+  stroke: var(--dx-surface, #ffffff);
+  stroke-width: 1;
+  transition: opacity 120ms ease;
+}
+.dx-sunburst-arc:hover { opacity: 0.85; }
+.dx-sunburst-hub {
+  fill: var(--dx-surface-alt, #f1f5f9);
+  stroke: var(--dx-border, #e2e8f0);
+}
+
+/* ---- Box / violin plot ---- */
+.dx-boxplot-violin { fill-opacity: 0.25; }
+.dx-boxplot-box { fill: var(--dx-surface, #ffffff); stroke-width: 2; }
+.dx-boxplot-median { stroke: var(--dx-text, #0f172a); stroke-width: 2; }
+.dx-boxplot-whisker,
+.dx-boxplot-whisker-cap { stroke: var(--dx-text-muted, #64748b); stroke-width: 1.5; }
+.dx-boxplot-outlier { fill: var(--dx-text-muted, #64748b); fill-opacity: 0.7; }
+
+/* ---- Sankey ---- */
+.dx-sankey-node { stroke: var(--dx-surface, #ffffff); stroke-width: 1; }
+.dx-sankey-link { stroke-opacity: 0.35; transition: stroke-opacity 120ms ease; }
+.dx-sankey-link:hover { stroke-opacity: 0.6; }
+.dx-sankey-label {
+  font-size: 11px;
+  fill: var(--dx-text, #334155);
+}
+
+.dx-treemap-cell[tabindex],
+.dx-sunburst-arc[tabindex],
+.dx-sankey-node[tabindex] {
+  cursor: pointer;
+}
+.dx-treemap-cell:focus-visible,
+.dx-sunburst-arc:focus-visible,
+.dx-sankey-node:focus-visible {
+  outline: 2px solid var(--dx-accent, #2563eb);
+  outline-offset: 1px;
+}
+
 /* ---- Interactive marks (selection is opt-in — see each chart's remarks) ---- */
 
 /* The chart becomes a role="application" roving-tabindex widget once a selection/hover

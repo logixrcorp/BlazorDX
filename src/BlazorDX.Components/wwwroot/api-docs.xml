@@ -255,6 +255,37 @@
         <member name="P:BlazorDX.Components.BulletPointEventArgs.Point">
             <summary>The row itself.</summary>
         </member>
+        <member name="T:BlazorDX.Components.BoxPlotGroup">
+            <summary>
+            One box (and, with <see cref="P:BlazorDX.Components.DxBoxPlot.Violin"/>, one density silhouette) for
+            <see cref="T:BlazorDX.Components.DxBoxPlot"/>: a labeled group of raw samples. The five-number summary and outliers
+            are computed by the chart itself (<see cref="T:BlazorDX.Primitives.Charts.BoxPlotStatistics"/>), off the
+            compute backend's sort — a caller supplies raw values, not pre-computed statistics.
+            </summary>
+            <param name="Label">The group's name.</param>
+            <param name="Values">The raw samples; NaN values are ignored.</param>
+            <param name="Color">Optional CSS color override; otherwise a palette color is used.</param>
+        </member>
+        <member name="M:BlazorDX.Components.BoxPlotGroup.#ctor(System.String,System.Collections.Generic.IReadOnlyList{System.Double},System.String)">
+            <summary>
+            One box (and, with <see cref="P:BlazorDX.Components.DxBoxPlot.Violin"/>, one density silhouette) for
+            <see cref="T:BlazorDX.Components.DxBoxPlot"/>: a labeled group of raw samples. The five-number summary and outliers
+            are computed by the chart itself (<see cref="T:BlazorDX.Primitives.Charts.BoxPlotStatistics"/>), off the
+            compute backend's sort — a caller supplies raw values, not pre-computed statistics.
+            </summary>
+            <param name="Label">The group's name.</param>
+            <param name="Values">The raw samples; NaN values are ignored.</param>
+            <param name="Color">Optional CSS color override; otherwise a palette color is used.</param>
+        </member>
+        <member name="P:BlazorDX.Components.BoxPlotGroup.Label">
+            <summary>The group's name.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.BoxPlotGroup.Values">
+            <summary>The raw samples; NaN values are ignored.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.BoxPlotGroup.Color">
+            <summary>Optional CSS color override; otherwise a palette color is used.</summary>
+        </member>
         <member name="T:BlazorDX.Components.ChartGradients">
             <summary>
             Shared SVG <c>&lt;defs&gt;</c> gradient rendering for charts that opt into a <c>Gradient</c>
@@ -266,6 +297,91 @@
         </member>
         <member name="M:BlazorDX.Components.ChartGradients.Url(System.String,System.String)">
             <summary>The <c>fill</c> value referencing the gradient built for <paramref name="color"/>.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.ChartTreeNode">
+            <summary>
+            A hierarchical data node for <see cref="T:BlazorDX.Components.DxTreemap"/> and <see cref="T:BlazorDX.Components.DxSunburst"/>. A leaf (no
+            <see cref="P:BlazorDX.Components.ChartTreeNode.Children"/>) carries its own <see cref="P:BlazorDX.Components.ChartTreeNode.Value"/>; a parent's effective value is
+            always the sum of its children's, computed by the chart — <see cref="P:BlazorDX.Components.ChartTreeNode.Value"/> on a node that
+            has children is ignored. Doesn't fit the flat <see cref="T:BlazorDX.Components.ChartPoint"/> shape (it's a tree, not
+            a series). Plain record, no reflection.
+            </summary>
+            <param name="Label">The node's name.</param>
+            <param name="Value">The leaf's magnitude; ignored on a node with children.</param>
+            <param name="Color">Optional CSS color override; otherwise a palette color (by top-level sibling index) is used.</param>
+            <param name="Children">Child nodes, or null/empty for a leaf.</param>
+        </member>
+        <member name="M:BlazorDX.Components.ChartTreeNode.#ctor(System.String,System.Double,System.String,System.Collections.Generic.IReadOnlyList{BlazorDX.Components.ChartTreeNode})">
+            <summary>
+            A hierarchical data node for <see cref="T:BlazorDX.Components.DxTreemap"/> and <see cref="T:BlazorDX.Components.DxSunburst"/>. A leaf (no
+            <see cref="P:BlazorDX.Components.ChartTreeNode.Children"/>) carries its own <see cref="P:BlazorDX.Components.ChartTreeNode.Value"/>; a parent's effective value is
+            always the sum of its children's, computed by the chart — <see cref="P:BlazorDX.Components.ChartTreeNode.Value"/> on a node that
+            has children is ignored. Doesn't fit the flat <see cref="T:BlazorDX.Components.ChartPoint"/> shape (it's a tree, not
+            a series). Plain record, no reflection.
+            </summary>
+            <param name="Label">The node's name.</param>
+            <param name="Value">The leaf's magnitude; ignored on a node with children.</param>
+            <param name="Color">Optional CSS color override; otherwise a palette color (by top-level sibling index) is used.</param>
+            <param name="Children">Child nodes, or null/empty for a leaf.</param>
+        </member>
+        <member name="P:BlazorDX.Components.ChartTreeNode.Label">
+            <summary>The node's name.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.ChartTreeNode.Value">
+            <summary>The leaf's magnitude; ignored on a node with children.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.ChartTreeNode.Color">
+            <summary>Optional CSS color override; otherwise a palette color (by top-level sibling index) is used.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.ChartTreeNode.Children">
+            <summary>Child nodes, or null/empty for a leaf.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.SankeyNode">
+            <summary>One node of a <see cref="T:BlazorDX.Components.DxSankeyChart"/>, referenced by <see cref="P:BlazorDX.Components.SankeyLink.Source"/>/<see cref="P:BlazorDX.Components.SankeyLink.Target"/>.</summary>
+            <param name="Id">A stable key linking it to <see cref="T:BlazorDX.Components.SankeyLink"/> entries.</param>
+            <param name="Label">The node's display name.</param>
+            <param name="Color">Optional CSS color override; otherwise a palette color (by first-appearance order) is used.</param>
+        </member>
+        <member name="M:BlazorDX.Components.SankeyNode.#ctor(System.String,System.String,System.String)">
+            <summary>One node of a <see cref="T:BlazorDX.Components.DxSankeyChart"/>, referenced by <see cref="P:BlazorDX.Components.SankeyLink.Source"/>/<see cref="P:BlazorDX.Components.SankeyLink.Target"/>.</summary>
+            <param name="Id">A stable key linking it to <see cref="T:BlazorDX.Components.SankeyLink"/> entries.</param>
+            <param name="Label">The node's display name.</param>
+            <param name="Color">Optional CSS color override; otherwise a palette color (by first-appearance order) is used.</param>
+        </member>
+        <member name="P:BlazorDX.Components.SankeyNode.Id">
+            <summary>A stable key linking it to <see cref="T:BlazorDX.Components.SankeyLink"/> entries.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.SankeyNode.Label">
+            <summary>The node's display name.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.SankeyNode.Color">
+            <summary>Optional CSS color override; otherwise a palette color (by first-appearance order) is used.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.SankeyLink">
+            <summary>One flow between two <see cref="T:BlazorDX.Components.SankeyNode"/>s, by id.</summary>
+            <param name="Source">The originating node's <see cref="P:BlazorDX.Components.SankeyNode.Id"/>.</param>
+            <param name="Target">The receiving node's <see cref="P:BlazorDX.Components.SankeyNode.Id"/>.</param>
+            <param name="Value">The flow's magnitude — sets the ribbon's thickness.</param>
+            <param name="Color">Optional CSS color override; otherwise inherits the source node's color.</param>
+        </member>
+        <member name="M:BlazorDX.Components.SankeyLink.#ctor(System.String,System.String,System.Double,System.String)">
+            <summary>One flow between two <see cref="T:BlazorDX.Components.SankeyNode"/>s, by id.</summary>
+            <param name="Source">The originating node's <see cref="P:BlazorDX.Components.SankeyNode.Id"/>.</param>
+            <param name="Target">The receiving node's <see cref="P:BlazorDX.Components.SankeyNode.Id"/>.</param>
+            <param name="Value">The flow's magnitude — sets the ribbon's thickness.</param>
+            <param name="Color">Optional CSS color override; otherwise inherits the source node's color.</param>
+        </member>
+        <member name="P:BlazorDX.Components.SankeyLink.Source">
+            <summary>The originating node's <see cref="P:BlazorDX.Components.SankeyNode.Id"/>.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.SankeyLink.Target">
+            <summary>The receiving node's <see cref="P:BlazorDX.Components.SankeyNode.Id"/>.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.SankeyLink.Value">
+            <summary>The flow's magnitude — sets the ribbon's thickness.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.SankeyLink.Color">
+            <summary>Optional CSS color override; otherwise inherits the source node's color.</summary>
         </member>
         <member name="T:BlazorDX.Components.DxAccordion">
             <summary>
@@ -386,6 +502,19 @@
         </member>
         <member name="P:BlazorDX.Components.DxBarcode.Class">
             <summary>Extra CSS classes for the root <c>svg</c>.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxBoxPlot">
+            <summary>
+            A box plot: one box-and-whisker per <see cref="T:BlazorDX.Components.BoxPlotGroup"/> — Q1/median/Q3 box, whiskers to
+            the nearest non-outlier min/max, and outlier dots beyond 1.5x IQR (Tukey's convention,
+            <see cref="T:BlazorDX.Primitives.Charts.BoxPlotStatistics"/>). Set <see cref="P:BlazorDX.Components.DxBoxPlot.Violin"/> to also draw a density silhouette
+            behind each box, binned via the same compute backend as <see cref="T:BlazorDX.Components.DxHistogram"/> (Rust in the
+            browser) over the shared value axis so every group's silhouette aligns. Pure SVG; styling via
+            dx-chart.css.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxBoxPlot.Violin">
+            <summary>Also draw a density silhouette (binned like <see cref="T:BlazorDX.Components.DxHistogram"/>) behind each box.</summary>
         </member>
         <member name="T:BlazorDX.Components.BreadcrumbItem">
             <summary>One entry in a <see cref="T:BlazorDX.Components.DxBreadcrumbs"/> trail.</summary>
@@ -1687,6 +1816,20 @@
             table index in document order), or an empty string when the caret is not in a table.
             </summary>
         </member>
+        <member name="T:BlazorDX.Components.DxSankeyChart">
+            <summary>
+            A Sankey diagram: nodes as columns of rectangles, links as thickness-scaled ribbons flowing
+            between them. Layered layout via <see cref="T:BlazorDX.Primitives.Charts.SankeyLayout"/> — see its remarks for what
+            "layered" does and doesn't do (not full crossing-minimization). Pure SVG; styling via
+            dx-chart.css.
+            </summary>
+            <remarks>
+            Nodes are independently focusable (natural tab order) when <see cref="P:BlazorDX.Components.DxSankeyChart.OnNodeSelected"/> is
+            wired — see <see cref="T:BlazorDX.Components.DxTreemap"/>'s remarks for why this differs from the roving-index
+            pattern the flat charts use. Links are not separately selectable, only hoverable via a title
+            tooltip — a ribbon has no single natural keyboard target the way a node rect does.
+            </remarks>
+        </member>
         <member name="T:BlazorDX.Components.DxScatterChart">
             <summary>
             A scatter plot: each (x, y) point is drawn as a dot, scaled to the data's
@@ -1920,6 +2063,15 @@
         <member name="P:BlazorDX.Components.DxStepper.Current">
             <summary>The active step index (0-based). Two-way bindable.</summary>
         </member>
+        <member name="T:BlazorDX.Components.DxSunburst">
+            <summary>
+            A sunburst: a radial treemap — every node (not just leaves) draws as its own ring segment at
+            its depth, angular width proportional to <see cref="P:BlazorDX.Components.ChartTreeNode.Value"/> (via
+            <see cref="T:BlazorDX.Primitives.Charts.SunburstLayout"/>). Reads the same <see cref="T:BlazorDX.Components.ChartTreeNode"/> shape as
+            <see cref="T:BlazorDX.Components.DxTreemap"/>. Pure SVG; styling via dx-chart.css.
+            </summary>
+            <remarks>Selection is opt-in, natural tab order — see <see cref="T:BlazorDX.Components.DxTreemap"/>'s remarks.</remarks>
+        </member>
         <member name="T:BlazorDX.Components.DxSwitch">
             <summary>
             A toggle switch built on a native checkbox with <c>role="switch"</c>, styled as
@@ -2102,6 +2254,37 @@
             inherited virtualization. Styling is CSS-variable-based (see dx-datagrid.css).
             </summary>
             <typeparam name="TRow">The node type (a reference type).</typeparam>
+        </member>
+        <member name="T:BlazorDX.Components.DxTreemap">
+            <summary>
+            A treemap: nested rectangles sized proportionally to <see cref="P:BlazorDX.Components.ChartTreeNode.Value"/>, laid out
+            with the squarified algorithm (<see cref="T:BlazorDX.Primitives.Charts.TreemapLayout"/>) so cells stay close to square
+            instead of degenerating into slivers. Only leaves are drawn; a leaf's color comes from its
+            nearest ancestor with a <see cref="P:BlazorDX.Components.ChartTreeNode.Color"/> override, or a palette color assigned
+            per top-level branch. Pure SVG; styling via dx-chart.css.
+            </summary>
+            <remarks>
+            Selection is opt-in like the rest of the chart family, but — unlike the flat charts' roving
+            <see cref="T:BlazorDX.Primitives.Charts.ChartSelectionPrimitive"/> — each cell is independently focusable
+            (natural tab order), since a nested hierarchy doesn't reduce to one linear index the way a bar
+            or slice list does.
+            </remarks>
+        </member>
+        <member name="T:BlazorDX.Components.ChartTreeNodeEventArgs">
+            <summary>The node a click/Enter/Space interaction occurred on, for <see cref="T:BlazorDX.Components.DxTreemap"/>/<see cref="T:BlazorDX.Components.DxSunburst"/>.</summary>
+            <param name="Node">The node itself.</param>
+            <param name="Path">Breadcrumb of labels from the root's direct child down to (and including) this node.</param>
+        </member>
+        <member name="M:BlazorDX.Components.ChartTreeNodeEventArgs.#ctor(BlazorDX.Components.ChartTreeNode,System.Collections.Generic.IReadOnlyList{System.String})">
+            <summary>The node a click/Enter/Space interaction occurred on, for <see cref="T:BlazorDX.Components.DxTreemap"/>/<see cref="T:BlazorDX.Components.DxSunburst"/>.</summary>
+            <param name="Node">The node itself.</param>
+            <param name="Path">Breadcrumb of labels from the root's direct child down to (and including) this node.</param>
+        </member>
+        <member name="P:BlazorDX.Components.ChartTreeNodeEventArgs.Node">
+            <summary>The node itself.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.ChartTreeNodeEventArgs.Path">
+            <summary>Breadcrumb of labels from the root's direct child down to (and including) this node.</summary>
         </member>
         <member name="T:BlazorDX.Components.TreeNode">
             <summary>A node in a <see cref="T:BlazorDX.Components.DxTreeView"/>. A class so expand/select track by reference.</summary>

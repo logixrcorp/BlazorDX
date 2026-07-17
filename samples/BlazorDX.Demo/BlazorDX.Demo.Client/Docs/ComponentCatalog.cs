@@ -112,6 +112,10 @@ public static class ComponentCatalog
         new("bubblechart", "DxBubbleChart", "Data visualization", "Scatter plot with a third dimension encoded as radius.", "/charts", "DxBubbleChart"),
         new("heatmap", "DxHeatmap", "Data visualization", "Row x column grid, intensity via fill-opacity.", "/charts", "DxHeatmap"),
         new("bulletchart", "DxBulletChart", "Data visualization", "KPI vs. target vs. qualitative range bands.", "/charts", "DxBulletChart"),
+        new("treemap", "DxTreemap", "Data visualization", "Squarified nested rectangles sized by value.", "/charts", "DxTreemap"),
+        new("sunburst", "DxSunburst", "Data visualization", "Radial treemap; every node is its own ring.", "/charts", "DxSunburst"),
+        new("boxplot", "DxBoxPlot", "Data visualization", "Q1/median/Q3 box, whiskers, outliers, optional violin.", "/charts", "DxBoxPlot"),
+        new("sankeychart", "DxSankeyChart", "Data visualization", "Layered flow diagram with thickness-scaled ribbons.", "/charts", "DxSankeyChart"),
 
         new("calendar", "DxCalendar", "Scheduling", "Inline month calendar with single/range selection, markers, and a day template.", "/calendar", "DxCalendar"),
         new("scheduler", "DxScheduler", "Scheduling", "Week/Month/Day calendar with recurrence and drag-to-move/create.", "/scheduler", "DxScheduler"),

@@ -43,8 +43,32 @@ All notable changes to BlazorDX are documented here. The format is loosely based
   color — not a hand-rolled color scale, and never the only signal); and **`DxBulletChart`**
   (Stephen Few's KPI-vs-target design, on a new dedicated `BulletPoint`/`BulletPointEventArgs`
   pair — a bullet row's own scale and range bands don't fit the flat `ChartPoint` shape). Demoed
-  live in `Charts.razor`. More chart types (treemap, sunburst, box/violin plot, sankey, and beyond)
-  are in progress as follow-up parts of this pass.
+  live in `Charts.razor`.
+
+- **Four hierarchical/statistical/flow chart types (the July "Graphs" pass, part 2 of 3):
+  `DxTreemap`, `DxSunburst`, `DxBoxPlot`, `DxSankeyChart`.** These don't fit the flat `ChartPoint`
+  shape, so each brings its own data type and a matching headless layout primitive in
+  `BlazorDX.Primitives.Charts` (unit-tested independently of any rendering):
+  - **`ChartTreeNode`** (a recursive `Label`/`Value`/`Color`/`Children` record) feeds both
+    **`DxTreemap`** (squarified layout — `TreemapLayout`, the Bruls/Huizing/van Wijk algorithm, so
+    cells stay close to square instead of degenerating into slivers) and **`DxSunburst`** (radial
+    partition — `SunburstLayout` — every node draws as its own ring segment, not just leaves).
+  - **`BoxPlotGroup`** (a label + raw sample list) feeds **`DxBoxPlot`**: Q1/median/Q3 box,
+    whiskers, and outliers beyond 1.5x IQR (`BoxPlotStatistics`, Tukey's convention, pure math over
+    an already-sorted sample — sorting itself is offloaded to the existing `IGridCompute.SortAsync`,
+    nothing new to duplicate there). A `Violin` bool also draws a density silhouette behind each
+    box, binned via the same compute backend as `DxHistogram` over a shared value axis so every
+    group's silhouette aligns.
+  - **`SankeyNode`/`SankeyLink`** feed **`DxSankeyChart`**: a layered ("Sugiyama-style") layout
+    (`SankeyLayout`) — each node's layer is its longest path from a source, nodes stack vertically
+    within their layer proportional to total flow, links draw as thickness-scaled bezier ribbons.
+    Not full crossing-minimization (that's d3-sankey's iterative relaxation) — a deliberate
+    simplification for the node/link counts a Sankey diagram realistically shows.
+  Selection on all four is opt-in like the rest of the family, but independently-focusable
+  (natural tab order) rather than the flat charts' roving-index pattern — a nested hierarchy or a
+  node/link graph doesn't reduce to one linear index the way a bar or slice list does. Demoed live
+  in `Charts.razor`. The parking-lot chart types (network/force-directed graph, parallel
+  coordinates, word cloud, chord diagram) are in progress as the final part of this pass.
 
 - **`[ChartRow]`/`[ChartValue]` source generator** — bind an existing domain type straight to a
   chart with `rows.ToChartPoints()`, no manual `ChartPoint` construction, no reflection. Tag a class

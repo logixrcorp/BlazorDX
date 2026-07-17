@@ -117,6 +117,28 @@
 <p class="dx-demo-meta">A KPI vs. target vs. qualitative range bands — Stephen Few's bullet-graph design.</p>
 <DxBulletChart Points="bulletPoints" Width="640" RowHeight="44" />
 
+<h2 style="margin-top:32px">Treemap</h2>
+<p class="dx-demo-meta">
+    Nested rectangles sized by <code>ChartTreeNode.Value</code>, squarified so cells stay close to
+    square. Click a cell: <strong>@treemapSelection</strong>.
+</p>
+<DxTreemap Root="treemapRoot" Width="640" Height="280" OnNodeSelected="OnTreemapNodeSelected" />
+
+<h2 style="margin-top:32px">Sunburst</h2>
+<p class="dx-demo-meta">The same <code>ChartTreeNode</code> tree — every node draws as its own ring, not just leaves.</p>
+<DxSunburst Root="treemapRoot" Size="320" />
+
+<h2 style="margin-top:32px">Box &amp; violin plot</h2>
+<p class="dx-demo-meta">
+    Q1/median/Q3 box, whiskers, and outliers beyond 1.5&times; IQR — with a density silhouette
+    behind each box.
+</p>
+<DxBoxPlot Groups="boxPlotGroups" Width="640" Height="280" Violin="true" />
+
+<h2 style="margin-top:32px">Sankey</h2>
+<p class="dx-demo-meta">Flow between stages, ribbon thickness scaled to value.</p>
+<DxSankeyChart Nodes="sankeyNodes" Links="sankeyLinks" Width="640" Height="280" />
+
 @code {
     private readonly double[] points = new double[6000];
     private IReadOnlyList<ChartPoint> lineData = [];
@@ -283,6 +305,68 @@
         new("Revenue", Value: 84, Target: 90, Max: 100, Ranges: [40, 75]),
         new("New signups", Value: 62, Target: 50, Max: 100, Ranges: [30, 65]),
         new("Support CSAT", Value: 91, Target: 85, Max: 100, Ranges: [60, 85]),
+    ];
+
+    private string treemapSelection = "(none)";
+
+    private readonly ChartTreeNode treemapRoot = new("Cloud spend", Children:
+    [
+        new("Compute", Children:
+        [
+            new("EC2", Value: 42), new("Lambda", Value: 11), new("Batch", Value: 6),
+        ]),
+        new("Storage", Children:
+        [
+            new("S3", Value: 28), new("EBS", Value: 9),
+        ]),
+        new("Data", Children:
+        [
+            new("RDS", Value: 18), new("Redshift", Value: 14), new("DynamoDB", Value: 7),
+        ]),
+        new("Networking", Value: 12),
+    ]);
+
+    private void OnTreemapNodeSelected(ChartTreeNodeEventArgs e) =>
+        treemapSelection = $"{string.Join(" / ", e.Path)} ({e.Node.Value:0.##})";
+
+    private readonly IReadOnlyList<BoxPlotGroup> boxPlotGroups =
+    [
+        new("Control", BuildSample(20260716, 50, 8)),
+        new("Variant A", BuildSample(20260717, 58, 10)),
+        new("Variant B", BuildSample(20260718, 47, 6)),
+    ];
+
+    private static IReadOnlyList<double> BuildSample(int seed, double mean, double stdDev)
+    {
+        Random random = new(seed);
+        double[] values = new double[80];
+        for (int i = 0; i < values.Length; i++)
+        {
+            // Sum of 6 uniforms -> approximately normal, same trick OnInitialized uses for the histogram.
+            double s = 0;
+            for (int k = 0; k < 6; k++)
+            {
+                s += random.NextDouble();
+            }
+
+            values[i] = mean + ((s / 6 - 0.5) * stdDev * 4);
+        }
+
+        return values;
+    }
+
+    private readonly IReadOnlyList<SankeyNode> sankeyNodes =
+    [
+        new("visited", "Visited"), new("signedup", "Signed up"), new("trial", "Started trial"),
+        new("paid", "Paid"), new("churned", "Churned"),
+    ];
+
+    private readonly IReadOnlyList<SankeyLink> sankeyLinks =
+    [
+        new("visited", "signedup", 1000),
+        new("signedup", "trial", 620),
+        new("trial", "paid", 240),
+        new("trial", "churned", 380),
     ];
 
     protected override void OnInitialized()
