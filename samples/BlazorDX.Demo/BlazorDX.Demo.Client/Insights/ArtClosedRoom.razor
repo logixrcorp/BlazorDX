@@ -1,0 +1,23 @@
+@* Hand-authored SVG: a closed shadow root as a real, enforced boundary. Three lines from outside
+   the page reach toward the inner boundary and stop right at its edge — nothing crosses in or
+   out except through the API surface the component actually exposes. *@
+
+<svg viewBox="0 0 1200 420" width="100%" role="img"
+     aria-label="A dashed outer boundary labeled page surrounds a solid inner boundary labeled closed shadow root, which holds a single filled dot representing the decrypted message. Three short lines approach the inner boundary from outside and stop exactly at its edge, unable to cross in."
+     xmlns="http://www.w3.org/2000/svg">
+    <rect x="60" y="40" width="1080" height="340" rx="24" fill="none" stroke="var(--dx-border, #e2e8f0)"
+          stroke-width="2" stroke-dasharray="8 8" />
+    <text x="90" y="76" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="600"
+          letter-spacing="0.1em" fill="var(--dx-text-muted, #64748b)">PAGE</text>
+
+    <line x1="140" y1="140" x2="330" y2="185" stroke="var(--dx-text-muted, #64748b)" stroke-width="2" />
+    <line x1="1060" y1="140" x2="870" y2="185" stroke="var(--dx-text-muted, #64748b)" stroke-width="2" />
+    <line x1="600" y1="60" x2="600" y2="150" stroke="var(--dx-text-muted, #64748b)" stroke-width="2" />
+
+    <rect x="330" y="150" width="540" height="180" rx="20" fill="var(--dx-surface, #ffffff)"
+          stroke="var(--dx-accent, #2563eb)" stroke-width="3" />
+    <text x="358" y="184" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700"
+          letter-spacing="0.08em" fill="var(--dx-accent, #2563eb)">CLOSED SHADOW ROOT</text>
+
+    <circle cx="600" cy="255" r="16" fill="var(--dx-accent, #2563eb)" />
+</svg>

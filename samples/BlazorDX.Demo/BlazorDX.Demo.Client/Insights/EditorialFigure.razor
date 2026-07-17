@@ -1,0 +1,20 @@
+@* A full-width narrative-break image. Art is hand-authored inline SVG (ChildContent) — no
+   external image files, no build tooling, colored entirely through dx-theme.css tokens so it
+   follows the page's light/dark theme automatically. *@
+
+<figure class="dx-editorial-figure">
+    <div class="dx-editorial-figure-art">
+        @ChildContent
+    </div>
+    @if (!string.IsNullOrEmpty(Caption))
+    {
+        <figcaption class="dx-editorial-figure-caption">@Caption</figcaption>
+    }
+</figure>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Shown under the art. Keep it a plain factual caption, not restated body copy.</summary>
+    [Parameter] public string? Caption { get; set; }
+}

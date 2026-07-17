@@ -9,6 +9,10 @@
                  Published="new DateOnly(2026, 7, 17)" ReadingMinutes="7"
                  FooterCards="footerCards">
 
+    <EditorialFigure Caption="A blind router: ciphertext moves from provider to browser through an empty frame that never holds a key.">
+        <ArtBlindRouter />
+    </EditorialFigure>
+
     <div class="dx-editorial-body">
         <p>
             Most chat features start from the same question: how do we store this conversation
@@ -83,6 +87,10 @@
             end-to-end Playwright test that renders the real component and inspects the actual DOM.
         </p>
     </div>
+
+    <EditorialFigure Caption="Three attempts from outside the page stop exactly at the shadow boundary. Nothing crosses in or out except through the API this component actually exposes.">
+        <ArtClosedRoom />
+    </EditorialFigure>
 
     <EditorialPullQuote Attribution="From the Conduit's own design notes">
         A router that cannot read what it routes cannot be made to leak it — by policy, by bug, or
