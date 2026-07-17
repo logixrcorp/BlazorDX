@@ -182,12 +182,14 @@ mod tests {
 
     // Arbitrary-but-fixed 32-byte seeds. Neither is the all-zero scalar and both
     // are far below the P-256 group order, so `SecretKey::from_slice` always
-    // accepts them -- no RNG needed for deterministic, reproducible tests.
-    const CLIENT_SEED: [u8; 32] = [
+    // accepts them -- no RNG needed for deterministic, reproducible tests. This is
+    // test-only fixture data (#[cfg(test)], never compiled into the shipped wasm
+    // module) -- not real key material, so there is no production nonce/key reuse.
+    const CLIENT_SEED: [u8; 32] = [ // codeql[rust/hard-coded-cryptographic-value] -- test-only fixture, see comment above
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
         26, 27, 28, 29, 30, 31, 32,
     ];
-    const SERVER_SEED: [u8; 32] = [
+    const SERVER_SEED: [u8; 32] = [ // codeql[rust/hard-coded-cryptographic-value] -- test-only fixture, see comment above
         33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55,
         56, 57, 58, 59, 60, 61, 62, 63, 64,
     ];
@@ -227,7 +229,7 @@ mod tests {
     #[test]
     fn begin_session_rejects_an_all_zero_seed() {
         let mut store = SessionStore::new();
-        let result = store.begin_session("s1", &[0u8; 32]);
+        let result = store.begin_session("s1", &[0u8; 32]); // codeql[rust/hard-coded-cryptographic-value] -- deliberately-invalid all-zero seed asserting rejection; test-only fixture
 
         assert_eq!(result, Err(SessionError::InvalidSeed));
     }
@@ -245,7 +247,7 @@ mod tests {
         let mut store = SessionStore::new();
         store.begin_session("s1", &CLIENT_SEED).expect("valid seed");
 
-        let result = store.complete_session("s1", &[0xFFu8; 10]);
+        let result = store.complete_session("s1", &[0xFFu8; 10]); // codeql[rust/hard-coded-cryptographic-value] -- deliberately-malformed key bytes asserting rejection; test-only fixture
 
         assert_eq!(result, Err(SessionError::InvalidPublicKey));
     }
@@ -257,7 +259,7 @@ mod tests {
         store.complete_session("s1", &server_public_key()).expect("valid server key");
         assert!(store.is_established("s1"));
 
-        let nonce = [7u8; NONCE_LEN];
+        let nonce = [7u8; NONCE_LEN]; // codeql[rust/hard-coded-cryptographic-value] -- fixed nonce for a deterministic test vector; test-only, never shipped
         let plaintext = b"the conversation withdraws when the household link is severed";
         let ciphertext = server_encrypt(&nonce, plaintext);
 
@@ -270,7 +272,7 @@ mod tests {
         let mut store = SessionStore::new();
         store.begin_session("s1", &CLIENT_SEED).expect("valid seed");
 
-        let result = store.decrypt("s1", &[0u8; NONCE_LEN], b"anything");
+        let result = store.decrypt("s1", &[0u8; NONCE_LEN], b"anything"); // codeql[rust/hard-coded-cryptographic-value] -- fixed nonce, test-only fixture
 
         assert_eq!(result, Err(SessionError::UnknownSession));
     }
@@ -278,7 +280,7 @@ mod tests {
     #[test]
     fn decrypt_for_an_unknown_session_is_rejected() {
         let store = SessionStore::new();
-        let result = store.decrypt("no-such-session", &[0u8; NONCE_LEN], b"anything");
+        let result = store.decrypt("no-such-session", &[0u8; NONCE_LEN], b"anything"); // codeql[rust/hard-coded-cryptographic-value] -- fixed nonce, test-only fixture
 
         assert_eq!(result, Err(SessionError::UnknownSession));
     }
@@ -289,7 +291,7 @@ mod tests {
         store.begin_session("s1", &CLIENT_SEED).expect("valid seed");
         store.complete_session("s1", &server_public_key()).expect("valid server key");
 
-        let result = store.decrypt("s1", &[0u8; 4], b"anything");
+        let result = store.decrypt("s1", &[0u8; 4], b"anything"); // codeql[rust/hard-coded-cryptographic-value] -- deliberately-short nonce asserting rejection; test-only fixture
 
         assert_eq!(result, Err(SessionError::InvalidNonceLength));
     }
@@ -300,7 +302,7 @@ mod tests {
         store.begin_session("s1", &CLIENT_SEED).expect("valid seed");
         store.complete_session("s1", &server_public_key()).expect("valid server key");
 
-        let nonce = [7u8; NONCE_LEN];
+        let nonce = [7u8; NONCE_LEN]; // codeql[rust/hard-coded-cryptographic-value] -- fixed nonce for a deterministic test vector; test-only, never shipped
         let mut ciphertext = server_encrypt(&nonce, b"original message");
         let last = ciphertext.len() - 1;
         ciphertext[last] ^= 0xFF; // flip a bit in the authentication tag
@@ -318,11 +320,11 @@ mod tests {
         // A second session that completes against its OWN (identical, for this
         // test) server key still gets a DIFFERENT shared secret because its
         // client seed differs -- proving sessions do not share key material.
-        let other_seed = [99u8; 32];
+        let other_seed = [99u8; 32]; // codeql[rust/hard-coded-cryptographic-value] -- fixed seed for a deterministic test vector; test-only, never shipped
         store.begin_session("s2", &other_seed).expect("valid seed");
         store.complete_session("s2", &server_public_key()).expect("valid server key");
 
-        let nonce = [7u8; NONCE_LEN];
+        let nonce = [7u8; NONCE_LEN]; // codeql[rust/hard-coded-cryptographic-value] -- fixed nonce for a deterministic test vector; test-only, never shipped
         let ciphertext = server_encrypt(&nonce, b"for s1 only");
 
         assert!(store.decrypt("s1", &nonce, &ciphertext).is_ok());
@@ -339,7 +341,7 @@ mod tests {
         store.end_session("s1");
 
         assert!(!store.is_established("s1"));
-        let result = store.decrypt("s1", &[7u8; NONCE_LEN], b"anything");
+        let result = store.decrypt("s1", &[7u8; NONCE_LEN], b"anything"); // codeql[rust/hard-coded-cryptographic-value] -- fixed nonce, test-only fixture (session already ended)
         assert_eq!(result, Err(SessionError::UnknownSession));
     }
 

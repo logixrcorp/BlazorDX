@@ -271,11 +271,13 @@ mod tests {
     use super::*;
     use p256::elliptic_curve::sec1::ToEncodedPoint;
 
-    const CLIENT_SEED: [u8; 32] = [
+    // Fixed, arbitrary 32-byte seeds -- test-only fixture data (#[cfg(test)], never compiled
+    // into the shipped wasm module), matching session::tests' own seeds for cross-consistency.
+    const CLIENT_SEED: [u8; 32] = [ // codeql[rust/hard-coded-cryptographic-value] -- test-only fixture, see comment above
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
         26, 27, 28, 29, 30, 31, 32,
     ];
-    const SERVER_SEED: [u8; 32] = [
+    const SERVER_SEED: [u8; 32] = [ // codeql[rust/hard-coded-cryptographic-value] -- test-only fixture, see comment above
         33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55,
         56, 57, 58, 59, 60, 61, 62, 63, 64,
     ];
@@ -316,7 +318,7 @@ mod tests {
         let client_public = p256::PublicKey::from_sec1_bytes(&out_pub).expect("valid client public key");
         let shared = p256::ecdh::diffie_hellman(server_secret.to_nonzero_scalar(), client_public.as_affine());
         let key_bytes: [u8; session::KEY_LEN] = (*shared.raw_secret_bytes()).into();
-        let nonce_bytes = [9u8; session::NONCE_LEN];
+        let nonce_bytes = [9u8; session::NONCE_LEN]; // codeql[rust/hard-coded-cryptographic-value] -- fixed nonce for a deterministic FFI test vector; test-only, never shipped
         let plaintext = b"withdrawn households still keep their message history";
         let ciphertext = {
             use aes_gcm::aead::{Aead, KeyInit};
@@ -377,7 +379,7 @@ mod tests {
     #[test]
     fn begin_session_rejects_an_all_zero_seed() {
         let session_id = b"zero-seed-session";
-        let zero_seed = [0u8; 32];
+        let zero_seed = [0u8; 32]; // codeql[rust/hard-coded-cryptographic-value] -- deliberately-invalid all-zero seed asserting rejection; test-only fixture
         let mut out_pub = [0u8; session::PUBLIC_KEY_LEN];
         let rc = unsafe {
             begin_session(session_id.as_ptr(), session_id.len(), zero_seed.as_ptr(), out_pub.as_mut_ptr())
@@ -388,7 +390,7 @@ mod tests {
     #[test]
     fn complete_session_without_begin_is_rejected() {
         let session_id = b"never-began";
-        let server_public = [0x04u8; session::PUBLIC_KEY_LEN];
+        let server_public = [0x04u8; session::PUBLIC_KEY_LEN]; // codeql[rust/hard-coded-cryptographic-value] -- deliberately-malformed key material asserting rejection; test-only fixture
         let rc = unsafe {
             complete_session(session_id.as_ptr(), session_id.len(), server_public.as_ptr(), server_public.len())
         };
@@ -398,7 +400,7 @@ mod tests {
     #[test]
     fn decrypt_payload_on_unknown_session_returns_null() {
         let session_id = b"unknown-for-decrypt";
-        let nonce = [0u8; session::NONCE_LEN];
+        let nonce = [0u8; session::NONCE_LEN]; // codeql[rust/hard-coded-cryptographic-value] -- fixed nonce, test-only fixture
         let ciphertext = b"irrelevant";
         let mut out_len: usize = 0xDEADBEEF; // sentinel: must be reset to 0 on failure
         let ptr = unsafe {
