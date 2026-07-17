@@ -159,6 +159,10 @@ it keeps the codebase navigable by humans as it grows. See
 | `BlazorDX.Security` | sanitizer, `ISafeAction`, scoped state | net10.0 |
 | `BlazorDX.SourceGen` | Roslyn generators | netstandard2.0 |
 | `BlazorDX.Htmx` | static-SSR forms tier | net10.0 (Razor) |
+| `BlazorDX.Documents` | Excel/.xlsx and Word/.docx viewer/editor, formula recalc graph | net10.0 (Razor) |
+| `BlazorDX.Documents.Parsing` | hand-rolled OOXML parsers, no external deps | net10.0 |
+| `BlazorDX.Integrations.PowerBI` | embed-token minting + `powerbi-client` wrapper | net10.0 (Razor) |
+| `BlazorDX.Integrations.Reporting` | SSRS rendering via Microsoft's URL-access engine | net10.0 (Razor) |
 | `BlazorDX.Analyzers` | DX1000 + security bans | netstandard2.0 |
 | `BlazorDX.Demo` | sample app (a demo page per component) | net10.0 (Blazor Web App) |
 

@@ -17,11 +17,17 @@ sample app (`samples/BlazorDX.Demo`).
 | `DxMenu` | Click menu: roving-tabindex keyboard nav, ARIA menu/menuitem | `/menu` |
 | `DxContextMenu` | Right-click menu positioned at the cursor | `/overlays` |
 | `DxCommandPalette` | ⌘K palette: dialog + typeahead filter + run-on-Enter | `/command` |
+| `DxHotkeys` | Registers global keyboard shortcuts, matched in JS so the browser default can be suppressed synchronously; renders nothing | `/hotkeys` |
+| `DxKeyboardShortcuts` | Cheat-sheet overlay listing your `DxHotkeys` shortcuts (press `?`) | `/hotkeys` |
 
 ## Selection & input
 
 | Component | What it does | Demo |
 |---|---|---|
+| `DxForm<TModel>` | Source-generated form: renders + validates a `[DxFormModel]`, and the same descriptor projects to an AI tool (`FormTool`) | `/forms` |
+| `DxFormSection` | Labelled, collapsible field group within a form | `/forms` |
+| `DxFormGrid` | Responsive multi-column field layout within a form | `/forms` |
+| `DxFormField` | Renders one form field by name, for manual layout | `/forms` |
 | `DxSelect<T>` | Single-select dropdown (positioning + dismiss + roving + selection) | `/select` |
 | `DxListbox<T>` | Inline single/multi list, `@bind-Values` | `/select` |
 | `DxComboBox<T>` | Typeahead filter + dropdown (aria-activedescendant) | `/select` |
@@ -32,6 +38,27 @@ sample app (`samples/BlazorDX.Demo`).
 | `DxNumeric<T>` | Generic-math numeric input + stepper (`INumber<T>`, no reflection) | `/controls` |
 | `DxRating` | Star rating, ARIA slider | `/rating` |
 | `DxDatePicker` | Calendar popover with 2-D keyboard navigation | `/pickers` |
+| `DxTimePicker` | Time input backed by the native time picker | `/pickers` |
+| `DxDateRangePicker` | Start/end date range, composing two `DxDatePicker`s | `/pickers` |
+| `DxColorPicker` | Native color input with hex readout and preset swatches | `/controls` |
+| `DxMaskedTextBox` | Text input that formats against a mask | `/controls` |
+| `DxRangeSlider` | Dual-thumb range slider, clamped so thumbs never cross | `/controls` |
+| `DxFileUpload` | Drag-drop upload zone over the native `InputFile` | `/controls` |
+| `DxVirtualKeyboard` | On-screen QWERTY for touch/kiosk/a11y text entry | `/keyboard` |
+
+## Buttons & display
+
+| Component | What it does | Demo |
+|---|---|---|
+| `DxButton` / `DxButtonGroup` | Styled button (attribute splatting) + a segmented group of adjacent buttons | `/elements` |
+| `DxToolbar` | Horizontal toolbar container (`role="toolbar"`) | `/elements` |
+| `DxSplitButton` | Primary action + a caret menu (composes `DxMenu`) | `/elements` |
+| `DxBadge` | Status pill or count badge; six variants + a dot | `/elements` |
+| `DxKbd` | Renders a shortcut as styled `<kbd>` key caps | `/hotkeys` |
+| `DxChip` | Compact tag, optionally dismissible | `/elements` |
+| `DxAvatar` | Circular avatar — image or initials fallback | `/elements` |
+| `DxCard` | Surface container with an optional header/footer | `/elements` |
+| `DxSlider` | Numeric slider backed by a native range input | `/elements` |
 
 ## Navigation & layout
 
@@ -44,9 +71,13 @@ sample app (`samples/BlazorDX.Demo`).
 | `DxPager` | Pagination with windowed page numbers | `/paging` |
 | `DxStepper` | Wizard / step flow | `/wizard` |
 | `DxTileLayout` | Reorderable dashboard tiles (drag + Alt+Arrow) | `/tiles` |
+| `DxKanban` | Board of draggable cards across columns | `/kanban` |
 | `DxSortableList` | Drag/keyboard reorderable list | `/sortable` |
 | `DxVirtualize<T>` | Generalized windowing/virtualization | `/virtualize` |
+| `DxTreeView` | Hierarchical tree with expand/collapse + keyboard nav | `/structure` |
+| `DxSplitter` | Two resizable panes with a draggable divider | `/structure` |
 | `DxThemeProvider` | Token theming (light/dark + accent) for a subtree | `/theme` |
+| `DxSkipLink` | WCAG 2.4.1 bypass-blocks link, offscreen until focused — used on every page in this site's own layout | `/` |
 
 ## Data grids
 
@@ -96,6 +127,8 @@ sample app (`samples/BlazorDX.Demo`).
 | `DxRichTextEditor` | WYSIWYG over contentEditable, routed through an **injected** sanitizer | `/richtext` |
 | `DxChat` | AI chat surface (assistant turns render via `DxMarkdown`) | `/chat` |
 | `DxFileManager` | Two-pane folder tree + contents with breadcrumb, hybrid drag-and-drop, and opt-in two-sided SHA-256 upload integrity verification | `/files` |
+| `DxQueryBuilder` | Visual, nestable predicate tree (AND/OR groups) | `/query` |
+| `DxImageEditor` | Canvas image editor: adjust, filter, rotate/flip, export — via a TS bridge | `/imageeditor` |
 
 ## Documents & reporting
 
@@ -119,6 +152,15 @@ and [ADR-0010](adr/0010-documents-and-reporting-integration.md).
 |---|---|---|
 | `DxToastHost` | Scoped toast notifications | `/feedback` |
 | `DxAlert` / `DxSpinner` / `DxProgress` / `DxSkeleton` | Status, loading, progress, placeholder | `/feedback` |
+| `DxErrorBoundary` | Contains a thrown exception; shows a retryable fallback and reports to `IDxDiagnostics` | `/errors` |
+
+## Barcodes & QR
+
+| Component | What it does | Demo |
+|---|---|---|
+| `DxQrCode` | QR code (versions 1–4, all EC levels), verified against published vectors | `/barcodes` |
+| `DxBarcode` | Code 128 (Set B) with an independent decoder round-trip | `/barcodes` |
+| `DxEan13` | EAN-13 retail barcode with a computed check digit | `/barcodes` |
 
 ---
 

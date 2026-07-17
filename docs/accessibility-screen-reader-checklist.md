@@ -41,9 +41,27 @@ Mark each: ✅ pass / ⚠ issue (link) / ⬜ not yet run.
 - [ ] (PDF) Note whether the source is PDF/UA-tagged; untagged PDFs are a content limitation
       we surface via the download alternative, not something the viewer can retrofit.
 
-## Reporting / Power BI (when built — Phase 4)
+## Reporting / Power BI (`/reports`, `/powerbi`) — Phase 4, shipped
 - [ ] iframe `title`; our toolbar + parameter form conform (3.3.1 / 3.3.2).
 - [ ] An accessible export (tagged PDF / data, or "Show as table") is offered.
 - [ ] The accessibility statement names what we guarantee vs the renderer/author.
 
-> Record results (date, AT/browser versions, findings) in the PR that performs the pass.
+## Excel viewer/editor (`/excel`, `/excel-edit`) — pending manual pass
+- [ ] Formula bar, cell reference, and active-cell value are announced on navigation.
+- [ ] Arrow-key cell navigation is a `grid`/`gridcell` pattern, not a plain table read.
+- [ ] Recalculated cells are announced (or the update is otherwise discoverable), not silent.
+
+## Word viewer/editor (`/word`, `/word-edit`) — pending manual pass
+- [ ] Document structure (headings, lists, tables) reads correctly through the OOXML↔HTML
+      round-trip — verify no semantic loss versus the source `.docx`.
+- [ ] The formatting toolbar's buttons announce pressed/active state for the current selection.
+
+## HTMX static-SSR document viewer (`/htmx/doc`) — pending manual pass
+- [ ] The no-JS fallback is independently operable (test with JS disabled, not just a slow AT pass).
+- [ ] Full-page navigation (this route intentionally skips Blazor's enhanced nav) doesn't strand
+      focus — confirm focus lands somewhere sensible after the reload.
+
+> Record results (date, AT/browser versions, findings) in the PR that performs the pass. The three
+> "pending manual pass" sections above were added when this checklist was last audited for drift —
+> Phase 4 (Reporting/Power BI) already has recorded results; Documents (Excel/Word) and the HTMX
+> viewer route do not yet.

@@ -233,6 +233,38 @@ graph each get their own type, but reuse `OnPointSelected`-style opt-in selectio
 <DxToastHost />                          @* place once per page that shows toasts *@
 <DxAlert Severity="warning">Heads up.</DxAlert>
 <DxSpinner /> <DxProgress Value="65" /> <DxSkeleton Width="70%" Height="1rem" />
+<DxErrorBoundary>@ChildContent</DxErrorBoundary>   @* retryable fallback; reports to IDxDiagnostics *@
+```
+
+### Buttons, display & misc inputs
+```razor
+<DxButton Variant="primary" @onclick="Save">Save</DxButton>
+<DxButtonGroup> <DxButton>A</DxButton> <DxButton>B</DxButton> </DxButtonGroup>
+<DxBadge Variant="success">Active</DxBadge>
+<DxChip Dismissible="true" OnDismiss="Remove">tag</DxChip>
+<DxAvatar Name="Ada Lovelace" ImageUrl="@url" />
+<DxCard Title="Summary"> … </DxCard>
+<DxSlider @bind-Value="volume" Min="0" Max="100" />
+<DxRangeSlider @bind-Low="lo" @bind-High="hi" Min="0" Max="100" />
+<DxColorPicker @bind-Value="color" Presets="palette" />
+<DxMaskedTextBox @bind-Value="phone" Mask="(000) 000-0000" />
+<DxFileUpload OnFilesSelected="OnFiles" Accept="image/*" />
+<DxTimePicker @bind-Value="time" />
+<DxDateRangePicker @bind-Start="from" @bind-End="to" />
+<DxTreeView Items="tree" ChildrenSelector="@(n => n.Children)" />
+<DxSplitter> <div>Left</div> <div>Right</div> </DxSplitter>
+<DxKanban Columns="columns" OnChange="OnChange" />
+```
+
+### Registering shortcuts + skip link
+```razor
+@* Place once, e.g. in the layout. Renders nothing itself. *@
+<DxHotkeys Bindings="@(new[]{ new Hotkey("Ctrl+K", EventCallback.Factory.Create(this, OpenPalette), "Open command palette") })" />
+<DxKeyboardShortcuts />   @* cheat-sheet overlay; press ? *@
+
+@* First focusable element in the layout; give <main> a matching id + tabindex="-1". *@
+<DxSkipLink TargetId="main-content" />
+<main id="main-content" tabindex="-1">@Body</main>
 ```
 
 ### DxCalendar (inline month calendar)
@@ -310,11 +342,20 @@ Server-side, re-hash any stream with the same primitive: `BlazorDX.Primitives.Fi
 
 ## 5. Full component catalog
 
-- **Overlays:** DxDialog, DxSheet, DxPopover, DxTooltip, DxMenu, DxContextMenu, DxCommandPalette
+- **Overlays:** DxDialog, DxSheet, DxPopover, DxTooltip, DxMenu, DxContextMenu, DxCommandPalette,
+  DxHotkeys (registers global shortcuts, renders nothing), DxKeyboardShortcuts (cheat-sheet
+  overlay for DxHotkeys)
+- **Forms:** DxForm<TModel> (source-generated from `[DxFormModel]`), DxFormSection (collapsible
+  field group), DxFormGrid (multi-column layout), DxFormField (render one field by name)
 - **Inputs:** DxSelect<T>, DxListbox<T>, DxComboBox<T>, DxTransferList, DxCheckbox, DxSwitch,
-  DxRadioGroup<T>, DxTextBox, DxTextArea, DxPassword, DxNumeric<T>, DxRating, DxDatePicker
+  DxRadioGroup<T>, DxTextBox, DxTextArea, DxPassword, DxNumeric<T>, DxRating, DxDatePicker,
+  DxTimePicker, DxDateRangePicker, DxColorPicker, DxMaskedTextBox, DxRangeSlider, DxFileUpload,
+  DxVirtualKeyboard
+- **Buttons & display:** DxButton, DxButtonGroup, DxToolbar, DxSplitButton, DxBadge, DxKbd,
+  DxChip, DxAvatar, DxCard, DxSlider
 - **Nav/layout:** DxTabs, DxAccordion, DxBreadcrumbs, DxDivider, DxDrawer, DxTimeline,
-  DxCarousel, DxPager, DxStepper, DxTileLayout, DxSortableList, DxVirtualize<T>, DxThemeProvider
+  DxCarousel, DxPager, DxStepper, DxTileLayout, DxKanban, DxSortableList, DxVirtualize<T>,
+  DxTreeView, DxSplitter, DxThemeProvider, DxSkipLink (WCAG 2.4.1 bypass-blocks link)
 - **Grids:** DxDataGrid<TRow>, DxTreeGrid<TRow>, DxPivotGrid<TRow>
 - **Charts:** DxLineChart, DxAreaChart, DxBarChart, DxPieChart, DxHistogram, DxSparkline,
   DxRadialGauge, DxLinearGauge, DxStackedBarChart, DxScatterChart, DxRadarChart, DxFunnelChart,
@@ -322,12 +363,14 @@ Server-side, re-hash any stream with the same primitive: `BlazorDX.Primitives.Fi
   DxSunburst, DxBoxPlot, DxSankeyChart, DxNetworkGraph, DxParallelCoordinates, DxWordCloud,
   DxChordDiagram
 - **Scheduling:** DxCalendar, DxScheduler, DxGantt
-- **Editors/files/AI:** DxMarkdown, DxMarkdownEditor, DxRichTextEditor, DxChat, DxFileManager
+- **Editors/files/AI:** DxMarkdown, DxMarkdownEditor, DxRichTextEditor, DxChat, DxFileManager,
+  DxQueryBuilder (nestable AND/OR predicate tree), DxImageEditor (canvas adjust/filter/rotate)
 - **Documents & reporting:** DxDocumentViewer (core; PDF/embed), DxSpreadsheetViewer (Excel
   viewer/editor, `BlazorDX.Documents`), DxWordViewer/DxWordEditor (`BlazorDX.Documents`),
   DxReportViewer (SSRS over HTMX, `BlazorDX.Integrations.Reporting`), DxPowerBiReport
   (`BlazorDX.Integrations.PowerBI`), DxHtmxDocumentViewer (static-SSR, `BlazorDX.Htmx`)
-- **Feedback:** DxToastHost, DxAlert, DxSpinner, DxProgress, DxSkeleton
+- **Feedback:** DxToastHost, DxAlert, DxSpinner, DxProgress, DxSkeleton, DxErrorBoundary
+- **Barcodes & QR:** DxQrCode, DxBarcode, DxEan13
 
 ---
 

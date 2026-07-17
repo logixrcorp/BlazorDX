@@ -5,7 +5,7 @@ makes a handful of strong claims; below, each one is paired with where it lives,
 to verify it, and what would *falsify* it. Please try to break them — a review that
 only confirms what we believe is worth little.
 
-The library is young (v0.3.0, single author, no production deployments yet). We are
+The library is young (v0.4.4, single author, no production deployments yet). We are
 not asking "is this as mature as Telerik" — it isn't. We are asking: **is the
 architecture sound, are the differentiating claims actually true across the whole
 catalog (not just the demo), and is the public surface safe to freeze at 1.0?**
@@ -18,7 +18,7 @@ Review in two stages — deep on the load-bearing 20%, broad on the rest:
 
 1. **Foundations (do this first, deeply).** The ADRs, the engine primitives, the
    source generator, the analyzers, the interop boundary, and one full vertical
-   slice (the DataGrid). If these are sound, the ~90 leaf components built on them
+   slice (the DataGrid). If these are sound, the 108 leaf components built on them
    inherit that soundness.
 2. **Breadth (later, broadly).** Spot-check the leaf components and audit the public
    API surface for consistency before 1.0.
@@ -38,15 +38,19 @@ Read, in order: [`docs/adr/`](adr) (0001–0009, one decision each),
 | `src/BlazorDX.Compute` (+ `.Rust`) | C# façade + `dx_grid` Rust crate → wasm32, with managed fallback. |
 | `src/BlazorDX.SourceGen` | Roslyn generator: `[GridRow]`/`[GridColumn]` → `IGridRowAccessor<T>`. |
 | `src/BlazorDX.Security` | HTML sanitizer + scoped-state helpers. |
+| `src/BlazorDX.Htmx` | Static-SSR, no-JS-fallback document/report viewers over htmx. |
+| `src/BlazorDX.Documents` (+ `.Parsing`) | Hand-rolled OOXML (.xlsx/.docx) viewer/editor + parsers; no external deps. |
+| `src/BlazorDX.Integrations.PowerBI` | Embed-token minting + `powerbi-client` wrapper; credentials stay server-side. |
+| `src/BlazorDX.Integrations.Reporting` | SSRS rendering via Microsoft's URL-access engine. |
 | `analyzers/BlazorDX.Analyzers` | DX1000/1001/1002 governance analyzers. |
 | `samples/BlazorDX.Demo` | Blazor Web App (all render modes) hosting every component. |
-| `tests/` | bUnit (components/primitives), compute, analyzer tests. |
+| `tests/` | bUnit (components/primitives), compute, analyzer, integration, and Playwright E2E tests. |
 
 Build everything and run the suite first:
 
 ```bash
 dotnet build BlazorDX.slnx -c Release      # expect 0 warnings / 0 errors
-dotnet test  BlazorDX.slnx -c Debug        # expect all green (~460 tests)
+dotnet test  BlazorDX.slnx -c Debug        # expect all green (~950 tests)
 cd src/BlazorDX.Compute.Rust && cargo test # Rust kernel unit tests
 ```
 
@@ -171,7 +175,7 @@ Each claim lists: **where** it lives · **verify** (do this) · **falsified if**
 
 ### 8. Test quality (not just count)
 
-- **Where:** `tests/` (~460 tests).
+- **Where:** `tests/` (~950 tests).
 - **Verify:** sample a dozen tests across families. Are they asserting *behavior and
   edge cases* (empty data, boundary values, escaping, keyboard edges, data-identity
   changes), or just "it rendered"? Check the source generator and analyzer tests in
@@ -200,9 +204,11 @@ We'd rather flag these than have you discover them and wonder what else we hid:
   this; it needs time and users. Treat correctness, not battle-testing, as the bar.
 - **Accessibility is unaudited.** Built to the ARIA patterns, never formally tested
   with assistive tech. This is the biggest credibility gap.
-- **Charts are static SVG.** No tooltips/zoom/pan interactivity yet.
-- **Grid is in-memory only.** No server-side `IDataSource` (paging/sort/filter pushed
-  to a backend) — caps it at "100k rows in the browser," not "10M on a server."
+- **Chart interactivity is partial.** Point selection, hover, and legend toggling shipped
+  (`title`-tag tooltips only, not a rich hover card); zoom/pan is still open.
+- **Server-side grid data binding has shipped** (`IGridDataSource`/`IGridGroupDataSource`,
+  with server-side grouping + aggregation) — no longer in-memory-only, but it's newer and less
+  exercised than the in-memory path; treat it as the less-battle-tested half of the DataGrid.
 - **Native WASM AOT is verified as trim-clean, but full `RunAOTCompilation` is
   exercised less than IL-trimming** — please run it (see claim 2).
 - **QR is verified by anchored codewords + independent readback + structure, not by a

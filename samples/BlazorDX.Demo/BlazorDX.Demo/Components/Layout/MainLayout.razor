@@ -1,4 +1,7 @@
 @inherits LayoutComponentBase
+@using BlazorDX.Components
+
+<DxSkipLink TargetId="main-content" />
 
 <nav class="dx-nav" aria-label="Main">
     <a class="dx-nav-brand" href="/">Blazor<span class="dx-nav-brand-accent">DX</span></a>
@@ -101,7 +104,7 @@
     </div>
 </nav>
 
-<main class="dx-main">
+<main id="main-content" class="dx-main" tabindex="-1">
     @Body
 </main>
 

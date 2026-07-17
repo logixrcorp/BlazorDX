@@ -36,6 +36,7 @@ public static class ComponentCatalog
         new("menu", "DxMenu", "Overlays & popups", "Click menu with roving-tabindex keyboard nav and ARIA menu roles.", "/menu", "DxMenu"),
         new("contextmenu", "DxContextMenu", "Overlays & popups", "Right-click menu positioned at the cursor.", "/overlays", "DxContextMenu"),
         new("commandpalette", "DxCommandPalette", "Overlays & popups", "⌘K palette: dialog + typeahead filter + run-on-Enter.", "/command", "DxCommandPalette"),
+        new("hotkeys", "DxHotkeys", "Overlays & popups", "Registers global keyboard shortcuts (matched in JS so the browser default can be suppressed synchronously); renders nothing.", "/hotkeys", "DxHotkeys"),
         new("keyboardshortcuts", "DxKeyboardShortcuts", "Overlays & popups", "Cheat-sheet overlay listing your DxHotkeys shortcuts (press ?).", "/hotkeys", "DxKeyboardShortcuts"),
 
         new("form", "DxForm<TModel>", "Selection & input", "Source-generated form: renders + validates a [DxFormModel], and the same descriptor projects to an AI tool (FormTool).", "/forms", "DxForm`1"),
@@ -90,6 +91,7 @@ public static class ComponentCatalog
         new("treeview", "DxTreeView", "Navigation & layout", "Hierarchical tree with expand/collapse + keyboard nav.", "/structure", "DxTreeView"),
         new("splitter", "DxSplitter", "Navigation & layout", "Two resizable panes with a draggable divider.", "/structure", "DxSplitter"),
         new("themeprovider", "DxThemeProvider", "Navigation & layout", "Token theming (light/dark + accent) for a subtree.", "/theme", "DxThemeProvider"),
+        new("skiplink", "DxSkipLink", "Navigation & layout", "WCAG 2.4.1 bypass-blocks link; offscreen until focused. Used on every page in this site's own layout.", "/", "DxSkipLink"),
 
         new("datagrid", "DxDataGrid<TRow>", "Data grids", "Virtualized grid: sort/filter/group/aggregate/select/edit/reorder/resize/pin, in-memory or server-side.", "/grid", "DxDataGrid`1"),
         new("treegrid", "DxTreeGrid<TRow>", "Data grids", "Hierarchical tree-table; flattened + virtualized.", "/tree", "DxTreeGrid`1"),

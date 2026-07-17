@@ -54,9 +54,10 @@ Raw component count is explicitly **not** the target — see *Out of scope*.
   ([`samples/BlazorDX.McpServer`](../samples/BlazorDX.McpServer)). The tool surface is **secured**:
   per-tool authorization, audit via the diagnostics sink, cancellation, and `[AiHidden]` /
   `[DxField(Sensitive)]` redaction of PII. See [docs/ai-integration.md](ai-integration.md).
-- **Packaging & delivery**: eight NuGet packages (incl. analyzer/source-gen) packed clean
-  and published to a feed; containerized demo deployment behind a Cloudflare tunnel.
-- **Automated checks**: ~460 automated tests (bUnit + compute + analyzer + Playwright E2E)
+- **Packaging & delivery**: twelve NuGet packages (incl. analyzer/source-gen, and the opt-in
+  `Documents`/`Documents.Parsing`/`Integrations.PowerBI`/`Integrations.Reporting` packages) packed
+  clean and published to a feed; containerized demo deployment behind a Cloudflare tunnel.
+- **Automated checks**: ~950 automated tests (bUnit + compute + analyzer + Playwright E2E)
   and Rust `cargo test` currently pass; **trim-clean publish** under
   `IsTrimmable`/`IsAotCompatible` + warnings-as-errors; 1000-line cap holding via DX1000.
   This is automated coverage only — with limited real-world use, treat the green suite as a
@@ -97,10 +98,12 @@ enhancements. None of this should be read as "ready"; it is a beta with work ahe
   endpoint are done; next are HTTP+SSE/sessions for server-initiated streaming, the DataGrid as
   a read tool over `IGridDataSource`, and the wider MCP surface (resources / prompts). See
   [docs/ai-integration.md](ai-integration.md).
-- **Chart interactivity** — tooltips, legend toggling, zoom/pan over the SVG charts.
+- **Chart interactivity** — point selection, hover, and legend toggling have shipped (title-tag
+  tooltips only, not a rich hover card); zoom/pan over the SVG charts is still open.
 - **Forms depth** — array / nested / conditional fields.
 - **Breadth tail** — a handful of leaves still worth adding (FAB/SpeedDial, Mention,
-  standalone AutoComplete; heatmap / treemap / sankey; month-view Calendar).
+  standalone AutoComplete). The chart-family tail (heatmap, treemap, sankey, and beyond) and
+  the month-view Calendar have both shipped since this was written.
 
 ---
 

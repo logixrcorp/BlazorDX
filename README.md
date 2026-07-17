@@ -73,16 +73,19 @@ load automatically — no extra build tooling on the consumer side.
 
 > **Packages:** `BlazorDX.Components` (styled, start here) · `BlazorDX.Primitives` (headless +
 > the source generator) · `BlazorDX.Interop` · `BlazorDX.Compute` · `BlazorDX.Security` ·
-> `BlazorDX.Htmx` (static-SSR forms tier).
+> `BlazorDX.Htmx` (static-SSR forms tier) · `BlazorDX.Documents` + `.Documents.Parsing` (Excel/Word
+> viewer/editor, hand-rolled OOXML) · `BlazorDX.Integrations.PowerBI` · `BlazorDX.Integrations.Reporting`
+> (SSRS). The last four are opt-in — pull them in only if you need documents/reporting.
 
 ## Repository layout
 
 ```
-src/        BlazorDX.* libraries (Primitives, Components, Interop, Compute, Security, SourceGen, Htmx)
+src/        BlazorDX.* libraries (Primitives, Components, Interop, Compute, Security, SourceGen, Htmx,
+            Documents, Documents.Parsing, Integrations.PowerBI, Integrations.Reporting)
 analyzers/  BlazorDX.Analyzers — the build-time governance (DX1000 line cap + security bans)
 build/      MSBuild targets that compile the Rust and TypeScript tiers
 samples/    BlazorDX.Demo — a Blazor Web App with a live demo page per component
-tests/      bUnit, compute, and analyzer test suites
+tests/      bUnit, compute, analyzer, integration, and Playwright E2E test suites
 docs/adr/   Architecture Decision Records
 ```
 
