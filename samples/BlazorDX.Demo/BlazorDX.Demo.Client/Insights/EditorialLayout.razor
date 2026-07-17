@@ -3,30 +3,32 @@
    Tailwind, no new color system; reuses the library's own design tokens. *@
 
 <article class="dx-editorial">
-    <header class="dx-editorial-hero">
-        @if (!string.IsNullOrEmpty(Kicker))
-        {
-            <span class="dx-editorial-kicker">@Kicker</span>
-        }
-        <h1 class="dx-editorial-title">@Title</h1>
-        @if (!string.IsNullOrEmpty(Subtitle))
-        {
-            <p class="dx-editorial-subtitle">@Subtitle</p>
-        }
-        <div class="dx-editorial-meta">
-            <span>@Author</span>
-            <span class="dx-editorial-meta-dot" aria-hidden="true"></span>
-            <span>@Published.ToString("MMMM d, yyyy")</span>
-            @if (ReadingMinutes is { } minutes)
-            {
-                <span class="dx-editorial-meta-dot" aria-hidden="true"></span>
-                <span>@minutes min read</span>
-            }
-        </div>
-        @if (!string.IsNullOrEmpty(HeroImageSrc))
+    <header class="dx-editorial-hero @(HasHeroImage ? "dx-editorial-hero--photo" : null)">
+        @if (HasHeroImage)
         {
             <img class="dx-editorial-hero-image" src="@HeroImageSrc" alt="@HeroImageAlt" loading="eager" />
         }
+        <div class="dx-editorial-hero-content">
+            @if (!string.IsNullOrEmpty(Kicker))
+            {
+                <span class="dx-editorial-kicker">@Kicker</span>
+            }
+            <h1 class="dx-editorial-title">@Title</h1>
+            @if (!string.IsNullOrEmpty(Subtitle))
+            {
+                <p class="dx-editorial-subtitle">@Subtitle</p>
+            }
+            <div class="dx-editorial-meta">
+                <span>@Author</span>
+                <span class="dx-editorial-meta-dot" aria-hidden="true"></span>
+                <span>@Published.ToString("MMMM d, yyyy")</span>
+                @if (ReadingMinutes is { } minutes)
+                {
+                    <span class="dx-editorial-meta-dot" aria-hidden="true"></span>
+                    <span>@minutes min read</span>
+                }
+            </div>
+        </div>
     </header>
 
     @ChildContent
@@ -55,4 +57,6 @@
     [Parameter] public RenderFragment? ChildContent { get; set; }
 
     [Parameter] public IReadOnlyList<EditorialFooter.FooterCard>? FooterCards { get; set; }
+
+    private bool HasHeroImage => !string.IsNullOrEmpty(HeroImageSrc);
 }

@@ -6,6 +6,9 @@
   --measure: 42rem;
   color: var(--dx-text, #0f172a);
   font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Full-bleed hero/figures break out to 100vw via the left:50%/-50vw trick below; this
+     guards against the sub-pixel scrollbar-width overflow that trick can introduce. */
+  overflow-x: hidden;
 }
 
 /* ---- Hero ---- */
@@ -14,6 +17,69 @@
   margin: 0 auto;
   padding: clamp(48px, 10vw, 120px) 24px clamp(32px, 6vw, 64px);
   text-align: left;
+}
+/* Cinematic variant: applied alongside .dx-editorial-hero when a HeroImageSrc is set.
+   Breaks out to full viewport width regardless of any ancestor's max-width/padding
+   (the page shell caps <main> at 1000px) — this is the one deliberate exception to the
+   token-driven theme, since white-on-photo text needs to read against an unknown image,
+   not against --dx-surface. */
+.dx-editorial-hero--photo {
+  position: relative;
+  left: 50%;
+  width: 100vw;
+  margin: 0 0 0 -50vw;
+  max-width: none;
+  min-height: 90vh;
+  padding: 0;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+.dx-editorial-hero-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  animation: dx-editorial-kenburns 20s ease-out forwards;
+}
+.dx-editorial-hero--photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(2, 6, 15, 0) 32%, rgba(2, 6, 15, 0.9) 100%);
+  z-index: 1;
+}
+.dx-editorial-hero-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+}
+.dx-editorial-hero--photo .dx-editorial-hero-content {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 0 24px clamp(56px, 9vw, 104px);
+}
+.dx-editorial-hero--photo .dx-editorial-kicker {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 5px 14px;
+  border-radius: 999px;
+}
+.dx-editorial-hero--photo .dx-editorial-title,
+.dx-editorial-hero--photo .dx-editorial-subtitle,
+.dx-editorial-hero--photo .dx-editorial-meta {
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+}
+.dx-editorial-hero--photo .dx-editorial-subtitle { color: rgba(255, 255, 255, 0.88); }
+.dx-editorial-hero--photo .dx-editorial-meta { color: rgba(255, 255, 255, 0.74); }
+
+@keyframes dx-editorial-kenburns {
+  from { transform: scale(1.09); }
+  to { transform: scale(1); }
 }
 .dx-editorial-kicker {
   display: inline-block;
@@ -54,33 +120,49 @@
   background: currentColor;
   flex: 0 0 auto;
 }
-.dx-editorial-hero-image {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-  display: block;
-  border-radius: var(--dx-radius, 8px);
-  margin-top: clamp(32px, 6vw, 56px);
-}
-
-/* ---- Hero / narrative-break images ---- */
+/* ---- Narrative-break images: full-bleed breakout (same 100vw trick as the photo hero),
+   a cinematic 2:1 crop, and a scroll-linked reveal on browsers that support CSS scroll-driven
+   animations — GPU-composited, off the main thread, so it costs nothing per scroll frame and
+   never becomes a scroll-position listener. Falls back to a static image everywhere else. ---- */
 .dx-editorial-figure {
-  width: 100%;
-  margin: clamp(40px, 8vw, 96px) 0;
+  position: relative;
+  left: 50%;
+  width: 100vw;
+  margin: clamp(56px, 9vw, 112px) 0 clamp(56px, 9vw, 112px) -50vw;
 }
-.dx-editorial-figure img,
 .dx-editorial-figure-art {
   width: 100%;
+  overflow: hidden;
+}
+.dx-editorial-figure-art img {
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  object-fit: cover;
   display: block;
-  border-radius: var(--dx-radius, 8px);
 }
 .dx-editorial-figure-caption {
-  margin-top: 12px;
-  font-size: 0.85rem;
+  margin-top: 16px;
+  padding: 0 24px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--dx-text-muted, #64748b);
   max-width: var(--measure);
   margin-left: auto;
   margin-right: auto;
+}
+
+@supports (animation-timeline: view()) {
+  .dx-editorial-figure-art img {
+    animation: dx-editorial-figure-reveal linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 35%;
+  }
+  @keyframes dx-editorial-figure-reveal {
+    from { transform: scale(1.12); filter: saturate(0.8); }
+    to { transform: scale(1); filter: saturate(1); }
+  }
 }
 
 /* ---- Body copy ---- */
@@ -112,12 +194,29 @@
 
 /* ---- Pull quotes ---- */
 .dx-editorial-pullquote {
+  position: relative;
   max-width: 52rem;
   margin: clamp(48px, 8vw, 88px) auto;
   padding: 0 24px;
   text-align: left;
 }
+/* An oversized ghost quotation mark behind the text — a classic magazine-spread device. */
+.dx-editorial-pullquote::before {
+  content: "\201C";
+  position: absolute;
+  top: -3.4rem;
+  left: 12px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 10rem;
+  line-height: 1;
+  color: var(--dx-accent, #2563eb);
+  opacity: 0.14;
+  z-index: 0;
+  pointer-events: none;
+}
 .dx-editorial-pullquote blockquote {
+  position: relative;
+  z-index: 1;
   margin: 0;
   font-family: Georgia, "Times New Roman", serif;
   font-style: italic;
@@ -128,6 +227,8 @@
   padding-left: 28px;
 }
 .dx-editorial-pullquote cite {
+  position: relative;
+  z-index: 1;
   display: block;
   margin-top: 16px;
   padding-left: 31px;
@@ -204,6 +305,7 @@
 }
 .dx-editorial-scrolly-stage {
   position: relative;
+  overflow: hidden;
   min-height: 55vh;
   display: flex;
   flex-direction: column;
@@ -221,6 +323,26 @@
 .dx-editorial-scrolly-stage.is-visible {
   opacity: 1;
   transform: translateY(0);
+}
+/* A giant ghost numeral watermarking each stage — echoes the small index label, another
+   magazine-spread device. Clipped by the stage's own overflow:hidden. */
+.dx-editorial-scrolly-stage::before {
+  content: attr(data-index);
+  position: absolute;
+  top: -0.28em;
+  right: 0.15em;
+  font-size: clamp(6rem, 16vw, 11rem);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--dx-text, #0f172a);
+  opacity: 0.05;
+  z-index: 0;
+  pointer-events: none;
+  user-select: none;
+}
+.dx-editorial-scrolly-stage > * {
+  position: relative;
+  z-index: 1;
 }
 .dx-editorial-scrolly-stage-index {
   font-size: 0.8rem;
@@ -284,6 +406,12 @@
     opacity: 1;
     transform: none;
     filter: none;
+  }
+  .dx-editorial-hero-image,
+  .dx-editorial-figure-art img {
+    animation: none !important;
+    transform: none !important;
+    filter: none !important;
   }
 }
 
@@ -401,4 +529,7 @@
   .dx-editorial-title { max-width: none; }
   .dx-editorial-scrolly-stage { min-height: 0; padding: 1.75rem 1.25rem; }
   .dx-editorial-dissipation { grid-template-columns: repeat(8, 1fr); }
+  .dx-editorial-hero--photo { min-height: 68vh; }
+  .dx-editorial-figure-art img { aspect-ratio: 4 / 5; }
+  .dx-editorial-pullquote::before { font-size: 6.5rem; top: -2.2rem; }
 }

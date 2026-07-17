@@ -34,6 +34,26 @@ All notable changes to BlazorDX are documented here. The format is loosely based
   1.2–12MB source files) to keep the page's load weight in line with the rest of the site.
   `EditorialLayout` gained an optional `HeroImageSrc`/`HeroImageAlt` pair (eager-loaded, since
   it's the page's LCP element); the four in-body figures use `loading="lazy"`.
+  The flagship article's presentation got a Runway/Vogue-style pass: the hero and all four
+  figures break out to full viewport width (the 100vw/-50vw technique, guarded by
+  `overflow-x: hidden` on `.dx-editorial` against the vw-includes-scrollbar sub-pixel overflow
+  it introduces) regardless of the page shell's 1000px `<main>` cap; the hero runs full-viewport-height
+  with the title/subtitle overlaid on a gradient scrim and a one-shot Ken Burns zoom; figures crop
+  to a cinematic 2:1 (4:5 on narrow viewports) and get a scroll-linked reveal via CSS
+  `animation-timeline: view()` — GPU-composited and declarative, so it costs nothing per scroll
+  frame and isn't a scroll-position listener — behind `@supports`, degrading to a static image
+  elsewhere. The pull-quote gained an oversized ghost quotation mark and the scrollytelling
+  stages a giant ghost numeral watermark (via a `data-index` attribute + `content: attr()`),
+  both classic magazine-spread devices. All motion respects `prefers-reduced-motion`.
+
+  Note on verifying this: the sandboxed preview browser's screenshot capture intermittently
+  clipped the leading character of hero text in this specific full-bleed/breakout layout. Ruled
+  out as an actual rendering defect via `getBoundingClientRect`/`textContent` (always complete,
+  correctly positioned, no horizontal overflow, zero console errors) and by process of
+  elimination (a plain diagnostic element captured correctly in the same screenshot; disabling
+  the Ken Burns animation and forcing a compositing layer both left the artifact unchanged) —
+  consistent with the same category of capture-tool-only quirk already noted for this
+  environment (see the scrollytelling `IntersectionObserver` caveat above).
 
 - **`DxGraph` — a single dynamic entry point over 18 chart kinds, switchable at runtime via a
   `Kind` (`GraphKind`) parameter.** A facade, not a rewrite: every `Kind` case opens the real

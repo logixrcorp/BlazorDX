@@ -1,7 +1,7 @@
 @* One stage of the scrollytelling sequence — starts hidden/offset, then CSS-transitions in when
    EditorialScrollytelling's observer marks it visible (see dx-editorial.css .is-visible). *@
 
-<div class="dx-editorial-scrolly-stage">
+<div class="dx-editorial-scrolly-stage" data-index="@Index">
     @if (!string.IsNullOrEmpty(Glyph))
     {
         <div class="dx-editorial-scrolly-glyph" aria-hidden="true">@Glyph</div>
