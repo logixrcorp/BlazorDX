@@ -7,10 +7,13 @@
 <EditorialLayout Kicker="Article" Title="The Architecture of Silence"
                  Subtitle="Inside the Zero-Trust Ephemeral Chat Conduit: a server that never sees plaintext, a browser-sandboxed crypto core, and a closed room that tears itself down the moment it's disturbed."
                  Published="new DateOnly(2026, 7, 17)" ReadingMinutes="7"
+                 HeroImageSrc="images/insights/zero-trust-ephemeral-chat-conduit/sanctuary-hero.jpg"
+                 HeroImageAlt="A lone figure works at a minimalist, geometric desk lit from within, in an empty room overlooking a city skyline at dusk."
                  FooterCards="footerCards">
 
-    <EditorialFigure Caption="A blind router: ciphertext moves from provider to browser through an empty frame that never holds a key.">
-        <ArtBlindRouter />
+    <EditorialFigure Caption="A message travels from provider to browser as a single unbroken thread — the router in between never touches what passes through it.">
+        <img src="images/insights/zero-trust-ephemeral-chat-conduit/transparent-connection.jpg"
+             alt="Two figures in profile face each other, connected by a single strand of light passing from one to the other." loading="lazy" />
     </EditorialFigure>
 
     <div class="dx-editorial-body">
@@ -88,8 +91,9 @@
         </p>
     </div>
 
-    <EditorialFigure Caption="Three attempts from outside the page stop exactly at the shadow boundary. Nothing crosses in or out except through the API this component actually exposes.">
-        <ArtClosedRoom />
+    <EditorialFigure Caption="Enclosed by its own boundary: what's inside is visible through the glass, but nothing outside can reach in and touch it.">
+        <img src="images/insights/zero-trust-ephemeral-chat-conduit/sovereignty-over-self.jpg"
+             alt="A figure works at a lit surface inside a glass dome, streams of light passing by outside the glass without entering." loading="lazy" />
     </EditorialFigure>
 
     <EditorialPullQuote Attribution="From the Conduit's own design notes">
@@ -131,6 +135,11 @@
         </EditorialScrollyStage>
     </EditorialScrollytelling>
 
+    <EditorialFigure Caption="The moment a session ends: a buffer is zeroized, a node is overwritten, and the light goes out — not because it's magic, but because nothing on the other side kept a copy.">
+        <img src="images/insights/zero-trust-ephemeral-chat-conduit/right-to-erasure.jpg"
+             alt="A hand closes a glowing laptop-like panel, the light dimming as it shuts." loading="lazy" />
+    </EditorialFigure>
+
     <div class="dx-editorial-body">
         <h2>Why build it this way</h2>
         <p>
@@ -153,6 +162,11 @@
             end.
         </p>
     </div>
+
+    <EditorialFigure Caption="The point was never distrust. It was building an architecture that doesn't ask anyone to keep a promise it could accidentally break.">
+        <img src="images/insights/zero-trust-ephemeral-chat-conduit/freedom-from-digital-footprints.jpg"
+             alt="A figure stands in an open field at dusk, releasing a stream of light particles into the sky." loading="lazy" />
+    </EditorialFigure>
 </EditorialLayout>
 
 @code {

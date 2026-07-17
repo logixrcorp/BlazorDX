@@ -23,6 +23,10 @@
                 <span>@minutes min read</span>
             }
         </div>
+        @if (!string.IsNullOrEmpty(HeroImageSrc))
+        {
+            <img class="dx-editorial-hero-image" src="@HeroImageSrc" alt="@HeroImageAlt" loading="eager" />
+        }
     </header>
 
     @ChildContent
@@ -42,6 +46,11 @@
     [Parameter, EditorRequired] public DateOnly Published { get; set; }
 
     [Parameter] public int? ReadingMinutes { get; set; }
+
+    /// <summary>Optional full-bleed image under the hero meta row. Omit for a text-only hero.</summary>
+    [Parameter] public string? HeroImageSrc { get; set; }
+
+    [Parameter] public string? HeroImageAlt { get; set; }
 
     [Parameter] public RenderFragment? ChildContent { get; set; }
 

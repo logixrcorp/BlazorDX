@@ -54,6 +54,14 @@
   background: currentColor;
   flex: 0 0 auto;
 }
+.dx-editorial-hero-image {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  display: block;
+  border-radius: var(--dx-radius, 8px);
+  margin-top: clamp(32px, 6vw, 56px);
+}
 
 /* ---- Hero / narrative-break images ---- */
 .dx-editorial-figure {

@@ -28,10 +28,12 @@ All notable changes to BlazorDX are documented here. The format is loosely based
   match what the feature actually guarantees, including its real limits (no authorization by
   default, best-effort SSE delivery, best-effort rather than provable erasure). Blog and
   Whitepapers ship as working, empty sections rather than seeded placeholder content.
-  The flagship article's two narrative-break images (`EditorialFigure`) are hand-authored inline
-  SVG — `ArtBlindRouter` and `ArtClosedRoom` — colored entirely through `dx-theme.css` tokens
-  (no external image files, no AI-generated imagery), in the same "data-as-art" spirit as the
-  existing `EditorialDissipation` visualization.
+  The flagship article uses a hero image plus four `EditorialFigure` narrative-break images
+  (provider-to-browser routing, the closed-shadow-root boundary, session-end erasure, and a
+  closing image), all resized/recompressed to 2000px-wide JPEGs (~150KB each, down from
+  1.2–12MB source files) to keep the page's load weight in line with the rest of the site.
+  `EditorialLayout` gained an optional `HeroImageSrc`/`HeroImageAlt` pair (eager-loaded, since
+  it's the page's LCP element); the four in-body figures use `loading="lazy"`.
 
 - **`DxGraph` — a single dynamic entry point over 18 chart kinds, switchable at runtime via a
   `Kind` (`GraphKind`) parameter.** A facade, not a rewrite: every `Kind` case opens the real
