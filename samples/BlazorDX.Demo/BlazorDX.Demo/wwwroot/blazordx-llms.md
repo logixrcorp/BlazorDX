@@ -176,6 +176,23 @@ read the columns to persist.
 }
 ```
 
+### DxGraph — one component, a runtime chart-type switch
+`DxGraph` wraps 18 chart kinds (`GraphKind`) behind a single dynamic entry point — rebind `Kind`
+alone (no other parameter change) to swap the underlying chart, e.g. a toolbar toggling the same
+`Points` between Bar/Line/Area/Pie/Scatter/Funnel. It's a thin facade: each `Kind` case opens the
+real `Dx*Chart` component and forwards typed parameters — zero reflection, zero boxing. Covers the
+13 `ChartPoint` kinds (see below) + Treemap/Sunburst (`Root: ChartTreeNode`) + the 2 gauges +
+Histogram (`Value`/`RawValues`, plain scalars — no new type). The other 7 chart types
+(Bullet/BoxPlot/Sankey/NetworkGraph/ParallelCoordinates/WordCloud/ChordDiagram) each need their own
+dedicated data record with no cross-kind reuse, so they're **not** in `DxGraph` — use them directly.
+```razor
+<DxGraph Kind="kind" Points="points" Width="720" Height="280"
+         OnPointSelected="OnSelected" />   @* kind: GraphKind field, e.g. bound to a toolbar *@
+@code { private GraphKind kind = GraphKind.Bar; }
+```
+For a known, fixed chart type, prefer the named component directly (`DxBarChart`, etc.) — `DxGraph`
+is additive, for the dynamic-kind case, not a replacement.
+
 ### Charts (SVG, Rust-downsampled where relevant)
 Every chart accepts one shared, generic data shape — `IReadOnlyList<ChartPoint>` — instead of a
 bespoke type per chart (`ChartPoint(X, Y, Category, Y2, Y3, Y4, Series, Color)`; unused fields are
@@ -357,11 +374,11 @@ Server-side, re-hash any stream with the same primitive: `BlazorDX.Primitives.Fi
   DxCarousel, DxPager, DxStepper, DxTileLayout, DxKanban, DxSortableList, DxVirtualize<T>,
   DxTreeView, DxSplitter, DxThemeProvider, DxSkipLink (WCAG 2.4.1 bypass-blocks link)
 - **Grids:** DxDataGrid<TRow>, DxTreeGrid<TRow>, DxPivotGrid<TRow>
-- **Charts:** DxLineChart, DxAreaChart, DxBarChart, DxPieChart, DxHistogram, DxSparkline,
-  DxRadialGauge, DxLinearGauge, DxStackedBarChart, DxScatterChart, DxRadarChart, DxFunnelChart,
-  DxCandlestickChart, DxWaterfallChart, DxBubbleChart, DxHeatmap, DxBulletChart, DxTreemap,
-  DxSunburst, DxBoxPlot, DxSankeyChart, DxNetworkGraph, DxParallelCoordinates, DxWordCloud,
-  DxChordDiagram
+- **Charts:** DxGraph (dynamic Kind switch over the 18 below marked *), DxLineChart*, DxAreaChart*,
+  DxBarChart*, DxPieChart*, DxHistogram*, DxSparkline*, DxRadialGauge*, DxLinearGauge*,
+  DxStackedBarChart*, DxScatterChart*, DxRadarChart*, DxFunnelChart*, DxCandlestickChart*,
+  DxWaterfallChart*, DxBubbleChart*, DxHeatmap*, DxTreemap*, DxSunburst*, DxBulletChart,
+  DxBoxPlot, DxSankeyChart, DxNetworkGraph, DxParallelCoordinates, DxWordCloud, DxChordDiagram
 - **Scheduling:** DxCalendar, DxScheduler, DxGantt
 - **Editors/files/AI:** DxMarkdown, DxMarkdownEditor, DxRichTextEditor, DxChat, DxFileManager,
   DxQueryBuilder (nestable AND/OR predicate tree), DxImageEditor (canvas adjust/filter/rotate)

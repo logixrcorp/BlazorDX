@@ -97,6 +97,7 @@ public static class ComponentCatalog
         new("treegrid", "DxTreeGrid<TRow>", "Data grids", "Hierarchical tree-table; flattened + virtualized.", "/tree", "DxTreeGrid`1"),
         new("pivotgrid", "DxPivotGrid<TRow>", "Data grids", "Cross-tab reusing the Rust aggregation kernels.", "/pivot", "DxPivotGrid`1"),
 
+        new("graph", "DxGraph", "Data visualization", "One component, a runtime Kind switch, over the 18 chart kinds sharing ChartPoint/ChartTreeNode/scalar data.", "/charts", "DxGraph"),
         new("linechart", "DxLineChart", "Data visualization", "Series line chart, LTTB-downsampled by Rust/wasm.", "/charts", "DxLineChart"),
         new("areachart", "DxAreaChart", "Data visualization", "Filled series chart, Rust-downsampled.", "/charts", "DxAreaChart"),
         new("barchart", "DxBarChart", "Data visualization", "Categorical bar chart (vertical/horizontal).", "/charts", "DxBarChart"),

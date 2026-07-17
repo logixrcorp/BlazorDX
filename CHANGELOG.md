@@ -9,6 +9,29 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ## [Unreleased]
 
+### Added
+
+- **`DxGraph` — a single dynamic entry point over 18 chart kinds, switchable at runtime via a
+  `Kind` (`GraphKind`) parameter.** A facade, not a rewrite: every `Kind` case opens the real
+  underlying `Dx*Chart` component (`OpenComponent<TComponent>`) and forwards typed parameters —
+  zero reflection, zero boxing, and the compiler still catches a typo'd parameter name at the call
+  site inside `DxGraph.cs` exactly as it would in hand-written markup. Rebinding `Kind` alone (e.g.
+  a toolbar toggling the same series between Bar/Line/Area) re-renders through the matching chart
+  with no markup change and no re-binding `Points`.
+  Covers exactly the 18 kinds whose data reduces to one of three already-shared, strongly-typed
+  shapes: `ChartPoint` (13 kinds: Bar, Area, Line, Pie, Scatter, StackedBar, Radar, Funnel,
+  Candlestick, Waterfall, Bubble, Heatmap, Sparkline), a `ChartTreeNode` root (Treemap, Sunburst),
+  or a bare scalar/raw-sample list needing no new type at all (the two gauges, Histogram). The
+  other 7 chart types (`DxBulletChart`, `DxBoxPlot`, `DxSankeyChart`, `DxNetworkGraph`,
+  `DxParallelCoordinates`, `DxWordCloud`, `DxChordDiagram`) each need their own dedicated data
+  record that no other kind reuses — folding one into `DxGraph` would cost one new parameter (or
+  pair) for exactly one kind, no consolidation benefit, just a wider surface on the shared facade.
+  Those 7 stay as their own named components, used directly. `DxGraph` is additive — every
+  existing `Dx*Chart` component is unchanged and remains the primary documented API for a known,
+  fixed chart type; `DxGraph` is for the dynamic-kind case. Demoed live in `Charts.razor` with a
+  Kind-toggle UI, verified in a real browser (including exercising the Rust/wasm compute backend
+  through the facade for Line/Area, not just the bUnit managed fallback).
+
 ### Changed
 
 - **Unified chart data model — `ChartPoint`, replacing per-chart bespoke shapes (breaking).**

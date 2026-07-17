@@ -25,6 +25,22 @@
 </p>
 <DxBarChart Points="bars" Width="720" Height="240" OnPointSelected="OnBarSelected" />
 
+<h2 style="margin-top:32px">Dynamic chart switching — <code>DxGraph</code></h2>
+<p class="dx-demo-meta">
+    One component, one <code>Points</code> binding, a runtime <code>Kind</code> switch — the same
+    series re-renders through whichever underlying chart <code>Kind</code> names, no markup change.
+    <code>DxGraph</code> covers the 18 kinds whose data reduces to <code>ChartPoint</code>,
+    <code>ChartTreeNode</code>, or a bare scalar/sample list — see its own doc comment for why the
+    other 7 chart types (different data shapes entirely) stay as their own named components.
+</p>
+<div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap">
+    @foreach (GraphKind kind in graphKinds)
+    {
+        <DxButton Variant="@(graphKind == kind ? "primary" : "secondary")" @onclick="() => graphKind = kind">@kind</DxButton>
+    }
+</div>
+<DxGraph Kind="graphKind" Points="graphPoints" Width="720" Height="260" />
+
 <h2 style="margin-top:32px">Bind an existing type — <code>[ChartRow]</code></h2>
 <p class="dx-demo-meta">
     No manual mapping: annotate a domain type's properties with <code>[ChartValue(ChartField.…)]</code>
@@ -176,6 +192,20 @@
 
     private void OnBarSelected(ChartPointEventArgs e) =>
         selectedBar = $"{e.Point.Category} = {e.Point.Y:0.##}";
+
+    private GraphKind graphKind = GraphKind.Bar;
+
+    private readonly GraphKind[] graphKinds =
+        [GraphKind.Bar, GraphKind.Line, GraphKind.Area, GraphKind.Scatter, GraphKind.Pie, GraphKind.Funnel];
+
+    private readonly IReadOnlyList<ChartPoint> graphPoints =
+    [
+        new(X: 0, Y: 18, Category: "Mon"),
+        new(X: 1, Y: 32, Category: "Tue"),
+        new(X: 2, Y: 27, Category: "Wed"),
+        new(X: 3, Y: 41, Category: "Thu"),
+        new(X: 4, Y: 36, Category: "Fri"),
+    ];
 
     private void OnPieLegendToggled(ChartLegendToggledEventArgs e) =>
         legendStatus = $"{e.Key} {(e.Visible ? "shown" : "hidden")}";

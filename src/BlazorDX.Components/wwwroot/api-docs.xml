@@ -1316,6 +1316,130 @@
         <member name="P:BlazorDX.Components.DxGantt.NameWidth">
             <summary>Width of the task-name column in pixels.</summary>
         </member>
+        <member name="T:BlazorDX.Components.GraphKind">
+            <summary>
+            Which underlying chart <see cref="T:BlazorDX.Components.DxGraph"/> renders. Grouped by the data shape each kind
+            reads — see <see cref="T:BlazorDX.Components.DxGraph"/>'s remarks.
+            </summary>
+        </member>
+        <member name="F:BlazorDX.Components.GraphKind.Bar">
+            <summary>Reads <see cref="P:BlazorDX.Components.DxGraph.Points"/>.</summary>
+        </member>
+        <member name="F:BlazorDX.Components.GraphKind.Area">
+            <summary>Reads <see cref="P:BlazorDX.Components.DxGraph.Points"/>.</summary>
+        </member>
+        <member name="F:BlazorDX.Components.GraphKind.Line">
+            <summary>Reads <see cref="P:BlazorDX.Components.DxGraph.Points"/>.</summary>
+        </member>
+        <member name="F:BlazorDX.Components.GraphKind.Pie">
+            <summary>Reads <see cref="P:BlazorDX.Components.DxGraph.Points"/> (+ <see cref="P:BlazorDX.Components.DxGraph.Donut"/>).</summary>
+        </member>
+        <member name="F:BlazorDX.Components.GraphKind.Scatter">
+            <summary>Reads <see cref="P:BlazorDX.Components.DxGraph.Points"/>.</summary>
+        </member>
+        <member name="F:BlazorDX.Components.GraphKind.StackedBar">
+            <summary>Reads <see cref="P:BlazorDX.Components.DxGraph.Points"/> + <see cref="P:BlazorDX.Components.DxGraph.Categories"/>.</summary>
+        </member>
+        <member name="F:BlazorDX.Components.GraphKind.Radar">
+            <summary>Reads <see cref="P:BlazorDX.Components.DxGraph.Points"/> + <see cref="P:BlazorDX.Components.DxGraph.Axes"/>.</summary>
+        </member>
+        <member name="F:BlazorDX.Components.GraphKind.Funnel">
+            <summary>Reads <see cref="P:BlazorDX.Components.DxGraph.Points"/>.</summary>
+        </member>
+        <member name="F:BlazorDX.Components.GraphKind.Candlestick">
+            <summary>Reads <see cref="P:BlazorDX.Components.DxGraph.Points"/> (<c>Y</c>..<c>Y4</c> as OHLC).</summary>
+        </member>
+        <member name="F:BlazorDX.Components.GraphKind.Waterfall">
+            <summary>Reads <see cref="P:BlazorDX.Components.DxGraph.Points"/> (<c>Y2</c> marks an absolute total).</summary>
+        </member>
+        <member name="F:BlazorDX.Components.GraphKind.Bubble">
+            <summary>Reads <see cref="P:BlazorDX.Components.DxGraph.Points"/> (<c>Y2</c> sizes the bubble).</summary>
+        </member>
+        <member name="F:BlazorDX.Components.GraphKind.Heatmap">
+            <summary>Reads <see cref="P:BlazorDX.Components.DxGraph.Points"/> (<c>Series</c>/<c>Category</c> as row/column).</summary>
+        </member>
+        <member name="F:BlazorDX.Components.GraphKind.Sparkline">
+            <summary>Reads <see cref="P:BlazorDX.Components.DxGraph.Points"/>.</summary>
+        </member>
+        <member name="F:BlazorDX.Components.GraphKind.Treemap">
+            <summary>Reads <see cref="P:BlazorDX.Components.DxGraph.Root"/>.</summary>
+        </member>
+        <member name="F:BlazorDX.Components.GraphKind.Sunburst">
+            <summary>Reads <see cref="P:BlazorDX.Components.DxGraph.Root"/>.</summary>
+        </member>
+        <member name="F:BlazorDX.Components.GraphKind.RadialGauge">
+            <summary>Reads <see cref="P:BlazorDX.Components.DxGraph.Value"/>.</summary>
+        </member>
+        <member name="F:BlazorDX.Components.GraphKind.LinearGauge">
+            <summary>Reads <see cref="P:BlazorDX.Components.DxGraph.Value"/>.</summary>
+        </member>
+        <member name="F:BlazorDX.Components.GraphKind.Histogram">
+            <summary>Reads <see cref="P:BlazorDX.Components.DxGraph.RawValues"/>.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxGraph">
+            <summary>
+            A single dynamic entry point over the 18 chart kinds whose data reduces to one of three
+            already-shared, strongly-typed shapes: <see cref="T:BlazorDX.Components.ChartPoint"/> (13 kinds), a
+            <see cref="T:BlazorDX.Components.ChartTreeNode"/> root (Treemap/Sunburst), or a bare scalar/raw-sample list (the
+            gauges, Histogram). Switching <see cref="P:BlazorDX.Components.DxGraph.Kind"/> at runtime — e.g. a dropdown toggling the
+            same series between Bar/Line/Area — re-renders through the matching underlying component; no
+            new markup, no re-binding <see cref="P:BlazorDX.Components.DxGraph.Points"/>.
+            </summary>
+            <remarks>
+            <para>
+            This is a facade, not a rewrite: every case below opens the real <c>Dx*Chart</c> component via
+            <see cref="M:Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder.OpenComponent``1(System.Int32)"/> and forwards typed parameters — zero
+            reflection, zero boxing, and the compiler still catches a typo'd parameter name at the call
+            site (inside <em>this</em> file) exactly as it would in hand-written markup.
+            </para>
+            <para>
+            <b>Why only these 18, not all 25:</b> the other 7 chart types (<c>DxBulletChart</c>,
+            <c>DxBoxPlot</c>, <c>DxSankeyChart</c>, <c>DxNetworkGraph</c>, <c>DxParallelCoordinates</c>,
+            <c>DxWordCloud</c>, <c>DxChordDiagram</c>) each need their own dedicated data record
+            (<c>BulletPoint</c>, <c>BoxPlotGroup</c>, <c>SankeyNode</c>/<c>SankeyLink</c>, etc.) that no
+            other kind reuses. Adding one of those kinds to <see cref="T:BlazorDX.Components.DxGraph"/> would cost exactly one
+            new parameter (or pair) for exactly one kind — no consolidation benefit, just a wider surface
+            on the shared facade. The 18 kinds here were chosen because they're "free riders": 13 kinds
+            share <see cref="T:BlazorDX.Components.ChartPoint"/>, 2 share <see cref="T:BlazorDX.Components.ChartTreeNode"/>, and the gauges/Histogram
+            need only BCL primitives (<see cref="T:System.Double"/>, <see cref="T:System.Collections.Generic.IReadOnlyList`1"/> of
+            <see cref="T:System.Double"/>) — no new record type at all. Those 7 stay as their own named components,
+            used directly — which is exactly what a fundamentally different data shape calls for.
+            </para>
+            </remarks>
+        </member>
+        <member name="P:BlazorDX.Components.DxGraph.Size">
+            <summary>Used by <see cref="F:BlazorDX.Components.GraphKind.Pie"/>, <see cref="F:BlazorDX.Components.GraphKind.RadialGauge"/>, <see cref="F:BlazorDX.Components.GraphKind.Sunburst"/> (single-dimension charts).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxGraph.Categories">
+            <summary>Used by <see cref="F:BlazorDX.Components.GraphKind.StackedBar"/>.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxGraph.Axes">
+            <summary>Used by <see cref="F:BlazorDX.Components.GraphKind.Radar"/>.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxGraph.Horizontal">
+            <summary>Used by <see cref="F:BlazorDX.Components.GraphKind.Bar"/>.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxGraph.Donut">
+            <summary>Used by <see cref="F:BlazorDX.Components.GraphKind.Pie"/>.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxGraph.Stacked">
+            <summary>Used by <see cref="F:BlazorDX.Components.GraphKind.StackedBar"/>: stacked (default) or grouped.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxGraph.ShowValues">
+            <summary>Used by <see cref="F:BlazorDX.Components.GraphKind.Heatmap"/>.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxGraph.Variant">
+            <summary>Used by <see cref="F:BlazorDX.Components.GraphKind.Sparkline"/>: "line" (default) or "bar".</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxGraph.Gradient">
+            <summary>Used by <see cref="F:BlazorDX.Components.GraphKind.Bar"/> and <see cref="F:BlazorDX.Components.GraphKind.Waterfall"/>.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxGraph.Max">
+            <summary>
+            Used by <see cref="F:BlazorDX.Components.GraphKind.Radar"/> (axis max; <c>null</c> auto-scales) and the gauges
+            (full-scale max; <c>null</c> defaults to 100) — same parameter, different per-kind default.
+            </summary>
+        </member>
         <member name="T:BlazorDX.Components.DxHeatmap">
             <summary>
             A heatmap: a grid of colored cells, one per (row, column) pair. Reuses the shared

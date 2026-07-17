@@ -91,6 +91,7 @@ sample app (`samples/BlazorDX.Demo`).
 
 | Component | What it does | Demo |
 |---|---|---|
+| `DxGraph` | A single dynamic entry point: a runtime `Kind` (`GraphKind`) switch over the 18 chart kinds below whose data reduces to `ChartPoint`, a `ChartTreeNode` root, or a bare scalar/sample list — see its own doc comment for why the other 7 (Bullet/BoxPlot/Sankey/NetworkGraph/ParallelCoordinates/WordCloud/ChordDiagram) stay separate | `/charts` |
 | `DxLineChart` / `DxAreaChart` | Series charts, LTTB-downsampled by Rust/wasm | `/charts` |
 | `DxBarChart` / `DxPieChart` | Categorical bar (V/H) + pie/donut with legend | `/charts` |
 | `DxHistogram` | Bins values via the Rust histogram kernel | `/charts` |
