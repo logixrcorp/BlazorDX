@@ -1,0 +1,316 @@
+@page "/ai-chat"
+@layout AiChatLayout
+@rendermode InteractiveWebAssembly
+@using System.Text.Json
+@using BlazorDX.Components
+@inject AiChatStore Store
+@inject HttpClient Http
+
+@*
+    Live demo of the "Zero-Trust Ephemeral AI Chat Conduit" (ADR 0016). Every message you send
+    here runs the REAL pipeline end to end: a real P-256 ECDH handshake generated in-browser by
+    the dx_security wasm module, a real AES-256-GCM decrypt, and a real closed Shadow DOM mount
+    via SecureEphemeralChat. Only the "AI" is fake — HandleEstablishAsync below sends a small,
+    keyword-matched canned reply (AiChatStore.GenerateReply, same spirit as Pages/Chat.razor) to
+    the demo-only broker at /demo/ai-chat/handshake for it to encrypt. No external API key is
+    used anywhere, and no real LLM is ever called.
+*@
+
+<PageTitle>Ephemeral AI Chat — @(selectedThread?.Title ?? "AI Chat")</PageTitle>
+
+<div class="ac-app">
+    <aside class="ac-threads" aria-label="AI chats">
+        <h2>Ephemeral chats</h2>
+        @foreach (AiChatThread t in Store.Threads)
+        {
+            <button type="button"
+                    class="ac-thread @(t.Id == selectedThreadId ? "ac-thread-on" : "")"
+                    @onclick="() => SelectThread(t.Id)">
+                <span class="ac-thread-title">@t.Title</span>
+                <span class="ac-thread-preview">@(t.Messages.Count > 0 ? $"{t.Messages.Count} message(s)" : t.Preview)</span>
+                <span class="ac-thread-meta">
+                    <span class="ac-thread-status">@t.Status</span>
+                    <span class="ac-thread-time">@t.LastActivity.ToString("MMM d, HH:mm")</span>
+                </span>
+            </button>
+        }
+    </aside>
+
+    <section class="ac-main" aria-label="Conversation">
+        @if (selectedThread is null)
+        {
+            <div class="ac-empty">
+                <p>Select a chat to view it.</p>
+            </div>
+        }
+        else
+        {
+            <div class="ac-transcript">
+                @if (selectedThread.Messages.Count == 0)
+                {
+                    <p class="ac-empty-transcript">No messages yet — send a prompt below to see a real ephemeral handshake mount live.</p>
+                }
+                @foreach (AiChatMessage m in selectedThread.Messages)
+                {
+                    @if (m.Role == AiChatRole.User)
+                    {
+                        <div class="ac-msg ac-msg-user">
+                            <span class="ac-msg-role">You</span>
+                            <p>@m.Text</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="ac-msg ac-msg-assistant">
+                            <span class="ac-msg-role">Assistant · encrypted</span>
+                            <SecureEphemeralChat UseLiveHandshake="true"
+                                                  SessionId="@m.SessionId"
+                                                  EstablishSession="@(pk => HandleEstablishAsync(m, pk))"
+                                                  OnWithdrawn="@(() => HandleWithdrawn(m))"
+                                                  OnTamperDetected="@(() => HandleWithdrawn(m))" />
+                            @if (!m.Withdrawn)
+                            {
+                                <div class="ac-msg-actions">
+                                    <button type="button" class="ac-btn ac-btn-revoke" @onclick="() => Revoke(m)">Revoke</button>
+                                    <button type="button" class="ac-btn ac-btn-sendto" @onclick="() => OpenSendTo(m)">Send to…</button>
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+
+            <div class="ac-compose">
+                @if (Store.Prompts.Count > 0)
+                {
+                    <div class="ac-prompt-picker">
+                        <label for="ac-prompt-select">Use a saved prompt</label>
+                        <select id="ac-prompt-select" @onchange="OnPromptPicked">
+                            <option value="">— choose —</option>
+                            @foreach (PromptSnippet p in Store.Prompts)
+                            {
+                                <option value="@p.Id">@p.Name</option>
+                            }
+                        </select>
+                    </div>
+                }
+                <textarea class="ac-compose-text" rows="3"
+                          placeholder="Ask about custody, budget, chores, meals, or security…"
+                          @bind="composeText" @bind:event="oninput"></textarea>
+                <div class="ac-compose-actions">
+                    <button type="button" class="ac-btn ac-btn-primary"
+                            disabled="@(sending || string.IsNullOrWhiteSpace(composeText))"
+                            @onclick="Send">
+                        @(sending ? "Sending…" : "Send")
+                    </button>
+                </div>
+            </div>
+        }
+    </section>
+
+    <aside class="ac-library" aria-label="Prompt library">
+        <h2>Prompt library</h2>
+        <p class="ac-library-hint">Reusable prompts — create, edit, or delete, then pick one above instead of typing free text.</p>
+
+        @foreach (PromptSnippet p in Store.Prompts)
+        {
+            @if (editingPromptId == p.Id)
+            {
+                <div class="ac-prompt-edit">
+                    <input class="ac-prompt-input" @bind="editName" placeholder="Name" />
+                    <textarea class="ac-prompt-input" rows="2" @bind="editText" placeholder="Prompt text"></textarea>
+                    <div class="ac-prompt-edit-actions">
+                        <button type="button" class="ac-btn" @onclick="CancelEdit">Cancel</button>
+                        <button type="button" class="ac-btn ac-btn-primary" @onclick="() => SaveEdit(p.Id)">Save</button>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="ac-prompt-item">
+                    <div class="ac-prompt-item-main">
+                        <strong>@p.Name</strong>
+                        <p>@p.Text</p>
+                    </div>
+                    <div class="ac-prompt-item-actions">
+                        <button type="button" class="ac-icon-btn" title="Edit" @onclick="() => StartEdit(p)">✎</button>
+                        <button type="button" class="ac-icon-btn" title="Delete" @onclick="() => Store.DeletePrompt(p.Id)">🗑</button>
+                    </div>
+                </div>
+            }
+        }
+
+        <div class="ac-prompt-new">
+            <input class="ac-prompt-input" @bind="newName" placeholder="New prompt name" />
+            <textarea class="ac-prompt-input" rows="2" @bind="newText" placeholder="New prompt text"></textarea>
+            <button type="button" class="ac-btn"
+                    disabled="@(string.IsNullOrWhiteSpace(newName) || string.IsNullOrWhiteSpace(newText))"
+                    @onclick="AddPrompt">
+                + Add prompt
+            </button>
+        </div>
+    </aside>
+</div>
+
+<DxSheet @bind-Open="sendToOpen" Side="right" AriaLabel="Send message externally">
+    <div class="ac-sendto">
+        <h2>Send externally</h2>
+        <p class="ac-sendto-hint">
+            <strong>Illustrative only</strong> — these buttons simulate a JSON-RPC exchange with
+            an external integration in this log; they do not call real Slack, Notion, or CRM
+            APIs. Sending externally does, however, genuinely revoke the local ephemeral copy —
+            through the same real Conduit WITHDRAW push the Revoke button uses.
+        </p>
+        <div class="ac-sendto-targets">
+            <button type="button" class="ac-btn" disabled="@sendingTo" @onclick='() => SimulateSendAsync("slack")'>💬 Slack</button>
+            <button type="button" class="ac-btn" disabled="@sendingTo" @onclick='() => SimulateSendAsync("notion")'>📓 Notion</button>
+            <button type="button" class="ac-btn" disabled="@sendingTo" @onclick='() => SimulateSendAsync("crm")'>🗂 CRM</button>
+        </div>
+        <pre class="ac-sendto-log" aria-live="polite">@string.Join("\n", sendToLog)</pre>
+    </div>
+</DxSheet>
+
+@code {
+    private int? selectedThreadId;
+    private AiChatThread? selectedThread => selectedThreadId is int id ? Store.Get(id) : null;
+
+    private string composeText = string.Empty;
+    private bool sending;
+
+    private int? editingPromptId;
+    private string editName = string.Empty;
+    private string editText = string.Empty;
+    private string newName = string.Empty;
+    private string newText = string.Empty;
+
+    private AiChatMessage? sendToTarget;
+    private bool sendToOpen;
+    private bool sendingTo;
+    private readonly List<string> sendToLog = new();
+
+    protected override void OnInitialized()
+    {
+        selectedThreadId = Store.Threads.FirstOrDefault()?.Id;
+    }
+
+    private void SelectThread(int id) => selectedThreadId = id;
+
+    private async Task Send()
+    {
+        if (selectedThread is null || string.IsNullOrWhiteSpace(composeText))
+        {
+            return;
+        }
+
+        AiChatThread thread = selectedThread;
+        string prompt = composeText.Trim();
+        composeText = string.Empty;
+        sending = true;
+        StateHasChanged();
+
+        Store.AddUserMessage(thread, prompt);
+        string reply = AiChatStore.GenerateReply(prompt);
+
+        await Task.Delay(300); // simulate a brief round trip, same spirit as Pages/Chat.razor
+        Store.AddAssistantMessage(thread, reply);
+
+        sending = false;
+    }
+
+    private void OnPromptPicked(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int id))
+        {
+            PromptSnippet? p = Store.Prompts.FirstOrDefault(x => x.Id == id);
+            if (p is not null)
+            {
+                composeText = p.Text;
+            }
+        }
+    }
+
+    /// <summary>
+    /// SecureEphemeralChat's live-handshake delegate: receives the client's freshly
+    /// wasm-generated public key and returns the demo broker's encrypted response. This is the
+    /// only place this page ever talks to the broker — an ordinary HTTP call, no different in
+    /// kind from what a real deployment would point at its actual external MCP provider.
+    /// </summary>
+    private async Task<EphemeralHandshakeResult> HandleEstablishAsync(AiChatMessage message, string clientPublicKeyBase64)
+    {
+        var request = new { sessionId = message.SessionId, clientPublicKeyBase64, replyText = message.PendingReplyText };
+        HttpResponseMessage response = await Http.PostAsJsonAsync("/demo/ai-chat/handshake", request);
+        response.EnsureSuccessStatusCode();
+
+        EphemeralHandshakeResult? result = await response.Content.ReadFromJsonAsync<EphemeralHandshakeResult>(
+            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        return result ?? throw new InvalidOperationException("The demo broker returned an empty handshake response.");
+    }
+
+    private void HandleWithdrawn(AiChatMessage m) => Store.MarkWithdrawn(m);
+
+    private async Task Revoke(AiChatMessage m)
+    {
+        if (string.IsNullOrEmpty(m.SessionId))
+        {
+            return;
+        }
+
+        // Give the component's EventSource a moment to finish connecting before the WITHDRAW
+        // push fires — BlazorDX.Conduit is an ephemeral relay, not a durable queue, so a push
+        // with no live listener yet is a silent no-op (see EphemeralSessionRegistry).
+        await Task.Delay(400);
+        await Http.PostAsync($"/demo/ai-chat/withdraw/{Uri.EscapeDataString(m.SessionId)}", null);
+    }
+
+    private void OpenSendTo(AiChatMessage m)
+    {
+        sendToTarget = m;
+        sendToLog.Clear();
+        sendToOpen = true;
+    }
+
+    private async Task SimulateSendAsync(string integration)
+    {
+        if (sendToTarget is null || sendingTo)
+        {
+            return;
+        }
+
+        AiChatMessage target = sendToTarget;
+        sendingTo = true;
+        string id = Guid.NewGuid().ToString("N")[..8];
+        sendToLog.Add($"→ {{\"jsonrpc\":\"2.0\",\"id\":\"{id}\",\"method\":\"{integration}.postMessage\",\"params\":{{\"channel\":\"#family-updates\"}}}}");
+        StateHasChanged();
+
+        await Task.Delay(350); // a simulated round trip only -- no real network call to any external service
+
+        sendToLog.Add($"← {{\"jsonrpc\":\"2.0\",\"id\":\"{id}\",\"result\":{{\"ok\":true}}}}");
+        StateHasChanged();
+
+        await Revoke(target);
+        sendToLog.Add("— local ephemeral copy revoked —");
+        sendingTo = false;
+    }
+
+    private void StartEdit(PromptSnippet p)
+    {
+        editingPromptId = p.Id;
+        editName = p.Name;
+        editText = p.Text;
+    }
+
+    private void CancelEdit() => editingPromptId = null;
+
+    private void SaveEdit(int id)
+    {
+        Store.UpdatePrompt(id, editName, editText);
+        editingPromptId = null;
+    }
+
+    private void AddPrompt()
+    {
+        Store.AddPrompt(newName.Trim(), newText.Trim());
+        newName = string.Empty;
+        newText = string.Empty;
+    }
+}

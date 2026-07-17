@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The "Conduit Router": BlazorDX acting as an MCP CLIENT of an external third-party MCP
+    resource-provider server — the reverse role of samples/BlazorDX.McpServer (which is
+    BlazorDX serving ITS OWN tools TO external assistants). This project is a blind,
+    zero-knowledge router: it shuttles opaque, already-encrypted tokens between that external
+    provider and the Blazor client over Server-Sent Events. It never reads plaintext and never
+    holds a decryption key — see EphemeralEventsEndpoint/McpProxyEndpoint for the routing
+    boundary.
+
+    Server-only: BackgroundService, HttpContext, IEndpointRouteBuilder, SSE streaming. Unlike
+    BlazorDX.Security/Reporting/Integrations.PowerBI (Razor SDK, shared with the browser-wasm
+    client) this project is never referenced by the WASM client, so — unlike those — a
+    FrameworkReference to Microsoft.AspNetCore.App is safe here.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The tests exercise the SSE write/flush ordering and the minimal-API handlers directly
+         (not just through routing), and the source-generated JSON DTOs, so those are internal. -->
+    <InternalsVisibleTo Include="BlazorDX.Conduit.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- HttpContext, IEndpointRouteBuilder/WebApplication, IResult, StatusCodes — and
+         BackgroundService (Microsoft.Extensions.Hosting.Abstractions, part of the shared
+         framework) — the server-only ASP.NET Core + generic-host types this project needs to
+         define its minimal-API endpoints and its background listener. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>

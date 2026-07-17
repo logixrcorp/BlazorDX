@@ -8,6 +8,9 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
 // Registers IGridCompute; in the browser this resolves to the Rust/wasm backend.
+// (AddBlazorDXCompute also registers every BlazorDX.Interop bridge -- grid DOM/wasm,
+// overlay, richtext, hotkeys, image editor, file DnD/hash, scheduler, document viewer,
+// and the ephemeral chat crypto/DOM bridge -- with their real, browser-only implementations.)
 builder.Services.AddBlazorDXCompute();
 
 // DxPowerBiReport's browser bridge (the [JSImport] wrapper over dx-powerbi.js).
@@ -31,6 +34,9 @@ builder.Services.AddScoped<BlazorDX.Demo.Client.TicketDesk.TicketStore>();
 builder.Services.AddScoped<BlazorDX.Demo.Client.Ecm.EcmStore>();
 builder.Services.AddScoped<BlazorDX.Demo.Client.Mail.MailStore>();
 builder.Services.AddScoped<BlazorDX.Demo.Client.Hr.HrStore>();
+
+// Ephemeral AI Chat example app data (prompt library + thread list) — Scoped, same isolation rule.
+builder.Services.AddScoped<BlazorDX.Demo.Client.AiChat.AiChatStore>();
 
 // Demo observability sink: BlazorDX components report failures here (the /errors page shows them).
 builder.Services.AddScoped<BlazorDX.Demo.Client.DemoDiagnosticsLog>();

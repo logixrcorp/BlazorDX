@@ -21,6 +21,7 @@
     <ProjectReference Include="..\..\..\src\BlazorDX.Integrations.Reporting\BlazorDX.Integrations.Reporting.csproj" />
     <ProjectReference Include="..\..\..\src\BlazorDX.Integrations.PowerBI\BlazorDX.Integrations.PowerBI.csproj" />
     <ProjectReference Include="..\..\BlazorDX.MockReportServer\BlazorDX.MockReportServer.csproj" />
+    <ProjectReference Include="..\..\..\src\BlazorDX.Conduit\BlazorDX.Conduit.csproj" />
   </ItemGroup>
 
 </Project>

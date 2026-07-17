@@ -1,0 +1,25 @@
+{
+  "name": "blazordx-mock-secure-broker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Reference mock of the external MCP secure-broker resource-provider for BlazorDX's Zero-Trust Ephemeral Chat conduit: ECDH session init, AES-256-GCM payload wrapping, and cryptographically-proven telemetry webhooks.",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.7",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
+  }
+}

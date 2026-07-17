@@ -17,6 +17,12 @@
     <RustCrateDir>$(MSBuildThisFileDirectory)..\BlazorDX.Compute.Rust</RustCrateDir>
     <RustCrateName>dx_grid</RustCrateName>
     <RustWasmDest>$(MSBuildThisFileDirectory)wwwroot\dx\dx_grid.wasm</RustWasmDest>
+    <!-- Second, independent crate: the zero-trust ephemeral chat crypto core.
+         Sibling to BlazorDX.Compute.Rust, never folded into it (see that
+         crate's README: grid/chart kernels only). -->
+    <RustSecurityCrateDir>$(MSBuildThisFileDirectory)..\BlazorDX.Security.Rust</RustSecurityCrateDir>
+    <RustSecurityCrateName>dx_security</RustSecurityCrateName>
+    <RustSecurityWasmDest>$(MSBuildThisFileDirectory)wwwroot\dx\dx_security.wasm</RustSecurityWasmDest>
     <TsSourceDir>$(MSBuildThisFileDirectory)..\BlazorDX.Interop.Ts</TsSourceDir>
     <TsOutputDir>$(MSBuildThisFileDirectory)wwwroot\dx</TsOutputDir>
   </PropertyGroup>

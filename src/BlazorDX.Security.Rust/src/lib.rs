@@ -1,0 +1,432 @@
+//! C-ABI surface for the `dx_security` wasm module -- the Wasm decryption core
+//! of the "Zero-Trust, Ephemeral AI Chat Conduit."
+//!
+//! The TypeScript bridge (`ephemeral-chat.ts`) drives this module directly: it
+//! writes session ids, seeds, public keys, nonces, and ciphertext into wasm
+//! linear memory with [`alloc`], calls the exported functions below, and reads
+//! results back out. No plaintext, key, or seed ever crosses back into C#/the
+//! Blazor virtual DOM -- decryption happens here and the plaintext is injected
+//! straight into an isolated Shadow DOM node by the TS bridge.
+//!
+//! Session state lives in a `thread_local!` [`session::SessionStore`]. Wasm32
+//! running under the browser's single JS thread never has real concurrency, so
+//! this is equivalent to a global but avoids `unsafe impl Sync` on interior
+//! mutability we don't need to share across threads.
+//!
+//! # The `decrypt_payload` / `clear_payload` pair
+//!
+//! `zeroize::Zeroize::zeroize()` takes `&mut self`, so the decrypted plaintext
+//! buffer must still be owned by Rust when it is zeroized -- a `Drop` impl that
+//! fires only when the *host* releases its reference is not something Rust can
+//! observe across the FFI boundary. So [`decrypt_payload`] returns a pointer and
+//! length *without* releasing ownership (the backing `Vec<u8>` is leaked with
+//! `mem::forget`, exactly like [`alloc`]), and [`clear_payload`] is a second,
+//! mandatory export: it reconstructs the `Vec<u8>`, zeroizes it in place, and
+//! only then lets it drop (deallocating). The TS bridge calls `clear_payload` in
+//! a `finally` block so the buffer is scrubbed even if mounting throws.
+
+mod session;
+
+use core::cell::RefCell;
+use core::mem;
+use session::{SessionError, SessionStore};
+use zeroize::Zeroize;
+
+thread_local! {
+    static STORE: RefCell<SessionStore> = RefCell::new(SessionStore::new());
+}
+
+/// Return codes shared by every fallible export. `OK` is always `0`; every
+/// error is a distinct negative value so the TS bridge can log which stage
+/// failed without ever seeing key material.
+pub mod status {
+    pub const OK: i32 = 0;
+    pub const ERR_INVALID_UTF8: i32 = -1;
+    pub const ERR_NULL_POINTER: i32 = -2;
+    pub const ERR_INVALID_SEED: i32 = -3;
+    pub const ERR_INVALID_PUBLIC_KEY: i32 = -4;
+    pub const ERR_NOT_PENDING: i32 = -5;
+}
+
+fn map_begin_error(e: SessionError) -> i32 {
+    match e {
+        SessionError::InvalidSeed => status::ERR_INVALID_SEED,
+        _ => status::ERR_INVALID_SEED,
+    }
+}
+
+fn map_complete_error(e: SessionError) -> i32 {
+    match e {
+        SessionError::InvalidSeed => status::ERR_INVALID_SEED,
+        SessionError::InvalidPublicKey => status::ERR_INVALID_PUBLIC_KEY,
+        SessionError::NotPending => status::ERR_NOT_PENDING,
+        SessionError::UnknownSession | SessionError::InvalidNonceLength | SessionError::DecryptFailed => {
+            status::ERR_NOT_PENDING
+        }
+    }
+}
+
+/// Reads `len` bytes at `ptr` as a UTF-8 `String`. Returns `None` on a null
+/// pointer or invalid UTF-8; never panics on attacker-controlled input.
+///
+/// # Safety
+/// `ptr` must be valid for `len` bytes (or `len` must be `0`).
+unsafe fn read_string(ptr: *const u8, len: usize) -> Option<String> {
+    if ptr.is_null() && len != 0 {
+        return None;
+    }
+    if len == 0 {
+        return Some(String::new());
+    }
+    let bytes = core::slice::from_raw_parts(ptr, len);
+    core::str::from_utf8(bytes).ok().map(str::to_owned)
+}
+
+/// Allocates `len` bytes inside the module's linear memory and returns a
+/// pointer the host can write into. The host must later return it via
+/// [`dealloc`] (for plaintext specifically, via [`clear_payload`] instead, so
+/// it is scrubbed first).
+#[no_mangle]
+pub extern "C" fn alloc(len: usize) -> *mut u8 {
+    let mut buffer = Vec::<u8>::with_capacity(len);
+    let pointer = buffer.as_mut_ptr();
+    mem::forget(buffer);
+    pointer
+}
+
+/// Frees a buffer previously returned by [`alloc`] (but NOT one returned by
+/// [`decrypt_payload`] -- use [`clear_payload`] for that one, so it is
+/// zeroized first).
+///
+/// # Safety
+/// `pointer`/`len` must come from a prior [`alloc`] call and be freed once.
+#[no_mangle]
+pub unsafe extern "C" fn dealloc(pointer: *mut u8, len: usize) {
+    if pointer.is_null() {
+        return;
+    }
+    drop(Vec::from_raw_parts(pointer, 0, len));
+}
+
+/// Starts a session: derives a client-side ephemeral P-256 keypair from the
+/// 32 bytes of host-supplied entropy at `seed_ptr` and writes the resulting
+/// public key (uncompressed SEC1, [`session::PUBLIC_KEY_LEN`] bytes) into the
+/// caller-allocated buffer at `out_pub_ptr`. Returns [`status::OK`] or a
+/// negative `status::ERR_*` code.
+///
+/// # Safety
+/// `session_id_ptr`/`session_id_len` must describe a valid UTF-8 byte range.
+/// `seed_ptr` must be valid for exactly 32 bytes. `out_pub_ptr` must be valid
+/// for exactly [`session::PUBLIC_KEY_LEN`] bytes (allocate it with [`alloc`]).
+#[no_mangle]
+pub unsafe extern "C" fn begin_session(
+    session_id_ptr: *const u8,
+    session_id_len: usize,
+    seed_ptr: *const u8,
+    out_pub_ptr: *mut u8,
+) -> i32 {
+    let Some(session_id) = read_string(session_id_ptr, session_id_len) else {
+        return status::ERR_INVALID_UTF8;
+    };
+    if seed_ptr.is_null() || out_pub_ptr.is_null() {
+        return status::ERR_NULL_POINTER;
+    }
+
+    let seed_slice = core::slice::from_raw_parts(seed_ptr, 32);
+    let mut seed = [0u8; 32];
+    seed.copy_from_slice(seed_slice);
+
+    let result = STORE.with(|store| store.borrow_mut().begin_session(&session_id, &seed));
+    seed.zeroize();
+
+    match result {
+        Ok(public_key) => {
+            core::slice::from_raw_parts_mut(out_pub_ptr, session::PUBLIC_KEY_LEN).copy_from_slice(&public_key);
+            status::OK
+        }
+        Err(e) => map_begin_error(e),
+    }
+}
+
+/// Completes a pending session: runs ECDH against the server's public key at
+/// `server_pub_ptr` and stores the derived AES-256-GCM key for `session_id`.
+/// Returns [`status::OK`] or a negative `status::ERR_*` code.
+///
+/// # Safety
+/// `session_id_ptr`/`session_id_len` must describe a valid UTF-8 byte range.
+/// `server_pub_ptr`/`server_pub_len` must describe a valid byte range.
+#[no_mangle]
+pub unsafe extern "C" fn complete_session(
+    session_id_ptr: *const u8,
+    session_id_len: usize,
+    server_pub_ptr: *const u8,
+    server_pub_len: usize,
+) -> i32 {
+    let Some(session_id) = read_string(session_id_ptr, session_id_len) else {
+        return status::ERR_INVALID_UTF8;
+    };
+    if server_pub_ptr.is_null() && server_pub_len != 0 {
+        return status::ERR_NULL_POINTER;
+    }
+
+    let server_public_key = core::slice::from_raw_parts(server_pub_ptr, server_pub_len);
+
+    let result = STORE.with(|store| store.borrow_mut().complete_session(&session_id, server_public_key));
+    match result {
+        Ok(()) => status::OK,
+        Err(e) => map_complete_error(e),
+    }
+}
+
+/// Decrypts an AES-256-GCM payload for `session_id` and returns a pointer to
+/// the plaintext, writing its length to `out_len_ptr`. **Ownership of the
+/// returned buffer is retained by Rust** -- the caller must pass the pointer
+/// and length to [`clear_payload`] (never [`dealloc`]) once it has copied the
+/// bytes out. Returns a null pointer and writes `0` to `out_len_ptr` on any
+/// failure (unknown session, bad nonce length, or authentication failure --
+/// deliberately not distinguished in the return value).
+///
+/// # Safety
+/// `session_id_ptr`/`session_id_len` must describe a valid UTF-8 byte range.
+/// `nonce_ptr` must be valid for exactly [`session::NONCE_LEN`] bytes.
+/// `ciphertext_ptr`/`ciphertext_len` must describe a valid byte range.
+/// `out_len_ptr` must be valid for one `usize`.
+#[no_mangle]
+pub unsafe extern "C" fn decrypt_payload(
+    session_id_ptr: *const u8,
+    session_id_len: usize,
+    nonce_ptr: *const u8,
+    ciphertext_ptr: *const u8,
+    ciphertext_len: usize,
+    out_len_ptr: *mut usize,
+) -> *mut u8 {
+    let fail = |out_len_ptr: *mut usize| -> *mut u8 {
+        if !out_len_ptr.is_null() {
+            *out_len_ptr = 0;
+        }
+        core::ptr::null_mut()
+    };
+
+    let Some(session_id) = read_string(session_id_ptr, session_id_len) else {
+        return fail(out_len_ptr);
+    };
+    if nonce_ptr.is_null() || out_len_ptr.is_null() {
+        return fail(out_len_ptr);
+    }
+    if ciphertext_ptr.is_null() && ciphertext_len != 0 {
+        return fail(out_len_ptr);
+    }
+
+    let nonce = core::slice::from_raw_parts(nonce_ptr, session::NONCE_LEN);
+    let ciphertext = core::slice::from_raw_parts(ciphertext_ptr, ciphertext_len);
+
+    let result = STORE.with(|store| store.borrow().decrypt(&session_id, nonce, ciphertext));
+    match result {
+        Ok(mut plaintext) => {
+            let ptr = plaintext.as_mut_ptr();
+            let len = plaintext.len();
+            mem::forget(plaintext);
+            *out_len_ptr = len;
+            ptr
+        }
+        Err(_) => fail(out_len_ptr),
+    }
+}
+
+/// Zeroizes a plaintext buffer previously returned by [`decrypt_payload`] in
+/// place, then deallocates it. Must be called exactly once per successful
+/// [`decrypt_payload`] call, and only after the caller has finished reading
+/// the bytes out (e.g. via `TextDecoder`) -- the TS bridge calls this in a
+/// `finally` block so it always runs, even if mounting throws.
+///
+/// # Safety
+/// `ptr`/`len` must be exactly the pointer/length pair most recently returned
+/// by [`decrypt_payload`] for this buffer, and must not have been passed to
+/// [`clear_payload`] or [`dealloc`] already.
+#[no_mangle]
+pub unsafe extern "C" fn clear_payload(ptr: *mut u8, len: usize) {
+    if ptr.is_null() || len == 0 {
+        return;
+    }
+    let mut buffer = Vec::from_raw_parts(ptr, len, len);
+    buffer.zeroize();
+    drop(buffer);
+}
+
+/// Removes and zeroizes a session's key material, e.g. on an SSE `WITHDRAW`
+/// event. A no-op if the session id is unknown or invalid UTF-8.
+///
+/// # Safety
+/// `session_id_ptr`/`session_id_len` must describe a valid UTF-8 byte range.
+#[no_mangle]
+pub unsafe extern "C" fn end_session(session_id_ptr: *const u8, session_id_len: usize) {
+    let Some(session_id) = read_string(session_id_ptr, session_id_len) else {
+        return;
+    };
+    STORE.with(|store| store.borrow_mut().end_session(&session_id));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use p256::elliptic_curve::sec1::ToEncodedPoint;
+
+    const CLIENT_SEED: [u8; 32] = [
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
+        26, 27, 28, 29, 30, 31, 32,
+    ];
+    const SERVER_SEED: [u8; 32] = [
+        33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55,
+        56, 57, 58, 59, 60, 61, 62, 63, 64,
+    ];
+
+    /// Drives the exported `extern "C"` functions exactly the way the TS bridge
+    /// does: raw pointers into buffers this test owns, standing in for wasm
+    /// linear memory (on the host target there is no separate "wasm memory" --
+    /// the ABI shape is identical, which is exactly what we want to exercise).
+    #[test]
+    fn full_ffi_handshake_decrypt_and_clear_round_trips() {
+        // A distinct STORE per #[test] fn would need real thread-local isolation
+        // per test thread; Rust's test harness runs each #[test] on its own OS
+        // thread by default, and thread_local! gives each thread its own STORE,
+        // so session ids below never collide across tests.
+        let session_id = b"ffi-session-1";
+
+        // 1. begin_session
+        let mut out_pub = [0u8; session::PUBLIC_KEY_LEN];
+        let begin_rc = unsafe {
+            begin_session(session_id.as_ptr(), session_id.len(), CLIENT_SEED.as_ptr(), out_pub.as_mut_ptr())
+        };
+        assert_eq!(begin_rc, status::OK);
+        assert_eq!(out_pub[0], 0x04);
+
+        // 2. complete_session, against a server keypair built the same way the
+        // Rust-side unit tests build one (see session::tests), independent of
+        // the client's out_pub above.
+        let server_secret = p256::SecretKey::from_slice(&SERVER_SEED).expect("valid server seed");
+        let server_public: [u8; session::PUBLIC_KEY_LEN] =
+            server_secret.public_key().to_encoded_point(false).as_bytes().try_into().unwrap();
+
+        let complete_rc = unsafe {
+            complete_session(session_id.as_ptr(), session_id.len(), server_public.as_ptr(), server_public.len())
+        };
+        assert_eq!(complete_rc, status::OK);
+
+        // 3. Encrypt as the server would, deriving the same shared key.
+        let client_public = p256::PublicKey::from_sec1_bytes(&out_pub).expect("valid client public key");
+        let shared = p256::ecdh::diffie_hellman(server_secret.to_nonzero_scalar(), client_public.as_affine());
+        let key_bytes: [u8; session::KEY_LEN] = (*shared.raw_secret_bytes()).into();
+        let nonce_bytes = [9u8; session::NONCE_LEN];
+        let plaintext = b"withdrawn households still keep their message history";
+        let ciphertext = {
+            use aes_gcm::aead::{Aead, KeyInit};
+            let cipher = aes_gcm::Aes256Gcm::new(&aes_gcm::Key::<aes_gcm::Aes256Gcm>::from(key_bytes));
+            cipher.encrypt(&aes_gcm::Nonce::from(nonce_bytes), plaintext.as_slice()).expect("encrypt")
+        };
+
+        // 4. decrypt_payload
+        let mut out_len: usize = 0;
+        let ptr = unsafe {
+            decrypt_payload(
+                session_id.as_ptr(),
+                session_id.len(),
+                nonce_bytes.as_ptr(),
+                ciphertext.as_ptr(),
+                ciphertext.len(),
+                &mut out_len as *mut usize,
+            )
+        };
+        assert!(!ptr.is_null());
+        assert_eq!(out_len, plaintext.len());
+
+        let decrypted = unsafe { core::slice::from_raw_parts(ptr, out_len) };
+        assert_eq!(decrypted, plaintext);
+
+        // 5. clear_payload must not panic and (per its contract) leaves the
+        // buffer scrubbed and deallocated. We cannot safely re-read `ptr` after
+        // this call (that memory is freed) -- which is exactly the point.
+        unsafe { clear_payload(ptr, out_len) };
+
+        // 6. end_session removes the key; a second decrypt attempt now fails.
+        unsafe { end_session(session_id.as_ptr(), session_id.len()) };
+        let mut out_len2: usize = 0;
+        let ptr2 = unsafe {
+            decrypt_payload(
+                session_id.as_ptr(),
+                session_id.len(),
+                nonce_bytes.as_ptr(),
+                ciphertext.as_ptr(),
+                ciphertext.len(),
+                &mut out_len2 as *mut usize,
+            )
+        };
+        assert!(ptr2.is_null());
+        assert_eq!(out_len2, 0);
+    }
+
+    #[test]
+    fn begin_session_rejects_invalid_utf8_session_id() {
+        let invalid_utf8: [u8; 2] = [0xFF, 0xFE];
+        let mut out_pub = [0u8; session::PUBLIC_KEY_LEN];
+        let rc = unsafe {
+            begin_session(invalid_utf8.as_ptr(), invalid_utf8.len(), CLIENT_SEED.as_ptr(), out_pub.as_mut_ptr())
+        };
+        assert_eq!(rc, status::ERR_INVALID_UTF8);
+    }
+
+    #[test]
+    fn begin_session_rejects_an_all_zero_seed() {
+        let session_id = b"zero-seed-session";
+        let zero_seed = [0u8; 32];
+        let mut out_pub = [0u8; session::PUBLIC_KEY_LEN];
+        let rc = unsafe {
+            begin_session(session_id.as_ptr(), session_id.len(), zero_seed.as_ptr(), out_pub.as_mut_ptr())
+        };
+        assert_eq!(rc, status::ERR_INVALID_SEED);
+    }
+
+    #[test]
+    fn complete_session_without_begin_is_rejected() {
+        let session_id = b"never-began";
+        let server_public = [0x04u8; session::PUBLIC_KEY_LEN];
+        let rc = unsafe {
+            complete_session(session_id.as_ptr(), session_id.len(), server_public.as_ptr(), server_public.len())
+        };
+        assert_eq!(rc, status::ERR_NOT_PENDING);
+    }
+
+    #[test]
+    fn decrypt_payload_on_unknown_session_returns_null() {
+        let session_id = b"unknown-for-decrypt";
+        let nonce = [0u8; session::NONCE_LEN];
+        let ciphertext = b"irrelevant";
+        let mut out_len: usize = 0xDEADBEEF; // sentinel: must be reset to 0 on failure
+        let ptr = unsafe {
+            decrypt_payload(
+                session_id.as_ptr(),
+                session_id.len(),
+                nonce.as_ptr(),
+                ciphertext.as_ptr(),
+                ciphertext.len(),
+                &mut out_len as *mut usize,
+            )
+        };
+        assert!(ptr.is_null());
+        assert_eq!(out_len, 0);
+    }
+
+    #[test]
+    fn clear_payload_on_null_or_zero_length_is_a_harmless_no_op() {
+        unsafe {
+            clear_payload(core::ptr::null_mut(), 0);
+            clear_payload(core::ptr::null_mut(), 16);
+        }
+    }
+
+    #[test]
+    fn alloc_dealloc_round_trip_does_not_panic() {
+        let ptr = alloc(128);
+        assert!(!ptr.is_null());
+        unsafe { dealloc(ptr, 128) };
+    }
+}

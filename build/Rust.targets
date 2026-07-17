@@ -87,4 +87,60 @@
              Text="BlazorDX: Rust module ready at $(RustWasmDest)" />
   </Target>
 
+  <!--
+    Second Rust crate wired the same way as DxBuildRustWasm above, for the
+    zero-trust ephemeral chat crypto core (BlazorDX.Security.Rust / dx_security).
+    It is a distinct crate, not added to BlazorDX.Compute.Rust (which stays
+    grid/chart kernels only), so it gets its own property group and target
+    rather than being folded into the properties above.
+
+    Expected properties (set by the importing project):
+      RustSecurityCrateDir  - directory containing Cargo.toml
+      RustSecurityCrateName - crate/output name (produces <name>.wasm)
+      RustSecurityWasmDest  - destination path for the copied .wasm
+  -->
+  <PropertyGroup>
+    <RustSecurityManifest>$(RustSecurityCrateDir)\Cargo.toml</RustSecurityManifest>
+    <RustSecurityWasmBuilt>$(RustSecurityCrateDir)\target\$(RustTarget)\$(RustCargoProfile)\$(RustSecurityCrateName).wasm</RustSecurityWasmBuilt>
+  </PropertyGroup>
+
+  <Target Name="DxBuildSecurityRustWasm" BeforeTargets="BeforeBuild"
+          Condition="'$(SkipRustBuild)' != 'true' And '$(RustSecurityCrateDir)' != ''">
+
+    <Message Importance="high" Text="BlazorDX: compiling Rust crate '$(RustSecurityCrateName)' to $(RustTarget) (profile '$(RustCargoProfile)')..." />
+
+    <Exec Condition="'$(RustSpeed)' == 'true' And '$(OS)' == 'Windows_NT'"
+          Command="set RUSTFLAGS=$(RustExtraRustFlags)&amp;&amp; cargo build $(RustProfileArg) --target $(RustTarget) --manifest-path &quot;$(RustSecurityManifest)&quot;"
+          WorkingDirectory="$(RustSecurityCrateDir)"
+          ContinueOnError="true">
+      <Output TaskParameter="ExitCode" PropertyName="_DxSecurityCargoExit" />
+    </Exec>
+
+    <Exec Condition="'$(RustSpeed)' == 'true' And '$(OS)' != 'Windows_NT'"
+          Command="RUSTFLAGS=&quot;$(RustExtraRustFlags)&quot; cargo build $(RustProfileArg) --target $(RustTarget) --manifest-path &quot;$(RustSecurityManifest)&quot;"
+          WorkingDirectory="$(RustSecurityCrateDir)"
+          ContinueOnError="true">
+      <Output TaskParameter="ExitCode" PropertyName="_DxSecurityCargoExit" />
+    </Exec>
+
+    <Exec Condition="'$(RustSpeed)' != 'true'"
+          Command="cargo build $(RustProfileArg) --target $(RustTarget) --manifest-path &quot;$(RustSecurityManifest)&quot;"
+          WorkingDirectory="$(RustSecurityCrateDir)"
+          ContinueOnError="true">
+      <Output TaskParameter="ExitCode" PropertyName="_DxSecurityCargoExit" />
+    </Exec>
+
+    <Warning Condition="'$(_DxSecurityCargoExit)' != '0'"
+             Text="BlazorDX: Rust build unavailable for '$(RustSecurityCrateName)' (cargo exit $(_DxSecurityCargoExit)). The ephemeral chat component has no managed fallback -- it degrades to 'nothing to show' off-wasm. Install Rust and run 'rustup target add $(RustTarget)' to enable it." />
+
+    <Copy Condition="'$(_DxSecurityCargoExit)' == '0' And Exists('$(RustSecurityWasmBuilt)')"
+          SourceFiles="$(RustSecurityWasmBuilt)"
+          DestinationFiles="$(RustSecurityWasmDest)"
+          SkipUnchangedFiles="true" />
+
+    <Message Condition="'$(_DxSecurityCargoExit)' == '0' And Exists('$(RustSecurityWasmBuilt)')"
+             Importance="high"
+             Text="BlazorDX: Rust module ready at $(RustSecurityWasmDest)" />
+  </Target>
+
 </Project>

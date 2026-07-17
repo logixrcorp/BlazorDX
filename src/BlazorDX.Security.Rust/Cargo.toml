@@ -1,0 +1,44 @@
+[package]
+name = "dx_security"
+version = "0.1.0"
+edition = "2021"
+description = "BlazorDX zero-trust ephemeral chat crypto core: ECDH session-key agreement, AES-GCM decrypt, and buffer zeroizing, compiled to wasm32."
+license = "MIT"
+
+[lib]
+# cdylib produces a standalone dx_security.wasm with C-ABI exports, loaded as a
+# sidecar module beside the .NET WASM runtime -- same convention as dx_grid in
+# BlazorDX.Compute.Rust. No wasm-bindgen: the ABI is a handful of pointer/length
+# functions the TypeScript bridge (ephemeral-chat.ts) drives directly.
+crate-type = ["cdylib"]
+
+[dependencies]
+# AES-256-GCM authenticated decryption of the chat payload.
+aes-gcm = { version = "0.10", default-features = false, features = ["aes", "alloc"] }
+# P-256 ECDH for per-session key agreement. wasm32-unknown-unknown has no OS RNG,
+# so this crate never generates randomness itself (see session.rs) -- it only
+# ever derives a keypair from 32 bytes of entropy the host supplies (sourced
+# from the browser's crypto.getRandomValues via the TS bridge). That keeps this
+# crate free of getrandom/js-sys/wasm-bindgen, matching the no-wasm-bindgen ABI rule.
+p256 = { version = "0.13", default-features = false, features = ["ecdh", "arithmetic"] }
+# Explicit, guaranteed-not-optimized-away scrubbing of decrypted plaintext and
+# session key material.
+zeroize = { version = "1", default-features = false, features = ["alloc"] }
+
+[profile.release]
+# Mirrors BlazorDX.Compute.Rust/Cargo.toml: size-tuned by default so the shipped
+# wasm stays small; RustSpeed (opt-level 3 + simd128) is opted into the same way
+# via build/Rust.targets for consumers that need it.
+opt-level = "z"
+lto = true
+panic = "abort"
+codegen-units = 1
+
+[profile.release-speed]
+inherits = "release"
+opt-level = 3
+
+[dev-dependencies]
+# Host-native unit tests for the crypto/session/zeroing logic (no wasm-bindgen-test;
+# true in-browser tamper-detection and zeroing-timing behavior is covered instead by
+# tests/BlazorDX.E2E.Tests/EphemeralChatE2ETests.cs via Playwright).

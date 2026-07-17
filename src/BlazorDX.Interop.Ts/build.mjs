@@ -22,6 +22,7 @@ const entryPoints = [
   resolve(here, "src", "file-hash.ts"),
   resolve(here, "src", "scheduler.ts"),
   resolve(here, "src", "docviewer.ts"),
+  resolve(here, "src", "ephemeral-chat.ts"),
 ];
 
 await build({

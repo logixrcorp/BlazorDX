@@ -2488,6 +2488,41 @@
             mismatch can detect this). Pure SVG; styling via dx-chart.css.
             </summary>
         </member>
+        <member name="T:BlazorDX.Components.EphemeralHandshakeResult">
+            <summary>
+            A broker's response to an ephemeral chat session handshake: its ephemeral
+            P-256 public key and an AES-GCM payload encrypted for the shared secret
+            that key agrees to with the client's public key from
+            <see cref="M:BlazorDX.Interop.IEphemeralChatInterop.BeginHandshakeAsync(System.String)"/>.
+            Never carries key material -- only what <see cref="T:BlazorDX.Components.SecureEphemeralChat"/>
+            needs to hand to <c>CompleteAndMountAsync</c>.
+            </summary>
+            <param name="ServerPublicKeyBase64">The broker's ephemeral P-256 public key (uncompressed SEC1, base64).</param>
+            <param name="NonceBase64">The AES-GCM nonce (base64) for <paramref name="CiphertextBase64"/>.</param>
+            <param name="CiphertextBase64">The AES-GCM ciphertext, including its trailing authentication tag (base64).</param>
+        </member>
+        <member name="M:BlazorDX.Components.EphemeralHandshakeResult.#ctor(System.String,System.String,System.String)">
+            <summary>
+            A broker's response to an ephemeral chat session handshake: its ephemeral
+            P-256 public key and an AES-GCM payload encrypted for the shared secret
+            that key agrees to with the client's public key from
+            <see cref="M:BlazorDX.Interop.IEphemeralChatInterop.BeginHandshakeAsync(System.String)"/>.
+            Never carries key material -- only what <see cref="T:BlazorDX.Components.SecureEphemeralChat"/>
+            needs to hand to <c>CompleteAndMountAsync</c>.
+            </summary>
+            <param name="ServerPublicKeyBase64">The broker's ephemeral P-256 public key (uncompressed SEC1, base64).</param>
+            <param name="NonceBase64">The AES-GCM nonce (base64) for <paramref name="CiphertextBase64"/>.</param>
+            <param name="CiphertextBase64">The AES-GCM ciphertext, including its trailing authentication tag (base64).</param>
+        </member>
+        <member name="P:BlazorDX.Components.EphemeralHandshakeResult.ServerPublicKeyBase64">
+            <summary>The broker's ephemeral P-256 public key (uncompressed SEC1, base64).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.EphemeralHandshakeResult.NonceBase64">
+            <summary>The AES-GCM nonce (base64) for <paramref name="CiphertextBase64"/>.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.EphemeralHandshakeResult.CiphertextBase64">
+            <summary>The AES-GCM ciphertext, including its trailing authentication tag (base64).</summary>
+        </member>
         <member name="T:BlazorDX.Components.FormFieldRenderContext">
             <summary>What a field template receives: the field metadata, its current value, a
             callback to change it, and any validation errors against it.</summary>
@@ -2585,13 +2620,46 @@
             <summary>Opaque session identifier from the host. No auth logic happens here.</summary>
         </member>
         <member name="P:BlazorDX.Components.SecureEphemeralChat.ServerPublicKeyBase64">
-            <summary>The server's ephemeral P-256 public key (uncompressed SEC1, base64), for the ECDH handshake.</summary>
+            <summary>
+            The server's ephemeral P-256 public key (uncompressed SEC1, base64), for the ECDH
+            handshake. Required unless <see cref="P:BlazorDX.Components.SecureEphemeralChat.UseLiveHandshake"/> is <see langword="true"/>,
+            in which case it is ignored -- <see cref="P:BlazorDX.Components.SecureEphemeralChat.EstablishSession"/> supplies it instead.
+            </summary>
         </member>
         <member name="P:BlazorDX.Components.SecureEphemeralChat.NonceBase64">
-            <summary>The AES-GCM nonce (base64) for <see cref="P:BlazorDX.Components.SecureEphemeralChat.CiphertextBase64"/>.</summary>
+            <summary>
+            The AES-GCM nonce (base64) for <see cref="P:BlazorDX.Components.SecureEphemeralChat.CiphertextBase64"/>. Required unless
+            <see cref="P:BlazorDX.Components.SecureEphemeralChat.UseLiveHandshake"/> is <see langword="true"/>.
+            </summary>
         </member>
         <member name="P:BlazorDX.Components.SecureEphemeralChat.CiphertextBase64">
-            <summary>The AES-GCM ciphertext, including its trailing authentication tag (base64).</summary>
+            <summary>
+            The AES-GCM ciphertext, including its trailing authentication tag (base64). Required
+            unless <see cref="P:BlazorDX.Components.SecureEphemeralChat.UseLiveHandshake"/> is <see langword="true"/>.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.SecureEphemeralChat.UseLiveHandshake">
+            <summary>
+            When <see langword="true"/>, this component drives the full handshake itself instead
+            of expecting an already-encrypted payload: it calls
+            <see cref="M:BlazorDX.Interop.IEphemeralChatInterop.BeginHandshakeAsync(System.String)"/> to generate a fresh client
+            keypair in-browser, hands the resulting public key to <see cref="P:BlazorDX.Components.SecureEphemeralChat.EstablishSession"/>,
+            and mounts whatever that returns. <see cref="P:BlazorDX.Components.SecureEphemeralChat.ServerPublicKeyBase64"/>,
+            <see cref="P:BlazorDX.Components.SecureEphemeralChat.NonceBase64"/>, and <see cref="P:BlazorDX.Components.SecureEphemeralChat.CiphertextBase64"/> are ignored in this mode.
+            This is the only mode in which a real deployment can work: the ciphertext must be
+            encrypted for a public key that does not exist until the client generates it, so it can
+            never be a value known ahead of a page render (see docs/adr/0016).
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.SecureEphemeralChat.EstablishSession">
+            <summary>
+            Required when <see cref="P:BlazorDX.Components.SecureEphemeralChat.UseLiveHandshake"/> is <see langword="true"/>: an async
+            callback that takes the client's freshly generated public key (uncompressed SEC1,
+            base64) and returns the broker's encrypted response. This component never talks to a
+            broker directly -- the host supplies this delegate (an HTTP call to
+            <c>BlazorDX.Conduit</c>'s conduit in a real deployment, or any in-process mock for a
+            demo) so the component stays broker-agnostic.
+            </summary>
         </member>
         <member name="P:BlazorDX.Components.SecureEphemeralChat.EventsBaseUrl">
             <summary>

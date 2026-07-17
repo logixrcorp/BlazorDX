@@ -889,3 +889,80 @@ body {
   .hr-cards { grid-template-columns: 1fr; }
   .hr-timeoff { grid-template-columns: 1fr; }
 }
+
+/* ============================================================= */
+/* Ephemeral AI Chat example app                                  */
+/* ============================================================= */
+.ac-shell { display: flex; flex-direction: column; min-height: 100vh; background: #f8fafc; color: #0f172a; }
+.ac-topbar { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid #e2e8f0; background: #fff; flex-wrap: wrap; }
+.ac-brand { font-weight: 800; font-size: 17px; color: #0f172a; text-decoration: none; }
+.ac-brand-sub { color: #64748b; font-size: 12.5px; flex: 1; }
+.ac-brand-sub strong { color: #334155; }
+.ac-back { color: #2563eb; text-decoration: none; font-size: 13px; }
+.ac-back:hover { text-decoration: underline; }
+.ac-main-shell { flex: 1; min-height: 0; }
+
+.ac-app { display: grid; grid-template-columns: 240px 1fr 280px; height: calc(100vh - 53px); }
+
+.ac-threads { border-right: 1px solid #e2e8f0; background: #fff; padding: 12px 10px; overflow: auto; }
+.ac-threads h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em; color: #64748b; margin: 4px 6px 10px; }
+.ac-thread { display: flex; flex-direction: column; gap: 3px; width: 100%; padding: 10px 10px; border: 0; border-radius: 10px;
+  background: transparent; cursor: pointer; font: inherit; text-align: left; margin-bottom: 4px; }
+.ac-thread:hover { background: #f1f5f9; }
+.ac-thread-on { background: #e0e7ff; }
+.ac-thread-title { font-weight: 600; font-size: 13.5px; }
+.ac-thread-preview { font-size: 12px; color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ac-thread-meta { display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8; margin-top: 2px; }
+.ac-thread-status { background: #f1f5f9; border-radius: 999px; padding: 1px 8px; color: #475569; }
+
+.ac-main { display: flex; flex-direction: column; min-width: 0; border-right: 1px solid #e2e8f0; background: #fbfcfe; }
+.ac-empty, .ac-empty-transcript { color: #94a3b8; padding: 24px; text-align: center; }
+.ac-transcript { flex: 1; overflow: auto; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+.ac-msg { max-width: 640px; border-radius: 12px; padding: 10px 14px; }
+.ac-msg-role { display: block; font-size: 11px; color: #94a3b8; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.03em; }
+.ac-msg-user { align-self: flex-end; background: #2563eb; color: #fff; }
+.ac-msg-user .ac-msg-role { color: #dbeafe; }
+.ac-msg-user p { margin: 0; }
+.ac-msg-assistant { align-self: flex-start; background: #fff; border: 1px solid #e2e8f0; }
+.ac-msg-actions { display: flex; gap: 6px; margin-top: 8px; }
+.dx-ephemeral-chat { display: block; min-height: 1.4em; }
+.dx-ephemeral-chat-status { font-size: 12.5px; color: #94a3b8; margin: 2px 0 0; }
+.dx-ephemeral-chat-error { color: #dc2626; }
+
+.ac-compose { border-top: 1px solid #e2e8f0; background: #fff; padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 8px; }
+.ac-prompt-picker { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #475569; }
+.ac-prompt-picker select { padding: 5px 8px; border: 1px solid #cbd5e1; border-radius: 8px; font: inherit; font-size: 12.5px; }
+.ac-compose-text { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 10px; font: inherit; resize: vertical; box-sizing: border-box; }
+.ac-compose-actions { display: flex; justify-content: flex-end; }
+
+.ac-btn { padding: 6px 12px; border: 1px solid #cbd5e1; background: #fff; border-radius: 8px; cursor: pointer; font: inherit; font-size: 13px; }
+.ac-btn:hover:not(:disabled) { background: #f1f5f9; }
+.ac-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.ac-btn-primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+.ac-btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+.ac-icon-btn { border: 0; background: transparent; cursor: pointer; font-size: 14px; padding: 4px 6px; border-radius: 6px; }
+.ac-icon-btn:hover { background: #f1f5f9; }
+
+.ac-library { padding: 14px; overflow: auto; background: #fff; }
+.ac-library h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em; color: #64748b; margin: 4px 0 4px; }
+.ac-library-hint { font-size: 12px; color: #94a3b8; margin: 0 0 14px; }
+.ac-prompt-item { border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; display: flex; gap: 8px; }
+.ac-prompt-item-main { flex: 1; min-width: 0; }
+.ac-prompt-item-main strong { font-size: 13px; }
+.ac-prompt-item-main p { margin: 3px 0 0; font-size: 12px; color: #64748b; }
+.ac-prompt-item-actions { display: flex; flex-direction: column; gap: 2px; }
+.ac-prompt-edit, .ac-prompt-new { border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 6px; }
+.ac-prompt-input { width: 100%; padding: 7px 9px; border: 1px solid #cbd5e1; border-radius: 8px; font: inherit; font-size: 12.5px; box-sizing: border-box; resize: vertical; }
+.ac-prompt-edit-actions { display: flex; justify-content: flex-end; gap: 6px; }
+
+.ac-sendto { padding: 18px; display: flex; flex-direction: column; gap: 12px; width: min(420px, 92vw); }
+.ac-sendto h2 { margin: 0; font-size: 18px; }
+.ac-sendto-hint { font-size: 12.5px; color: #64748b; margin: 0; line-height: 1.5; }
+.ac-sendto-targets { display: flex; gap: 8px; flex-wrap: wrap; }
+.ac-sendto-log { background: #0f172a; color: #e2e8f0; border-radius: 10px; padding: 12px; font-size: 11.5px;
+  min-height: 100px; max-height: 260px; overflow: auto; white-space: pre-wrap; word-break: break-word; margin: 0; }
+
+@media (max-width: 980px) {
+  .ac-app { grid-template-columns: 1fr; height: auto; }
+  .ac-threads, .ac-library { border: 0; border-bottom: 1px solid #e2e8f0; }
+}

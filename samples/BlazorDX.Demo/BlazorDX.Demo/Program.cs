@@ -1,5 +1,7 @@
 using System.Text.Encodings.Web;
 using BlazorDX.Compute;
+using BlazorDX.Conduit;
+using BlazorDX.Demo;
 using BlazorDX.Demo.Client;
 using BlazorDX.Demo.Components;
 using BlazorDX.Integrations.PowerBI;
@@ -45,6 +47,9 @@ builder.Services.AddScoped<BlazorDX.Demo.Client.Ecm.EcmStore>();
 builder.Services.AddScoped<BlazorDX.Demo.Client.Mail.MailStore>();
 builder.Services.AddScoped<BlazorDX.Demo.Client.Hr.HrStore>();
 
+// Ephemeral AI Chat example app data — also server-side so /ai-chat prerenders.
+builder.Services.AddScoped<BlazorDX.Demo.Client.AiChat.AiChatStore>();
+
 // Same observability sink registered server-side so the /errors page prerenders.
 builder.Services.AddScoped<BlazorDX.Demo.Client.DemoDiagnosticsLog>();
 builder.Services.AddScoped<BlazorDX.Primitives.Diagnostics.IDxDiagnostics>(
@@ -83,6 +88,14 @@ builder.Services.AddBlazorDXPowerBi(o =>
 
 // Used (Production / PowerBI:PlaygroundSample) to fetch the Power BI playground sample config.
 builder.Services.AddHttpClient();
+
+// The Conduit Router (BlazorDX.Conduit): tracks active ephemeral SSE connections so
+// /ephemeral-events and /mcp-proxy below can register/push against the same set. Singleton —
+// it must outlive any single request, since SSE connections and provider pushes come from
+// unrelated requests. No IEphemeralSessionAuthorizer is registered here (every session id is
+// allowed), matching this demo's existing anonymous /mcp posture; production should register
+// one gating a session id to its owning caller.
+builder.Services.AddSingleton<EphemeralSessionRegistry>();
 
 var app = builder.Build();
 
@@ -222,6 +235,28 @@ app.MapPost("/mcp", async (HttpContext http) =>
     string response = await mcp.HandleAsync(body, http.RequestAborted);
     return Results.Content(response, "application/json");
 }).DisableAntiforgery();
+
+// The Conduit Router (BlazorDX.Conduit): BlazorDX acting as an MCP CLIENT of an external MCP
+// resource-provider server — the reverse role of the /mcp endpoint above (which is BlazorDX
+// serving its own tools) and of samples/BlazorDX.McpServer (untouched by this feature). A blind
+// router: it shuttles opaque, already-encrypted tokens between that external provider and the
+// Blazor client over Server-Sent Events, and never reads plaintext or holds a decryption key.
+//
+// GET  /ephemeral-events/{sessionId} — the SSE stream a frontend's EventSource connects to.
+// POST /mcp-proxy/{sessionId}        — where the external provider delivers an encrypted payload.
+//
+// PRODUCTION: register an IEphemeralSessionAuthorizer (gating a session id to its owning
+// caller) and wire a real IConduitNotificationSource + McpBrokerClient hosted service against
+// the actual provider (webhook relay or Azure Service Bus) so WITHDRAW/REFRESH notifications
+// flow in too — this demo only mounts the two endpoints.
+app.MapEphemeralEvents();
+app.MapMcpProxy();
+
+// DEMO-ONLY: the "/ai-chat" example app's stand-in for an external MCP resource-provider (see
+// DemoAiChatBroker's own doc comment). Unlike the two mounts above, this is not part of
+// BlazorDX.Conduit's real contract — it is this sample's own encryption broker, kept as a
+// separate file specifically so nobody mistakes it for library code.
+app.MapDemoAiChatBroker();
 
 app.Run();
 

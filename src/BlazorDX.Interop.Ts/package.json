@@ -5,10 +5,13 @@
   "description": "TypeScript DOM bridge for BlazorDX, bundled to minified ESM by esbuild.",
   "type": "module",
   "scripts": {
-    "build": "node build.mjs"
+    "build": "node build.mjs",
+    "test": "vitest run"
   },
   "devDependencies": {
     "esbuild": "0.28.1",
-    "typescript": "5.5.4"
+    "typescript": "5.5.4",
+    "vitest": "2.1.8",
+    "jsdom": "25.0.1"
   }
 }

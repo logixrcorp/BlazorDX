@@ -1,0 +1,220 @@
+@**
+    The Blazor container for the "Zero-Trust, Ephemeral AI Chat Conduit."
+
+    This component deliberately renders almost nothing: the actual message
+    text never enters the Blazor virtual DOM or C# memory. It hands the
+    encrypted payload's coordinates (session id, server public key, nonce,
+    ciphertext -- never the key itself) to EphemeralChatInterop, which loads
+    the dx_security wasm module, runs the ECDH handshake, decrypts, and
+    injects the plaintext directly into an isolated Shadow DOM node in
+    TypeScript. All this component ever sees back is a boolean: did it mount.
+
+    Pinned to InteractiveWebAssembly because decryption is a wasm/JS-only
+    capability -- there is no meaningful server-rendered fallback for a
+    component whose entire point is that the server-side render never touches
+    the plaintext either.
+**@
+@rendermode InteractiveWebAssembly
+@implements IAsyncDisposable
+@using BlazorDX.Interop
+@using static Microsoft.AspNetCore.Components.Web.RenderMode
+@inject IEphemeralChatInterop Interop
+
+<div id="@hostElementId" class="dx-ephemeral-chat" aria-live="polite" aria-label="Encrypted message"></div>
+
+@if (state == MountState.Decrypting)
+{
+    <p class="dx-ephemeral-chat-status">Decrypting…</p>
+}
+else if (state == MountState.Failed)
+{
+    <p class="dx-ephemeral-chat-status dx-ephemeral-chat-error" role="alert">
+        This message could not be verified and was not shown.
+    </p>
+}
+else if (state == MountState.Withdrawn)
+{
+    <p class="dx-ephemeral-chat-status">This message was withdrawn.</p>
+}
+
+@code {
+    private enum MountState { Decrypting, Mounted, Failed, Withdrawn }
+
+    // Unique per component instance so multiple ephemeral messages can be on
+    // screen at once without their Shadow DOM hosts, MutationObservers, or
+    // EventSources colliding.
+    private readonly string hostElementId = $"dx-ephemeral-chat-{Guid.NewGuid():N}";
+
+    private MountState state = MountState.Decrypting;
+    private bool scrubbed;
+
+    /// <summary>Opaque session identifier from the host. No auth logic happens here.</summary>
+    [Parameter, EditorRequired]
+    public string SessionId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The server's ephemeral P-256 public key (uncompressed SEC1, base64), for the ECDH
+    /// handshake. Required unless <see cref="UseLiveHandshake"/> is <see langword="true"/>,
+    /// in which case it is ignored -- <see cref="EstablishSession"/> supplies it instead.
+    /// </summary>
+    [Parameter]
+    public string ServerPublicKeyBase64 { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The AES-GCM nonce (base64) for <see cref="CiphertextBase64"/>. Required unless
+    /// <see cref="UseLiveHandshake"/> is <see langword="true"/>.
+    /// </summary>
+    [Parameter]
+    public string NonceBase64 { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The AES-GCM ciphertext, including its trailing authentication tag (base64). Required
+    /// unless <see cref="UseLiveHandshake"/> is <see langword="true"/>.
+    /// </summary>
+    [Parameter]
+    public string CiphertextBase64 { get; set; } = string.Empty;
+
+    /// <summary>
+    /// When <see langword="true"/>, this component drives the full handshake itself instead
+    /// of expecting an already-encrypted payload: it calls
+    /// <see cref="IEphemeralChatInterop.BeginHandshakeAsync"/> to generate a fresh client
+    /// keypair in-browser, hands the resulting public key to <see cref="EstablishSession"/>,
+    /// and mounts whatever that returns. <see cref="ServerPublicKeyBase64"/>,
+    /// <see cref="NonceBase64"/>, and <see cref="CiphertextBase64"/> are ignored in this mode.
+    /// This is the only mode in which a real deployment can work: the ciphertext must be
+    /// encrypted for a public key that does not exist until the client generates it, so it can
+    /// never be a value known ahead of a page render (see docs/adr/0016).
+    /// </summary>
+    [Parameter]
+    public bool UseLiveHandshake { get; set; }
+
+    /// <summary>
+    /// Required when <see cref="UseLiveHandshake"/> is <see langword="true"/>: an async
+    /// callback that takes the client's freshly generated public key (uncompressed SEC1,
+    /// base64) and returns the broker's encrypted response. This component never talks to a
+    /// broker directly -- the host supplies this delegate (an HTTP call to
+    /// <c>BlazorDX.Conduit</c>'s conduit in a real deployment, or any in-process mock for a
+    /// demo) so the component stays broker-agnostic.
+    /// </summary>
+    [Parameter]
+    public Func<string, Task<EphemeralHandshakeResult>>? EstablishSession { get; set; }
+
+    /// <summary>
+    /// Base path for the revocation SSE endpoint; the bridge connects to
+    /// <c>{EventsBaseUrl}/{SessionId}</c>. Defaults to the contract path
+    /// implemented by <c>EphemeralEventsEndpoint</c>.
+    /// </summary>
+    [Parameter]
+    public string EventsBaseUrl { get; set; } = "/ephemeral-events";
+
+    /// <summary>Raised after the server pushes a <c>WITHDRAW</c> event and the node has been scrubbed.</summary>
+    [Parameter]
+    public EventCallback OnWithdrawn { get; set; }
+
+    /// <summary>Raised after the server pushes a <c>REFRESH</c> event (the node is left mounted).</summary>
+    [Parameter]
+    public EventCallback OnRefreshed { get; set; }
+
+    /// <summary>Raised if the MutationObserver detects tampering and the node self-destructs.</summary>
+    [Parameter]
+    public EventCallback OnTamperDetected { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        bool mounted = UseLiveHandshake ? await MountViaLiveHandshakeAsync() : await MountViaSuppliedCiphertextAsync();
+
+        state = mounted ? MountState.Mounted : MountState.Failed;
+        StateHasChanged();
+    }
+
+    private Task<bool> MountViaSuppliedCiphertextAsync() =>
+        Interop.DecryptAndMountAsync(
+            hostElementId,
+            SessionId,
+            ServerPublicKeyBase64,
+            NonceBase64,
+            CiphertextBase64,
+            EventsBaseUrl,
+            onWithdraw: () => _ = InvokeAsync(HandleWithdrawnAsync),
+            onRefresh: () => _ = InvokeAsync(HandleRefreshedAsync),
+            onTamper: () => _ = InvokeAsync(HandleTamperDetectedAsync)).AsTask();
+
+    private async Task<bool> MountViaLiveHandshakeAsync()
+    {
+        if (EstablishSession is null)
+        {
+            return false;
+        }
+
+        string? clientPublicKeyBase64 = await Interop.BeginHandshakeAsync(SessionId);
+        if (clientPublicKeyBase64 is null)
+        {
+            return false;
+        }
+
+        EphemeralHandshakeResult response;
+        try
+        {
+            response = await EstablishSession(clientPublicKeyBase64);
+        }
+        catch
+        {
+            // The broker call failed (network, rejected session, etc.) -- there is no
+            // ciphertext to mount, and the wasm module's pending handshake state for this
+            // session id is simply left to be overwritten by a future begin_session call
+            // (see SessionStore::begin_session: a second call for the same id always
+            // overwrites, so this cannot leak or accumulate).
+            return false;
+        }
+
+        return await Interop.CompleteAndMountAsync(
+            hostElementId,
+            SessionId,
+            response.ServerPublicKeyBase64,
+            response.NonceBase64,
+            response.CiphertextBase64,
+            EventsBaseUrl,
+            onWithdraw: () => _ = InvokeAsync(HandleWithdrawnAsync),
+            onRefresh: () => _ = InvokeAsync(HandleRefreshedAsync),
+            onTamper: () => _ = InvokeAsync(HandleTamperDetectedAsync));
+    }
+
+    private async Task HandleWithdrawnAsync()
+    {
+        // The TS bridge already scrubbed the node before raising this callback.
+        scrubbed = true;
+        state = MountState.Withdrawn;
+        StateHasChanged();
+        await OnWithdrawn.InvokeAsync();
+    }
+
+    private async Task HandleRefreshedAsync()
+    {
+        // The node stays mounted; the host decides whether a REFRESH means new
+        // parameters (a fresh ciphertext) are coming, which will re-trigger
+        // OnAfterRenderAsync's mount on the next render if SessionId changes.
+        await OnRefreshed.InvokeAsync();
+    }
+
+    private async Task HandleTamperDetectedAsync()
+    {
+        scrubbed = true;
+        state = MountState.Failed;
+        StateHasChanged();
+        await OnTamperDetected.InvokeAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (!scrubbed)
+        {
+            scrubbed = true;
+            await Interop.ScrubNodeAsync(hostElementId);
+        }
+    }
+}

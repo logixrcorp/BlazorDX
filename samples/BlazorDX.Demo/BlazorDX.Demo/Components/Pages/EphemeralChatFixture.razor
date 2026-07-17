@@ -1,0 +1,115 @@
+@page "/ephemeral-chat-fixture"
+@using System.Security.Cryptography
+@using System.Text
+@using BlazorDX.Components
+
+@*
+    Not a feature showcase -- a deterministic test fixture for
+    tests/BlazorDX.E2E.Tests/EphemeralChatE2ETests.cs.
+
+    SecureEphemeralChat's decrypt handshake needs a client-side ephemeral P-256
+    key that BlazorDX.Security.Rust derives from crypto.getRandomValues *inside
+    the browser*, at mount time. Nothing server-side can know that key ahead of
+    time, so there is no way for an ordinary page load to hand the component a
+    ciphertext it will actually decrypt -- a real deployment establishes the
+    session key through a prior round trip this demo does not implement (see
+    docs/adr/0016-zero-trust-ephemeral-chat-conduit.md).
+
+    This page sidesteps that by publishing a payload encrypted for a FIXED,
+    published client seed (ClientSeedForE2ETests below) rather than a real
+    one. On its own, loading this page decrypts nothing new -- the real
+    browser CSPRNG will not produce that seed. The Playwright E2E test
+    overrides window.crypto.getRandomValues before navigating here so the
+    real, unmodified client-side handshake lands on exactly that seed, and
+    the mount genuinely succeeds end-to-end (real ECDH, real AES-256-GCM, real
+    Shadow DOM mount) -- only the source of "randomness" is fixed, matching
+    how BlazorDX.Security.Rust's own Rust-side tests use fixed seeds for the
+    same reason (see src/BlazorDX.Security.Rust/src/session.rs).
+*@
+
+<PageTitle>Ephemeral chat E2E fixture</PageTitle>
+
+<h1>Ephemeral chat E2E fixture</h1>
+
+<p class="dx-demo-meta">
+    This route exists only for the Playwright E2E suite's tamper/withdraw test. Outside that
+    test, the message below will show as unverifiable, because the ciphertext was encrypted for
+    a fixed test seed a real browser session never generates.
+</p>
+
+<SecureEphemeralChat SessionId="@SessionId"
+                      ServerPublicKeyBase64="@serverPublicKeyBase64"
+                      NonceBase64="@nonceBase64"
+                      CiphertextBase64="@ciphertextBase64" />
+
+@code {
+    // Published test constants -- intentionally not secret. The E2E test imports these exact
+    // values (SessionId, ClientSeedForE2ETests, PlaintextMessage) to drive and assert against
+    // the same fixture. Session id, seeds, nonce, and plaintext mirror the deterministic vectors
+    // already used by src/BlazorDX.Security.Rust/src/session.rs's own unit tests.
+    public const string SessionId = "e2e-fixture-session";
+    public const string PlaintextMessage = "the household link is verified end to end";
+
+    /// <summary>
+    /// The 32-byte seed the E2E test forces <c>crypto.getRandomValues</c> to return before
+    /// navigating here, so the browser's real <c>begin_session</c> call derives this exact
+    /// client keypair.
+    /// </summary>
+    public static readonly byte[] ClientSeedForE2ETests = [.. Enumerable.Range(1, 32).Select(i => (byte)i)];
+
+    private static readonly byte[] ServerSeed = [.. Enumerable.Range(33, 32).Select(i => (byte)i)];
+    private static readonly byte[] Nonce = [.. Enumerable.Repeat((byte)7, 12)];
+
+    private string serverPublicKeyBase64 = string.Empty;
+    private string nonceBase64 = string.Empty;
+    private string ciphertextBase64 = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        // System.Security.Cryptography's EC/AES-GCM types need a native crypto backend that
+        // browser-wasm does not provide (exactly why this feature has its own Rust/wasm crypto
+        // core) -- this computation only ever runs here, server-side, during render.
+        using ECDiffieHellman server = ImportRawScalar(ServerSeed);
+        using ECDiffieHellman client = ImportRawScalar(ClientSeedForE2ETests);
+
+        byte[] sharedSecret = server.DeriveRawSecretAgreement(client.PublicKey);
+
+        byte[] plaintext = Encoding.UTF8.GetBytes(PlaintextMessage);
+        byte[] ciphertext = new byte[plaintext.Length];
+        byte[] tag = new byte[16];
+        using (AesGcm gcm = new(sharedSecret, tag.Length))
+        {
+            gcm.Encrypt(Nonce, plaintext, ciphertext, tag);
+        }
+
+        serverPublicKeyBase64 = Convert.ToBase64String(UncompressedPublicKey(server));
+        nonceBase64 = Convert.ToBase64String(Nonce);
+        // AES-GCM ciphertext + trailing 16-byte tag, matching the convention
+        // BlazorDX.Security.Rust's decrypt_payload (and the aes-gcm crate) expects.
+        ciphertextBase64 = Convert.ToBase64String([.. ciphertext, .. tag]);
+    }
+
+    // Imports a raw 32-byte P-256 scalar as a private key by wrapping it in the minimal SEC1
+    // ECPrivateKey DER (RFC 5915) that names the curve but omits the public key -- .NET derives
+    // the public point from the scalar on import. Test-fixture-only: production code never
+    // constructs an EC key from a fixed, published scalar.
+    private static ECDiffieHellman ImportRawScalar(byte[] scalar32)
+    {
+        byte[] curveOid = [0x06, 0x08, 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x03, 0x01, 0x07]; // 1.2.840.10045.3.1.7 (P-256)
+        byte[] version = [0x02, 0x01, 0x01];
+        byte[] privateKeyOctet = [0x04, (byte)scalar32.Length, .. scalar32];
+        byte[] parametersField = [0xA0, (byte)curveOid.Length, .. curveOid];
+        byte[] body = [.. version, .. privateKeyOctet, .. parametersField];
+        byte[] der = [0x30, (byte)body.Length, .. body];
+
+        ECDiffieHellman key = ECDiffieHellman.Create();
+        key.ImportECPrivateKey(der, out _);
+        return key;
+    }
+
+    private static byte[] UncompressedPublicKey(ECDiffieHellman key)
+    {
+        ECParameters exported = key.ExportParameters(false);
+        return [0x04, .. exported.Q.X!, .. exported.Q.Y!];
+    }
+}

@@ -71,3 +71,70 @@ export function gridWasm(): GridWasmExports {
   }
   return cached;
 }
+
+// --- dx_security (BlazorDX.Security.Rust) -----------------------------------
+// Same load-once/cache pattern as dx_grid above, for the zero-trust ephemeral
+// chat crypto core. Kept in this file because it is the same Rust-wasm loading
+// convention, not because the two modules are related -- ephemeral-chat.ts is
+// the only consumer of the exports below.
+
+export interface SecurityWasmExports {
+  memory: WebAssembly.Memory;
+  alloc(byteLength: number): number;
+  dealloc(pointer: number, byteLength: number): void;
+  begin_session(
+    sessionIdPointer: number,
+    sessionIdLength: number,
+    seedPointer: number,
+    outPublicKeyPointer: number,
+  ): number;
+  complete_session(
+    sessionIdPointer: number,
+    sessionIdLength: number,
+    serverPublicKeyPointer: number,
+    serverPublicKeyLength: number,
+  ): number;
+  decrypt_payload(
+    sessionIdPointer: number,
+    sessionIdLength: number,
+    noncePointer: number,
+    ciphertextPointer: number,
+    ciphertextLength: number,
+    outLengthPointer: number,
+  ): number;
+  clear_payload(pointer: number, byteLength: number): void;
+  end_session(sessionIdPointer: number, sessionIdLength: number): void;
+}
+
+let securityCached: SecurityWasmExports | null = null;
+let securityLoading: Promise<SecurityWasmExports> | null = null;
+
+function instantiateSecurity(): Promise<SecurityWasmExports> {
+  const wasmUrl = new URL("./dx_security.wasm", import.meta.url);
+  return WebAssembly.instantiateStreaming(fetch(wasmUrl), {})
+    .catch(async () => {
+      // Same MIME-type fallback as instantiate() above.
+      const bytes = await fetch(wasmUrl).then((response) => response.arrayBuffer());
+      return WebAssembly.instantiate(bytes, {});
+    })
+    .then((result) => result.instance.exports as unknown as SecurityWasmExports);
+}
+
+// Awaited once by the host before any session/decrypt call.
+export async function ensureSecurityWasm(): Promise<void> {
+  if (securityCached !== null) {
+    return;
+  }
+  if (securityLoading === null) {
+    securityLoading = instantiateSecurity();
+  }
+  securityCached = await securityLoading;
+}
+
+// Synchronous accessor used after loading has completed.
+export function securityWasm(): SecurityWasmExports {
+  if (securityCached === null) {
+    throw new Error("dx_security wasm is not loaded yet; await ensureSecurityWasm() first.");
+  }
+  return securityCached;
+}
