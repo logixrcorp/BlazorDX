@@ -25,15 +25,16 @@
    not against --dx-surface. */
 .dx-editorial-hero--photo {
   position: relative;
-  left: 50%;
   width: 100vw;
-  margin: 0 0 0 -50vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
   max-width: none;
-  min-height: 90vh;
+  min-height: 78vh;
   padding: 0;
   display: flex;
   align-items: flex-end;
   overflow: hidden;
+  box-sizing: border-box;
 }
 .dx-editorial-hero-image {
   position: absolute;
@@ -44,38 +45,49 @@
   z-index: 0;
   animation: dx-editorial-kenburns 20s ease-out forwards;
 }
+/* A full-image ambient tint plus a stronger bottom gradient — text needs to read reliably
+   over whatever the photo happens to show at that point, not just in the darkest corner. */
+.dx-editorial-hero--photo::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 6, 15, 0.22);
+  z-index: 1;
+}
 .dx-editorial-hero--photo::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(2, 6, 15, 0) 32%, rgba(2, 6, 15, 0.9) 100%);
+  background: linear-gradient(180deg, rgba(2, 6, 15, 0) 10%, rgba(2, 6, 15, 0.55) 55%, rgba(2, 6, 15, 0.94) 100%);
   z-index: 1;
 }
 .dx-editorial-hero-content {
   position: relative;
   z-index: 2;
   width: 100%;
+  box-sizing: border-box;
 }
 .dx-editorial-hero--photo .dx-editorial-hero-content {
   max-width: 64rem;
   margin: 0 auto;
-  padding: 0 24px clamp(56px, 9vw, 104px);
+  padding: 0 clamp(24px, 5vw, 56px) clamp(56px, 9vw, 104px);
 }
 .dx-editorial-hero--photo .dx-editorial-kicker {
   color: #fff;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.32);
   padding: 5px 14px;
   border-radius: 999px;
+  backdrop-filter: blur(4px);
 }
 .dx-editorial-hero--photo .dx-editorial-title,
 .dx-editorial-hero--photo .dx-editorial-subtitle,
 .dx-editorial-hero--photo .dx-editorial-meta {
   color: #fff;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7), 0 4px 16px rgba(0, 0, 0, 0.5);
 }
-.dx-editorial-hero--photo .dx-editorial-subtitle { color: rgba(255, 255, 255, 0.88); }
-.dx-editorial-hero--photo .dx-editorial-meta { color: rgba(255, 255, 255, 0.74); }
+.dx-editorial-hero--photo .dx-editorial-subtitle { color: rgba(255, 255, 255, 0.9); }
+.dx-editorial-hero--photo .dx-editorial-meta { color: rgba(255, 255, 255, 0.78); }
 
 @keyframes dx-editorial-kenburns {
   from { transform: scale(1.09); }
@@ -125,10 +137,11 @@
    animations — GPU-composited, off the main thread, so it costs nothing per scroll frame and
    never becomes a scroll-position listener. Falls back to a static image everywhere else. ---- */
 .dx-editorial-figure {
-  position: relative;
-  left: 50%;
   width: 100vw;
-  margin: clamp(56px, 9vw, 112px) 0 clamp(56px, 9vw, 112px) -50vw;
+  margin-top: clamp(56px, 9vw, 112px);
+  margin-bottom: clamp(56px, 9vw, 112px);
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
 }
 .dx-editorial-figure-art {
   width: 100%;
