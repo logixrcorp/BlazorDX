@@ -139,6 +139,22 @@
 <p class="dx-demo-meta">Flow between stages, ribbon thickness scaled to value.</p>
 <DxSankeyChart Nodes="sankeyNodes" Links="sankeyLinks" Width="640" Height="280" />
 
+<h2 style="margin-top:32px">Network graph</h2>
+<p class="dx-demo-meta">Force-directed — connected nodes cluster, unconnected ones drift apart.</p>
+<DxNetworkGraph Nodes="networkNodes" Edges="networkEdges" Width="640" Height="360" />
+
+<h2 style="margin-top:32px">Parallel coordinates</h2>
+<p class="dx-demo-meta">One axis per dimension; each row is a polyline crossing every axis at its own value.</p>
+<DxParallelCoordinates Axes="parallelAxes" Rows="parallelRows" Width="640" Height="280" />
+
+<h2 style="margin-top:32px">Word cloud</h2>
+<p class="dx-demo-meta">Spiral-packed, sized by weight.</p>
+<DxWordCloud Words="wordCloudWords" Width="640" Height="300" />
+
+<h2 style="margin-top:32px">Chord diagram</h2>
+<p class="dx-demo-meta">Nodes as arcs sized by total flow; ribbons connect a proportional slice of each endpoint.</p>
+<DxChordDiagram Nodes="chordNodes" Links="chordLinks" Size="380" />
+
 @code {
     private readonly double[] points = new double[6000];
     private IReadOnlyList<ChartPoint> lineData = [];
@@ -367,6 +383,44 @@
         new("signedup", "trial", 620),
         new("trial", "paid", 240),
         new("trial", "churned", 380),
+    ];
+
+    private readonly IReadOnlyList<GraphNode> networkNodes =
+    [
+        new("api", "API"), new("auth", "Auth"), new("db", "Database"),
+        new("cache", "Cache"), new("worker", "Worker"), new("queue", "Queue"),
+    ];
+
+    private readonly IReadOnlyList<GraphEdge> networkEdges =
+    [
+        new("api", "auth"), new("api", "db"), new("api", "cache"),
+        new("worker", "queue"), new("worker", "db"), new("queue", "api"),
+    ];
+
+    private readonly IReadOnlyList<string> parallelAxes = ["Speed", "Power", "Range", "Efficiency"];
+
+    private readonly IReadOnlyList<ParallelCoordinateRow> parallelRows =
+    [
+        new("Model A", [80, 55, 70, 60]),
+        new("Model B", [60, 85, 50, 45]),
+        new("Model C", [45, 40, 90, 88]),
+    ];
+
+    private readonly IReadOnlyList<WordCloudEntry> wordCloudWords =
+    [
+        new("Blazor", 100), new("SVG", 70), new("Rust", 65), new("WASM", 55),
+        new("Charts", 50), new("Accessible", 40), new("SourceGen", 38), new("Headless", 32),
+        new("Themeable", 28), new("Virtualized", 24), new("Reflection-free", 20), new("Fast", 18),
+    ];
+
+    private readonly IReadOnlyList<ChordNode> chordNodes =
+    [
+        new("US"), new("EU"), new("APAC"), new("LatAm"),
+    ];
+
+    private readonly IReadOnlyList<ChordLink> chordLinks =
+    [
+        new(0, 1, 40), new(0, 2, 25), new(1, 2, 30), new(2, 3, 15), new(3, 0, 20),
     ];
 
     protected override void OnInitialized()

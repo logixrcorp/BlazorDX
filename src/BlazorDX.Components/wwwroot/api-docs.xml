@@ -298,6 +298,72 @@
         <member name="M:BlazorDX.Components.ChartGradients.Url(System.String,System.String)">
             <summary>The <c>fill</c> value referencing the gradient built for <paramref name="color"/>.</summary>
         </member>
+        <member name="T:BlazorDX.Components.GraphNode">
+            <summary>One node of a <see cref="T:BlazorDX.Components.DxNetworkGraph"/>, referenced by <see cref="P:BlazorDX.Components.GraphEdge.Source"/>/<see cref="P:BlazorDX.Components.GraphEdge.Target"/>.</summary>
+            <param name="Id">A stable key linking it to <see cref="T:BlazorDX.Components.GraphEdge"/> entries.</param>
+            <param name="Label">The node's display name.</param>
+            <param name="Color">Optional CSS color override; otherwise a palette color (by first-appearance order) is used.</param>
+        </member>
+        <member name="M:BlazorDX.Components.GraphNode.#ctor(System.String,System.String,System.String)">
+            <summary>One node of a <see cref="T:BlazorDX.Components.DxNetworkGraph"/>, referenced by <see cref="P:BlazorDX.Components.GraphEdge.Source"/>/<see cref="P:BlazorDX.Components.GraphEdge.Target"/>.</summary>
+            <param name="Id">A stable key linking it to <see cref="T:BlazorDX.Components.GraphEdge"/> entries.</param>
+            <param name="Label">The node's display name.</param>
+            <param name="Color">Optional CSS color override; otherwise a palette color (by first-appearance order) is used.</param>
+        </member>
+        <member name="P:BlazorDX.Components.GraphNode.Id">
+            <summary>A stable key linking it to <see cref="T:BlazorDX.Components.GraphEdge"/> entries.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.GraphNode.Label">
+            <summary>The node's display name.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.GraphNode.Color">
+            <summary>Optional CSS color override; otherwise a palette color (by first-appearance order) is used.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.GraphEdge">
+            <summary>One connection between two <see cref="T:BlazorDX.Components.GraphNode"/>s, by id.</summary>
+        </member>
+        <member name="M:BlazorDX.Components.GraphEdge.#ctor(System.String,System.String,System.String)">
+            <summary>One connection between two <see cref="T:BlazorDX.Components.GraphNode"/>s, by id.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.ParallelCoordinateRow">
+            <summary>One row for <see cref="T:BlazorDX.Components.DxParallelCoordinates"/>: one value per axis, in the same order as <c>Axes</c>.</summary>
+            <param name="Label">The row's name (shown in its tooltip).</param>
+            <param name="Values">One value per axis — must be the same length as <c>Axes</c>.</param>
+            <param name="Color">Optional CSS color override; otherwise a palette color (by row index) is used.</param>
+        </member>
+        <member name="M:BlazorDX.Components.ParallelCoordinateRow.#ctor(System.String,System.Collections.Generic.IReadOnlyList{System.Double},System.String)">
+            <summary>One row for <see cref="T:BlazorDX.Components.DxParallelCoordinates"/>: one value per axis, in the same order as <c>Axes</c>.</summary>
+            <param name="Label">The row's name (shown in its tooltip).</param>
+            <param name="Values">One value per axis — must be the same length as <c>Axes</c>.</param>
+            <param name="Color">Optional CSS color override; otherwise a palette color (by row index) is used.</param>
+        </member>
+        <member name="P:BlazorDX.Components.ParallelCoordinateRow.Label">
+            <summary>The row's name (shown in its tooltip).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.ParallelCoordinateRow.Values">
+            <summary>One value per axis — must be the same length as <c>Axes</c>.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.ParallelCoordinateRow.Color">
+            <summary>Optional CSS color override; otherwise a palette color (by row index) is used.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.WordCloudEntry">
+            <summary>One word for <see cref="T:BlazorDX.Components.DxWordCloud"/>; <see cref="P:BlazorDX.Components.WordCloudEntry.Weight"/> drives font size.</summary>
+        </member>
+        <member name="M:BlazorDX.Components.WordCloudEntry.#ctor(System.String,System.Double,System.String)">
+            <summary>One word for <see cref="T:BlazorDX.Components.DxWordCloud"/>; <see cref="P:BlazorDX.Components.WordCloudEntry.Weight"/> drives font size.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.ChordNode">
+            <summary>One node of a <see cref="T:BlazorDX.Components.DxChordDiagram"/>, referenced by <see cref="T:BlazorDX.Components.ChordLink"/>'s index into <c>Nodes</c>.</summary>
+        </member>
+        <member name="M:BlazorDX.Components.ChordNode.#ctor(System.String,System.String)">
+            <summary>One node of a <see cref="T:BlazorDX.Components.DxChordDiagram"/>, referenced by <see cref="T:BlazorDX.Components.ChordLink"/>'s index into <c>Nodes</c>.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.ChordLink">
+            <summary>One flow between two <see cref="T:BlazorDX.Components.ChordNode"/>s, by index into the chart's <c>Nodes</c> list.</summary>
+        </member>
+        <member name="M:BlazorDX.Components.ChordLink.#ctor(System.Int32,System.Int32,System.Double)">
+            <summary>One flow between two <see cref="T:BlazorDX.Components.ChordNode"/>s, by index into the chart's <c>Nodes</c> list.</summary>
+        </member>
         <member name="T:BlazorDX.Components.ChartTreeNode">
             <summary>
             A hierarchical data node for <see cref="T:BlazorDX.Components.DxTreemap"/> and <see cref="T:BlazorDX.Components.DxSunburst"/>. A leaf (no
@@ -721,6 +787,14 @@
         </member>
         <member name="P:BlazorDX.Components.DxChip.Class">
             <summary>Extra CSS classes appended to the chip.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxChordDiagram">
+            <summary>
+            A chord diagram: nodes as arcs around a circle (<see cref="T:BlazorDX.Primitives.Charts.ChordLayout"/>, sized by each node's
+            total involvement), links as ribbons connecting a proportional slice of each endpoint's arc.
+            Pure SVG; styling via dx-chart.css.
+            </summary>
+            <remarks>Node selection is opt-in, natural tab order — see <see cref="T:BlazorDX.Components.DxTreemap"/>'s remarks. Ribbons are hover-only (title tooltip).</remarks>
         </member>
         <member name="T:BlazorDX.Components.DxColorPicker">
             <summary>
@@ -1501,6 +1575,14 @@
             WAI-ARIA menu semantics. Styling is CSS-variable driven (see dx-overlay.css).
             </summary>
         </member>
+        <member name="T:BlazorDX.Components.DxNetworkGraph">
+            <summary>
+            A network/force-directed graph: nodes settle into a stable layout (<see cref="T:BlazorDX.Primitives.Charts.ForceDirectedLayout"/>)
+            where connected nodes cluster together and unconnected ones drift apart. Pure SVG, pure C# — no
+            Rust/wasm kernel (see the layout's own remarks for why); styling via dx-chart.css.
+            </summary>
+            <remarks>Selection is opt-in, natural tab order — see <see cref="T:BlazorDX.Components.DxTreemap"/>'s remarks.</remarks>
+        </member>
         <member name="T:BlazorDX.Components.DxNumeric`1">
             <summary>
             A labelled numeric input with stepper buttons, generic over any numeric type
@@ -1532,6 +1614,17 @@
         </member>
         <member name="P:BlazorDX.Components.DxPager.PageCount">
             <summary>The number of pages (at least one).</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxParallelCoordinates">
+            <summary>
+            A parallel coordinates chart: one vertical axis per dimension, each row drawn as a polyline
+            crossing every axis at its own value (independently min/max-normalized per axis). Good for
+            spotting clusters and correlations across many dimensions at once — something no single 2-D
+            chart in the family shows. Pure SVG; styling via dx-chart.css.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxParallelCoordinates.Axes">
+            <summary>Dimension names, left to right; each <see cref="P:BlazorDX.Components.ParallelCoordinateRow.Values"/> must have one value per axis.</summary>
         </member>
         <member name="T:BlazorDX.Components.DxPassword">
             <summary>
@@ -2385,6 +2478,15 @@
         </member>
         <member name="P:BlazorDX.Components.DxWaterfallChart.TotalColor">
             <summary>Color for an absolute "total" bar (a point with <see cref="P:BlazorDX.Components.ChartPoint.Y2"/> set).</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxWordCloud">
+            <summary>
+            A word cloud: words sized by <see cref="P:BlazorDX.Components.WordCloudEntry.Weight"/>, spiral-packed
+            (<see cref="T:BlazorDX.Primitives.Charts.WordCloudLayout"/>) so they fill the available space without overlapping. A word
+            that can't find room within the chart's bounds is silently dropped by the layout — no
+            truncation error, it just doesn't appear (a caller with a `Words.Count` vs. rendered-count
+            mismatch can detect this). Pure SVG; styling via dx-chart.css.
+            </summary>
         </member>
         <member name="T:BlazorDX.Components.FormFieldRenderContext">
             <summary>What a field template receives: the field metadata, its current value, a

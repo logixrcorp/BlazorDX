@@ -210,6 +210,18 @@ graph each get their own type, but reuse `OnPointSelected`-style opt-in selectio
 
 <DxSankeyChart Nodes="nodes" Links="links" Width="640" Height="280" />
 @* nodes: new SankeyNode("a", "Visited"); links: new SankeyLink("a", "b", Value: 1000) — layered layout, longest-path-from-source *@
+
+<DxNetworkGraph Nodes="graphNodes" Edges="graphEdges" Width="640" Height="360" OnNodeSelected="OnNode" />
+@* graphNodes: new GraphNode("api", "API"); graphEdges: new GraphEdge("api", "auth") — force-directed, plain C#, no Rust *@
+
+<DxParallelCoordinates Axes="@(new[]{"Speed","Power"})" Rows="rows" Width="640" Height="280" />
+@* rows: new ParallelCoordinateRow("Model A", [80, 55]) — per-axis min/max normalized *@
+
+<DxWordCloud Words="words" Width="640" Height="300" />
+@* words: new WordCloudEntry("Blazor", Weight: 100) — spiral-packed, largest first *@
+
+<DxChordDiagram Nodes="chordNodes" Links="chordLinks" Size="380" />
+@* chordNodes: new ChordNode("US"); chordLinks: new ChordLink(From: 0, To: 1, Value: 40) — indices into Nodes, not ids *@
 ```
 
 ### Overlays, inputs, feedback
@@ -307,7 +319,8 @@ Server-side, re-hash any stream with the same primitive: `BlazorDX.Primitives.Fi
 - **Charts:** DxLineChart, DxAreaChart, DxBarChart, DxPieChart, DxHistogram, DxSparkline,
   DxRadialGauge, DxLinearGauge, DxStackedBarChart, DxScatterChart, DxRadarChart, DxFunnelChart,
   DxCandlestickChart, DxWaterfallChart, DxBubbleChart, DxHeatmap, DxBulletChart, DxTreemap,
-  DxSunburst, DxBoxPlot, DxSankeyChart
+  DxSunburst, DxBoxPlot, DxSankeyChart, DxNetworkGraph, DxParallelCoordinates, DxWordCloud,
+  DxChordDiagram
 - **Scheduling:** DxCalendar, DxScheduler, DxGantt
 - **Editors/files/AI:** DxMarkdown, DxMarkdownEditor, DxRichTextEditor, DxChat, DxFileManager
 - **Documents & reporting:** DxDocumentViewer (core; PDF/embed), DxSpreadsheetViewer (Excel

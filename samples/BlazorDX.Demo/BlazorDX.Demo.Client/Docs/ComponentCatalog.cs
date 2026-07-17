@@ -116,6 +116,10 @@ public static class ComponentCatalog
         new("sunburst", "DxSunburst", "Data visualization", "Radial treemap; every node is its own ring.", "/charts", "DxSunburst"),
         new("boxplot", "DxBoxPlot", "Data visualization", "Q1/median/Q3 box, whiskers, outliers, optional violin.", "/charts", "DxBoxPlot"),
         new("sankeychart", "DxSankeyChart", "Data visualization", "Layered flow diagram with thickness-scaled ribbons.", "/charts", "DxSankeyChart"),
+        new("networkgraph", "DxNetworkGraph", "Data visualization", "Force-directed graph; connected nodes cluster.", "/charts", "DxNetworkGraph"),
+        new("parallelcoordinates", "DxParallelCoordinates", "Data visualization", "One axis per dimension, rows as crossing polylines.", "/charts", "DxParallelCoordinates"),
+        new("wordcloud", "DxWordCloud", "Data visualization", "Spiral-packed words sized by weight.", "/charts", "DxWordCloud"),
+        new("chorddiagram", "DxChordDiagram", "Data visualization", "Nodes as arcs, ribbons connecting flow slices.", "/charts", "DxChordDiagram"),
 
         new("calendar", "DxCalendar", "Scheduling", "Inline month calendar with single/range selection, markers, and a day template.", "/calendar", "DxCalendar"),
         new("scheduler", "DxScheduler", "Scheduling", "Week/Month/Day calendar with recurrence and drag-to-move/create.", "/scheduler", "DxScheduler"),

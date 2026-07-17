@@ -75,6 +75,10 @@ sample app (`samples/BlazorDX.Demo`).
 | `DxTreemap` / `DxSunburst` | Squarified nested rectangles / radial treemap, sized by `ChartTreeNode.Value` | `/charts` |
 | `DxBoxPlot` | Q1/median/Q3 box, whiskers, outliers beyond 1.5x IQR, optional violin density silhouette | `/charts` |
 | `DxSankeyChart` | Layered flow diagram; ribbon thickness scaled to `SankeyLink.Value` | `/charts` |
+| `DxNetworkGraph` | Force-directed graph; connected nodes cluster, unconnected ones drift apart | `/charts` |
+| `DxParallelCoordinates` | One axis per dimension; each row is a polyline crossing every axis at its own value | `/charts` |
+| `DxWordCloud` | Spiral-packed words sized by weight (largest first) | `/charts` |
+| `DxChordDiagram` | Nodes as arcs sized by total flow; ribbons connect a proportional slice of each endpoint | `/charts` |
 
 ## Scheduling
 

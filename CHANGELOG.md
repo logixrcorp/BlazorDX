@@ -67,8 +67,32 @@ All notable changes to BlazorDX are documented here. The format is loosely based
   Selection on all four is opt-in like the rest of the family, but independently-focusable
   (natural tab order) rather than the flat charts' roving-index pattern — a nested hierarchy or a
   node/link graph doesn't reduce to one linear index the way a bar or slice list does. Demoed live
-  in `Charts.razor`. The parking-lot chart types (network/force-directed graph, parallel
-  coordinates, word cloud, chord diagram) are in progress as the final part of this pass.
+  in `Charts.razor`.
+
+- **Four more chart types close out the July "Graphs" pass (part 3 of 3):
+  `DxNetworkGraph`, `DxParallelCoordinates`, `DxWordCloud`, `DxChordDiagram`.** Every planned chart
+  type from the roadmap note is now shipped — 21 chart/gauge/sparkline types total.
+  - **`GraphNode`/`GraphEdge`** feed **`DxNetworkGraph`**: a force-directed ("spring embedder",
+    Fruchterman-Reingold-style) layout (`ForceDirectedLayout`) — connected nodes cluster, unconnected
+    ones drift apart. Deliberately plain C#, not a Rust/wasm kernel: realistic network diagrams run
+    to tens or low hundreds of nodes, well within budget even at the algorithm's O(n²)-per-step cost
+    — the same "does this need Rust" call this library already makes for the Scheduler's date math
+    and the other Tier-2 layouts.
+  - **`ParallelCoordinateRow`** feeds **`DxParallelCoordinates`**: one vertical axis per dimension
+    (independently min/max-normalized), each row a polyline crossing every axis at its own value —
+    the one chart in the family built for spotting clusters/correlations across many dimensions at
+    once, something no 2-D chart here shows.
+  - **`WordCloudEntry`** feeds **`DxWordCloud`**: spiral-packing layout (`WordCloudLayout`, the
+    classic Wordle/d3-cloud approach) — words placed largest-first, spiraling outward until a
+    non-overlapping spot is found (an axis-aligned-box approximation of each word's extent, since
+    exact glyph metrics aren't available without a font-measurement pass). A word that can't fit is
+    dropped, not thrown.
+  - **`ChordNode`/`ChordLink`** feed **`DxChordDiagram`**: `ChordLayout` sizes each node's arc by its
+    total involvement and slices it proportionally per connection (the same value-to-angle scale
+    drives both, so a node's slices always exactly fill its own arc); each link draws as a ribbon —
+    two inner-edge arcs joined by quadratic curves through the circle's center.
+  Selection follows the same independently-focusable pattern as Tier 2's four. Demoed live in
+  `Charts.razor`.
 
 - **`[ChartRow]`/`[ChartValue]` source generator** — bind an existing domain type straight to a
   chart with `rows.ToChartPoints()`, no manual `ChartPoint` construction, no reflection. Tag a class

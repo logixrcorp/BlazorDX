@@ -342,6 +342,57 @@
             pattern. No wrap at the ends.
             </summary>
         </member>
+        <member name="T:BlazorDX.Primitives.Charts.ChordArc">
+            <summary>One node's angular arc around the circle.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Charts.ChordArc.#ctor(System.Int32,System.Double,System.Double)">
+            <summary>One node's angular arc around the circle.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Charts.ChordRibbon">
+            <summary>One link's angular slice on each of its two endpoints' arcs.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Charts.ChordRibbon.#ctor(System.Int32,System.Int32,System.Int32,System.Double,System.Double,System.Double,System.Double)">
+            <summary>One link's angular slice on each of its two endpoints' arcs.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Charts.ChordLinkInput">
+            <summary>A directed flow between two node indices, by value.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Charts.ChordLinkInput.#ctor(System.Int32,System.Int32,System.Double)">
+            <summary>A directed flow between two node indices, by value.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Charts.ChordLayout">
+            <summary>
+            Chord diagram layout: each node gets an arc around the circle proportional to its total
+            involvement (sum of every link touching it, either direction); each link gets a slice within
+            its two endpoints' arcs, proportional to the link's own value, stacked in link order — the same
+            value-to-angle scale drives both, so a node's link slices always exactly fill its own arc. A
+            caller draws each <see cref="T:BlazorDX.Primitives.Charts.ChordRibbon"/> as a pair of arcs connected by bezier curves.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Charts.ForceNodeLayout">
+            <summary>One node's settled position after the simulation.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Charts.ForceNodeLayout.#ctor(System.Int32,System.Double,System.Double)">
+            <summary>One node's settled position after the simulation.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Charts.ForceEdgeInput">
+            <summary>A directed edge between two node indices (order doesn't affect the layout — undirected physically).</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Charts.ForceEdgeInput.#ctor(System.Int32,System.Int32)">
+            <summary>A directed edge between two node indices (order doesn't affect the layout — undirected physically).</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Charts.ForceDirectedLayout">
+            <summary>
+            A force-directed ("spring embedder", Fruchterman-Reingold-style) graph layout: every node
+            repels every other node, an edge pulls its two endpoints together like a spring, and a weak
+            center-gravity force keeps the whole graph from drifting off-canvas. Iterates a fixed step count
+            with simulated-annealing cooling to settle into a stable layout. Nodes start on a circle (not
+            randomized), so the same input always produces the same output. Realistic network/dependency
+            diagrams run to tens or low hundreds of nodes, well within plain C#'s budget even at O(n²) per
+            step — the same "does this need Rust" judgment call this library already makes elsewhere (see
+            the Scheduler's date math, or the other Tier-2 chart layouts); no Rust/wasm kernel here.
+            </summary>
+        </member>
         <member name="T:BlazorDX.Primitives.Charts.SankeyNodeLayout">
             <summary>One node's position and size after layout.</summary>
         </member>
@@ -416,6 +467,29 @@
             by design — it operates on plain sizes and an index, not a tree type — so a caller builds a
             full hierarchy (<see cref="!:BlazorDX.Components.TreeNode"/>) by recursing: lay out a node's
             children in its own rect, then recurse into each child's own rect with its own children.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Charts.WordCloudPlacement">
+            <summary>One word's placement after layout.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Charts.WordCloudPlacement.#ctor(System.Int32,System.Double,System.Double,System.Double)">
+            <summary>One word's placement after layout.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Charts.WordCloudInput">
+            <summary>One word and the weight driving its font size.</summary>
+        </member>
+        <member name="M:BlazorDX.Primitives.Charts.WordCloudInput.#ctor(System.String,System.Double)">
+            <summary>One word and the weight driving its font size.</summary>
+        </member>
+        <member name="T:BlazorDX.Primitives.Charts.WordCloudLayout">
+            <summary>
+            Spiral-packing word-cloud layout (the classic Wordle/d3-cloud approach): words are placed
+            largest-first, spiraling outward from center until a non-overlapping spot is found. A word's
+            extent is approximated as an axis-aligned box (text-length x font-size heuristic) rather than
+            true glyph shapes — the same simplification every lightweight word-cloud implementation makes,
+            since exact glyph metrics aren't available without an actual font-measurement pass. A word that
+            can't fit within the search radius is dropped, not thrown — <see cref="M:BlazorDX.Primitives.Charts.WordCloudLayout.Compute(System.Collections.Generic.IReadOnlyList{BlazorDX.Primitives.Charts.WordCloudInput},System.Double,System.Double,System.Double,System.Double)"/> can return
+            fewer placements than inputs; compare counts to detect this.
             </summary>
         </member>
         <member name="T:BlazorDX.Primitives.Chat.ChatRole">

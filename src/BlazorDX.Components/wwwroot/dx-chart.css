@@ -219,14 +219,60 @@
   fill: var(--dx-text, #334155);
 }
 
+/* ---- Network / force-directed graph ---- */
+.dx-network-edge { stroke: var(--dx-border, #cbd5e1); stroke-width: 1.5; }
+.dx-network-node { stroke: var(--dx-surface, #ffffff); stroke-width: 1.5; transition: opacity 120ms ease; }
+.dx-network-node:hover { opacity: 0.85; }
+.dx-network-label {
+  font-size: 10px;
+  fill: var(--dx-text, #334155);
+  pointer-events: none;
+}
+
+/* ---- Parallel coordinates ---- */
+.dx-parallel-axis { stroke: var(--dx-border, #cbd5e1); stroke-width: 1; }
+.dx-parallel-axis-label {
+  font-size: 11px;
+  fill: var(--dx-text-muted, #64748b);
+}
+.dx-parallel-line {
+  stroke-width: 1.5;
+  stroke-opacity: 0.55;
+  transition: stroke-opacity 120ms ease;
+  pointer-events: stroke;
+}
+.dx-parallel-line:hover { stroke-opacity: 1; stroke-width: 2.5; }
+
+/* ---- Word cloud ---- */
+.dx-wordcloud-word {
+  font-weight: 600;
+  transition: opacity 120ms ease;
+}
+.dx-wordcloud-word:hover { opacity: 0.75; }
+
+/* ---- Chord diagram ---- */
+.dx-chord-arc { stroke: var(--dx-surface, #ffffff); stroke-width: 1; }
+.dx-chord-ribbon { fill-opacity: 0.35; transition: fill-opacity 120ms ease; }
+.dx-chord-ribbon:hover { fill-opacity: 0.6; }
+.dx-chord-label {
+  font-size: 10px;
+  fill: var(--dx-text, #334155);
+}
+
 .dx-treemap-cell[tabindex],
 .dx-sunburst-arc[tabindex],
-.dx-sankey-node[tabindex] {
+.dx-sankey-node[tabindex],
+.dx-network-node[tabindex],
+.dx-parallel-line[tabindex],
+.dx-chord-arc[tabindex] {
   cursor: pointer;
 }
 .dx-treemap-cell:focus-visible,
 .dx-sunburst-arc:focus-visible,
-.dx-sankey-node:focus-visible {
+.dx-sankey-node:focus-visible,
+.dx-network-node:focus-visible,
+.dx-parallel-line:focus-visible,
+.dx-chord-arc:focus-visible {
   outline: 2px solid var(--dx-accent, #2563eb);
   outline-offset: 1px;
 }
