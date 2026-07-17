@@ -65,6 +65,13 @@ sample app (`samples/BlazorDX.Demo`).
 | `DxHistogram` | Bins values via the Rust histogram kernel | `/charts` |
 | `DxSparkline` | Inline line/bar trend | `/charts` |
 | `DxRadialGauge` / `DxLinearGauge` | Meter gauges (270° arc / zoned bar) | `/charts` |
+| `DxScatterChart` / `DxStackedBarChart` | XY scatter plot + stacked/grouped series bars | `/charts` |
+| `DxRadarChart` / `DxFunnelChart` | Spider chart over shared axes + conversion funnel | `/charts` |
+| `DxCandlestickChart` | OHLC candlesticks coloured by direction | `/charts` |
+| `DxWaterfallChart` | Running-total bars; a point with `Y2` set is an absolute total that resets the running total | `/charts` |
+| `DxBubbleChart` | Scatter plot with a third dimension (`Y2`) encoded as radius | `/charts` |
+| `DxHeatmap` | Row (`Series`) x column (`Category`) grid, intensity via fill-opacity | `/charts` |
+| `DxBulletChart` | KPI vs. target vs. qualitative range bands (Stephen Few's bullet-graph design) | `/charts` |
 
 ## Scheduling
 

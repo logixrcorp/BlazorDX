@@ -43,7 +43,7 @@ Raw component count is explicitly **not** the target — see *Out of scope*.
   master/detail rows, CSV / Excel (`.xlsx`) / PDF export, clipboard copy, keyboard cell
   navigation, saved layout/state, tree data, pivot, and **server-side data binding with
   server-side grouping + aggregation** (`IGridDataSource` / `IGridGroupDataSource`).
-- **Catalog**: overlays, inputs, navigation/layout, ~11 chart/gauge/sparkline types,
+- **Catalog**: overlays, inputs, navigation/layout, 17 chart/gauge/sparkline types,
   scheduling (Scheduler + Gantt), Kanban, editors (Markdown + WYSIWYG + QueryBuilder),
   file manager, AI chat, hotkeys, and pure-C# **EAN-13 / Code 128 / QR** verified against
   published reference vectors. Multiple `[JSImport]` TS bridges; five Rust kernels with

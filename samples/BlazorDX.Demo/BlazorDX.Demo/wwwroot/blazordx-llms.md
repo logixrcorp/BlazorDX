@@ -181,14 +181,21 @@ Every chart accepts one shared, generic data shape — `IReadOnlyList<ChartPoint
 bespoke type per chart (`ChartPoint(X, Y, Category, Y2, Y3, Y4, Series, Color)`; unused fields are
 simply ignored). A bar/pie/funnel/sparkline reads `Category` + `Y`; a line/area/scatter chart reads
 `X` + `Y`; a stacked-bar/radar chart also reads `Series`; a candlestick reads `Y`..`Y4` as
-Open/High/Low/Close.
+Open/High/Low/Close; a waterfall reads `Y` as a delta unless `Y2` is set (an absolute total that
+resets the running total); a bubble chart reads `Y2` as radius; a heatmap reads `Series` as the row
+key and `Category` as the column key. Every mark animates in (staggered fade/rise; line/area wipe
+in left-to-right), and `DxBarChart`/`DxWaterfallChart` take an opt-in `Gradient` bool.
 ```razor
-<DxBarChart Points="bars" Width="420" Height="220" />   @* new ChartPoint(Category: "Label", Y: 18) *@
+<DxBarChart Points="bars" Width="420" Height="220" Gradient="true" />   @* new ChartPoint(Category: "Label", Y: 18) *@
 <DxPieChart Points="bars" Donut="true" />
 <DxLineChart Points="series" Threshold="400" Width="720" Height="240" />   @* new ChartPoint(X: i, Y: v) *@
 <DxRadialGauge Value="72" Label="CPU %" Size="120" Color="#16a34a" Format="0" />
 <DxStackedBarChart Categories="quarters" Points="points" />   @* new ChartPoint(Category: "Q1", Y: 18, Series: "Direct") *@
 <DxSparkline Points="@(new[]{ new ChartPoint(Y: 4), new ChartPoint(Y: 7) })" />
+<DxWaterfallChart Points="points" />   @* new ChartPoint(Category: "Start", Y2: 100) then new ChartPoint(Category: "Gain", Y: 30) *@
+<DxBubbleChart Points="points" MinRadius="6" MaxRadius="32" />   @* new ChartPoint(X: 1, Y: 2, Y2: 40) — Y2 sizes the bubble *@
+<DxHeatmap Points="points" ShowValues="true" />   @* new ChartPoint(Category: "Mon", Series: "Team A", Y: 3) *@
+<DxBulletChart Points="rows" />   @* new BulletPoint("Revenue", Value: 84, Target: 90, Max: 100, Ranges: [40, 75]) — not a ChartPoint *@
 ```
 
 ### Overlays, inputs, feedback
@@ -285,7 +292,7 @@ Server-side, re-hash any stream with the same primitive: `BlazorDX.Primitives.Fi
 - **Grids:** DxDataGrid<TRow>, DxTreeGrid<TRow>, DxPivotGrid<TRow>
 - **Charts:** DxLineChart, DxAreaChart, DxBarChart, DxPieChart, DxHistogram, DxSparkline,
   DxRadialGauge, DxLinearGauge, DxStackedBarChart, DxScatterChart, DxRadarChart, DxFunnelChart,
-  DxCandlestickChart
+  DxCandlestickChart, DxWaterfallChart, DxBubbleChart, DxHeatmap, DxBulletChart
 - **Scheduling:** DxCalendar, DxScheduler, DxGantt
 - **Editors/files/AI:** DxMarkdown, DxMarkdownEditor, DxRichTextEditor, DxChat, DxFileManager
 - **Documents & reporting:** DxDocumentViewer (core; PDF/embed), DxSpreadsheetViewer (Excel

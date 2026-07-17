@@ -108,6 +108,10 @@ public static class ComponentCatalog
         new("radarchart", "DxRadarChart", "Data visualization", "Spider chart over shared axes.", "/charts", "DxRadarChart"),
         new("funnelchart", "DxFunnelChart", "Data visualization", "Stacked-trapezoid conversion funnel.", "/charts", "DxFunnelChart"),
         new("candlestickchart", "DxCandlestickChart", "Data visualization", "OHLC candlesticks coloured by direction.", "/charts", "DxCandlestickChart"),
+        new("waterfallchart", "DxWaterfallChart", "Data visualization", "Running-total bars with total resets and connectors.", "/charts", "DxWaterfallChart"),
+        new("bubblechart", "DxBubbleChart", "Data visualization", "Scatter plot with a third dimension encoded as radius.", "/charts", "DxBubbleChart"),
+        new("heatmap", "DxHeatmap", "Data visualization", "Row x column grid, intensity via fill-opacity.", "/charts", "DxHeatmap"),
+        new("bulletchart", "DxBulletChart", "Data visualization", "KPI vs. target vs. qualitative range bands.", "/charts", "DxBulletChart"),
 
         new("calendar", "DxCalendar", "Scheduling", "Inline month calendar with single/range selection, markers, and a day template.", "/calendar", "DxCalendar"),
         new("scheduler", "DxScheduler", "Scheduling", "Week/Month/Day calendar with recurrence and drag-to-move/create.", "/scheduler", "DxScheduler"),
