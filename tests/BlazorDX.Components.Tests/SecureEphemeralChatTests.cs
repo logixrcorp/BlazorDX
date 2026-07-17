@@ -187,6 +187,21 @@ public sealed class SecureEphemeralChatTests : TestContext
     }
 
     [Fact]
+    public void An_exception_from_the_interop_layer_shows_the_generic_error_instead_of_hanging_on_Decrypting()
+    {
+        // Regression test: a 404 loading the wasm module (e.g. a stale deploy) used to throw an
+        // unhandled exception out of OnAfterRenderAsync, leaving the component stuck showing
+        // "Decrypting..." forever instead of resolving to the normal failed-mount state.
+        fake.MountThrows = new InvalidOperationException("simulated wasm 404");
+
+        IRenderedComponent<SecureEphemeralChat> chat = RenderChat();
+
+        Assert.DoesNotContain("Decrypting", chat.Markup); // not stuck on "Decrypting..."
+        var error = chat.Find(".dx-ephemeral-chat-error");
+        Assert.Equal("alert", error.GetAttribute("role"));
+    }
+
+    [Fact]
     public void Live_handshake_forwards_the_wasm_generated_client_public_key_to_EstablishSession_and_mounts_its_response()
     {
         fake.BeginHandshakeClientPublicKeyBase64 = "client-pub-from-wasm";

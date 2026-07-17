@@ -33,6 +33,9 @@ internal sealed class FakeEphemeralChatInterop : IEphemeralChatInterop
         return ValueTask.CompletedTask;
     }
 
+    /// <summary>When set, <see cref="DecryptAndMountAsync"/> throws this instead of returning. Simulates e.g. the wasm module 404ing.</summary>
+    public Exception? MountThrows { get; set; }
+
     public ValueTask<bool> DecryptAndMountAsync(
         string hostElementId,
         string sessionId,
@@ -48,7 +51,7 @@ internal sealed class FakeEphemeralChatInterop : IEphemeralChatInterop
         withdraw = onWithdraw;
         refresh = onRefresh;
         tamper = onTamper;
-        return ValueTask.FromResult(MountSucceeds);
+        return MountThrows is not null ? ValueTask.FromException<bool>(MountThrows) : ValueTask.FromResult(MountSucceeds);
     }
 
     /// <summary>What <see cref="BeginHandshakeAsync"/> should return. Defaults to a fixed fake key.</summary>

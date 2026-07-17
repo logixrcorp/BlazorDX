@@ -126,7 +126,20 @@ else if (state == MountState.Withdrawn)
             return;
         }
 
-        bool mounted = UseLiveHandshake ? await MountViaLiveHandshakeAsync() : await MountViaSuppliedCiphertextAsync();
+        bool mounted;
+        try
+        {
+            mounted = UseLiveHandshake ? await MountViaLiveHandshakeAsync() : await MountViaSuppliedCiphertextAsync();
+        }
+        catch
+        {
+            // Any unexpected failure below this point (the wasm module 404ing behind a stale
+            // deploy, a network blip, any other JS interop exception) must still resolve to the
+            // same safe "could not be verified" state as an ordinary failed decrypt -- never
+            // leave the component stuck on "Decrypting..." with an unhandled exception the user
+            // has no way to see or recover from.
+            mounted = false;
+        }
 
         state = mounted ? MountState.Mounted : MountState.Failed;
         StateHasChanged();

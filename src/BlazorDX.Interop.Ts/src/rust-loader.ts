@@ -41,13 +41,33 @@ export interface GridWasmExports {
 let cached: GridWasmExports | null = null;
 let loading: Promise<GridWasmExports> | null = null;
 
+// Marks an error as "the fetch itself failed" (bad HTTP status) so the instantiateStreaming
+// fallback below can tell that apart from "the MIME type just wasn't application/wasm" and
+// re-throw instead of silently retrying a request that will only 404 again.
+class WasmFetchError extends Error {}
+
+async function fetchWasmOrThrow(url: URL): Promise<Response> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    // A 404/500/etc. response body is very often an HTML error page, which
+    // WebAssembly.instantiate would otherwise fail to parse with an opaque
+    // "expected magic word" CompileError -- this is the actual, diagnosable cause.
+    throw new WasmFetchError(`${url.pathname} request failed: ${response.status} ${response.statusText}`);
+  }
+  return response;
+}
+
 function instantiate(): Promise<GridWasmExports> {
   const wasmUrl = new URL("./dx_grid.wasm", import.meta.url);
-  return WebAssembly.instantiateStreaming(fetch(wasmUrl), {})
-    .catch(async () => {
+  return fetchWasmOrThrow(wasmUrl)
+    .then((response) => WebAssembly.instantiateStreaming(response, {}))
+    .catch(async (err) => {
+      if (err instanceof WasmFetchError) {
+        throw err;
+      }
       // instantiateStreaming fails if the server's MIME type is not
       // application/wasm; fall back to a plain fetch + instantiate.
-      const bytes = await fetch(wasmUrl).then((response) => response.arrayBuffer());
+      const bytes = await fetchWasmOrThrow(wasmUrl).then((response) => response.arrayBuffer());
       return WebAssembly.instantiate(bytes, {});
     })
     .then((result) => result.instance.exports as unknown as GridWasmExports);
@@ -111,10 +131,14 @@ let securityLoading: Promise<SecurityWasmExports> | null = null;
 
 function instantiateSecurity(): Promise<SecurityWasmExports> {
   const wasmUrl = new URL("./dx_security.wasm", import.meta.url);
-  return WebAssembly.instantiateStreaming(fetch(wasmUrl), {})
-    .catch(async () => {
+  return fetchWasmOrThrow(wasmUrl)
+    .then((response) => WebAssembly.instantiateStreaming(response, {}))
+    .catch(async (err) => {
+      if (err instanceof WasmFetchError) {
+        throw err;
+      }
       // Same MIME-type fallback as instantiate() above.
-      const bytes = await fetch(wasmUrl).then((response) => response.arrayBuffer());
+      const bytes = await fetchWasmOrThrow(wasmUrl).then((response) => response.arrayBuffer());
       return WebAssembly.instantiate(bytes, {});
     })
     .then((result) => result.instance.exports as unknown as SecurityWasmExports);
