@@ -94,6 +94,29 @@
 <h2 style="margin-top:32px">Candlestick</h2>
 <DxCandlestickChart Points="candles" Width="640" Height="260" />
 
+<h2 style="margin-top:32px">Waterfall</h2>
+<p class="dx-demo-meta">
+    Bars float from a running total; a point with <code>Y2</code> set is an absolute total that
+    resets the running total (the dashed connectors trace it across bars).
+</p>
+<DxWaterfallChart Points="waterfallPoints" Width="640" Height="260" Gradient="true" />
+
+<h2 style="margin-top:32px">Bubble</h2>
+<p class="dx-demo-meta">A scatter plot with a third dimension — <code>Y2</code> — encoded as radius.</p>
+<DxBubbleChart Points="bubblePoints" Width="640" Height="300" />
+
+<h2 style="margin-top:32px">Heatmap</h2>
+<p class="dx-demo-meta">
+    <code>Series</code> is the row, <code>Category</code> is the column, <code>Y</code> is the
+    value — intensity is a fill-opacity scale on the chart's own accent color, so it stays
+    theme-safe.
+</p>
+<DxHeatmap Points="heatmapPoints" Width="640" Height="220" ShowValues="true" />
+
+<h2 style="margin-top:32px">Bullet</h2>
+<p class="dx-demo-meta">A KPI vs. target vs. qualitative range bands — Stephen Few's bullet-graph design.</p>
+<DxBulletChart Points="bulletPoints" Width="640" RowHeight="44" />
+
 @code {
     private readonly double[] points = new double[6000];
     private IReadOnlyList<ChartPoint> lineData = [];
@@ -207,6 +230,59 @@
         new(Category: "Search", Y: 28),
         new(Category: "Social", Y: 18),
         new(Category: "Email", Y: 12),
+    ];
+
+    private readonly IReadOnlyList<ChartPoint> waterfallPoints =
+    [
+        new(Category: "Starting cash", Y2: 120),
+        new(Category: "Revenue", Y: 85),
+        new(Category: "COGS", Y: -32),
+        new(Category: "Opex", Y: -41),
+        new(Category: "Other income", Y: 9),
+        new(Category: "Ending cash", Y2: 141),
+    ];
+
+    private readonly IReadOnlyList<ChartPoint> bubblePoints = BuildBubbles();
+
+    private static IReadOnlyList<ChartPoint> BuildBubbles()
+    {
+        Random random = new(20260716);
+        List<ChartPoint> pts = new(24);
+        for (int i = 0; i < 24; i++)
+        {
+            double x = random.NextDouble() * 100;
+            double y = random.NextDouble() * 100;
+            double size = 5 + (random.NextDouble() * 95);
+            pts.Add(new ChartPoint(x, y, Category: $"Item {i + 1}", Y2: size));
+        }
+
+        return pts;
+    }
+
+    private readonly IReadOnlyList<ChartPoint> heatmapPoints = BuildHeatmap();
+
+    private static IReadOnlyList<ChartPoint> BuildHeatmap()
+    {
+        string[] days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+        string[] shifts = ["Morning", "Afternoon", "Evening"];
+        Random random = new(20260716);
+        List<ChartPoint> pts = new(days.Length * shifts.Length);
+        foreach (string shift in shifts)
+        {
+            foreach (string day in days)
+            {
+                pts.Add(new ChartPoint(Category: day, Series: shift, Y: random.Next(2, 40)));
+            }
+        }
+
+        return pts;
+    }
+
+    private readonly IReadOnlyList<BulletPoint> bulletPoints =
+    [
+        new("Revenue", Value: 84, Target: 90, Max: 100, Ranges: [40, 75]),
+        new("New signups", Value: 62, Target: 50, Max: 100, Ranges: [30, 65]),
+        new("Support CSAT", Value: 91, Target: 85, Max: 100, Ranges: [60, 85]),
     ];
 
     protected override void OnInitialized()

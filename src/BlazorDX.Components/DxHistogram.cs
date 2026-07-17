@@ -90,12 +90,14 @@ public sealed class DxHistogram : ComponentBase
             double y = axis - h;
 
             builder.OpenElement(10, "rect");
-            builder.AddAttribute(11, "class", "dx-bar-rect");
+            builder.SetKey(i);
+            builder.AddAttribute(11, "class", "dx-bar-rect dx-chart-drawin");
             builder.AddAttribute(12, "x", F(x));
             builder.AddAttribute(13, "y", F(y));
             builder.AddAttribute(14, "width", F(barWidth));
             builder.AddAttribute(15, "height", F(Math.Max(0, h)));
             builder.AddAttribute(16, "fill", "var(--dx-accent, #2563eb)");
+            builder.AddAttribute(116, "style", $"animation-delay:{i * 12}ms");
             builder.OpenElement(17, "title");
             builder.AddContent(18, $"{BinLabel(i)}: {counts[i]}");
             builder.CloseElement();

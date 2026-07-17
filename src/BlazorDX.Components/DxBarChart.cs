@@ -36,6 +36,9 @@ public sealed class DxBarChart : ComponentBase
 
     [Parameter] public string? Class { get; set; }
 
+    /// <summary>Fill each bar with a top-to-bottom fade of its own color instead of a flat fill.</summary>
+    [Parameter] public bool Gradient { get; set; }
+
     /// <summary>Raised on click or Enter/Space when a bar is the active (keyboard-focused) point.</summary>
     [Parameter] public EventCallback<ChartPointEventArgs> OnPointSelected { get; set; }
 
@@ -74,6 +77,12 @@ public sealed class DxBarChart : ComponentBase
             builder.AddEventPreventDefaultAttribute(10, "onkeydown", true);
         }
 
+        if (Gradient)
+        {
+            IEnumerable<string> colors = Points.Select((p, i) => p.Color ?? Palette[i % Palette.Length]);
+            ChartGradients.RenderDefs(builder, 15, chartId, colors);
+        }
+
         double max = Points.Count == 0 ? 1 : Math.Max(1e-9, Points.Max(b => b.Y));
         if (Horizontal)
         {
@@ -102,8 +111,9 @@ public sealed class DxBarChart : ComponentBase
             double y = axis - h;
             string color = bar.Color ?? Palette[i % Palette.Length];
             string label = bar.Category ?? string.Empty;
+            string fill = Gradient ? ChartGradients.Url(chartId, color) : color;
 
-            Rect(builder, i, x, y, barWidth, h, color, $"{label}: {Num(bar.Y)}", interactive);
+            Rect(builder, i, x, y, barWidth, h, fill, $"{label}: {Num(bar.Y)}", interactive);
             Text(builder, x + (barWidth / 2), y - 4, "dx-bar-value", Num(bar.Y), "middle");
             Text(builder, x + (barWidth / 2), Height - 6, "dx-bar-label", label, "middle");
         }
@@ -122,9 +132,10 @@ public sealed class DxBarChart : ComponentBase
             double y = (i * slot) + (Gap / 2);
             string color = bar.Color ?? Palette[i % Palette.Length];
             string label = bar.Category ?? string.Empty;
+            string fill = Gradient ? ChartGradients.Url(chartId, color) : color;
 
             Text(builder, labelW - 6, y + (barHeight / 2) + 4, "dx-bar-label", label, "end");
-            Rect(builder, i, labelW, y, w, barHeight, color, $"{label}: {Num(bar.Y)}", interactive);
+            Rect(builder, i, labelW, y, w, barHeight, fill, $"{label}: {Num(bar.Y)}", interactive);
             Text(builder, labelW + w + 4, y + (barHeight / 2) + 4, "dx-bar-value", Num(bar.Y), "start");
         }
     }
@@ -133,7 +144,7 @@ public sealed class DxBarChart : ComponentBase
         RenderTreeBuilder builder, int index, double x, double y, double w, double h, string fill, string title,
         bool interactive)
     {
-        string css = "dx-bar-rect";
+        string css = "dx-bar-rect dx-chart-drawin";
         if (interactive && selection.IsActive(index))
         {
             css += " dx-chart-mark-active";
@@ -153,6 +164,7 @@ public sealed class DxBarChart : ComponentBase
         builder.AddAttribute(35, "height", F(Math.Max(0, h)));
         builder.AddAttribute(36, "rx", "3");
         builder.AddAttribute(37, "fill", fill);
+        builder.AddAttribute(137, "style", $"animation-delay:{index * 22}ms");
 
         if (interactive)
         {

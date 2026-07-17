@@ -104,7 +104,7 @@ public sealed class DxCandlestickChart : ComponentBase
             string color = up ? UpColor : DownColor;
             string label = $"{Points[i].Category}: open {open:0.##}, high {high:0.##}, low {low:0.##}, close {close:0.##}";
 
-            string groupCss = "dx-candle";
+            string groupCss = "dx-candle dx-chart-drawin";
             if (interactive && selection.IsActive(i))
             {
                 groupCss += " dx-chart-mark-active";
@@ -118,6 +118,7 @@ public sealed class DxCandlestickChart : ComponentBase
             builder.OpenElement(20, "g");
             builder.SetKey(i);
             builder.AddAttribute(21, "class", groupCss);
+            builder.AddAttribute(121, "style", Inv($"animation-delay:{i * 25}ms"));
 
             if (interactive)
             {

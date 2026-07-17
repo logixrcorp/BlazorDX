@@ -113,3 +113,31 @@ public sealed class ChartValueAttribute : Attribute
 
     public ChartField Field { get; }
 }
+
+/// <summary>
+/// One KPI row for <see cref="DxBulletChart"/> (Stephen Few's bullet-graph design): a single
+/// measure bar against a target marker and, optionally, qualitative range bands (e.g.
+/// poor/satisfactory/good). Doesn't fit the flat <see cref="ChartPoint"/> shape — a bullet row has
+/// its own scale (<see cref="Max"/>) and multiple thresholds, not one X/Y pair.
+/// </summary>
+/// <param name="Label">The KPI's name.</param>
+/// <param name="Value">The measure — how far the bar fills.</param>
+/// <param name="Target">Where the target tick is drawn.</param>
+/// <param name="Max">The scale's upper bound; <see cref="Value"/> and <see cref="Target"/> read against <c>[0, Max]</c>.</param>
+/// <param name="Ranges">
+/// Ascending thresholds within <c>[0, Max]</c> splitting the track into qualitative bands (e.g.
+/// <c>[40, 75]</c> for poor/satisfactory/good). <c>null</c> draws a single plain track.
+/// </param>
+/// <param name="Color">Optional CSS color override for the measure bar; otherwise a palette color is used.</param>
+public readonly record struct BulletPoint(
+    string Label,
+    double Value,
+    double Target,
+    double Max = 100,
+    IReadOnlyList<double>? Ranges = null,
+    string? Color = null);
+
+/// <summary>The row a click, keyboard selection, or hover interaction occurred on, for <see cref="DxBulletChart"/>.</summary>
+/// <param name="Index">The row's index into the chart's <c>Points</c> list.</param>
+/// <param name="Point">The row itself.</param>
+public readonly record struct BulletPointEventArgs(int Index, BulletPoint Point);

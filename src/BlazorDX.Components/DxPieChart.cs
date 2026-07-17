@@ -112,7 +112,7 @@ public sealed class DxPieChart : ComponentBase
             string color = point.Color ?? Palette[index % Palette.Length];
             string label = $"{point.Category}: {Pct(fraction)}";
 
-            string css = "dx-pie-slice";
+            string css = "dx-pie-slice dx-chart-drawin";
             if (interactive && selection.IsActive(index))
             {
                 css += " dx-chart-mark-active";
@@ -128,6 +128,7 @@ public sealed class DxPieChart : ComponentBase
             builder.AddAttribute(21, "class", css);
             builder.AddAttribute(22, "d", Arc(cx, cy, r, angle, end, fraction));
             builder.AddAttribute(23, "fill", color);
+            builder.AddAttribute(123, "style", $"animation-delay:{index * 30}ms");
 
             if (interactive)
             {

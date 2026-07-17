@@ -73,12 +73,12 @@ public sealed class DxAreaChart : ComponentBase
         (string line, string area) = BuildPaths();
 
         builder.OpenElement(8, "polygon");
-        builder.AddAttribute(9, "class", "dx-area-fill");
+        builder.AddAttribute(9, "class", "dx-area-fill dx-chart-reveal");
         builder.AddAttribute(10, "points", area);
         builder.CloseElement();
 
         builder.OpenElement(11, "polyline");
-        builder.AddAttribute(12, "class", "dx-chart-line");
+        builder.AddAttribute(12, "class", "dx-chart-line dx-chart-reveal");
         builder.AddAttribute(13, "fill", "none");
         builder.AddAttribute(14, "vector-effect", "non-scaling-stroke");
         builder.AddAttribute(15, "points", line);

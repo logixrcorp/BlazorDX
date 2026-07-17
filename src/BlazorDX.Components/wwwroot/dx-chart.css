@@ -104,6 +104,79 @@
   dominant-baseline: middle;
 }
 
+/* ---- Entrance motion: every chart draws itself in, not just appears ---- */
+
+/* Discrete marks (bar/slice/dot/stage/candle/vertex) fade + rise in, staggered per-mark via an
+   inline animation-delay the component computes from the point's index. */
+@keyframes dx-chart-drawin {
+  from { opacity: 0; transform: translateY(4px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.dx-chart-drawin {
+  animation: dx-chart-drawin 360ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  transform-origin: center;
+}
+
+/* Continuous paths (line/area) wipe in left-to-right instead — a fade would hide the shape the
+   downsampling worked to preserve. */
+@keyframes dx-chart-reveal {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0 0 0); }
+}
+.dx-chart-reveal {
+  animation: dx-chart-reveal 560ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dx-chart-drawin,
+  .dx-chart-reveal {
+    animation: none;
+  }
+}
+
+/* ---- Waterfall ---- */
+.dx-waterfall-rect { transition: opacity 120ms ease; }
+.dx-waterfall-rect:hover { opacity: 0.85; }
+.dx-waterfall-connector {
+  stroke: var(--dx-border, #cbd5e1);
+  stroke-dasharray: 3 3;
+}
+
+/* ---- Bubble ---- */
+.dx-bubble-dot {
+  fill-opacity: 0.6;
+  transition: fill-opacity 120ms ease;
+}
+.dx-bubble-dot:hover { fill-opacity: 0.85; }
+
+/* ---- Heatmap ---- */
+.dx-heatmap-cell { transition: opacity 120ms ease; }
+.dx-heatmap-cell:hover { opacity: 0.8; }
+.dx-heatmap-label {
+  font-size: 10px;
+  fill: var(--dx-text-muted, #64748b);
+}
+.dx-heatmap-cell-value {
+  font-size: 10px;
+  fill: #ffffff;
+  pointer-events: none;
+}
+
+/* ---- Bullet ---- */
+.dx-bullet-label {
+  font-size: 12px;
+  fill: var(--dx-text, #334155);
+}
+.dx-bullet-track { fill: var(--dx-border, #e2e8f0); }
+.dx-bullet-range-1 { fill: var(--dx-surface-alt, #f1f5f9); }
+.dx-bullet-range-2 { fill: var(--dx-border, #e2e8f0); }
+.dx-bullet-bar { fill: var(--dx-accent, #2563eb); }
+.dx-bullet-target {
+  stroke: var(--dx-text, #0f172a);
+  stroke-width: 2.5;
+}
+.dx-bullet-row { cursor: default; }
+
 /* ---- Interactive marks (selection is opt-in — see each chart's remarks) ---- */
 
 /* The chart becomes a role="application" roving-tabindex widget once a selection/hover
@@ -120,6 +193,10 @@
 .dx-chart-mark-active {
   outline: 2px solid var(--dx-accent, #2563eb);
   outline-offset: 1px;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--dx-accent, #2563eb) 65%, transparent));
+}
+.dx-chart-mark-active.dx-chart-mark-hovered {
+  filter: brightness(1.08) drop-shadow(0 0 5px color-mix(in srgb, var(--dx-accent, #2563eb) 65%, transparent));
 }
 
 /* A pointer-hovered mark: a lift, not a colour change (colour alone must never be the
@@ -131,7 +208,11 @@
 
 .dx-funnel-stage,
 .dx-candle,
-.dx-radar-vertex {
+.dx-radar-vertex,
+.dx-waterfall-rect,
+.dx-bubble-dot,
+.dx-heatmap-cell,
+.dx-chart-svg[role="application"] .dx-bullet-row {
   cursor: pointer;
 }
 .dx-radar-vertex {

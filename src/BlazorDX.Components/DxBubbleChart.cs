@@ -7,27 +7,29 @@ using Microsoft.AspNetCore.Components.Web;
 namespace BlazorDX.Components;
 
 /// <summary>
-/// A scatter plot: each (x, y) point is drawn as a dot, scaled to the data's
-/// bounds. Reuses the shared <see cref="ChartPoint"/> model (<see cref="ChartPoint.X"/> +
-/// <see cref="ChartPoint.Y"/>). Pure SVG. Styling is token-driven (see dx-chart.css).
+/// A bubble chart: a scatter plot with a third dimension encoded as dot radius. Reuses the shared
+/// <see cref="ChartPoint"/> model — <see cref="ChartPoint.X"/> + <see cref="ChartPoint.Y"/> place
+/// the bubble, and <see cref="ChartPoint.Y2"/> (when set) sizes it, linearly mapped across the
+/// series' own min/max into <see cref="MinRadius"/>..<see cref="MaxRadius"/>. A point with no
+/// <see cref="ChartPoint.Y2"/> draws at <see cref="MinRadius"/>. Pure SVG; styling via dx-chart.css.
 /// </summary>
 /// <remarks>Selection is a progressive enhancement — see <see cref="DxBarChart"/>'s remarks.</remarks>
-public sealed class DxScatterChart : ComponentBase
+public sealed class DxBubbleChart : ComponentBase
 {
-    private const double Pad = 10;
+    private const double Pad = 14;
 
     private readonly ChartSelectionPrimitive selection = new();
-    private readonly string chartId = $"dx-scatter-{Guid.NewGuid():N}";
+    private readonly string chartId = $"dx-bubble-{Guid.NewGuid():N}";
 
     [Parameter, EditorRequired] public IReadOnlyList<ChartPoint> Points { get; set; } = [];
 
     [Parameter] public int Width { get; set; } = 640;
 
-    [Parameter] public int Height { get; set; } = 280;
+    [Parameter] public int Height { get; set; } = 320;
 
-    [Parameter] public double Radius { get; set; } = 3.5;
+    [Parameter] public double MinRadius { get; set; } = 6;
 
-    [Parameter] public string? Color { get; set; }
+    [Parameter] public double MaxRadius { get; set; } = 32;
 
     [Parameter] public string? Class { get; set; }
 
@@ -36,6 +38,9 @@ public sealed class DxScatterChart : ComponentBase
     [Parameter] public EventCallback<ChartPointEventArgs> OnPointHovered { get; set; }
 
     private bool Interactive => OnPointSelected.HasDelegate || OnPointHovered.HasDelegate;
+
+    private static readonly string[] Palette =
+        ["#2563eb", "#16a34a", "#d97706", "#dc2626", "#7c3aed", "#0891b2", "#db2777", "#65a30d"];
 
     protected override void OnParametersSet() => selection.ClampTo(Points.Count);
 
@@ -50,7 +55,7 @@ public sealed class DxScatterChart : ComponentBase
         builder.AddAttribute(3, "class", "dx-chart-svg");
         builder.AddAttribute(4, "viewBox", $"0 0 {Width} {Height}");
         builder.AddAttribute(5, "role", interactive ? "application" : "img");
-        builder.AddAttribute(6, "aria-label", $"Scatter plot of {Points.Count} points");
+        builder.AddAttribute(6, "aria-label", $"Bubble chart of {Points.Count} points");
 
         if (interactive)
         {
@@ -82,13 +87,21 @@ public sealed class DxScatterChart : ComponentBase
         double spanX = maxX - minX == 0 ? 1 : maxX - minX;
         double spanY = maxY - minY == 0 ? 1 : maxY - minY;
 
+        double minSize = Points.Min(p => p.Y2 ?? MinRadius);
+        double maxSize = Points.Max(p => p.Y2 ?? MinRadius);
+        double spanSize = maxSize - minSize == 0 ? 1 : maxSize - minSize;
+
+        double area = Math.Max(1, Math.Min(Width, Height) - (2 * Pad) - (2 * MaxRadius));
+
         for (int i = 0; i < Points.Count; i++)
         {
             ChartPoint point = Points[i];
-            double cx = Pad + ((point.X - minX) / spanX * (Width - (2 * Pad)));
-            double cy = (Height - Pad) - ((point.Y - minY) / spanY * (Height - (2 * Pad)));
+            double cx = Pad + MaxRadius + ((point.X - minX) / spanX * area);
+            double cy = (Height - Pad - MaxRadius) - ((point.Y - minY) / spanY * area);
+            double size = point.Y2 ?? minSize;
+            double radius = MinRadius + ((size - minSize) / spanSize * (MaxRadius - MinRadius));
 
-            string css = "dx-scatter-dot dx-chart-drawin";
+            string css = "dx-bubble-dot dx-chart-drawin";
             if (interactive && selection.IsActive(i))
             {
                 css += " dx-chart-mark-active";
@@ -99,33 +112,33 @@ public sealed class DxScatterChart : ComponentBase
                 css += " dx-chart-mark-hovered";
             }
 
+            string color = point.Color ?? Palette[i % Palette.Length];
+            string label = point.Y2 is { } sz
+                ? $"{point.Category ?? $"({Num(point.X)}, {Num(point.Y)})"}: size {Num(sz)}"
+                : point.Category ?? $"({Num(point.X)}, {Num(point.Y)})";
+
             builder.OpenElement(10, "circle");
             builder.SetKey(i);
             builder.AddAttribute(11, "class", css);
             builder.AddAttribute(12, "cx", F(cx));
             builder.AddAttribute(13, "cy", F(cy));
-            builder.AddAttribute(14, "r", F(Radius));
-            builder.AddAttribute(114, "style", $"animation-delay:{i * 6}ms");
-            if ((point.Color ?? Color) is { } fill)
-            {
-                builder.AddAttribute(15, "fill", fill);
-            }
+            builder.AddAttribute(14, "r", F(radius));
+            builder.AddAttribute(15, "fill", color);
+            builder.AddAttribute(16, "style", $"animation-delay:{i * 10}ms");
 
             if (interactive)
             {
                 int captured = i;
-                string label = $"({Num(point.X)}, {Num(point.Y)})";
-                builder.AddAttribute(16, "id", PointId(i));
-                builder.AddAttribute(17, "aria-label", label);
-                builder.AddAttribute(18, "onclick", EventCallback.Factory.Create(this, () => SelectAsync(captured)));
-                builder.AddAttribute(19, "onmouseover", EventCallback.Factory.Create(this, () => HoverAsync(captured)));
-                builder.AddAttribute(20, "onmouseout", EventCallback.Factory.Create(this, () => HoverAsync(-1)));
-
-                builder.OpenElement(21, "title");
-                builder.AddContent(22, label);
-                builder.CloseElement();
+                builder.AddAttribute(17, "id", PointId(i));
+                builder.AddAttribute(18, "aria-label", label);
+                builder.AddAttribute(19, "onclick", EventCallback.Factory.Create(this, () => SelectAsync(captured)));
+                builder.AddAttribute(20, "onmouseover", EventCallback.Factory.Create(this, () => HoverAsync(captured)));
+                builder.AddAttribute(21, "onmouseout", EventCallback.Factory.Create(this, () => HoverAsync(-1)));
             }
 
+            builder.OpenElement(22, "title");
+            builder.AddContent(23, label);
+            builder.CloseElement();
             builder.CloseElement();
         }
     }

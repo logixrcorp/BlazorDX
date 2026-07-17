@@ -82,7 +82,7 @@ public sealed class DxFunnelChart : ComponentBase
             string points = string.Create(CultureInfo.InvariantCulture,
                 $"{cx - topW / 2:0.#},{yTop:0.#} {cx + topW / 2:0.#},{yTop:0.#} {cx + botW / 2:0.#},{yBot:0.#} {cx - botW / 2:0.#},{yBot:0.#}");
 
-            string css = "dx-funnel-stage";
+            string css = "dx-funnel-stage dx-chart-drawin";
             if (interactive && selection.IsActive(i))
             {
                 css += " dx-chart-mark-active";
@@ -99,6 +99,7 @@ public sealed class DxFunnelChart : ComponentBase
             builder.AddAttribute(22, "points", points);
             builder.AddAttribute(23, "fill", color);
             builder.AddAttribute(24, "fill-opacity", "0.85");
+            builder.AddAttribute(124, "style", Inv($"animation-delay:{i * 40}ms"));
 
             if (interactive)
             {

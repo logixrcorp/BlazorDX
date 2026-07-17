@@ -71,7 +71,7 @@ public sealed class DxLineChart : ComponentBase
         builder.AddAttribute(9, "aria-label", $"Line chart of {selected.Length} downsampled points");
 
         builder.OpenElement(10, "polyline");
-        builder.AddAttribute(11, "class", "dx-chart-line");
+        builder.AddAttribute(11, "class", "dx-chart-line dx-chart-reveal");
         builder.AddAttribute(12, "fill", "none");
         builder.AddAttribute(13, "vector-effect", "non-scaling-stroke");
         builder.AddAttribute(14, "points", BuildPoints());

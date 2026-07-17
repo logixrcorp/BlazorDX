@@ -111,7 +111,9 @@ public sealed class DxRadarChart : ComponentBase
                 string color = ColorOf(s, names[s]);
                 builder.OpenElement(80, "g");
                 builder.SetKey(names[s]);
-                Polygon(builder, 81, SeriesPoints(cx, cy, radius, max, names[s], n), color, color, 2, 0.18);
+                builder.AddAttribute(180, "class", "dx-chart-drawin");
+                builder.AddAttribute(181, "style", Inv($"animation-delay:{s * 60}ms"));
+                Polygon(builder, 82, SeriesPoints(cx, cy, radius, max, names[s], n), color, color, 2, 0.18);
                 if (interactive)
                 {
                     BuildVertices(builder, cx, cy, radius, max, names[s], s, n);
@@ -134,7 +136,7 @@ public sealed class DxRadarChart : ComponentBase
             (double x, double y) = Point(cx, cy, radius * value / max, i, n);
             int index = (seriesIndex * n) + i;
 
-            string css = "dx-radar-vertex";
+            string css = "dx-radar-vertex dx-chart-drawin";
             if (selection.IsActive(index))
             {
                 css += " dx-chart-mark-active";
@@ -154,6 +156,7 @@ public sealed class DxRadarChart : ComponentBase
             builder.AddAttribute(92, "cx", Inv($"{x:0.#}"));
             builder.AddAttribute(93, "cy", Inv($"{y:0.#}"));
             builder.AddAttribute(94, "r", "4");
+            builder.AddAttribute(194, "style", Inv($"animation-delay:{(seriesIndex * n + i) * 20}ms"));
             builder.AddAttribute(95, "id", PointId(index));
             builder.AddAttribute(96, "aria-label", label);
             builder.AddAttribute(97, "onclick", EventCallback.Factory.Create(this, () => SelectAsync(captured)));

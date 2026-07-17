@@ -184,6 +184,89 @@
         <member name="T:BlazorDX.Components.ChartValueAttribute">
             <summary>Declares a property as the source of one <see cref="T:BlazorDX.Components.ChartPoint"/> field. See <see cref="T:BlazorDX.Components.ChartField"/>.</summary>
         </member>
+        <member name="T:BlazorDX.Components.BulletPoint">
+            <summary>
+            One KPI row for <see cref="T:BlazorDX.Components.DxBulletChart"/> (Stephen Few's bullet-graph design): a single
+            measure bar against a target marker and, optionally, qualitative range bands (e.g.
+            poor/satisfactory/good). Doesn't fit the flat <see cref="T:BlazorDX.Components.ChartPoint"/> shape — a bullet row has
+            its own scale (<see cref="P:BlazorDX.Components.BulletPoint.Max"/>) and multiple thresholds, not one X/Y pair.
+            </summary>
+            <param name="Label">The KPI's name.</param>
+            <param name="Value">The measure — how far the bar fills.</param>
+            <param name="Target">Where the target tick is drawn.</param>
+            <param name="Max">The scale's upper bound; <see cref="P:BlazorDX.Components.BulletPoint.Value"/> and <see cref="P:BlazorDX.Components.BulletPoint.Target"/> read against <c>[0, Max]</c>.</param>
+            <param name="Ranges">
+            Ascending thresholds within <c>[0, Max]</c> splitting the track into qualitative bands (e.g.
+            <c>[40, 75]</c> for poor/satisfactory/good). <c>null</c> draws a single plain track.
+            </param>
+            <param name="Color">Optional CSS color override for the measure bar; otherwise a palette color is used.</param>
+        </member>
+        <member name="M:BlazorDX.Components.BulletPoint.#ctor(System.String,System.Double,System.Double,System.Double,System.Collections.Generic.IReadOnlyList{System.Double},System.String)">
+            <summary>
+            One KPI row for <see cref="T:BlazorDX.Components.DxBulletChart"/> (Stephen Few's bullet-graph design): a single
+            measure bar against a target marker and, optionally, qualitative range bands (e.g.
+            poor/satisfactory/good). Doesn't fit the flat <see cref="T:BlazorDX.Components.ChartPoint"/> shape — a bullet row has
+            its own scale (<see cref="P:BlazorDX.Components.BulletPoint.Max"/>) and multiple thresholds, not one X/Y pair.
+            </summary>
+            <param name="Label">The KPI's name.</param>
+            <param name="Value">The measure — how far the bar fills.</param>
+            <param name="Target">Where the target tick is drawn.</param>
+            <param name="Max">The scale's upper bound; <see cref="P:BlazorDX.Components.BulletPoint.Value"/> and <see cref="P:BlazorDX.Components.BulletPoint.Target"/> read against <c>[0, Max]</c>.</param>
+            <param name="Ranges">
+            Ascending thresholds within <c>[0, Max]</c> splitting the track into qualitative bands (e.g.
+            <c>[40, 75]</c> for poor/satisfactory/good). <c>null</c> draws a single plain track.
+            </param>
+            <param name="Color">Optional CSS color override for the measure bar; otherwise a palette color is used.</param>
+        </member>
+        <member name="P:BlazorDX.Components.BulletPoint.Label">
+            <summary>The KPI's name.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.BulletPoint.Value">
+            <summary>The measure — how far the bar fills.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.BulletPoint.Target">
+            <summary>Where the target tick is drawn.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.BulletPoint.Max">
+            <summary>The scale's upper bound; <see cref="P:BlazorDX.Components.BulletPoint.Value"/> and <see cref="P:BlazorDX.Components.BulletPoint.Target"/> read against <c>[0, Max]</c>.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.BulletPoint.Ranges">
+            <summary>
+            Ascending thresholds within <c>[0, Max]</c> splitting the track into qualitative bands (e.g.
+            <c>[40, 75]</c> for poor/satisfactory/good). <c>null</c> draws a single plain track.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.BulletPoint.Color">
+            <summary>Optional CSS color override for the measure bar; otherwise a palette color is used.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.BulletPointEventArgs">
+            <summary>The row a click, keyboard selection, or hover interaction occurred on, for <see cref="T:BlazorDX.Components.DxBulletChart"/>.</summary>
+            <param name="Index">The row's index into the chart's <c>Points</c> list.</param>
+            <param name="Point">The row itself.</param>
+        </member>
+        <member name="M:BlazorDX.Components.BulletPointEventArgs.#ctor(System.Int32,BlazorDX.Components.BulletPoint)">
+            <summary>The row a click, keyboard selection, or hover interaction occurred on, for <see cref="T:BlazorDX.Components.DxBulletChart"/>.</summary>
+            <param name="Index">The row's index into the chart's <c>Points</c> list.</param>
+            <param name="Point">The row itself.</param>
+        </member>
+        <member name="P:BlazorDX.Components.BulletPointEventArgs.Index">
+            <summary>The row's index into the chart's <c>Points</c> list.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.BulletPointEventArgs.Point">
+            <summary>The row itself.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.ChartGradients">
+            <summary>
+            Shared SVG <c>&lt;defs&gt;</c> gradient rendering for charts that opt into a <c>Gradient</c>
+            parameter. Each gradient fades a mark's own color from full opacity at its base to translucent
+            at its tip — no hardcoded lighter-shade math, so it works with any color (hex, named, a CSS
+            variable) and stays theme-safe. One <c>&lt;linearGradient&gt;</c> is emitted per distinct color
+            actually in use.
+            </summary>
+        </member>
+        <member name="M:BlazorDX.Components.ChartGradients.Url(System.String,System.String)">
+            <summary>The <c>fill</c> value referencing the gradient built for <paramref name="color"/>.</summary>
+        </member>
         <member name="T:BlazorDX.Components.DxAccordion">
             <summary>
             Tier 2 styled accordion. Inherits all behavior from
@@ -273,6 +356,9 @@
             pre-existing decorative <c>role="img"</c> with no behavior change.
             </remarks>
         </member>
+        <member name="P:BlazorDX.Components.DxBarChart.Gradient">
+            <summary>Fill each bar with a top-to-bottom fade of its own color instead of a flat fill.</summary>
+        </member>
         <member name="P:BlazorDX.Components.DxBarChart.OnPointSelected">
             <summary>Raised on click or Enter/Space when a bar is the active (keyboard-focused) point.</summary>
         </member>
@@ -326,6 +412,28 @@
         </member>
         <member name="P:BlazorDX.Components.DxBreadcrumbs.Separator">
             <summary>Separator glyph between items.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxBubbleChart">
+            <summary>
+            A bubble chart: a scatter plot with a third dimension encoded as dot radius. Reuses the shared
+            <see cref="T:BlazorDX.Components.ChartPoint"/> model — <see cref="P:BlazorDX.Components.ChartPoint.X"/> + <see cref="P:BlazorDX.Components.ChartPoint.Y"/> place
+            the bubble, and <see cref="P:BlazorDX.Components.ChartPoint.Y2"/> (when set) sizes it, linearly mapped across the
+            series' own min/max into <see cref="P:BlazorDX.Components.DxBubbleChart.MinRadius"/>..<see cref="P:BlazorDX.Components.DxBubbleChart.MaxRadius"/>. A point with no
+            <see cref="P:BlazorDX.Components.ChartPoint.Y2"/> draws at <see cref="P:BlazorDX.Components.DxBubbleChart.MinRadius"/>. Pure SVG; styling via dx-chart.css.
+            </summary>
+            <remarks>Selection is a progressive enhancement — see <see cref="T:BlazorDX.Components.DxBarChart"/>'s remarks.</remarks>
+        </member>
+        <member name="T:BlazorDX.Components.DxBulletChart">
+            <summary>
+            A bullet chart (Stephen Few's KPI design): one row per <see cref="T:BlazorDX.Components.BulletPoint"/>, each a measure
+            bar against a target tick, optionally over qualitative range bands. Doesn't use
+            <see cref="T:BlazorDX.Components.ChartPoint"/> — see <see cref="T:BlazorDX.Components.BulletPoint"/> for why. Pure SVG; styling via
+            dx-chart.css.
+            </summary>
+            <remarks>
+            Selection is a progressive enhancement (see <see cref="T:BlazorDX.Components.DxBarChart"/>'s remarks) — the
+            interactive mark is a whole row.
+            </remarks>
         </member>
         <member name="T:BlazorDX.Components.DxButton">
             <summary>
@@ -1004,6 +1112,21 @@
         </member>
         <member name="P:BlazorDX.Components.DxGantt.NameWidth">
             <summary>Width of the task-name column in pixels.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxHeatmap">
+            <summary>
+            A heatmap: a grid of colored cells, one per (row, column) pair. Reuses the shared
+            <see cref="T:BlazorDX.Components.ChartPoint"/> model — <see cref="P:BlazorDX.Components.ChartPoint.Series"/> is the row key,
+            <see cref="P:BlazorDX.Components.ChartPoint.Category"/> is the column key, and <see cref="P:BlazorDX.Components.ChartPoint.Y"/> is the
+            cell's value. Intensity is drawn as <c>fill-opacity</c> on the chart's accent color (normalized
+            min→max across every cell), not a hand-rolled color scale — theme-safe, and colour is never the
+            only signal (the value is always in the cell's tooltip/label). Pure SVG; styling via dx-chart.css.
+            </summary>
+            <remarks>Selection is a progressive enhancement — see <see cref="T:BlazorDX.Components.DxBarChart"/>'s remarks; the
+            interactive mark is one grid cell, in <c>Points</c> order.</remarks>
+        </member>
+        <member name="P:BlazorDX.Components.DxHeatmap.ShowValues">
+            <summary>Show each cell's value as text (in addition to the tooltip).</summary>
         </member>
         <member name="T:BlazorDX.Components.DxHistogram">
             <summary>
@@ -2060,6 +2183,26 @@
         <member name="P:BlazorDX.Components.DxVirtualKeyboard.Class">
             <summary>Extra CSS classes appended to the keyboard container.</summary>
         </member>
+        <member name="T:BlazorDX.Components.DxWaterfallChart">
+            <summary>
+            A waterfall chart: bars float from a running total to show how a sequence of positive/negative
+            deltas add up to a final value. Reuses the shared <see cref="T:BlazorDX.Components.ChartPoint"/> model — a point's
+            <see cref="P:BlazorDX.Components.ChartPoint.Y"/> is a delta added to the running total (positive or negative), unless
+            <see cref="P:BlazorDX.Components.ChartPoint.Y2"/> is set, in which case the point is an absolute "total" bar (drawn
+            from zero) that resets the running total to <see cref="P:BlazorDX.Components.ChartPoint.Y2"/>. Pure SVG; styling via
+            dx-chart.css.
+            </summary>
+            <remarks>Selection is a progressive enhancement — see <see cref="T:BlazorDX.Components.DxBarChart"/>'s remarks.</remarks>
+        </member>
+        <member name="P:BlazorDX.Components.DxWaterfallChart.UpColor">
+            <summary>Color for a positive delta bar.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxWaterfallChart.DownColor">
+            <summary>Color for a negative delta bar.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxWaterfallChart.TotalColor">
+            <summary>Color for an absolute "total" bar (a point with <see cref="P:BlazorDX.Components.ChartPoint.Y2"/> set).</summary>
+        </member>
         <member name="T:BlazorDX.Components.FormFieldRenderContext">
             <summary>What a field template receives: the field metadata, its current value, a
             callback to change it, and any validation errors against it.</summary>
@@ -2152,6 +2295,34 @@
         <member name="M:BlazorDX.Components.ToastService.ResumeAll">
             <summary>Restarts auto-dismiss for every visible toast (e.g. when the pointer or focus
             leaves the region). Each toast gets a fresh countdown.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.SecureEphemeralChat.SessionId">
+            <summary>Opaque session identifier from the host. No auth logic happens here.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.SecureEphemeralChat.ServerPublicKeyBase64">
+            <summary>The server's ephemeral P-256 public key (uncompressed SEC1, base64), for the ECDH handshake.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.SecureEphemeralChat.NonceBase64">
+            <summary>The AES-GCM nonce (base64) for <see cref="P:BlazorDX.Components.SecureEphemeralChat.CiphertextBase64"/>.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.SecureEphemeralChat.CiphertextBase64">
+            <summary>The AES-GCM ciphertext, including its trailing authentication tag (base64).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.SecureEphemeralChat.EventsBaseUrl">
+            <summary>
+            Base path for the revocation SSE endpoint; the bridge connects to
+            <c>{EventsBaseUrl}/{SessionId}</c>. Defaults to the contract path
+            implemented by <c>EphemeralEventsEndpoint</c>.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.SecureEphemeralChat.OnWithdrawn">
+            <summary>Raised after the server pushes a <c>WITHDRAW</c> event and the node has been scrubbed.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.SecureEphemeralChat.OnRefreshed">
+            <summary>Raised after the server pushes a <c>REFRESH</c> event (the node is left mounted).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.SecureEphemeralChat.OnTamperDetected">
+            <summary>Raised if the MutationObserver detects tampering and the node self-destructs.</summary>
         </member>
     </members>
 </doc>

@@ -27,6 +27,25 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ### Added
 
+- **Chart visual language upgrade + four new chart types (the July "Graphs" pass, part 1 of 3).**
+  Every chart now draws itself in instead of just appearing: discrete marks (bar/slice/dot/stage/
+  candle/vertex) fade-and-rise in with a per-mark stagger, continuous paths (line/area) wipe in
+  left-to-right — both a `prefers-reduced-motion`-respecting CSS animation, no new dependency. The
+  keyboard-focused mark now gets a soft glow (`drop-shadow`) alongside its existing outline. A new
+  opt-in `Gradient` bool (currently on `DxBarChart`/`DxWaterfallChart`) fills a mark with a
+  top-to-bottom fade of its own color via a shared `ChartGradients` SVG `<defs>` helper — works
+  with any color, no hardcoded shade math, so it stays theme-safe.
+  Four new chart types, all following the same progressive-enhancement selection contract as the
+  original 10: **`DxWaterfallChart`** (bars float from a running total; a point with `Y2` set is an
+  absolute "total" that resets it, with dashed connectors tracing the total across bars);
+  **`DxBubbleChart`** (scatter + a third dimension via `Y2`, linearly scaled to a radius range);
+  **`DxHeatmap`** (a `Series`×`Category` grid, intensity drawn as `fill-opacity` on the accent
+  color — not a hand-rolled color scale, and never the only signal); and **`DxBulletChart`**
+  (Stephen Few's KPI-vs-target design, on a new dedicated `BulletPoint`/`BulletPointEventArgs`
+  pair — a bullet row's own scale and range bands don't fit the flat `ChartPoint` shape). Demoed
+  live in `Charts.razor`. More chart types (treemap, sunburst, box/violin plot, sankey, and beyond)
+  are in progress as follow-up parts of this pass.
+
 - **`[ChartRow]`/`[ChartValue]` source generator** — bind an existing domain type straight to a
   chart with `rows.ToChartPoints()`, no manual `ChartPoint` construction, no reflection. Tag a class
   or struct `[ChartRow]` and its properties `[ChartValue(ChartField.Category)]` /

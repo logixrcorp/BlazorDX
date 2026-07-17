@@ -214,7 +214,7 @@ public sealed class DxStackedBarChart : ComponentBase
         RenderTreeBuilder builder, int index, double x, double y, double w, double h, string fill, string label,
         bool interactive)
     {
-        string css = "dx-bar-rect";
+        string css = "dx-bar-rect dx-chart-drawin";
         if (interactive && selection.IsActive(index))
         {
             css += " dx-chart-mark-active";
@@ -233,6 +233,7 @@ public sealed class DxStackedBarChart : ComponentBase
         builder.AddAttribute(14, "width", F(Math.Max(0, w)));
         builder.AddAttribute(15, "height", F(Math.Max(0, h)));
         builder.AddAttribute(16, "fill", fill);
+        builder.AddAttribute(116, "style", $"animation-delay:{index * 18}ms");
 
         if (interactive)
         {
