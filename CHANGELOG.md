@@ -9,6 +9,28 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ## [Unreleased]
 
+### Fixed
+
+- **`.dx-chart-caption` failed WCAG AA color contrast on the demo shell's page background.**
+  Adding `/charts` to the axe-core E2E accessibility sweep (see below) immediately caught a real
+  violation: the shared caption style used `--dx-text-muted` (`#64748b`, Tailwind slate-500),
+  correct against the component library's own white `--dx-surface` cards, but every chart on the
+  `/charts` demo page renders directly on the demo shell's `body { background: #f1f5f9 }` — against
+  that background `#64748b` only reaches ~4.34:1, just under the 4.5:1 AA threshold for normal
+  text. Changed to `#475569` (slate-600), the same darker pairing the demo app's own CSS already
+  uses everywhere else text sits on that `#f1f5f9` background (`.td-pri-low`, `.mail-label`,
+  `.hr-leave-row`, etc.) — ~6.9:1 against the demo shell, ~7.6:1 against a plain white card, so the
+  fix is safe in every context `.dx-chart-caption` renders in, not just this one page.
+
+### Added
+
+- **`/charts` now covered by the axe-core accessibility E2E sweep.** `AccessibilityE2ETests.cs`
+  ran a real-browser axe-core check against ~20 routes (grid, calendar, scheduler, docs, etc.) but
+  never the chart showcase — so the entire 25-chart-type family had zero automated real-browser
+  accessibility verification, only bUnit's DOM-shape assertions. Added `/charts` to the route list.
+  It immediately found the `color-contrast` violation fixed above — direct validation that the gap
+  was real, not just theoretical. All 23 routes pass now, `/charts` included.
+
 ### Changed
 
 - **`DxNetworkGraph`'s demo now shows its own selection feature.** `Charts.razor` rendered the

@@ -37,6 +37,7 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
     [InlineData("/htmx/doc?kind=pdf")]   // ... PDF embed shell + download fallback
     [InlineData("/reports")]             // static-SSR + HTMX SSRS report viewer (embed + parameter form)
     [InlineData("/powerbi")]             // interactive Power BI embed (wrapper container, loading/error)
+    [InlineData("/charts")]              // all 25 chart types, incl. interactive selection (Bar/Treemap/Network graph)
     public async Task Page_has_no_serious_axe_violations(string route)
     {
         Skip.IfNot(fx.Ready, fx.SkipReason);
