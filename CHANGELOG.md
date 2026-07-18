@@ -11,6 +11,26 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ### Fixed
 
+- **CI was red on every push since the "classic-meets-modern" editorial CSS pass (2026-07-18) —
+  `dotnet build BlazorDX.slnx -c Release` failing on `NU1902`.** A fresh restore (CI always does
+  one; a long-lived local checkout with cached `obj/` state doesn't re-audit) surfaced a moderate
+  advisory on AngleSharp 1.1.2 (GHSA-pgww-w46g-26qg / CVE-2026-54570, an mXSS sanitizer-bypass),
+  reached only transitively via bunit 1.31.3's test-time DOM parser — no shipping library or app
+  code references AngleSharp. Every push in the interim built locally with `-p:NuGetAudit=false`
+  as an undocumented local workaround; this closes that gap for real.
+  Tried the obvious fix first — a central transitive pin to AngleSharp 1.5.0+ (the patched
+  version) — and it's a binary break, not a drop-in: bunit 1.31.3's compiled
+  `Bunit.RefreshableElementCollection` calls `AngleSharp.Dom.IHtmlCollection<T>.get_Item(int)` in
+  a shape 1.5.x removed, so pinning past 1.5.0 threw `MissingMethodException` across 136 bUnit
+  tests. bunit's own 2.x line depends on a patched AngleSharp, but upgrading a test framework two
+  major versions across 1000+ tests is a separately-scoped, separately-regression-tested decision,
+  not something to bundle into an unrelated fix.
+  Suppressed the specific advisory instead, via `NuGetAuditSuppress` in `Directory.Build.props`,
+  with the full reasoning recorded there — a targeted, standard NuGet mechanism for "this advisory
+  doesn't apply to how we use this package," not a blanket audit bypass. Verified for real: clean
+  `dotnet restore`/`dotnet build BlazorDX.slnx -c Release` with no bypass flag, then all 6 CI unit
+  test steps run exactly as the workflow does (1172 tests total, 0 failures).
+
 - **`.dx-chart-caption` failed WCAG AA color contrast on the demo shell's page background.**
   Adding `/charts` to the axe-core E2E accessibility sweep (see below) immediately caught a real
   violation: the shared caption style used `--dx-text-muted` (`#64748b`, Tailwind slate-500),

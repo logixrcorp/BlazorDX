@@ -22,6 +22,26 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
   </PropertyGroup>
 
+  <!--
+    NuGetAuditSuppress: GHSA-pgww-w46g-26qg (CVE-2026-54570), moderate mXSS in
+    AngleSharp < 1.5.0, reaches this repo only transitively via bunit 1.31.3's
+    test-time DOM parser (Bunit.RefreshableElementCollection etc.) — no shipping
+    library or app code references AngleSharp directly. The advisory describes a
+    sanitizer-bypass primitive against attacker-supplied HTML; bUnit parses HTML
+    this codebase's own tests render, in an isolated test process, never
+    attacker-controlled input, so the vulnerability class doesn't apply to this
+    usage. Pinning past 1.5.0 is not a drop-in fix: bunit 1.31.3's compiled
+    Bunit.RefreshableElementCollection calls
+    AngleSharp.Dom.IHtmlCollection<T>.get_Item(int) in a shape 1.5.x removed —
+    doing so broke 136 tests with MissingMethodException. bunit's own 2.x line
+    depends on a patched AngleSharp; upgrading to it is a deliberate, separately
+    regression-tested follow-up (a wider API surface change), not bundled into
+    this suppression. Revisit this suppression when that upgrade lands.
+  -->
+  <ItemGroup Label="NuGet audit suppressions">
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-pgww-w46g-26qg" />
+  </ItemGroup>
+
   <!-- Trimming/AOT flags are applied in Directory.Build.targets, where OutputType
        is known, so they target libraries only (not the demo or test executables). -->
 

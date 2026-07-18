@@ -38,6 +38,17 @@
     <!-- Transitive pin: bunit 1.31.3 otherwise drags in a vulnerable preview of
          this package (NU1903). Central transitive pinning forces the patched one. -->
     <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="10.0.8" />
+    <!-- AngleSharp 1.1.2 (via bunit 1.31.3) carries a moderate mXSS advisory
+         (GHSA-pgww-w46g-26qg / CVE-2026-54570, fixed in 1.5.0). NOT pinned here:
+         bunit 1.31.3's compiled Bunit.RefreshableElementCollection calls
+         AngleSharp.Dom.IHtmlCollection<T>.get_Item(int) in a shape that no longer
+         exists in 1.5.x — pinning to the patched version is a binary break, not a
+         drop-in fix (confirmed: 136 bUnit tests fail with MissingMethodException).
+         bunit's own 2.x line depends on a patched AngleSharp, but is a major-version
+         upgrade of its own with a wider surface to regression-test; that's a
+         deliberate follow-up, not bundled into this suppression. See
+         Directory.Build.props for the NuGetAuditSuppress and its rationale. -->
+
     <!-- WebApplicationFactory<Program> for in-memory integration tests of the
          mock SSRS report server sample. -->
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.8" />
