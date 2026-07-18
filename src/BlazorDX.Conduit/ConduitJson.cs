@@ -23,6 +23,25 @@ internal sealed class McpProxyErrorResponse
 }
 
 /// <summary>
+/// The JSON <c>data</c> body of a <c>security/lifecycle</c> SSE event — the whitepaper's §8.3
+/// wire schema for a WITHDRAW/REFRESH notification: an <c>action</c> field rather than a
+/// distinct SSE event name per action. Built by <see cref="McpBrokerClient.RunAsync"/>; carries
+/// no signature (this class has no cryptographic key material -- see that method's own doc
+/// comment).
+/// </summary>
+internal sealed class SecurityLifecycleEnvelope
+{
+    [JsonPropertyName("action")]
+    public string Action { get; init; } = string.Empty;
+
+    [JsonPropertyName("correlationId")]
+    public string CorrelationId { get; init; } = string.Empty;
+
+    [JsonPropertyName("messageId")]
+    public string MessageId { get; init; } = string.Empty;
+}
+
+/// <summary>
 /// The source-generated <see cref="JsonSerializerContext"/> for the Conduit's own wire types
 /// (ADR 0002: zero reflection, trim/AOT-clean — this library is built with
 /// <c>IsAotCompatible</c>, so <c>Results.Json</c> must be called with a
@@ -34,4 +53,5 @@ internal sealed class McpProxyErrorResponse
     DefaultIgnoreCondition = JsonIgnoreCondition.Never)]
 [JsonSerializable(typeof(McpProxyAcceptedResponse))]
 [JsonSerializable(typeof(McpProxyErrorResponse))]
+[JsonSerializable(typeof(SecurityLifecycleEnvelope))]
 internal sealed partial class ConduitJsonContext : JsonSerializerContext;

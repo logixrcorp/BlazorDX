@@ -119,6 +119,17 @@ else if (state == MountState.Withdrawn)
     [Parameter]
     public string? TelemetryBaseUrl { get; set; }
 
+    /// <summary>
+    /// Optional cryptographic time-to-live, in seconds: when set, the session self-destructs
+    /// (a Destruction Receipt with trigger <c>TTL_EXPIRY</c>) this many seconds after mounting,
+    /// even with no WITHDRAW, tamper, or unmount. Leave unset/<see langword="null"/> for a
+    /// session that lives until one of those other triggers fires. In
+    /// <see cref="UseLiveHandshake"/> mode this parameter is ignored in favor of the broker's
+    /// own <see cref="EphemeralHandshakeResult.TtlSeconds"/>.
+    /// </summary>
+    [Parameter]
+    public int? TtlSeconds { get; set; }
+
     /// <summary>Raised after the server pushes a <c>WITHDRAW</c> event and the node has been scrubbed.</summary>
     [Parameter]
     public EventCallback OnWithdrawn { get; set; }
@@ -166,6 +177,7 @@ else if (state == MountState.Withdrawn)
             CiphertextBase64,
             EventsBaseUrl,
             TelemetryBaseUrl,
+            TtlSeconds,
             onWithdraw: () => _ = InvokeAsync(HandleWithdrawnAsync),
             onRefresh: () => _ = InvokeAsync(HandleRefreshedAsync),
             onTamper: () => _ = InvokeAsync(HandleTamperDetectedAsync)).AsTask();
@@ -206,6 +218,7 @@ else if (state == MountState.Withdrawn)
             response.CiphertextBase64,
             EventsBaseUrl,
             TelemetryBaseUrl,
+            response.TtlSeconds,
             onWithdraw: () => _ = InvokeAsync(HandleWithdrawnAsync),
             onRefresh: () => _ = InvokeAsync(HandleRefreshedAsync),
             onTamper: () => _ = InvokeAsync(HandleTamperDetectedAsync));

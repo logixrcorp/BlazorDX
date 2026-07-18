@@ -10,21 +10,28 @@
 //   3. Watch that node with a MutationObserver: any mutation we did not
 //      originate ourselves is treated as tampering and self-destructs the
 //      node immediately.
-//   4. Listen for server-pushed WITHDRAW/REFRESH events over the native
-//      EventSource against `${eventsBaseUrl}/{sessionId}` -- no SignalR.
-//      Both are HMAC-signed by the broker (the session's signing key, the
-//      same one derived during the ECDH handshake) and verified here before
-//      being acted on -- an unsigned/forged control signal cannot force a
-//      teardown or a refresh the way an unauthenticated Conduit relay could
-//      otherwise be tricked into forwarding.
+//   4. Listen for server-pushed lifecycle events over the native EventSource
+//      against `${eventsBaseUrl}/{sessionId}` -- no SignalR. Both WITHDRAW
+//      and REFRESH arrive as a single `security/lifecycle` SSE event
+//      carrying an `action` field, matching the whitepaper's wire schema
+//      (see docs/adr/0016). Both are HMAC-signed by the broker (the
+//      session's signing key, the same one derived during the ECDH
+//      handshake) and verified here before being acted on -- an
+//      unsigned/forged control signal cannot force a teardown or a refresh
+//      the way an unauthenticated Conduit relay could otherwise be tricked
+//      into forwarding. An unrecognized `action` on this trusted channel is
+//      itself treated as tampering, not silently ignored.
 //   5. Always call `clear_payload` on the wasm buffer, even on failure, so
 //      the plaintext is zeroized in Rust-owned memory the moment we are done
 //      copying it out.
 //   6. Sign and (best-effort, non-blocking) POST an Access Receipt right
 //      after a successful mount, and a Destruction Receipt at the moment the
-//      session is finally torn down (WITHDRAW, tamper, or unmount) -- the
-//      Proof-of-Destruction protocol. A telemetry POST failure never blocks
-//      or breaks the chat itself.
+//      session is finally torn down (WITHDRAW, tamper, unmount, or TTL
+//      expiry) -- the Proof-of-Destruction protocol. A telemetry POST
+//      failure never blocks or breaks the chat itself.
+//   7. Optionally self-destruct after a caller-supplied TTL (seconds) with
+//      no other trigger required -- a client-scheduled timer, since the
+//      Conduit relay never holds session state to expire on its own.
 
 import { ensureSecurityWasm, securityWasm, type SecurityWasmExports } from "./rust-loader";
 
@@ -40,6 +47,7 @@ interface MountedSession {
   shadowRoot: ShadowRoot;
   observer: MutationObserver;
   eventSource: EventSource | null;
+  ttlTimer: ReturnType<typeof setTimeout> | null;
   onWithdraw: () => void;
   onRefresh: () => void;
   onTamper: () => void;
@@ -276,6 +284,9 @@ function destroySession(hostElementId: string, notifyTamper: boolean): void {
   entry.observer.disconnect();
   overwriteShadowContent(entry.shadowRoot);
   entry.eventSource?.close();
+  if (entry.ttlTimer !== null) {
+    clearTimeout(entry.ttlTimer);
+  }
   mounted.delete(hostElementId);
   if (notifyTamper) {
     entry.onTamper();
@@ -315,20 +326,26 @@ function startTamperObserver(
   return observer;
 }
 
-// Parses `{"signature":"<base64>"}` from an SSE frame's data field. Any parse failure (missing
-// field, malformed JSON, not even valid base64 once decoded) degrades to an empty signature,
-// which simply fails verification below rather than throwing -- a malformed control frame is
-// exactly as untrusted as a well-formed-but-wrong one.
-function parseSignatureFromEventData(data: string): Uint8Array {
+// Parses `{"action":"WITHDRAW"|"REFRESH", "correlationId":"...", "signature":"<base64>"}` from
+// a `security/lifecycle` SSE frame's data field -- matching the whitepaper's §8.3 wire schema.
+// `correlationId` is accepted but not required here: this bridge is always already scoped to
+// one sessionId (the EventSource URL itself), so the field is informational rather than a
+// second source of truth. Any parse failure (malformed JSON, missing/non-string fields, not
+// even valid base64 once decoded) degrades to a null action and/or empty signature, which
+// simply fails verification below rather than throwing -- a malformed control frame is exactly
+// as untrusted as a well-formed-but-wrong one.
+function parseLifecycleEventData(data: string): { action: string | null; signature: Uint8Array } {
   try {
     const parsed: unknown = JSON.parse(data);
-    const signatureBase64 =
-      typeof parsed === "object" && parsed !== null && "signature" in parsed
-        ? (parsed as { signature: unknown }).signature
-        : null;
-    return typeof signatureBase64 === "string" ? base64ToBytes(signatureBase64) : new Uint8Array(0);
+    if (typeof parsed !== "object" || parsed === null) {
+      return { action: null, signature: new Uint8Array(0) };
+    }
+    const record = parsed as { action?: unknown; signature?: unknown };
+    const action = typeof record.action === "string" ? record.action : null;
+    const signature = typeof record.signature === "string" ? base64ToBytes(record.signature) : new Uint8Array(0);
+    return { action, signature };
   } catch {
-    return new Uint8Array(0);
+    return { action: null, signature: new Uint8Array(0) };
   }
 }
 
@@ -342,57 +359,85 @@ function openEventSource(
   const url = `${base}/${encodeURIComponent(sessionId)}`;
   const source = new EventSource(url, { withCredentials: true });
 
-  source.addEventListener("WITHDRAW", (event) => {
+  // WITHDRAW and REFRESH both arrive as one `security/lifecycle` event, distinguished by an
+  // `action` field -- the whitepaper's §8.3 envelope, rather than a distinct SSE event name per
+  // action. An action this bridge does not recognize (including a missing/malformed one) is
+  // treated the same as a forged signature: this is meant to be a trusted, fully-controlled
+  // channel, so anything unexpected on it is tampering, not something to silently drop.
+  source.addEventListener("security/lifecycle", (event) => {
     const entry = mounted.get(hostElementId);
     if (entry === undefined) {
       return;
     }
-    const signature = parseSignatureFromEventData((event as MessageEvent).data);
-    const outcome = verifyAndEndWithWasm(
-      securityWasm(),
-      sessionId,
-      controlMessage(sessionId, "WITHDRAW"),
-      signature,
-      controlMessage(sessionId, "WITHDRAW_EVENT"),
-    );
-    if (outcome === null) {
-      return; // nothing left to verify/end against -- already torn down by something else
-    }
-    const onWithdraw = entry.onWithdraw;
-    // A forged/invalid WITHDRAW is itself a tamper signal: an unauthenticated party injected a
-    // lifecycle event into what should be a trusted channel. A genuinely valid WITHDRAW is not
-    // tampering -- scrub without the tamper callback, then tell the host directly.
-    destroySession(hostElementId, /* notifyTamper */ !outcome.valid);
-    postTelemetryReceipt(
-      telemetryBaseUrl,
-      "destruction",
-      destructionReceiptBody(sessionId, outcome.valid ? "WITHDRAW_EVENT" : "TAMPER_DETECTED", outcome.destructionSignature),
-    );
-    if (outcome.valid) {
-      onWithdraw();
-    }
-  });
+    const { action, signature } = parseLifecycleEventData((event as MessageEvent).data);
 
-  source.addEventListener("REFRESH", (event) => {
-    const entry = mounted.get(hostElementId);
-    if (entry === undefined) {
+    if (action === "WITHDRAW") {
+      const outcome = verifyAndEndWithWasm(
+        securityWasm(),
+        sessionId,
+        controlMessage(sessionId, "WITHDRAW"),
+        signature,
+        controlMessage(sessionId, "WITHDRAW_EVENT"),
+      );
+      if (outcome === null) {
+        return; // nothing left to verify/end against -- already torn down by something else
+      }
+      const onWithdraw = entry.onWithdraw;
+      // A forged/invalid WITHDRAW is itself a tamper signal: an unauthenticated party injected
+      // a lifecycle event into what should be a trusted channel. A genuinely valid WITHDRAW is
+      // not tampering -- scrub without the tamper callback, then tell the host directly.
+      destroySession(hostElementId, /* notifyTamper */ !outcome.valid);
+      postTelemetryReceipt(
+        telemetryBaseUrl,
+        "destruction",
+        destructionReceiptBody(sessionId, outcome.valid ? "WITHDRAW_EVENT" : "TAMPER_DETECTED", outcome.destructionSignature),
+      );
+      if (outcome.valid) {
+        onWithdraw();
+      }
       return;
     }
-    const signature = parseSignatureFromEventData((event as MessageEvent).data);
-    const valid = verifySignalWithWasm(securityWasm(), sessionId, controlMessage(sessionId, "REFRESH"), signature);
-    if (valid === null) {
-      return; // nothing left to verify against
+
+    if (action === "REFRESH") {
+      const valid = verifySignalWithWasm(securityWasm(), sessionId, controlMessage(sessionId, "REFRESH"), signature);
+      if (valid === null) {
+        return; // nothing left to verify against
+      }
+      if (valid) {
+        entry.onRefresh();
+      } else {
+        // Same defensive-teardown response as any other detected tamper -- REFRESH does not
+        // normally end the session, but a forged one is not a normal REFRESH.
+        destroySessionWithReceipt(hostElementId, sessionId, telemetryBaseUrl, "TAMPER_DETECTED", /* notifyTamper */ true);
+      }
+      return;
     }
-    if (valid) {
-      entry.onRefresh();
-    } else {
-      // Same defensive-teardown response as any other detected tamper -- REFRESH does not
-      // normally end the session, but a forged one is not a normal REFRESH.
-      destroySessionWithReceipt(hostElementId, sessionId, telemetryBaseUrl, "TAMPER_DETECTED", /* notifyTamper */ true);
-    }
+
+    // Anything else on this channel -- an unrecognized action, or none at all (malformed JSON,
+    // wrong shape) -- is treated as tampering rather than silently ignored.
+    destroySessionWithReceipt(hostElementId, sessionId, telemetryBaseUrl, "TAMPER_DETECTED", /* notifyTamper */ true);
   });
 
   return source;
+}
+
+// Schedules TTL_EXPIRY self-destruction `ttlSeconds` after a successful mount. Returns null
+// when ttlSeconds is null/disabled. A session already torn down by something else by the time
+// the timer fires is a harmless no-op (destroySessionWithReceipt's wasm call simply finds no
+// signing key left and returns null, same as a duplicate WITHDRAW) -- but destroySession also
+// clears this timer on every other teardown path, so that path is not normally reached at all.
+function scheduleTtlExpiry(
+  hostElementId: string,
+  sessionId: string,
+  telemetryBaseUrl: string | null,
+  ttlSeconds: number | null,
+): ReturnType<typeof setTimeout> | null {
+  if (ttlSeconds === null) {
+    return null;
+  }
+  return setTimeout(() => {
+    destroySessionWithReceipt(hostElementId, sessionId, telemetryBaseUrl, "TTL_EXPIRY", /* notifyTamper */ false);
+  }, ttlSeconds * 1000);
 }
 
 /**
@@ -402,7 +447,10 @@ function openEventSource(
  * reason -- callers must never fall back to displaying the raw ciphertext.
  * `telemetryBaseUrl` is optional (pass `null` to disable): when set, an Access
  * Receipt is signed and posted right after a successful mount, and every
- * termination path signs and posts a Destruction Receipt.
+ * termination path signs and posts a Destruction Receipt. `ttlSeconds` is
+ * optional (pass `null` to disable): when set, the session self-destructs
+ * (trigger `TTL_EXPIRY`) that many seconds after a successful mount, with no
+ * other trigger required.
  */
 export async function decryptAndMount(
   hostElementId: string,
@@ -412,6 +460,7 @@ export async function decryptAndMount(
   ciphertextBase64: string,
   eventsBaseUrl: string,
   telemetryBaseUrl: string | null,
+  ttlSeconds: number | null,
   onWithdraw: () => void,
   onRefresh: () => void,
   onTamper: () => void,
@@ -511,6 +560,7 @@ export async function decryptAndMount(
 
     const observer = startTamperObserver(hostElementId, shadowRoot, sessionId, telemetryBaseUrl);
     const eventSource = openEventSource(eventsBaseUrl, sessionId, hostElementId, telemetryBaseUrl);
+    const ttlTimer = scheduleTtlExpiry(hostElementId, sessionId, telemetryBaseUrl, ttlSeconds);
 
     mounted.set(hostElementId, {
       sessionId,
@@ -518,6 +568,7 @@ export async function decryptAndMount(
       shadowRoot,
       observer,
       eventSource,
+      ttlTimer,
       onWithdraw,
       onRefresh,
       onTamper,
@@ -600,7 +651,8 @@ export async function beginHandshake(sessionId: string): Promise<string | null> 
  * for the same `sessionId` already stored in the wasm module. Calling this
  * without a preceding, successful `beginHandshake` for the same session id
  * always fails (`complete_session` rejects a session with no pending state).
- * `telemetryBaseUrl` is optional (pass `null` to disable) -- see {@link decryptAndMount}.
+ * `telemetryBaseUrl` and `ttlSeconds` are both optional (pass `null` to disable either) -- see
+ * {@link decryptAndMount}.
  */
 export async function completeAndMount(
   hostElementId: string,
@@ -610,6 +662,7 @@ export async function completeAndMount(
   ciphertextBase64: string,
   eventsBaseUrl: string,
   telemetryBaseUrl: string | null,
+  ttlSeconds: number | null,
   onWithdraw: () => void,
   onRefresh: () => void,
   onTamper: () => void,
@@ -687,6 +740,7 @@ export async function completeAndMount(
 
     const observer = startTamperObserver(hostElementId, shadowRoot, sessionId, telemetryBaseUrl);
     const eventSource = openEventSource(eventsBaseUrl, sessionId, hostElementId, telemetryBaseUrl);
+    const ttlTimer = scheduleTtlExpiry(hostElementId, sessionId, telemetryBaseUrl, ttlSeconds);
 
     mounted.set(hostElementId, {
       sessionId,
@@ -694,6 +748,7 @@ export async function completeAndMount(
       shadowRoot,
       observer,
       eventSource,
+      ttlTimer,
       onWithdraw,
       onRefresh,
       onTamper,

@@ -51,11 +51,12 @@ public static class DemoAiChatBroker
 
     /// <summary>
     /// <c>POST /demo/ai-chat/withdraw/{sessionId}</c> — signs a WITHDRAW control message with
-    /// this session's stored HMAC key and pushes it as a real "WITHDRAW" SSE event via
-    /// <see cref="EphemeralEventsEndpoint.PushEphemeralEventAsync"/>, exactly as a real external
-    /// provider revoking a message would. Nothing about this push is simulated; only the fact
-    /// that it is *this* demo page triggering it (rather than an external provider's own revoke
-    /// action) is demo-specific.
+    /// this session's stored HMAC key and pushes it as a real <c>security/lifecycle</c> SSE
+    /// event (§8.3's envelope: an <c>action</c> field rather than a distinct event name per
+    /// action) via <see cref="EphemeralEventsEndpoint.PushEphemeralEventAsync"/>, exactly as a
+    /// real external provider revoking a message would. Nothing about this push is simulated;
+    /// only the fact that it is *this* demo page triggering it (rather than an external
+    /// provider's own revoke action) is demo-specific.
     /// </summary>
     public const string WithdrawRoute = "/demo/ai-chat/withdraw/{sessionId}";
 
@@ -76,6 +77,17 @@ public static class DemoAiChatBroker
     /// (<see cref="DemoAiChatSessionAuthorizer"/>) or revoke it (<see cref="HandleWithdrawAsync"/>).
     /// </summary>
     internal const string VisitorCookieName = "dx-ai-chat-visitor";
+
+    /// <summary>
+    /// The MIME type the whitepaper's §8.2 Ephemeral Token Envelope schema requires the
+    /// handshake response be delivered with, instead of a generic <c>application/json</c>. A
+    /// custom type gives the "blind router" claim a concrete artifact: a router forwarding this
+    /// response could not treat it as ordinary JSON to inspect even if it wanted to. The client
+    /// reads the body manually (see <c>AiChat.razor</c>'s <c>HandleEstablishAsync</c>) rather
+    /// than via <c>HttpContent.ReadFromJsonAsync</c>, which requires an <c>application/json</c>-
+    /// or <c>+json</c>-suffixed content type and would otherwise reject this response outright.
+    /// </summary>
+    internal const string HandshakeContentType = "application/x-blazordx-ephemeral";
 
     // Domain-separation label mirroring dx_security::session::HMAC_KEY_DERIVATION_LABEL
     // byte-for-byte. Any implementation on either side of the ECDH handshake that changes this
@@ -205,8 +217,9 @@ public static class DemoAiChatBroker
             ServerPublicKeyBase64 = Convert.ToBase64String(serverPublicKeyBytes),
             NonceBase64 = Convert.ToBase64String(nonce),
             CiphertextBase64 = Convert.ToBase64String(ciphertextWithTag),
+            TtlSeconds = request.TtlSeconds,
         };
-        return Task.FromResult(Results.Json(response));
+        return Task.FromResult(Results.Json(response, contentType: HandshakeContentType));
     }
 
     private static async Task<IResult> HandleWithdrawAsync(
@@ -243,12 +256,19 @@ public static class DemoAiChatBroker
         }
 
         byte[] signature = Sign(hmacKey, $"{sessionId}|WITHDRAW");
-        string data = JsonSerializer.Serialize(new { signature = Convert.ToBase64String(signature) });
+        string data = JsonSerializer.Serialize(new
+        {
+            action = "WITHDRAW",
+            correlationId = sessionId,
+            signature = Convert.ToBase64String(signature),
+        });
 
         // Real push through the real Conduit registry — the same method a production
         // McpBrokerClient/webhook relay would call. A session nobody is currently watching is a
-        // silent no-op (the Conduit is an ephemeral relay, not a durable queue).
-        await registry.PushEphemeralEventAsync(sessionId, "WITHDRAW", data, cancellationToken).ConfigureAwait(false);
+        // silent no-op (the Conduit is an ephemeral relay, not a durable queue). The event name
+        // and envelope shape (an `action` field rather than a distinct SSE event per action)
+        // match the whitepaper's §8.3 "security/lifecycle" wire schema.
+        await registry.PushEphemeralEventAsync(sessionId, "security/lifecycle", data, cancellationToken).ConfigureAwait(false);
         return Results.Accepted();
     }
 
@@ -491,6 +511,14 @@ internal sealed class HandshakeRequest
 
     /// <summary>The plaintext the caller wants this handshake's ciphertext to decrypt to — the demo's canned "AI reply".</summary>
     public string ReplyText { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Optional cryptographic time-to-live, in seconds — echoed back verbatim on
+    /// <see cref="HandshakeResponse.TtlSeconds"/>. A real broker would decide this itself rather
+    /// than take the caller's word for it; this demo lets the caller request one purely so
+    /// <c>/ai-chat</c> can demonstrate TTL-based self-destruction without a second UI surface.
+    /// </summary>
+    public int? TtlSeconds { get; set; }
 }
 
 /// <summary>Response body for <see cref="DemoAiChatBroker.HandshakeRoute"/>, shaped to match <c>BlazorDX.Components.EphemeralHandshakeResult</c> (camelCase JSON, via ASP.NET Core's default naming policy).</summary>
@@ -501,6 +529,9 @@ internal sealed class HandshakeResponse
     public string NonceBase64 { get; set; } = string.Empty;
 
     public string CiphertextBase64 { get; set; } = string.Empty;
+
+    /// <summary>See <see cref="HandshakeRequest.TtlSeconds"/>.</summary>
+    public int? TtlSeconds { get; set; }
 }
 
 /// <summary>

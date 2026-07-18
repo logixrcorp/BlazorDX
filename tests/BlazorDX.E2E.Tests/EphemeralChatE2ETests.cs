@@ -38,10 +38,11 @@ namespace BlazorDX.E2E.Tests;
 /// up a second server just to POST one event would duplicate a fair amount of session
 /// plumbing for a signal Playwright can already deliver more directly. Instead, this suite
 /// intercepts the page's own <c>EventSource</c> request and fulfills it with a hand-written
-/// SSE <c>WITHDRAW</c> frame. The <c>EventSource</c>, its <c>"WITHDRAW"</c> listener, and
-/// everything it calls (<c>destroySession</c>, the <c>onWithdraw</c> callback into Blazor,
-/// the re-render) are the real, unmodified app code; only the network origin of the event
-/// frame is simulated.
+/// SSE <c>security/lifecycle</c> frame carrying <c>{"action":"WITHDRAW",...}</c> (the
+/// whitepaper's §8.3 envelope). The <c>EventSource</c>, its <c>"security/lifecycle"</c>
+/// listener, and everything it calls (<c>destroySession</c>, the <c>onWithdraw</c> callback
+/// into Blazor, the re-render) are the real, unmodified app code; only the network origin of
+/// the event frame is simulated.
 /// </para>
 ///
 /// <para>
@@ -136,7 +137,7 @@ public sealed class EphemeralChatE2ETests(PlaywrightFixture fx)
             requestCount++;
             string body = requestCount == 1
                 ? "retry: 50\n\n"
-                : $"event: WITHDRAW\ndata: {{\"signature\":\"{withdrawSignatureBase64}\"}}\n\n";
+                : $"event: security/lifecycle\ndata: {{\"action\":\"WITHDRAW\",\"correlationId\":\"{SessionId}\",\"signature\":\"{withdrawSignatureBase64}\"}}\n\n";
             await route.FulfillAsync(new RouteFulfillOptions
             {
                 Status = 200,
