@@ -70,12 +70,22 @@ RUN apt-get update \
 
 WORKDIR /app
 COPY --from=build --chown=app:app /app/publish ./
+RUN mkdir -p /keys && chown app:app /keys
 USER app
 
 ENV ASPNETCORE_URLS=http://+:8080 \
     ASPNETCORE_ENVIRONMENT=Production \
     UseForwardedHeaders=true \
-    DOTNET_EnableDiagnostics=0
+    DOTNET_EnableDiagnostics=0 \
+    DataProtection__KeysPath=/keys
+
+# /keys holds the ASP.NET Core DataProtection key ring (antiforgery tokens, auth cookies).
+# Mount a persistent volume here in production — without one, every container recreation
+# (restart, redeploy) generates a fresh key ring and invalidates every outstanding browser
+# session's antiforgery token, breaking in-flight form submissions with
+# AntiforgeryValidationException. A bare `docker run` without `-v` still gets a *new* anonymous
+# volume each time (same problem); reuse a named volume or bind mount across deployments.
+VOLUME ["/keys"]
 
 EXPOSE 8080
 

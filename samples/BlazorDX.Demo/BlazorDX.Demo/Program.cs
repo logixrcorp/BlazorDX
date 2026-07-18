@@ -8,6 +8,7 @@ using BlazorDX.Integrations.PowerBI;
 using BlazorDX.Integrations.Reporting;
 using BlazorDX.MockReportServer;
 using BlazorDX.Primitives.Forms;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,6 +28,21 @@ if (behindProxy)
         options.KnownProxies.Clear();
     });
 }
+
+// Persist DataProtection keys (antiforgery tokens, auth cookies) to a fixed path outside the
+// app's own publish tree, rather than the container default (an ephemeral in-memory/per-container
+// key ring). Without this, every container restart or redeploy generates a fresh key ring, so any
+// browser holding a cookie encrypted under the old keys gets a hard AntiforgeryValidationException
+// on its next form submit. SetApplicationName pins the key-ring discriminator explicitly — without
+// it, DataProtection derives one from the content root path, which can itself change between
+// image builds and silently orphan a persisted key ring. The container Dockerfile documents that
+// this path needs an operator-mounted persistent volume in production; local `dotnet run` just
+// gets a stable folder under its own content root, which is already persistent across restarts.
+string dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"]
+    ?? Path.Combine(builder.Environment.ContentRootPath, "dataprotection-keys");
+builder.Services.AddDataProtection()
+    .SetApplicationName("BlazorDX.Demo")
+    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

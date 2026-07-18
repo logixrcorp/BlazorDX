@@ -11,6 +11,24 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ### Fixed
 
+- **Production (`blazordx.com`): every redeploy invalidated all outstanding sessions'
+  antiforgery tokens, breaking in-flight form submissions with `AntiforgeryValidationException`.**
+  Reported directly from the live site's container logs. Root cause: ASP.NET Core's
+  DataProtection key ring was never configured to persist anywhere, so a fresh one is generated on
+  every container start — any browser holding a cookie encrypted under the previous keys fails to
+  decrypt it on its next request after a redeploy. Fixed in three parts: `Program.cs` now calls
+  `AddDataProtection().SetApplicationName("BlazorDX.Demo").PersistKeysToFileSystem(...)` (the
+  explicit application name matters too — without it, DataProtection derives its key-ring
+  discriminator from the content root path, which can itself change between image builds and
+  silently orphan a persisted ring); the `Dockerfile` points that path at `/keys` and declares it
+  as a `VOLUME` with a comment explaining why; `deploy/docker-compose.yml` mounts an actual named
+  volume there, since a bare `VOLUME` declaration alone still gets a fresh anonymous volume every
+  time `docker compose up -d --build` recreates the container — which is exactly what the deploy
+  README's own "Updating after a `git pull`" instructions do on every release.
+  Verified locally: built and ran the Release server, confirmed the key file is written on first
+  start, stopped and restarted it, confirmed the *same* key file (same GUID) is reused rather than
+  a new one being generated — the actual failure mode this fixes.
+
 - **WebKit-only ARIA violations in `DxBarChart`, `DxTreemap`, `DxSunburst`, and `DxNetworkGraph`,
   surfaced by CI's WebKit E2E job once the build gate (below) let it actually run.** Two related
   bugs, both from the same root pattern (interactive marks gaining `aria-label` with no explicit

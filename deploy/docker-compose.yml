@@ -22,6 +22,14 @@ services:
       UseForwardedHeaders: "true"
     expose:
       - "8080"          # visible to cloudflared on the shared network, not to the host
+    volumes:
+      # The ASP.NET Core DataProtection key ring (antiforgery tokens, auth cookies). Named
+      # volume, not a bind mount, so it survives `docker compose up -d --build` recreating the
+      # container on every deploy — without it, each redeploy generates a fresh key ring and every
+      # visitor's outstanding antiforgery token breaks with AntiforgeryValidationException on
+      # their next form submit. `docker compose down -v` deletes it (logs everyone out); plain
+      # `down`/`up` or `restart` does not.
+      - dataprotection-keys:/keys
     networks:
       - edge
 
@@ -44,3 +52,6 @@ services:
 networks:
   edge:
     driver: bridge
+
+volumes:
+  dataprotection-keys:

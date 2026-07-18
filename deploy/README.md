@@ -98,3 +98,8 @@ docker compose up -d --build
   workload to the Dockerfile build stage and publish with `-p:EnableAot=true`.
 - No host port is published — the container is reachable **only** through the tunnel. To smoke-
   test locally before wiring DNS, temporarily add `ports: ["8080:8080"]` to the `app` service.
+- The `dataprotection-keys` named volume holds the app's DataProtection key ring (antiforgery
+  tokens, auth cookies). It survives every `docker compose up -d --build` redeploy, so a visitor's
+  session doesn't break mid-form after a `git pull` + redeploy. `docker compose down -v` (the `-v`
+  specifically) deletes it — that logs out every outstanding session, not just a normal `down`/`up`
+  or `restart`.
