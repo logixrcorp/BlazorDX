@@ -155,9 +155,13 @@
 <p class="dx-demo-meta">Flow between stages, ribbon thickness scaled to value.</p>
 <DxSankeyChart Nodes="sankeyNodes" Links="sankeyLinks" Width="640" Height="280" />
 
-<h2 style="margin-top:32px">Network graph</h2>
-<p class="dx-demo-meta">Force-directed — connected nodes cluster, unconnected ones drift apart.</p>
-<DxNetworkGraph Nodes="networkNodes" Edges="networkEdges" Width="640" Height="360" />
+<h2 style="margin-top:32px">Network graph (interactive)</h2>
+<p class="dx-demo-meta">
+    Force-directed — connected nodes cluster, unconnected ones drift apart. Each node is
+    independently focusable (natural tab order, not roving tabindex — a 2D layout doesn't reduce
+    to one linear index). Click a node, or Tab to it and press Enter/Space. Selected: <strong>@networkSelection</strong>.
+</p>
+<DxNetworkGraph Nodes="networkNodes" Edges="networkEdges" Width="640" Height="360" OnNodeSelected="OnNetworkNodeSelected" />
 
 <h2 style="margin-top:32px">Parallel coordinates</h2>
 <p class="dx-demo-meta">One axis per dimension; each row is a polyline crossing every axis at its own value.</p>
@@ -426,6 +430,10 @@
         new("api", "auth"), new("api", "db"), new("api", "cache"),
         new("worker", "queue"), new("worker", "db"), new("queue", "api"),
     ];
+
+    private string networkSelection = "(none)";
+
+    private void OnNetworkNodeSelected(GraphNode node) => networkSelection = node.Label;
 
     private readonly IReadOnlyList<string> parallelAxes = ["Speed", "Power", "Range", "Efficiency"];
 

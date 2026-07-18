@@ -9,6 +9,18 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ## [Unreleased]
 
+### Changed
+
+- **`DxNetworkGraph`'s demo now shows its own selection feature.** `Charts.razor` rendered the
+  network graph without wiring `OnNodeSelected`, unlike `DxBarChart` and `DxTreemap` right above
+  it on the same page, which both demo their selection callback with live "Selected: X" feedback
+  text. The component already supported click and Tab+Enter/Space node selection (each node is
+  independently focusable, natural tab order rather than `ChartSelectionPrimitive`'s roving
+  tabindex, since a 2D force layout doesn't reduce to one linear index — the same reasoning
+  `DxTreemap` documents for its own cells) — it just wasn't visible to anyone browsing the demo.
+  Now wired the same way as its siblings, with the same "Selected: X" caption pattern. Verified
+  live: clicking a node updates the caption immediately, no console errors.
+
 ### Added
 
 - **Three new `DxEditorial*` components (Phase 4, closing the reading-experience roadmap)**:
