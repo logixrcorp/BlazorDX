@@ -2882,8 +2882,14 @@
             <param name="ServerPublicKeyBase64">The broker's ephemeral P-256 public key (uncompressed SEC1, base64).</param>
             <param name="NonceBase64">The AES-GCM nonce (base64) for <paramref name="CiphertextBase64"/>.</param>
             <param name="CiphertextBase64">The AES-GCM ciphertext, including its trailing authentication tag (base64).</param>
+            <param name="TtlSeconds">
+            Optional cryptographic time-to-live: when set, the mounted session self-destructs (a
+            Destruction Receipt with trigger <c>TTL_EXPIRY</c>) this many seconds after mounting, even
+            with no WITHDRAW, tamper, or unmount. <see langword="null"/> means the session lives until
+            one of those other triggers fires.
+            </param>
         </member>
-        <member name="M:BlazorDX.Components.EphemeralHandshakeResult.#ctor(System.String,System.String,System.String)">
+        <member name="M:BlazorDX.Components.EphemeralHandshakeResult.#ctor(System.String,System.String,System.String,System.Nullable{System.Int32})">
             <summary>
             A broker's response to an ephemeral chat session handshake: its ephemeral
             P-256 public key and an AES-GCM payload encrypted for the shared secret
@@ -2895,6 +2901,12 @@
             <param name="ServerPublicKeyBase64">The broker's ephemeral P-256 public key (uncompressed SEC1, base64).</param>
             <param name="NonceBase64">The AES-GCM nonce (base64) for <paramref name="CiphertextBase64"/>.</param>
             <param name="CiphertextBase64">The AES-GCM ciphertext, including its trailing authentication tag (base64).</param>
+            <param name="TtlSeconds">
+            Optional cryptographic time-to-live: when set, the mounted session self-destructs (a
+            Destruction Receipt with trigger <c>TTL_EXPIRY</c>) this many seconds after mounting, even
+            with no WITHDRAW, tamper, or unmount. <see langword="null"/> means the session lives until
+            one of those other triggers fires.
+            </param>
         </member>
         <member name="P:BlazorDX.Components.EphemeralHandshakeResult.ServerPublicKeyBase64">
             <summary>The broker's ephemeral P-256 public key (uncompressed SEC1, base64).</summary>
@@ -2904,6 +2916,14 @@
         </member>
         <member name="P:BlazorDX.Components.EphemeralHandshakeResult.CiphertextBase64">
             <summary>The AES-GCM ciphertext, including its trailing authentication tag (base64).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.EphemeralHandshakeResult.TtlSeconds">
+            <summary>
+            Optional cryptographic time-to-live: when set, the mounted session self-destructs (a
+            Destruction Receipt with trigger <c>TTL_EXPIRY</c>) this many seconds after mounting, even
+            with no WITHDRAW, tamper, or unmount. <see langword="null"/> means the session lives until
+            one of those other triggers fires.
+            </summary>
         </member>
         <member name="T:BlazorDX.Components.FormFieldRenderContext">
             <summary>What a field template receives: the field metadata, its current value, a
@@ -3048,6 +3068,27 @@
             Base path for the revocation SSE endpoint; the bridge connects to
             <c>{EventsBaseUrl}/{SessionId}</c>. Defaults to the contract path
             implemented by <c>EphemeralEventsEndpoint</c>.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.SecureEphemeralChat.TelemetryBaseUrl">
+            <summary>
+            Optional (leave unset/<see langword="null"/> to disable): base path for the broker's
+            telemetry endpoint. When set, an Access Receipt is signed and posted to
+            <c>{TelemetryBaseUrl}/access</c> right after a successful mount, and a signed
+            Destruction Receipt is posted to <c>{TelemetryBaseUrl}/destruction</c> on every
+            termination path (WITHDRAW, tamper, or unmount) -- the Proof-of-Destruction protocol.
+            Both are signed with the session's HMAC key, the same one derived during the ECDH
+            handshake, so only a party that participated in that handshake can forge one.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.SecureEphemeralChat.TtlSeconds">
+            <summary>
+            Optional cryptographic time-to-live, in seconds: when set, the session self-destructs
+            (a Destruction Receipt with trigger <c>TTL_EXPIRY</c>) this many seconds after mounting,
+            even with no WITHDRAW, tamper, or unmount. Leave unset/<see langword="null"/> for a
+            session that lives until one of those other triggers fires. In
+            <see cref="P:BlazorDX.Components.SecureEphemeralChat.UseLiveHandshake"/> mode this parameter is ignored in favor of the broker's
+            own <see cref="P:BlazorDX.Components.EphemeralHandshakeResult.TtlSeconds"/>.
             </summary>
         </member>
         <member name="P:BlazorDX.Components.SecureEphemeralChat.OnWithdrawn">

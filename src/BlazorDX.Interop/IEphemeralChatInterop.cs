@@ -29,6 +29,18 @@ public interface IEphemeralChatInterop : IAsyncDisposable
     /// must never fall back to rendering the raw ciphertext -- "nothing to
     /// show" is the only safe fallback.
     /// </returns>
+    /// <param name="telemetryBaseUrl">
+    /// Optional (pass <see langword="null"/> to disable): when set, signs and posts an Access
+    /// Receipt to <c>{telemetryBaseUrl}/access</c> right after a successful mount, and a
+    /// signed Destruction Receipt to <c>{telemetryBaseUrl}/destruction</c> on every
+    /// termination path (WITHDRAW, tamper, unmount, or TTL expiry) -- the Proof-of-Destruction
+    /// protocol.
+    /// </param>
+    /// <param name="ttlSeconds">
+    /// Optional cryptographic time-to-live: when set, the session self-destructs (Destruction
+    /// Receipt trigger <c>TTL_EXPIRY</c>) this many seconds after a successful mount, with no
+    /// other trigger required. <see langword="null"/> disables it.
+    /// </param>
     ValueTask<bool> DecryptAndMountAsync(
         string hostElementId,
         string sessionId,
@@ -36,6 +48,8 @@ public interface IEphemeralChatInterop : IAsyncDisposable
         string nonceBase64,
         string ciphertextBase64,
         string eventsBaseUrl,
+        string? telemetryBaseUrl,
+        int? ttlSeconds,
         Action onWithdraw,
         Action onRefresh,
         Action onTamper);
@@ -60,6 +74,8 @@ public interface IEphemeralChatInterop : IAsyncDisposable
     /// no preceding, successful <see cref="BeginHandshakeAsync"/> call always
     /// fails.
     /// </summary>
+    /// <param name="telemetryBaseUrl">Optional (pass <see langword="null"/> to disable) -- see <see cref="DecryptAndMountAsync"/>.</param>
+    /// <param name="ttlSeconds">Optional (pass <see langword="null"/> to disable) -- see <see cref="DecryptAndMountAsync"/>.</param>
     ValueTask<bool> CompleteAndMountAsync(
         string hostElementId,
         string sessionId,
@@ -67,6 +83,8 @@ public interface IEphemeralChatInterop : IAsyncDisposable
         string nonceBase64,
         string ciphertextBase64,
         string eventsBaseUrl,
+        string? telemetryBaseUrl,
+        int? ttlSeconds,
         Action onWithdraw,
         Action onRefresh,
         Action onTamper);

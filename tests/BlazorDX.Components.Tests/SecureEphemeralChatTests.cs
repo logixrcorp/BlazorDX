@@ -50,6 +50,19 @@ public sealed class SecureEphemeralChatTests : TestContext
     }
 
     [Fact]
+    public void The_host_element_carries_layout_and_paint_containment_regardless_of_any_consumer_stylesheet()
+    {
+        // Layout isolation (whitepaper §3.4) is applied inline by the component itself, not
+        // left for a consuming app to remember to add. Not `contain: strict`: its `size`
+        // containment collapsed the box to min-height and clipped every message when verified
+        // live -- see SecureEphemeralChat.razor's comment on the host element.
+        IRenderedComponent<SecureEphemeralChat> chat = RenderChat();
+
+        var host = chat.Find(".dx-ephemeral-chat");
+        Assert.Contains("contain: layout paint", host.GetAttribute("style"));
+    }
+
+    [Fact]
     public void Passes_all_payload_coordinates_and_the_default_events_base_url_to_the_bridge()
     {
         RenderChat();
@@ -62,6 +75,36 @@ public sealed class SecureEphemeralChatTests : TestContext
         Assert.Equal(CiphertextBase64, args.CiphertextBase64);
         Assert.Equal("/ephemeral-events", args.EventsBaseUrl);
         Assert.StartsWith("dx-ephemeral-chat-", args.HostElementId);
+        Assert.Null(args.TelemetryBaseUrl); // opt-in only -- unset by default
+        Assert.Null(args.TtlSeconds); // no TTL unless explicitly set
+    }
+
+    [Fact]
+    public void A_TtlSeconds_parameter_is_forwarded_to_the_bridge()
+    {
+        fake.MountSucceeds = true;
+        RenderComponent<SecureEphemeralChat>(parameters => parameters
+            .Add(c => c.SessionId, SessionId)
+            .Add(c => c.ServerPublicKeyBase64, ServerPublicKeyBase64)
+            .Add(c => c.NonceBase64, NonceBase64)
+            .Add(c => c.CiphertextBase64, CiphertextBase64)
+            .Add(c => c.TtlSeconds, 90));
+
+        Assert.Equal(90, fake.LastMountArgs!.Value.TtlSeconds);
+    }
+
+    [Fact]
+    public void A_TelemetryBaseUrl_parameter_is_forwarded_to_the_bridge()
+    {
+        fake.MountSucceeds = true;
+        RenderComponent<SecureEphemeralChat>(parameters => parameters
+            .Add(c => c.SessionId, SessionId)
+            .Add(c => c.ServerPublicKeyBase64, ServerPublicKeyBase64)
+            .Add(c => c.NonceBase64, NonceBase64)
+            .Add(c => c.CiphertextBase64, CiphertextBase64)
+            .Add(c => c.TelemetryBaseUrl, "/demo/ai-chat/telemetry"));
+
+        Assert.Equal("/demo/ai-chat/telemetry", fake.LastMountArgs!.Value.TelemetryBaseUrl);
     }
 
     [Fact]
@@ -206,7 +249,7 @@ public sealed class SecureEphemeralChatTests : TestContext
     {
         fake.BeginHandshakeClientPublicKeyBase64 = "client-pub-from-wasm";
         string? capturedClientPublicKey = null;
-        var response = new EphemeralHandshakeResult("broker-server-pub-b64", "broker-nonce-b64", "broker-ciphertext-b64");
+        var response = new EphemeralHandshakeResult("broker-server-pub-b64", "broker-nonce-b64", "broker-ciphertext-b64", TtlSeconds: 120);
 
         RenderComponent<SecureEphemeralChat>(parameters => parameters
             .Add(c => c.SessionId, SessionId)
@@ -225,6 +268,7 @@ public sealed class SecureEphemeralChatTests : TestContext
         Assert.Equal(response.ServerPublicKeyBase64, args.ServerPublicKeyBase64);
         Assert.Equal(response.NonceBase64, args.NonceBase64);
         Assert.Equal(response.CiphertextBase64, args.CiphertextBase64);
+        Assert.Equal(response.TtlSeconds, args.TtlSeconds);
         // The pre-supplied-ciphertext path must never fire in live mode.
         Assert.Null(fake.LastMountArgs);
     }

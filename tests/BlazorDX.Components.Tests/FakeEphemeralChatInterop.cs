@@ -15,7 +15,7 @@ internal sealed class FakeEphemeralChatInterop : IEphemeralChatInterop
 
     /// <summary>Captures the arguments of the most recent <see cref="DecryptAndMountAsync"/> call.</summary>
     public (string HostElementId, string SessionId, string ServerPublicKeyBase64, string NonceBase64,
-        string CiphertextBase64, string EventsBaseUrl)? LastMountArgs
+        string CiphertextBase64, string EventsBaseUrl, string? TelemetryBaseUrl, int? TtlSeconds)? LastMountArgs
     { get; private set; }
 
     /// <summary>Host element ids passed to <see cref="ScrubNodeAsync"/>, in call order.</summary>
@@ -43,11 +43,13 @@ internal sealed class FakeEphemeralChatInterop : IEphemeralChatInterop
         string nonceBase64,
         string ciphertextBase64,
         string eventsBaseUrl,
+        string? telemetryBaseUrl,
+        int? ttlSeconds,
         Action onWithdraw,
         Action onRefresh,
         Action onTamper)
     {
-        LastMountArgs = (hostElementId, sessionId, serverPublicKeyBase64, nonceBase64, ciphertextBase64, eventsBaseUrl);
+        LastMountArgs = (hostElementId, sessionId, serverPublicKeyBase64, nonceBase64, ciphertextBase64, eventsBaseUrl, telemetryBaseUrl, ttlSeconds);
         withdraw = onWithdraw;
         refresh = onRefresh;
         tamper = onTamper;
@@ -62,7 +64,7 @@ internal sealed class FakeEphemeralChatInterop : IEphemeralChatInterop
 
     /// <summary>Captures the arguments of the most recent <see cref="CompleteAndMountAsync"/> call.</summary>
     public (string HostElementId, string SessionId, string ServerPublicKeyBase64, string NonceBase64,
-        string CiphertextBase64, string EventsBaseUrl)? LastCompleteAndMountArgs
+        string CiphertextBase64, string EventsBaseUrl, string? TelemetryBaseUrl, int? TtlSeconds)? LastCompleteAndMountArgs
     { get; private set; }
 
     public ValueTask<string?> BeginHandshakeAsync(string sessionId)
@@ -78,11 +80,13 @@ internal sealed class FakeEphemeralChatInterop : IEphemeralChatInterop
         string nonceBase64,
         string ciphertextBase64,
         string eventsBaseUrl,
+        string? telemetryBaseUrl,
+        int? ttlSeconds,
         Action onWithdraw,
         Action onRefresh,
         Action onTamper)
     {
-        LastCompleteAndMountArgs = (hostElementId, sessionId, serverPublicKeyBase64, nonceBase64, ciphertextBase64, eventsBaseUrl);
+        LastCompleteAndMountArgs = (hostElementId, sessionId, serverPublicKeyBase64, nonceBase64, ciphertextBase64, eventsBaseUrl, telemetryBaseUrl, ttlSeconds);
         withdraw = onWithdraw;
         refresh = onRefresh;
         tamper = onTamper;

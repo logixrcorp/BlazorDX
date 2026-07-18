@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text.Json;
 using Microsoft.Playwright;
 using Xunit;
 
@@ -119,6 +121,52 @@ public sealed class AiChatE2ETests(PlaywrightFixture fx)
         Assert.Equal(0, remainingRevokeButtons);
     }
 
+    [SkippableFact]
+    public async Task A_stranger_with_no_owning_visitor_cookie_cannot_open_or_withdraw_someone_elses_session()
+    {
+        Skip.IfNot(fx.Ready, fx.SkipReason);
+        IPage owner = await fx.NewPageAsync();
+
+        // Capture the real session id DemoAiChatSessionAuthorizer will have recorded an owner
+        // for, by observing (not modifying) the page's own handshake request -- RouteAsync here
+        // only reads the request and then continues it unmodified, so this is still the real,
+        // unmodified handshake, identical to the other tests in this class.
+        string? capturedSessionId = null;
+        await owner.RouteAsync("**" + DemoAiChatBrokerRoutes.HandshakeRoute, async route =>
+        {
+            using JsonDocument body = JsonDocument.Parse(route.Request.PostData ?? "{}");
+            capturedSessionId = body.RootElement.GetProperty("sessionId").GetString();
+            await route.ContinueAsync();
+        });
+
+        await owner.GotoInteractiveAsync($"{fx.BaseUrl}{Route}", ThreadSelector);
+        await owner.FillAsync(ComposeSelector, Prompt);
+        await owner.ClickAsync(SendSelector);
+        await owner.WaitForSelectorAsync($".{HostClass}", new PageWaitForSelectorOptions { Timeout = 20_000 });
+        await WaitForMountedAsync(owner);
+
+        Assert.NotNull(capturedSessionId);
+
+        // A plain, cookie-less HttpClient -- not a second Playwright browser context, deliberately:
+        // this proves the *server's* authorization decision directly, uncomplicated by a browser's
+        // own EventSource retry/reconnect behavior on a rejected stream.
+        using HttpClient stranger = new();
+        HttpResponseMessage sseAttempt = await stranger.GetAsync(
+            $"{fx.BaseUrl}{DemoAiChatBrokerRoutes.EphemeralEventsRoutePrefix}/{Uri.EscapeDataString(capturedSessionId!)}");
+        Assert.Equal(HttpStatusCode.Forbidden, sseAttempt.StatusCode);
+
+        // The Revoke action is even more consequential than merely listening -- confirm a
+        // stranger cannot force-withdraw someone else's message either.
+        HttpResponseMessage withdrawAttempt = await stranger.PostAsync(
+            $"{fx.BaseUrl}/demo/ai-chat/withdraw/{Uri.EscapeDataString(capturedSessionId!)}", content: null);
+        Assert.Equal(HttpStatusCode.Forbidden, withdrawAttempt.StatusCode);
+
+        // The message is still genuinely mounted in the owner's own page -- neither attempt above
+        // had any effect (a real WITHDRAW would have flipped this to the withdrawn status text).
+        int remainingRevokeButtons = await owner.Locator(RevokeSelector).CountAsync();
+        Assert.Equal(1, remainingRevokeButtons);
+    }
+
     /// <summary>
     /// Mounted is the only one of SecureEphemeralChat's four states that renders no status
     /// paragraph at all (Decrypting/Failed/Withdrawn each show one — see
@@ -129,4 +177,15 @@ public sealed class AiChatE2ETests(PlaywrightFixture fx)
         page.WaitForFunctionAsync($$"""
             () => !document.querySelector('.{{StatusClass}}')
             """, null, new PageWaitForFunctionOptions { Timeout = 20_000 });
+}
+
+/// <summary>
+/// Route literals this test file needs but has no assembly reference for (E2E tests assert
+/// against the running app over HTTP, not its internals) -- duplicated deliberately, matching
+/// this suite's existing convention (see EphemeralChatE2ETests's own duplicated constants).
+/// </summary>
+file static class DemoAiChatBrokerRoutes
+{
+    public const string HandshakeRoute = "/demo/ai-chat/handshake";
+    public const string EphemeralEventsRoutePrefix = "/ephemeral-events";
 }
