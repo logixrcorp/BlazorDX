@@ -11,6 +11,30 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ### Added
 
+- **Five new `DxEditorial*` components (Phase 3 of the reading-experience roadmap)**:
+  `DxEditorialInsetFigure` (a small floated image with text wrapping via CSS `shape-outside` — a
+  third image treatment alongside the full-bleed `DxEditorialFigure` and two-column
+  `DxEditorialSpread`), `DxEditorialStatRow` (oversized numeric callouts, the data-journalism
+  "big number" device), `DxEditorialFootnoteRef`/`DxEditorialFootnotes` (a superscript marker and
+  its back-linked footnote list — the web analogue of a print footnote), and
+  `DxEditorialGlossaryTerm` (an inline hover/focus definition composing the library's own
+  `DxTooltip` rather than inventing a new interaction pattern).
+  This pass also split `dx-editorial.css`: the 1000-line file cap (DX1000) finally caught up with
+  three phases of additions, so the reading-experience/discovery rules (drop cap, table of
+  contents, reading progress, author bio, tags, related, series nav, and everything in this
+  entry) moved to a new `dx-editorial-extras.css` — load both stylesheets; `--measure` and the
+  rest of the token set still resolve correctly across the file boundary since every selector in
+  the new file is rendered as a descendant of `.dx-editorial`.
+  Unlike `DxEditorialInsetFigure` (not wired into the flagship article — no spare image asset
+  exists to demo it honestly; all 5 real photos are already placed), the other four ship with
+  real usage: a footnote on "MCP" (linking to this repo's own `docs/ai-integration.md`, since MCP
+  is a real term this project already uses, not a fabricated one), glossary terms on "ECDH" and
+  "AES-256-GCM" in the crypto-handshake stage, and a 3-stat row (P-256, 256-bit AES key, 0
+  plaintext copies stored) closing the piece. Verified live: the glossary tooltip renders the
+  real definition text with `role="tooltip"` on focus, not just present in markup.
+  6 new bUnit tests (1051 total passing, zero regressions). Documented in `docs/COMPONENTS.md`,
+  `ComponentCatalog.cs`, and `blazordx-llms.md`.
+
 - **Three new `DxEditorial*` components (Phase 2 of the reading-experience roadmap)**:
   `DxEditorialTagList` (topic pills, each a real `<a>` — not `DxChip`, which has no href),
   `DxEditorialRelated` (a "more like this" card row; renders nothing when `Entries` is empty,

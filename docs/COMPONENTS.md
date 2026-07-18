@@ -169,6 +169,9 @@ Magazine-style layout components for articles, blog posts, and whitepapers — h
 technical sidebars, a scroll-revealed narrative section, a two-column "spread," a three-card
 footer. Built entirely on `dx-theme.css` tokens (no new color system). See it composed end to
 end in the flagship piece at `/insights/articles/zero-trust-ephemeral-chat-conduit`.
+Two stylesheets: `dx-editorial.css` (core layout) and `dx-editorial-extras.css`
+(reading-experience/discovery add-ons below, split out once the core file hit the library's own
+1000-line cap) — load both.
 
 | Component | What it does | Demo |
 |---|---|---|
@@ -187,6 +190,10 @@ end in the flagship piece at `/insights/articles/zero-trust-ephemeral-chat-condu
 | `DxEditorialTagList` | A row of topic pills, each a real link (not `DxChip`, which has no href) | not wired into a live piece yet — no topic archive exists to link to |
 | `DxEditorialRelated` | A "more like this" card row for the end of a piece; renders nothing when `Entries` is empty | not wired into a live piece yet — there's only one published piece to relate |
 | `DxEditorialSeriesNav` | Previous/next navigation for a multi-part piece — the web analogue of a print jump line; either side may be omitted | not wired into a live piece yet — no multi-part series exists |
+| `DxEditorialInsetFigure` | A small floated image with text wrapping around it via `shape-outside` — a third image treatment alongside `DxEditorialFigure` and `DxEditorialSpread` | not wired into a live piece yet — no spare image asset to demo it with honestly |
+| `DxEditorialStatRow` | A row of oversized numeric callouts, the data-journalism "big number" device | `/insights/articles/zero-trust-ephemeral-chat-conduit` |
+| `DxEditorialFootnoteRef` / `DxEditorialFootnotes` | An inline superscript marker and its matching footnote list, with a back-link — the web analogue of a print footnote | `/insights/articles/zero-trust-ephemeral-chat-conduit` |
+| `DxEditorialGlossaryTerm` | An inline term with a hover/focus definition, composing `DxTooltip` | `/insights/articles/zero-trust-ephemeral-chat-conduit` |
 
 ---
 

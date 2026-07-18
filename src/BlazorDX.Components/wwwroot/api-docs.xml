@@ -1105,6 +1105,39 @@
         <member name="P:BlazorDX.Components.DxEditorialFooter.Cards">
             <summary>Defaults to <see cref="F:BlazorDX.Components.DxEditorialFooter.DefaultCards"/> when omitted.</summary>
         </member>
+        <member name="T:BlazorDX.Components.DxEditorialFootnoteRef">
+            <summary>
+            An inline superscript marker jumping to the matching entry in a
+            <see cref="T:BlazorDX.Components.DxEditorialFootnotes"/> list — the web analogue of a print footnote/endnote.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxEditorialFootnotes">
+            <summary>
+            The footnote list for a <see cref="T:BlazorDX.Components.DxEditorialLayout"/> piece, typically placed at the end.
+            Each entry gets a back-link to its matching <see cref="T:BlazorDX.Components.DxEditorialFootnoteRef"/> marker.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxEditorialGlossaryTerm">
+            <summary>
+            An inline term with a hover/focus definition for a <see cref="T:BlazorDX.Components.DxEditorialLayout"/> piece —
+            composes the library's own <see cref="T:BlazorDX.Components.DxTooltip"/> rather than a new interaction pattern.
+            The visible term is a plain <c>&lt;span&gt;</c>, not naturally focusable, so it carries
+            <c>tabindex="0"</c> itself to stay keyboard-reachable.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxEditorialInsetFigure">
+            <summary>
+            A small, floated image with text wrapping around it via CSS <c>shape-outside</c> — a third
+            image treatment for a <see cref="T:BlazorDX.Components.DxEditorialLayout"/> piece, distinct from the full-bleed
+            <see cref="T:BlazorDX.Components.DxEditorialFigure"/> and the two-column <see cref="T:BlazorDX.Components.DxEditorialSpread"/>. A classic
+            print-magazine technique (text flowing around an inset image), well-supported natively in
+            CSS since 2020. <see cref="P:BlazorDX.Components.DxEditorialInsetFigure.ChildContent"/> is the art itself — typically an &lt;img&gt;, but
+            hand-authored SVG works too, same convention as <see cref="T:BlazorDX.Components.DxEditorialFigure"/>.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxEditorialInsetFigure.Right">
+            <summary>Floats right instead of left.</summary>
+        </member>
         <member name="T:BlazorDX.Components.DxEditorialLayout">
             <summary>
             Shared "Architecture of Silence" editorial shell for long-form, magazine-style pieces: a
@@ -1208,6 +1241,12 @@
         </member>
         <member name="P:BlazorDX.Components.DxEditorialSpread.Reverse">
             <summary>Puts the photo on the right instead of the left, for rhythm across a piece with more than one spread.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxEditorialStatRow">
+            <summary>
+            A row of oversized numeric callouts for a <see cref="T:BlazorDX.Components.DxEditorialLayout"/> piece — the
+            data-journalism "big number" device. Use real facts, not decoration.
+            </summary>
         </member>
         <member name="T:BlazorDX.Components.DxEditorialTableOfContents">
             <summary>

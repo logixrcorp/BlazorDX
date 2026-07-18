@@ -164,6 +164,11 @@ public static class ComponentCatalog
         new("editorialtaglist", "DxEditorialTagList", "Editorial & long-form", "A row of topic pills, each a real link.", "/insights", "DxEditorialTagList"),
         new("editorialrelated", "DxEditorialRelated", "Editorial & long-form", "A \"more like this\" card row; renders nothing when Entries is empty.", "/insights", "DxEditorialRelated"),
         new("editorialseriesnav", "DxEditorialSeriesNav", "Editorial & long-form", "Previous/next navigation for a multi-part piece.", "/insights", "DxEditorialSeriesNav"),
+        new("editorialinsetfigure", "DxEditorialInsetFigure", "Editorial & long-form", "A small floated image; text wraps around it via shape-outside.", "/insights", "DxEditorialInsetFigure"),
+        new("editorialstatrow", "DxEditorialStatRow", "Editorial & long-form", "A row of oversized numeric callouts.", "/insights/articles/zero-trust-ephemeral-chat-conduit", "DxEditorialStatRow"),
+        new("editorialfootnoteref", "DxEditorialFootnoteRef", "Editorial & long-form", "An inline superscript marker linking to a DxEditorialFootnotes entry.", "/insights/articles/zero-trust-ephemeral-chat-conduit", "DxEditorialFootnoteRef"),
+        new("editorialfootnotes", "DxEditorialFootnotes", "Editorial & long-form", "The footnote list for a piece, with back-links.", "/insights/articles/zero-trust-ephemeral-chat-conduit", "DxEditorialFootnotes"),
+        new("editorialglossaryterm", "DxEditorialGlossaryTerm", "Editorial & long-form", "An inline term with a hover/focus definition, composing DxTooltip.", "/insights/articles/zero-trust-ephemeral-chat-conduit", "DxEditorialGlossaryTerm"),
     ];
 
     // Curated usage examples, keyed by slug. Components without an entry fall back to
@@ -433,6 +438,37 @@ public static class ComponentCatalog
         ["editorialseriesnav"] = """
             <DxEditorialSeriesNav PreviousTitle="Part One" PreviousRoute="/insights/articles/part-one"
                                    NextTitle="Part Three" NextRoute="/insights/articles/part-three" />
+            """,
+        ["editorialinsetfigure"] = """
+            <DxEditorialInsetFigure Caption="A caption.">
+                <img src="inset.jpg" alt="..." loading="lazy" />
+            </DxEditorialInsetFigure>
+            <p>Body copy flows around the image via CSS shape-outside.</p>
+            """,
+        ["editorialstatrow"] = """
+            <DxEditorialStatRow Stats="stats" />
+            @code {
+                private static readonly IReadOnlyList<DxEditorialStatRow.Stat> stats =
+                [
+                    new("256-bit", "AES-GCM key size", "Authenticated encryption"),
+                    new("0", "Plaintext copies stored"),
+                ];
+            }
+            """,
+        ["editorialfootnoteref"] = """
+            The claim needing a citation<DxEditorialFootnoteRef Number="1" /> continues here.
+            """,
+        ["editorialfootnotes"] = """
+            <DxEditorialFootnotes Entries="footnotes" />
+            @code {
+                private static readonly IReadOnlyList<DxEditorialFootnotes.FootnoteEntry> footnotes =
+                [
+                    new(1, "The citation text."),
+                ];
+            }
+            """,
+        ["editorialglossaryterm"] = """
+            <DxEditorialGlossaryTerm Term="ECDH" Definition="Elliptic-Curve Diffie-Hellman: agrees on a shared secret without transmitting it." />
             """,
     };
 

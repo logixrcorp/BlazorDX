@@ -52,7 +52,8 @@ builder.Services.AddScoped<MyAppStore>();
 <link rel="stylesheet" href="_content/BlazorDX.Components/dx-display.css" />
 <link rel="stylesheet" href="_content/BlazorDX.Components/dx-scheduler.css" />   <!-- DxScheduler / DxGantt -->
 <link rel="stylesheet" href="_content/BlazorDX.Components/dx-filemanager.css" /> <!-- DxFileManager -->
-<link rel="stylesheet" href="_content/BlazorDX.Components/dx-editorial.css" />   <!-- DxEditorial* -->
+<link rel="stylesheet" href="_content/BlazorDX.Components/dx-editorial.css" />   <!-- DxEditorial* core layout -->
+<link rel="stylesheet" href="_content/BlazorDX.Components/dx-editorial-extras.css" /> <!-- reading-experience/discovery add-ons; split out at the 1000-line file cap -->
 <script type="module" src="_content/BlazorDX.Components/dx-editorial-scrollytelling.js"></script> <!-- DxEditorialScrollytelling reveal; required, not optional -->
 ```
 
@@ -408,6 +409,19 @@ multi-part piece; either side may be omitted, renders nothing if both are).
 <DxEditorialSeriesNav NextTitle="Part Two" NextRoute="/insights/articles/part-two" />
 ```
 
+Text-flow devices: `DxEditorialInsetFigure` (small floated image, `shape-outside` text wrap —
+`Right` bool to float the other way), `DxEditorialStatRow` (oversized numeric callouts,
+`Stats: IReadOnlyList<DxEditorialStatRow.Stat>` of `(Value, Label, Detail?)`),
+`DxEditorialFootnoteRef` + `DxEditorialFootnotes` (superscript marker + back-linked list, matched
+by `Number`), `DxEditorialGlossaryTerm` (`Term`/`Definition`, composes `DxTooltip` — needs
+`IAnchorInterop` registered, same as any other overlay-positioned component).
+```razor
+<p>ECDH<DxEditorialFootnoteRef Number="1" /> agrees on a shared secret.</p>
+<DxEditorialGlossaryTerm Term="ECDH" Definition="Elliptic-Curve Diffie-Hellman." />
+<DxEditorialStatRow Stats="[new("256-bit", "Key size")]" />
+<DxEditorialFootnotes Entries="[new(1, "Elliptic-Curve Diffie-Hellman.")]" />
+```
+
 ---
 
 ## 5. Full component catalog
@@ -444,7 +458,8 @@ multi-part piece; either side may be omitted, renders nothing if both are).
   DxEditorialPullQuote, DxEditorialSidebar, DxEditorialScrollytelling, DxEditorialScrollyStage,
   DxEditorialDissipation, DxEditorialFooter, DxEditorialTableOfContents,
   DxEditorialReadingProgress, DxEditorialDropCap, DxEditorialAuthorBio, DxEditorialTagList,
-  DxEditorialRelated, DxEditorialSeriesNav
+  DxEditorialRelated, DxEditorialSeriesNav, DxEditorialInsetFigure, DxEditorialStatRow,
+  DxEditorialFootnoteRef, DxEditorialFootnotes, DxEditorialGlossaryTerm
 - **Barcodes & QR:** DxQrCode, DxBarcode, DxEan13
 
 ---

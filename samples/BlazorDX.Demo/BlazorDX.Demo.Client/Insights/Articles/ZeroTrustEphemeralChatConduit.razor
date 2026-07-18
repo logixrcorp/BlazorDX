@@ -54,9 +54,9 @@
     <div id="the-pipeline">
     <DxEditorialScrollytelling Intro="Four steps, four trust boundaries. Scroll to follow one message through the pipeline.">
         <DxEditorialScrollyStage Index="01" Title="A provider encrypts, once" Glyph="✉">
-            Before a message reaches BlazorDX at all, the MCP resource-provider that owns it
-            encrypts it. The Conduit never receives plaintext — there's no point in the pipeline
-            where it could, even if you wanted it to.
+            Before a message reaches BlazorDX at all, the MCP<DxEditorialFootnoteRef Number="1" />
+            resource-provider that owns it encrypts it. The Conduit never receives plaintext —
+            there's no point in the pipeline where it could, even if you wanted it to.
         </DxEditorialScrollyStage>
 
         <DxEditorialScrollyStage Index="02" Title="The Conduit relays blind" Glyph="↯">
@@ -69,7 +69,11 @@
 
         <DxEditorialScrollyStage Index="03" Title="The browser decrypts, alone" Glyph="🔑">
             A Rust crate compiled to WebAssembly (<code>dx_security</code>) runs the actual
-            handshake — P-256 ECDH, then AES-256-GCM — entirely inside the browser's own sandbox.
+            handshake — P-256
+            <DxEditorialGlossaryTerm Term="ECDH" Definition="Elliptic-Curve Diffie-Hellman: lets two parties agree on a shared secret without ever transmitting it." />,
+            then
+            <DxEditorialGlossaryTerm Term="AES-256-GCM" Definition="Advanced Encryption Standard, Galois/Counter Mode: an authenticated cipher — it encrypts and detects tampering in one pass." />
+            — entirely inside the browser's own sandbox.
             No hardware enclave, no secure element; this is an ordinary wasm module, isolated the
             same way any browser tab is isolated from any other. The private key material never
             crosses back to the server, and it never touches JavaScript's garbage-collected heap.
@@ -177,10 +181,14 @@
         </p>
     </div>
 
+    <DxEditorialStatRow Stats="stats" />
+
     <DxEditorialFigure Caption="The point was never distrust. It was building an architecture that doesn't ask anyone to keep a promise it could accidentally break.">
         <img src="images/insights/zero-trust-ephemeral-chat-conduit/freedom-from-digital-footprints.jpg"
              alt="A figure stands in an open field at dusk, releasing a stream of light particles into the sky." loading="lazy" />
     </DxEditorialFigure>
+
+    <DxEditorialFootnotes Entries="footnotes" />
 
     <DxEditorialAuthorBio Name="BlazorDX Team" Role="Maintainers">
         We write these the same way we build the library: read the actual code and tests before
@@ -191,6 +199,20 @@
 </DxEditorialLayout>
 
 @code {
+    private static readonly IReadOnlyList<DxEditorialStatRow.Stat> stats =
+    [
+        new("P-256", "ECDH curve", "The handshake, run entirely in the browser sandbox"),
+        new("256-bit", "AES-GCM key size", "Authenticated — encrypts and detects tampering"),
+        new("0", "Plaintext copies stored", "The server that routes a message never sees it"),
+    ];
+
+    private static readonly IReadOnlyList<DxEditorialFootnotes.FootnoteEntry> footnotes =
+    [
+        new(1, "MCP: Model Context Protocol — the same protocol this repository's own AI-form " +
+                "integration speaks (see docs/ai-integration.md); resource-providers here are the " +
+                "MCP sense of the term, not something BlazorDX-specific."),
+    ];
+
     private static readonly IReadOnlyList<DxEditorialTableOfContents.TocEntry> tocEntries =
     [
         new("What 'zero-trust' means", "zero-trust-meaning"),

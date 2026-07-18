@@ -1,6 +1,8 @@
 using BlazorDX.Components;
+using BlazorDX.Interop;
 using Bunit;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace BlazorDX.Components.Tests;
@@ -8,11 +10,18 @@ namespace BlazorDX.Components.Tests;
 /// <summary>
 /// The Dx*Editorial family: long-form/magazine-style layout components (hero shell, full-bleed
 /// figures, a two-column "spread", pull-quotes, spec sidebars, scrollytelling, and the footer).
-/// All are plain markup composition — no interop, no compute backend — so coverage here is
-/// mostly "does the right markup/attributes come out for the params given."
+/// Mostly plain markup composition — no interop, no compute backend — so coverage here is mostly
+/// "does the right markup/attributes come out for the params given." DxEditorialGlossaryTerm is
+/// the one exception (it composes DxTooltip, which needs IAnchorInterop), so the DI registration
+/// below covers the whole class rather than adding a second test class just for that.
 /// </summary>
 public sealed class EditorialTests : TestContext
 {
+    public EditorialTests()
+    {
+        Services.AddScoped<IAnchorInterop, NullAnchorInterop>();
+    }
+
     [Fact]
     public void Layout_renders_text_only_hero_by_default()
     {
@@ -308,5 +317,71 @@ public sealed class EditorialTests : TestContext
         IRenderedComponent<DxEditorialSeriesNav> nav = RenderComponent<DxEditorialSeriesNav>();
 
         Assert.Empty(nav.FindAll("nav"));
+    }
+
+    [Fact]
+    public void InsetFigure_applies_the_right_modifier_and_renders_the_caption_when_set()
+    {
+        IRenderedComponent<DxEditorialInsetFigure> left = RenderComponent<DxEditorialInsetFigure>(p => p
+            .Add(f => f.Caption, "A caption").AddChildContent("<img src=\"x.jpg\" alt=\"x\" />"));
+        Assert.DoesNotContain("dx-editorial-inset-figure--right", left.Find("figure").ClassName);
+        Assert.Equal("A caption", left.Find("figcaption").TextContent);
+
+        IRenderedComponent<DxEditorialInsetFigure> right = RenderComponent<DxEditorialInsetFigure>(p => p
+            .Add(f => f.Right, true).AddChildContent("<img src=\"x.jpg\" alt=\"x\" />"));
+        Assert.Contains("dx-editorial-inset-figure--right", right.Find("figure").ClassName);
+        Assert.Empty(right.FindAll("figcaption"));
+    }
+
+    [Fact]
+    public void StatRow_renders_a_stat_per_entry_and_omits_detail_when_unset()
+    {
+        DxEditorialStatRow.Stat[] stats =
+        [
+            new("256-bit", "AES-GCM key size", "Authenticated encryption"),
+            new("0", "Plaintext copies stored"),
+        ];
+        IRenderedComponent<DxEditorialStatRow> row = RenderComponent<DxEditorialStatRow>(p => p.Add(s => s.Stats, stats));
+
+        var values = row.FindAll(".dx-editorial-stat-value");
+        Assert.Equal(2, values.Count);
+        Assert.Equal("256-bit", values[0].TextContent);
+        Assert.Single(row.FindAll(".dx-editorial-stat-detail"));
+    }
+
+    [Fact]
+    public void FootnoteRef_and_Footnotes_link_to_each_other_by_number()
+    {
+        IRenderedComponent<DxEditorialFootnoteRef> reference = RenderComponent<DxEditorialFootnoteRef>(p => p.Add(r => r.Number, 1));
+        var refLink = reference.Find("sup.dx-editorial-footnote-ref a");
+        Assert.Equal("fnref-1", refLink.GetAttribute("id"));
+        Assert.Equal("#fn-1", refLink.GetAttribute("href"));
+
+        DxEditorialFootnotes.FootnoteEntry[] entries = [new(1, "MCP: Model Context Protocol.")];
+        IRenderedComponent<DxEditorialFootnotes> footnotes = RenderComponent<DxEditorialFootnotes>(p => p.Add(f => f.Entries, entries));
+        var item = footnotes.Find("li");
+        Assert.Equal("fn-1", item.GetAttribute("id"));
+        Assert.Contains("MCP: Model Context Protocol.", item.TextContent);
+        Assert.Equal("#fnref-1", footnotes.Find(".dx-editorial-footnote-back").GetAttribute("href"));
+    }
+
+    [Fact]
+    public void Footnotes_renders_nothing_when_entries_are_empty()
+    {
+        IRenderedComponent<DxEditorialFootnotes> footnotes = RenderComponent<DxEditorialFootnotes>(p => p
+            .Add(f => f.Entries, Array.Empty<DxEditorialFootnotes.FootnoteEntry>()));
+
+        Assert.Empty(footnotes.FindAll("section"));
+    }
+
+    [Fact]
+    public void GlossaryTerm_renders_a_focusable_trigger_and_the_definition_panel()
+    {
+        IRenderedComponent<DxEditorialGlossaryTerm> term = RenderComponent<DxEditorialGlossaryTerm>(p => p
+            .Add(t => t.Term, "ECDH").Add(t => t.Definition, "Elliptic-Curve Diffie-Hellman."));
+
+        var trigger = term.Find(".dx-editorial-glossary-term");
+        Assert.Equal("ECDH", trigger.TextContent);
+        Assert.Equal("0", trigger.GetAttribute("tabindex"));
     }
 }
