@@ -92,15 +92,20 @@ builder.Services.AddHttpClient();
 // The Conduit Router (BlazorDX.Conduit): tracks active ephemeral SSE connections so
 // /ephemeral-events and /mcp-proxy below can register/push against the same set. Singleton —
 // it must outlive any single request, since SSE connections and provider pushes come from
-// unrelated requests. No IEphemeralSessionAuthorizer is registered here (every session id is
-// allowed), matching this demo's existing anonymous /mcp posture; production should register
-// one gating a session id to its owning caller.
+// unrelated requests.
 builder.Services.AddSingleton<EphemeralSessionRegistry>();
 
 // DemoAiChatBroker's session signing-key store (see DemoAiChatBroker.cs) — Singleton for the
 // same reason as EphemeralSessionRegistry: a session's handshake and its later WITHDRAW/
 // telemetry calls arrive on unrelated requests.
 builder.Services.AddSingleton<BlazorDX.Demo.DemoAiChatSigningKeyRegistry>();
+
+// This demo's IEphemeralSessionAuthorizer: gates a session id's SSE stream (and, per the
+// interface's own contract, McpProxyEndpoint's payload intake, though nothing here exercises
+// that) to the same browser that ran its handshake, via a visitor cookie -- see
+// DemoAiChatBroker.cs for the full ownership model. Not registering this at all (as an earlier
+// version of this demo did) means every session id is allowed; this is the fix for that.
+builder.Services.AddDemoAiChatBroker();
 
 var app = builder.Build();
 

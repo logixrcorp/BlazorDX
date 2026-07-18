@@ -1045,6 +1045,31 @@
         <member name="P:BlazorDX.Components.DxEan13.Class">
             <summary>Extra CSS classes for the root <c>svg</c>.</summary>
         </member>
+        <member name="T:BlazorDX.Components.DxEditorialRelated">
+            <summary>
+            A "more like this" card row for the end of a <see cref="!:DxEditorialLayout"/> piece. Plain
+            non-generic entries (mirroring <see cref="!:DxEditorialFooter.FooterCard"/>) rather than a
+            generic type parameter — map your own content model to <see cref="T:BlazorDX.Components.DxEditorialRelated.RelatedEntry"/> with a
+            simple <c>Select</c> before passing it in.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxEditorialSeriesNav">
+            <summary>
+            Previous/next navigation for a multi-part <see cref="!:DxEditorialLayout"/> piece — the web
+            equivalent of a print magazine's jump line ("continued on p. 34"), except it moves forward
+            into the next part rather than just resuming the current one. Either side may be omitted
+            (the opening piece in a series has no previous; the closer has no next); when only one side
+            is given, it's rendered alone rather than leaving an empty grid cell.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxEditorialTagList">
+            <summary>
+            A row of topic/category pills for a <see cref="!:DxEditorialLayout"/> piece — the web
+            counterpart to a print magazine's "department" labeling. Each tag is a real link (not a
+            <see cref="T:BlazorDX.Components.DxChip"/>, which has no href) since tags typically navigate to a filtered or
+            archive view.
+            </summary>
+        </member>
         <member name="T:BlazorDX.Components.DxErrorBoundary">
             <summary>
             Contains exceptions thrown while rendering its content so one broken component
