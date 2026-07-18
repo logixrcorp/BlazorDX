@@ -20,7 +20,16 @@
 @using static Microsoft.AspNetCore.Components.Web.RenderMode
 @inject IEphemeralChatInterop Interop
 
-<div id="@hostElementId" class="dx-ephemeral-chat" aria-live="polite" aria-label="Encrypted message"></div>
+@* contain: layout paint isolates this subtree's layout calculations and clips its paint to its
+   own box, without contain: strict's `size` containment -- size containment forces a box to
+   ignore its descendants' actual size entirely, which collapsed this element to min-height and
+   silently clipped every mounted message inside the (already-unreadable-from-outside) shadow
+   root when tried locally against a live handshake. The whitepaper's §3.4 wants full `size`
+   containment too, to stop message length from being inferred via how the box displaces later
+   siblings -- but that specific property requires a fixed, content-independent height, which
+   this bubble's current variable-height design does not have. Left as layout+paint only rather
+   than force a fixed-height/scrollable-bubble UX change unasked for. *@
+<div id="@hostElementId" class="dx-ephemeral-chat" style="contain: layout paint;" aria-live="polite" aria-label="Encrypted message"></div>
 
 @if (state == MountState.Decrypting)
 {

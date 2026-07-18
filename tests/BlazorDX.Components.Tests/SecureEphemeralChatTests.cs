@@ -50,6 +50,19 @@ public sealed class SecureEphemeralChatTests : TestContext
     }
 
     [Fact]
+    public void The_host_element_carries_layout_and_paint_containment_regardless_of_any_consumer_stylesheet()
+    {
+        // Layout isolation (whitepaper §3.4) is applied inline by the component itself, not
+        // left for a consuming app to remember to add. Not `contain: strict`: its `size`
+        // containment collapsed the box to min-height and clipped every message when verified
+        // live -- see SecureEphemeralChat.razor's comment on the host element.
+        IRenderedComponent<SecureEphemeralChat> chat = RenderChat();
+
+        var host = chat.Find(".dx-ephemeral-chat");
+        Assert.Contains("contain: layout paint", host.GetAttribute("style"));
+    }
+
+    [Fact]
     public void Passes_all_payload_coordinates_and_the_default_events_base_url_to_the_bridge()
     {
         RenderChat();

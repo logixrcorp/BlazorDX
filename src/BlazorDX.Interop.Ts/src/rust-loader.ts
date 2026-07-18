@@ -187,7 +187,15 @@ export async function ensureSecurityWasm(): Promise<void> {
   if (securityLoading === null) {
     securityLoading = instantiateSecurity();
   }
-  securityCached = await securityLoading;
+  // Object.freeze, not just Object.seal: the WebAssembly JS API spec creates the exports
+  // object's function properties as ordinary writable/configurable data properties -- nothing
+  // stops page-realm code (a "MAIN world" browser extension, a prototype-pollution-adjacent
+  // bug in an unrelated script) from reassigning e.g. `wasm.decrypt_payload` to something that
+  // observes or substitutes plaintext before this bridge ever sees it. Freezing closes that off
+  // for the one wasm module carrying key material (see docs/adr/0016's threat model / the
+  // whitepaper's §3.2 "Property Access Hardening"). gridWasm has no such hardening: it is a
+  // different feature with no secrets crossing this boundary.
+  securityCached = Object.freeze(await securityLoading);
 }
 
 // Synchronous accessor used after loading has completed.
