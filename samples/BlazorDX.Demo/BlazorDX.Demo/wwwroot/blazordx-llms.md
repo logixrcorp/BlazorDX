@@ -422,6 +422,18 @@ by `Number`), `DxEditorialGlossaryTerm` (`Term`/`Definition`, composes `DxToolti
 <DxEditorialFootnotes Entries="[new(1, "Elliptic-Curve Diffie-Hellman.")]" />
 ```
 
+End-of-piece add-ons: `DxEditorialShareBar` (real share-intent links to X/LinkedIn/email —
+`Url`/`Title`, no clipboard "copy link" button since that needs JS interop this family avoids),
+`DxEditorialNewsletterSignup` (composes `DxTextBox` + `DxButton`; ships no backend — `OnSubscribe`
+hands the host app a raw email string), `DxEditorialListen` (wraps a real narration file in native
+`<audio controls>`, no custom player, no TTS engine).
+```razor
+@inject NavigationManager Nav
+<DxEditorialShareBar Url="@Nav.Uri" Title="The piece's headline" />
+<DxEditorialNewsletterSignup OnSubscribe="EmailCaptureService.SubscribeAsync" />
+<DxEditorialListen AudioSrc="narration.mp3" />
+```
+
 ---
 
 ## 5. Full component catalog
@@ -459,7 +471,8 @@ by `Number`), `DxEditorialGlossaryTerm` (`Term`/`Definition`, composes `DxToolti
   DxEditorialDissipation, DxEditorialFooter, DxEditorialTableOfContents,
   DxEditorialReadingProgress, DxEditorialDropCap, DxEditorialAuthorBio, DxEditorialTagList,
   DxEditorialRelated, DxEditorialSeriesNav, DxEditorialInsetFigure, DxEditorialStatRow,
-  DxEditorialFootnoteRef, DxEditorialFootnotes, DxEditorialGlossaryTerm
+  DxEditorialFootnoteRef, DxEditorialFootnotes, DxEditorialGlossaryTerm, DxEditorialShareBar,
+  DxEditorialNewsletterSignup, DxEditorialListen
 - **Barcodes & QR:** DxQrCode, DxBarcode, DxEan13
 
 ---

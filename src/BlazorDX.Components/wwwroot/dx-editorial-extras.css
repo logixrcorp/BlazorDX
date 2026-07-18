@@ -351,6 +351,81 @@
   line-height: 1.45;
 }
 
+/* ---- Share bar: real share-intent links, no clipboard button (that needs JS interop this
+   family avoids). ---- */
+.dx-editorial-share {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  max-width: var(--measure);
+  margin: 1.5rem auto 0;
+  padding: 0 24px;
+}
+.dx-editorial-share-link {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--dx-border, #e2e8f0);
+  color: var(--dx-text, #0f172a);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color 150ms ease, color 150ms ease;
+}
+.dx-editorial-share-link:hover,
+.dx-editorial-share-link:focus-visible {
+  border-color: var(--dx-accent, #2563eb);
+  color: var(--dx-accent, #2563eb);
+}
+
+/* ---- Newsletter signup: composes DxTextBox + DxButton. No backend of its own — OnSubscribe
+   hands the host app a raw email string. ---- */
+.dx-editorial-newsletter {
+  max-width: var(--measure);
+  margin: clamp(48px, 8vw, 88px) auto;
+  padding: 28px 28px 32px;
+  background: var(--dx-surface-alt, #f8fafc);
+  border: 1px solid var(--dx-border, #e2e8f0);
+  border-radius: 14px;
+}
+.dx-editorial-newsletter-heading {
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin: 0 0 6px;
+}
+.dx-editorial-newsletter-description {
+  font-size: 0.92rem;
+  color: var(--dx-text-muted, #64748b);
+  line-height: 1.5rem;
+  margin: 0 0 16px;
+}
+.dx-editorial-newsletter-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+}
+.dx-editorial-newsletter-input {
+  flex: 1 1 220px;
+}
+
+/* ---- Listen: wraps a real pre-recorded audio file in native <audio controls> — no custom
+   player (that would need JS interop), no TTS engine (BlazorDX ships none). ---- */
+.dx-editorial-listen {
+  max-width: var(--measure);
+  margin: clamp(32px, 6vw, 56px) auto;
+  padding: 0 24px;
+}
+.dx-editorial-listen-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--dx-text-muted, #64748b);
+  margin: 0 0 8px;
+}
+.dx-editorial-listen-audio {
+  width: 100%;
+}
+
 /* ---- Responsive ---- */
 @media (max-width: 640px) {
   .dx-editorial-author-bio {

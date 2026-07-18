@@ -1,5 +1,6 @@
 @page "/insights/articles/zero-trust-ephemeral-chat-conduit"
 @rendermode InteractiveWebAssembly
+@inject NavigationManager Nav
 
 <PageTitle>The Architecture of Silence — BlazorDX Insights</PageTitle>
 
@@ -196,6 +197,8 @@
         against the real ADR, the Conduit implementation, and its Playwright E2E test before a
         word of the copy was final.
     </DxEditorialAuthorBio>
+
+    <DxEditorialShareBar Url="@Nav.Uri" Title="The Architecture of Silence — BlazorDX Insights" />
 </DxEditorialLayout>
 
 @code {

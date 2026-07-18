@@ -384,4 +384,68 @@ public sealed class EditorialTests : TestContext
         Assert.Equal("ECDH", trigger.TextContent);
         Assert.Equal("0", trigger.GetAttribute("tabindex"));
     }
+
+    [Fact]
+    public void ShareBar_encodes_url_and_title_into_real_share_intent_links()
+    {
+        IRenderedComponent<DxEditorialShareBar> bar = RenderComponent<DxEditorialShareBar>(p => p
+            .Add(s => s.Url, "https://example.com/a b").Add(s => s.Title, "A & B"));
+
+        var links = bar.FindAll("a.dx-editorial-share-link");
+        Assert.Equal(3, links.Count);
+        string encodedUrl = System.Net.WebUtility.UrlEncode("https://example.com/a b")!;
+        string encodedTitle = System.Net.WebUtility.UrlEncode("A & B")!;
+        Assert.Contains("twitter.com/intent/tweet", links[0].GetAttribute("href"));
+        Assert.Contains($"url={encodedUrl}", links[0].GetAttribute("href"));
+        Assert.Contains("linkedin.com/sharing", links[1].GetAttribute("href"));
+        Assert.StartsWith($"mailto:?subject={encodedTitle}", links[2].GetAttribute("href"));
+        Assert.Null(links[2].GetAttribute("target"));
+    }
+
+    [Fact]
+    public void ShareBar_omits_the_email_link_when_ShowEmail_is_false()
+    {
+        IRenderedComponent<DxEditorialShareBar> bar = RenderComponent<DxEditorialShareBar>(p => p
+            .Add(s => s.Url, "https://example.com").Add(s => s.Title, "T").Add(s => s.ShowEmail, false));
+
+        Assert.Equal(2, bar.FindAll("a.dx-editorial-share-link").Count);
+    }
+
+    [Fact]
+    public void NewsletterSignup_invokes_OnSubscribe_with_the_typed_email_on_submit()
+    {
+        string? submitted = null;
+        IRenderedComponent<DxEditorialNewsletterSignup> form = RenderComponent<DxEditorialNewsletterSignup>(p => p
+            .Add(f => f.OnSubscribe, EventCallback.Factory.Create<string>(this, v => submitted = v)));
+
+        Assert.Empty(form.FindAll(".dx-editorial-newsletter-description"));
+        form.Find("input").Change("reader@example.com");
+        form.Find("form").Submit();
+
+        Assert.Equal("reader@example.com", submitted);
+    }
+
+    [Fact]
+    public void NewsletterSignup_does_not_invoke_OnSubscribe_when_the_email_is_blank()
+    {
+        var invoked = false;
+        IRenderedComponent<DxEditorialNewsletterSignup> form = RenderComponent<DxEditorialNewsletterSignup>(p => p
+            .Add(f => f.OnSubscribe, EventCallback.Factory.Create<string>(this, _ => invoked = true)));
+
+        form.Find("form").Submit();
+
+        Assert.False(invoked);
+    }
+
+    [Fact]
+    public void Listen_renders_a_native_audio_element_with_the_given_source()
+    {
+        IRenderedComponent<DxEditorialListen> listen = RenderComponent<DxEditorialListen>(p => p
+            .Add(l => l.AudioSrc, "narration.mp3"));
+
+        var audio = listen.Find("audio.dx-editorial-listen-audio");
+        Assert.Equal("narration.mp3", audio.GetAttribute("src"));
+        Assert.NotNull(audio.GetAttribute("controls"));
+        Assert.Equal("Listen to this article", listen.Find(".dx-editorial-listen-label").TextContent);
+    }
 }

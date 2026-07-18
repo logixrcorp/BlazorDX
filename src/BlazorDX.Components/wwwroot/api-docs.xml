@@ -1150,6 +1150,27 @@
         <member name="P:BlazorDX.Components.DxEditorialLayout.HeroImageSrc">
             <summary>Optional full-bleed image under the hero meta row. Omit for a text-only hero.</summary>
         </member>
+        <member name="T:BlazorDX.Components.DxEditorialListen">
+            <summary>
+            An "listen to this article" control for a <see cref="T:BlazorDX.Components.DxEditorialLayout"/> piece — wraps a
+            pre-recorded narration file in a native <c>&lt;audio controls&gt;</c> element rather than a
+            custom-styled player. BlazorDX ships no text-to-speech engine; this component assumes
+            <see cref="P:BlazorDX.Components.DxEditorialListen.AudioSrc"/> is a real audio file the host application recorded or generated. A
+            custom play/pause UI would need JS interop this library's Editorial family deliberately
+            avoids, and native controls are already fully accessible and functional without it.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxEditorialNewsletterSignup">
+            <summary>
+            An inline email-capture form for a <see cref="T:BlazorDX.Components.DxEditorialLayout"/> piece — composes the
+            library's own <see cref="T:BlazorDX.Components.DxTextBox"/> and <see cref="T:BlazorDX.Components.DxButton"/>. Ships no backend of its
+            own (there's no newsletter service to wire it to): <see cref="P:BlazorDX.Components.DxEditorialNewsletterSignup.OnSubscribe"/> hands the host
+            application a raw email string to do something real with. Not wired into the flagship
+            article for that reason — a signup form with nowhere real for the email to go would mislead
+            a reader who submits it, which is worse than the honest empty states this project already
+            uses for content it doesn't have yet.
+            </summary>
+        </member>
         <member name="T:BlazorDX.Components.DxEditorialPullQuote">
             <summary>A large, italicized, serif-accented pull-quote to punctuate a long-form piece.</summary>
         </member>
@@ -1209,6 +1230,18 @@
             (the opening piece in a series has no previous; the closer has no next); when only one side
             is given, it's rendered alone rather than leaving an empty grid cell.
             </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxEditorialShareBar">
+            <summary>
+            A social/email share row for a <see cref="T:BlazorDX.Components.DxEditorialLayout"/> piece — real share-intent
+            links (X, LinkedIn, email), no clipboard "copy link" button, since that needs JS interop
+            this library's Editorial family deliberately avoids (the one exception,
+            <see cref="T:BlazorDX.Components.DxEditorialScrollytelling"/>'s reveal, is an explicit opt-in static asset, not
+            per-component interop). A non-functional "copy" button would be worse than omitting it.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxEditorialShareBar.ShowEmail">
+            <summary>Whether to include the "share by email" link.</summary>
         </member>
         <member name="T:BlazorDX.Components.DxEditorialSidebar">
             <summary>

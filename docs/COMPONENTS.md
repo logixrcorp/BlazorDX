@@ -194,6 +194,9 @@ Two stylesheets: `dx-editorial.css` (core layout) and `dx-editorial-extras.css`
 | `DxEditorialStatRow` | A row of oversized numeric callouts, the data-journalism "big number" device | `/insights/articles/zero-trust-ephemeral-chat-conduit` |
 | `DxEditorialFootnoteRef` / `DxEditorialFootnotes` | An inline superscript marker and its matching footnote list, with a back-link — the web analogue of a print footnote | `/insights/articles/zero-trust-ephemeral-chat-conduit` |
 | `DxEditorialGlossaryTerm` | An inline term with a hover/focus definition, composing `DxTooltip` | `/insights/articles/zero-trust-ephemeral-chat-conduit` |
+| `DxEditorialShareBar` | Real share-intent links (X, LinkedIn, email) — no "copy link" button, since that needs JS interop this family avoids | `/insights/articles/zero-trust-ephemeral-chat-conduit` |
+| `DxEditorialNewsletterSignup` | An inline email-capture form composing `DxTextBox` + `DxButton`; ships no backend of its own — `OnSubscribe` hands the host app a raw email string | not wired into a live piece yet — no newsletter service to hand the email to |
+| `DxEditorialListen` | An "listen to this article" control wrapping a real narration file in native `<audio controls>`, no custom player | not wired into a live piece yet — no recorded narration asset to demo it with honestly |
 
 ---
 

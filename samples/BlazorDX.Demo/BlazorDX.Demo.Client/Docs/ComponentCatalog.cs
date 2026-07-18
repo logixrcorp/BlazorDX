@@ -169,6 +169,9 @@ public static class ComponentCatalog
         new("editorialfootnoteref", "DxEditorialFootnoteRef", "Editorial & long-form", "An inline superscript marker linking to a DxEditorialFootnotes entry.", "/insights/articles/zero-trust-ephemeral-chat-conduit", "DxEditorialFootnoteRef"),
         new("editorialfootnotes", "DxEditorialFootnotes", "Editorial & long-form", "The footnote list for a piece, with back-links.", "/insights/articles/zero-trust-ephemeral-chat-conduit", "DxEditorialFootnotes"),
         new("editorialglossaryterm", "DxEditorialGlossaryTerm", "Editorial & long-form", "An inline term with a hover/focus definition, composing DxTooltip.", "/insights/articles/zero-trust-ephemeral-chat-conduit", "DxEditorialGlossaryTerm"),
+        new("editorialsharebar", "DxEditorialShareBar", "Editorial & long-form", "Real share-intent links (X, LinkedIn, email) — no clipboard button.", "/insights/articles/zero-trust-ephemeral-chat-conduit", "DxEditorialShareBar"),
+        new("editorialnewslettersignup", "DxEditorialNewsletterSignup", "Editorial & long-form", "An inline email-capture form composing DxTextBox and DxButton.", "/insights", "DxEditorialNewsletterSignup"),
+        new("editoriallisten", "DxEditorialListen", "Editorial & long-form", "An \"listen to this article\" control wrapping a real audio file in native audio controls.", "/insights", "DxEditorialListen"),
     ];
 
     // Curated usage examples, keyed by slug. Components without an entry fall back to
@@ -469,6 +472,18 @@ public static class ComponentCatalog
             """,
         ["editorialglossaryterm"] = """
             <DxEditorialGlossaryTerm Term="ECDH" Definition="Elliptic-Curve Diffie-Hellman: agrees on a shared secret without transmitting it." />
+            """,
+        ["editorialsharebar"] = """
+            @inject NavigationManager Nav
+
+            <DxEditorialShareBar Url="@Nav.Uri" Title="The piece's headline" />
+            """,
+        ["editorialnewslettersignup"] = """
+            <DxEditorialNewsletterSignup Description="One good piece a month, nothing else."
+                                          OnSubscribe="EmailCaptureService.SubscribeAsync" />
+            """,
+        ["editoriallisten"] = """
+            <DxEditorialListen AudioSrc="narration.mp3" />
             """,
     };
 

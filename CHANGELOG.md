@@ -11,6 +11,26 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ### Added
 
+- **Three new `DxEditorial*` components (Phase 4, closing the reading-experience roadmap)**:
+  `DxEditorialShareBar` (real share-intent links to X, LinkedIn, and email — deliberately no
+  clipboard "copy link" button, since that needs JS interop this component family avoids; the
+  family's one deliberate exception, `DxEditorialScrollytelling`'s reveal, is an explicit opt-in
+  static asset, not per-component interop), `DxEditorialNewsletterSignup` (an inline email-capture
+  form composing the library's own `DxTextBox` and `DxButton`; ships no backend of its own —
+  `OnSubscribe` hands the host application a raw email string to do something real with), and
+  `DxEditorialListen` (an "listen to this article" control wrapping a real narration file in a
+  native `<audio controls>` element rather than a custom-styled player — BlazorDX ships no
+  text-to-speech engine, and native controls are already fully accessible without JS interop).
+  `DxEditorialShareBar` is wired into the flagship article using `NavigationManager.Uri` for a
+  genuinely live URL (the same pattern `App.razor` already uses for its canonical/`og:url` tags).
+  `DxEditorialNewsletterSignup` and `DxEditorialListen` ship tested and documented but
+  deliberately unwired: there is no real newsletter service to hand a submitted email to, and no
+  recorded narration asset exists for this piece — wiring either would mislead a reader who
+  interacts with it, which is worse than the honest empty/unwired states this project already uses
+  for content it doesn't have yet.
+  6 new bUnit tests (1056 total passing, zero regressions). Documented in `docs/COMPONENTS.md`,
+  `ComponentCatalog.cs`, and `blazordx-llms.md`.
+
 - **Five new `DxEditorial*` components (Phase 3 of the reading-experience roadmap)**:
   `DxEditorialInsetFigure` (a small floated image with text wrapping via CSS `shape-outside` — a
   third image treatment alongside the full-bleed `DxEditorialFigure` and two-column
