@@ -93,7 +93,7 @@ public sealed class DxTreemap : ComponentBase
         builder.OpenElement(2, "svg");
         builder.AddAttribute(3, "class", "dx-chart-svg");
         builder.AddAttribute(4, "viewBox", $"0 0 {Width} {Height}");
-        builder.AddAttribute(5, "role", "img");
+        builder.AddAttribute(5, "role", interactive ? "application" : "img");
         builder.AddAttribute(6, "aria-label", $"Treemap with {cells.Count} cells");
 
         for (int i = 0; i < cells.Count; i++)
@@ -117,6 +117,7 @@ public sealed class DxTreemap : ComponentBase
             {
                 int captured = i;
                 builder.AddAttribute(18, "tabindex", "0");
+                builder.AddAttribute(24, "role", "button");
                 builder.AddAttribute(19, "aria-label", title);
                 builder.AddAttribute(20, "onclick", EventCallback.Factory.Create(this, () => SelectAsync(cells, captured)));
                 builder.AddAttribute(21, "onkeydown", EventCallback.Factory.Create<KeyboardEventArgs>(

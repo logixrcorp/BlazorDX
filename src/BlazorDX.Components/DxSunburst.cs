@@ -91,7 +91,7 @@ public sealed class DxSunburst : ComponentBase
         builder.OpenElement(2, "svg");
         builder.AddAttribute(3, "class", "dx-chart-svg");
         builder.AddAttribute(4, "viewBox", $"0 0 {Size} {Size}");
-        builder.AddAttribute(5, "role", "img");
+        builder.AddAttribute(5, "role", interactive ? "application" : "img");
         builder.AddAttribute(6, "aria-label", $"Sunburst chart with {arcs.Count} segments");
 
         builder.OpenElement(7, "circle");
@@ -122,6 +122,7 @@ public sealed class DxSunburst : ComponentBase
             {
                 int captured = i;
                 builder.AddAttribute(25, "tabindex", "0");
+                builder.AddAttribute(31, "role", "button");
                 builder.AddAttribute(26, "aria-label", title);
                 builder.AddAttribute(27, "onclick", EventCallback.Factory.Create(this, () => SelectAsync(arcs, captured)));
                 builder.AddAttribute(28, "onkeydown", EventCallback.Factory.Create<KeyboardEventArgs>(

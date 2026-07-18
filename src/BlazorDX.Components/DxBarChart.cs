@@ -170,6 +170,7 @@ public sealed class DxBarChart : ComponentBase
         {
             int captured = index;
             builder.AddAttribute(38, "id", PointId(index));
+            builder.AddAttribute(138, "role", "button");
             builder.AddAttribute(39, "aria-label", title);
             builder.AddAttribute(40, "onclick", EventCallback.Factory.Create(this, () => SelectAsync(captured)));
             builder.AddAttribute(41, "onmouseover", EventCallback.Factory.Create(this, () => HoverAsync(captured)));

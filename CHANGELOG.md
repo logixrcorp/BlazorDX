@@ -11,6 +11,27 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ### Fixed
 
+- **WebKit-only ARIA violations in `DxBarChart`, `DxTreemap`, `DxSunburst`, and `DxNetworkGraph`,
+  surfaced by CI's WebKit E2E job once the build gate (below) let it actually run.** Two related
+  bugs, both from the same root pattern (interactive marks gaining `aria-label` with no explicit
+  `role`) across every chart shape that supports per-mark selection:
+  - `aria-prohibited-attr`: an SVG `<rect>`/`<circle>` mark with `aria-label` but no `role` has no
+    ARIA name-permitting role under WebKit's implicit-role computation, so the label is rejected.
+    Chromium/Firefox didn't flag it — only WebKit's stricter SVG-AAM mapping did. Fixed by adding
+    `role="button"` to each interactive mark in `DxBarChart`, `DxTreemap`, `DxSunburst`, and
+    `DxNetworkGraph` — the correct semantic (click/Enter/Space activates = selects the mark).
+  - `nested-interactive`: fixing the above then exposed a second bug in `DxTreemap` — its SVG root
+    kept `role="img"` unconditionally, even when its cells became `role="button"`, and ARIA
+    forbids interactive descendants of an "img"-rolled element. `DxBarChart` already switched its
+    root to `role="application"` when interactive; `DxTreemap`, `DxSunburst`, and `DxNetworkGraph`
+    did not — all three now do the same, closing the same latent bug in `DxSunburst` before any
+    demo happened to expose it.
+  Verified for real against the actual WebKit engine (not just Chromium): full local `dotnet test`
+  run against a live server with `BLAZORDX_BROWSER=webkit`, 23/23 axe-core checks passing including
+  `/charts`. Also confirmed via CI's own WebKit job re-run that `FileManagerE2ETests`'s native-DnD
+  failure in the same run was pre-existing WebKit/Playwright flakiness (passed on rerun, unrelated
+  to any of this session's changes) rather than a regression — not fixed, just correctly ruled out.
+
 - **Every route logged a console error: "An import map is added after module script load was
   triggered."** Fixing the CI build gate (below) let the E2E suite actually run for the first
   time in days, and it immediately caught this — the scrollytelling `<script type="module">` tag

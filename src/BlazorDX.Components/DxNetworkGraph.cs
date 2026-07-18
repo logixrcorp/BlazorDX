@@ -67,7 +67,7 @@ public sealed class DxNetworkGraph : ComponentBase
         builder.OpenElement(2, "svg");
         builder.AddAttribute(3, "class", "dx-chart-svg");
         builder.AddAttribute(4, "viewBox", $"0 0 {Width} {Height}");
-        builder.AddAttribute(5, "role", "img");
+        builder.AddAttribute(5, "role", interactive ? "application" : "img");
         builder.AddAttribute(6, "aria-label", $"Network graph with {Nodes.Count} nodes and {Edges.Count} edges");
 
         for (int i = 0; i < Edges.Count; i++)
@@ -113,6 +113,7 @@ public sealed class DxNetworkGraph : ComponentBase
             {
                 GraphNode captured = node;
                 builder.AddAttribute(27, "tabindex", "0");
+                builder.AddAttribute(39, "role", "button");
                 builder.AddAttribute(28, "aria-label", node.Label);
                 builder.AddAttribute(29, "onclick", EventCallback.Factory.Create(this, () => OnNodeSelected.InvokeAsync(captured)));
                 builder.AddAttribute(30, "onkeydown", EventCallback.Factory.Create<KeyboardEventArgs>(
