@@ -62,6 +62,21 @@ public sealed class SecureEphemeralChatTests : TestContext
         Assert.Equal(CiphertextBase64, args.CiphertextBase64);
         Assert.Equal("/ephemeral-events", args.EventsBaseUrl);
         Assert.StartsWith("dx-ephemeral-chat-", args.HostElementId);
+        Assert.Null(args.TelemetryBaseUrl); // opt-in only -- unset by default
+    }
+
+    [Fact]
+    public void A_TelemetryBaseUrl_parameter_is_forwarded_to_the_bridge()
+    {
+        fake.MountSucceeds = true;
+        RenderComponent<SecureEphemeralChat>(parameters => parameters
+            .Add(c => c.SessionId, SessionId)
+            .Add(c => c.ServerPublicKeyBase64, ServerPublicKeyBase64)
+            .Add(c => c.NonceBase64, NonceBase64)
+            .Add(c => c.CiphertextBase64, CiphertextBase64)
+            .Add(c => c.TelemetryBaseUrl, "/demo/ai-chat/telemetry"));
+
+        Assert.Equal("/demo/ai-chat/telemetry", fake.LastMountArgs!.Value.TelemetryBaseUrl);
     }
 
     [Fact]

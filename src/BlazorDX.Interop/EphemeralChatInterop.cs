@@ -37,6 +37,7 @@ public sealed partial class EphemeralChatInterop : IEphemeralChatInterop
         string nonceBase64,
         string ciphertextBase64,
         string eventsBaseUrl,
+        string? telemetryBaseUrl,
         Action onWithdraw,
         Action onRefresh,
         Action onTamper)
@@ -49,6 +50,7 @@ public sealed partial class EphemeralChatInterop : IEphemeralChatInterop
             nonceBase64,
             ciphertextBase64,
             eventsBaseUrl,
+            telemetryBaseUrl,
             onWithdraw,
             onRefresh,
             onTamper);
@@ -67,6 +69,7 @@ public sealed partial class EphemeralChatInterop : IEphemeralChatInterop
         string nonceBase64,
         string ciphertextBase64,
         string eventsBaseUrl,
+        string? telemetryBaseUrl,
         Action onWithdraw,
         Action onRefresh,
         Action onTamper)
@@ -79,6 +82,7 @@ public sealed partial class EphemeralChatInterop : IEphemeralChatInterop
             nonceBase64,
             ciphertextBase64,
             eventsBaseUrl,
+            telemetryBaseUrl,
             onWithdraw,
             onRefresh,
             onTamper);
@@ -100,6 +104,7 @@ public sealed partial class EphemeralChatInterop : IEphemeralChatInterop
         string nonceBase64,
         string ciphertextBase64,
         string eventsBaseUrl,
+        string? telemetryBaseUrl,
         [JSMarshalAs<JSType.Function>] Action onWithdraw,
         [JSMarshalAs<JSType.Function>] Action onRefresh,
         [JSMarshalAs<JSType.Function>] Action onTamper);
@@ -115,6 +120,7 @@ public sealed partial class EphemeralChatInterop : IEphemeralChatInterop
         string nonceBase64,
         string ciphertextBase64,
         string eventsBaseUrl,
+        string? telemetryBaseUrl,
         [JSMarshalAs<JSType.Function>] Action onWithdraw,
         [JSMarshalAs<JSType.Function>] Action onRefresh,
         [JSMarshalAs<JSType.Function>] Action onTamper);

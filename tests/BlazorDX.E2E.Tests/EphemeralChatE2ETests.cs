@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.Playwright;
 using Xunit;
 
@@ -114,18 +116,27 @@ public sealed class EphemeralChatE2ETests(PlaywrightFixture fx)
         IPage page = await fx.NewPageAsync();
         await OverrideRandomValuesWithFixedSeedAsync(page);
 
+        // The client-side wasm module now verifies a WITHDRAW's signature before acting on it
+        // (see docs/adr/0016 and dx_security::session::verify_and_end) -- an unsigned/wrong
+        // frame is treated as tampering, not withdrawal. Because this suite's client and
+        // server seeds are both fixed and known (see OverrideRandomValuesWithFixedSeedAsync /
+        // EphemeralChatFixture.ServerSeed), the exact shared secret -- and so the exact signing
+        // key -- is independently computable here, the same construction a real broker runs
+        // server-side (see DemoAiChatBroker.DeriveSigningKey).
+        string withdrawSignatureBase64 = ComputeControlSignatureBase64("WITHDRAW");
+
         // Fulfil the frontend's own EventSource request with a hand-written SSE stream: the
         // first response sets a short reconnect delay and ends immediately (matching the real
         // backend's actual "connected, nothing pushed yet" behavior); the second — after the
-        // browser's automatic EventSource reconnect — delivers WITHDRAW. See the type-level
-        // doc comment for why this substitutes for a live backend push.
+        // browser's automatic EventSource reconnect — delivers a genuinely-signed WITHDRAW.
+        // See the type-level doc comment for why this substitutes for a live backend push.
         int requestCount = 0;
         await page.RouteAsync("**/ephemeral-events/**", async route =>
         {
             requestCount++;
             string body = requestCount == 1
                 ? "retry: 50\n\n"
-                : "event: WITHDRAW\ndata: {}\n\n";
+                : $"event: WITHDRAW\ndata: {{\"signature\":\"{withdrawSignatureBase64}\"}}\n\n";
             await route.FulfillAsync(new RouteFulfillOptions
             {
                 Status = 200,
@@ -191,6 +202,56 @@ public sealed class EphemeralChatE2ETests(PlaywrightFixture fx)
               };
             })();
             """);
+    }
+
+    // Mirrors Components.Pages.EphemeralChatFixture's own fixed vectors exactly: the client
+    // seed OverrideRandomValuesWithFixedSeedAsync forces crypto.getRandomValues to return
+    // (bytes 1..32), and the server seed the fixture encrypted its payload with (bytes 33..64).
+    // Duplicated rather than shared across the assembly boundary, like PlaintextMessage above.
+    private static readonly byte[] ClientSeed = [.. Enumerable.Range(1, 32).Select(i => (byte)i)];
+    private static readonly byte[] ServerSeed = [.. Enumerable.Range(33, 32).Select(i => (byte)i)];
+    private const string SessionId = "e2e-fixture-session";
+    private const string HmacKeyDerivationLabel = "dx-security/hmac-key/v1";
+
+    /// <summary>
+    /// Independently computes the exact signature a real broker would send for a WITHDRAW/
+    /// REFRESH targeting this fixture's fixed, known session -- same ECDH shared secret (both
+    /// seeds are fixed and known here), same domain-separated HMAC-SHA256 signing-key
+    /// derivation as <c>dx_security::session::derive_signing_key</c> and
+    /// <c>DemoAiChatBroker.DeriveSigningKey</c>, so this is a genuine cross-implementation
+    /// signature the real, unmodified client-side wasm verify path must accept.
+    /// </summary>
+    private static string ComputeControlSignatureBase64(string action)
+    {
+        using ECDiffieHellman server = ImportRawScalar(ServerSeed);
+        using ECDiffieHellman client = ImportRawScalar(ClientSeed);
+        byte[] sharedSecret = server.DeriveRawSecretAgreement(client.PublicKey);
+
+        using HMACSHA256 keyDerivation = new(sharedSecret);
+        byte[] hmacKey = keyDerivation.ComputeHash(Encoding.UTF8.GetBytes(HmacKeyDerivationLabel));
+
+        using HMACSHA256 signer = new(hmacKey);
+        byte[] signature = signer.ComputeHash(Encoding.UTF8.GetBytes($"{SessionId}|{action}"));
+        return Convert.ToBase64String(signature);
+    }
+
+    // Imports a raw 32-byte P-256 scalar as a private key by wrapping it in the minimal SEC1
+    // ECPrivateKey DER (RFC 5915) that names the curve but omits the public key -- .NET derives
+    // the public point from the scalar on import. Test-fixture-only, mirrors
+    // EphemeralChatFixture.razor's identical helper (duplicated, not shared, for the same
+    // assembly-boundary reason as the constants above).
+    private static ECDiffieHellman ImportRawScalar(byte[] scalar32)
+    {
+        byte[] curveOid = [0x06, 0x08, 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x03, 0x01, 0x07]; // 1.2.840.10045.3.1.7 (P-256)
+        byte[] version = [0x02, 0x01, 0x01];
+        byte[] privateKeyOctet = [0x04, (byte)scalar32.Length, .. scalar32];
+        byte[] parametersField = [0xA0, (byte)curveOid.Length, .. curveOid];
+        byte[] body = [.. version, .. privateKeyOctet, .. parametersField];
+        byte[] der = [0x30, (byte)body.Length, .. body];
+
+        ECDiffieHellman key = ECDiffieHellman.Create();
+        key.ImportECPrivateKey(der, out _);
+        return key;
     }
 
     /// <summary>

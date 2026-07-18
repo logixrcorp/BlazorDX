@@ -29,6 +29,12 @@ public interface IEphemeralChatInterop : IAsyncDisposable
     /// must never fall back to rendering the raw ciphertext -- "nothing to
     /// show" is the only safe fallback.
     /// </returns>
+    /// <param name="telemetryBaseUrl">
+    /// Optional (pass <see langword="null"/> to disable): when set, signs and posts an Access
+    /// Receipt to <c>{telemetryBaseUrl}/access</c> right after a successful mount, and a
+    /// signed Destruction Receipt to <c>{telemetryBaseUrl}/destruction</c> on every
+    /// termination path (WITHDRAW, tamper, or unmount) -- the Proof-of-Destruction protocol.
+    /// </param>
     ValueTask<bool> DecryptAndMountAsync(
         string hostElementId,
         string sessionId,
@@ -36,6 +42,7 @@ public interface IEphemeralChatInterop : IAsyncDisposable
         string nonceBase64,
         string ciphertextBase64,
         string eventsBaseUrl,
+        string? telemetryBaseUrl,
         Action onWithdraw,
         Action onRefresh,
         Action onTamper);
@@ -60,6 +67,7 @@ public interface IEphemeralChatInterop : IAsyncDisposable
     /// no preceding, successful <see cref="BeginHandshakeAsync"/> call always
     /// fails.
     /// </summary>
+    /// <param name="telemetryBaseUrl">Optional (pass <see langword="null"/> to disable) -- see <see cref="DecryptAndMountAsync"/>.</param>
     ValueTask<bool> CompleteAndMountAsync(
         string hostElementId,
         string sessionId,
@@ -67,6 +75,7 @@ public interface IEphemeralChatInterop : IAsyncDisposable
         string nonceBase64,
         string ciphertextBase64,
         string eventsBaseUrl,
+        string? telemetryBaseUrl,
         Action onWithdraw,
         Action onRefresh,
         Action onTamper);

@@ -1,5 +1,8 @@
+using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using BlazorDX.Conduit;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -19,11 +22,12 @@ namespace BlazorDX.Demo;
 /// external MCP resource-provider server holding its own keypair, reached over whatever
 /// transport ADR 0016 documents. This class stands in for that external provider purely so the
 /// "/ai-chat" demo page can show a full, real client-side handshake — real P-256 ECDH, real
-/// AES-256-GCM, a real closed Shadow DOM mount — without requiring any external API key or a
-/// second running process. Do not mistake this for production wiring: a real deployment also
-/// registers an <see cref="IEphemeralSessionAuthorizer"/> before exposing anything like this
-/// beyond a local demo (this endpoint, like <c>/mcp</c> and <c>/mcp-proxy</c> elsewhere in this
-/// sample, is anonymous).
+/// AES-256-GCM, a real closed Shadow DOM mount, real signed WITHDRAW/Access/Destruction
+/// receipts — without requiring any external API key or a second running process. Do not
+/// mistake this for production wiring: a real deployment also registers an
+/// <see cref="IEphemeralSessionAuthorizer"/> before exposing anything like this beyond a local
+/// demo (this endpoint, like <c>/mcp</c> and <c>/mcp-proxy</c> elsewhere in this sample, is
+/// anonymous).
 ///
 /// <see cref="System.Security.Cryptography"/>'s <c>ECDiffieHellman</c>/<c>AesGcm</c> types need a
 /// native crypto backend that browser-wasm does not provide — exactly why the feature has its
@@ -36,31 +40,55 @@ public static class DemoAiChatBroker
     /// <c>POST /demo/ai-chat/handshake</c> — the client's freshly wasm-generated P-256 public
     /// key comes in, an encrypted response encrypted for the shared secret with a fresh server
     /// keypair goes out. Request/response shapes are demo-local (<see cref="HandshakeRequest"/>
-    /// / <see cref="HandshakeResponse"/>), not a BlazorDX.Conduit contract.
+    /// / <see cref="HandshakeResponse"/>), not a BlazorDX.Conduit contract. Also derives and
+    /// stores this session's HMAC signing key (see <see cref="DemoAiChatSigningKeyRegistry"/>) —
+    /// the exact same domain-separated derivation <c>dx_security::session::derive_signing_key</c>
+    /// runs client-side against its own copy of the shared secret, so a signature produced on
+    /// either side verifies on the other.
     /// </summary>
     public const string HandshakeRoute = "/demo/ai-chat/handshake";
 
     /// <summary>
-    /// <c>POST /demo/ai-chat/withdraw/{sessionId}</c> — pushes a real "WITHDRAW" SSE event to
-    /// the session via <see cref="EphemeralEventsEndpoint.PushEphemeralEventAsync"/>, exactly as
-    /// a real external provider revoking a message would. Nothing about this push is simulated;
-    /// only the fact that it is *this* demo page triggering it (rather than an external
-    /// provider's own revoke action) is demo-specific.
+    /// <c>POST /demo/ai-chat/withdraw/{sessionId}</c> — signs a WITHDRAW control message with
+    /// this session's stored HMAC key and pushes it as a real "WITHDRAW" SSE event via
+    /// <see cref="EphemeralEventsEndpoint.PushEphemeralEventAsync"/>, exactly as a real external
+    /// provider revoking a message would. Nothing about this push is simulated; only the fact
+    /// that it is *this* demo page triggering it (rather than an external provider's own revoke
+    /// action) is demo-specific.
     /// </summary>
     public const string WithdrawRoute = "/demo/ai-chat/withdraw/{sessionId}";
+
+    /// <summary><c>POST /demo/ai-chat/telemetry/access</c> — Access Receipt intake (Proof of Access half of the PoD protocol).</summary>
+    public const string TelemetryAccessRoute = "/demo/ai-chat/telemetry/access";
+
+    /// <summary><c>POST /demo/ai-chat/telemetry/destruction</c> — Destruction Receipt intake (Proof of Destruction half).</summary>
+    public const string TelemetryDestructionRoute = "/demo/ai-chat/telemetry/destruction";
+
+    /// <summary><c>GET /demo/ai-chat/telemetry/audit</c> — read-only view of every receipt this broker has verified, newest first. Demo/visibility only.</summary>
+    public const string TelemetryAuditRoute = "/demo/ai-chat/telemetry/audit";
+
+    // Domain-separation label mirroring dx_security::session::HMAC_KEY_DERIVATION_LABEL
+    // byte-for-byte. Any implementation on either side of the ECDH handshake that changes this
+    // label independently will produce non-interoperable signing keys.
+    private const string HmacKeyDerivationLabel = "dx-security/hmac-key/v1";
 
     private const int P256PublicKeyLength = 65; // 0x04 || X(32) || Y(32)
     private const int NonceLength = 12;
     private const int TagLength = 16;
+    private const int MaxAuditEntries = 200;
 
     public static IEndpointRouteBuilder MapDemoAiChatBroker(this WebApplication app)
     {
         app.MapPost(HandshakeRoute, HandleHandshakeAsync).DisableAntiforgery();
         app.MapPost(WithdrawRoute, HandleWithdrawAsync).DisableAntiforgery();
+        app.MapPost(TelemetryAccessRoute, HandleAccessTelemetryAsync).DisableAntiforgery();
+        app.MapPost(TelemetryDestructionRoute, HandleDestructionTelemetryAsync).DisableAntiforgery();
+        app.MapGet(TelemetryAuditRoute, HandleTelemetryAuditAsync);
         return app;
     }
 
-    private static Task<IResult> HandleHandshakeAsync(HandshakeRequest request, CancellationToken cancellationToken)
+    private static Task<IResult> HandleHandshakeAsync(
+        HandshakeRequest request, DemoAiChatSigningKeyRegistry signingKeys, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.SessionId) || string.IsNullOrWhiteSpace(request.ClientPublicKeyBase64))
         {
@@ -122,6 +150,12 @@ public static class DemoAiChatBroker
             // Trailing 16-byte tag concatenated onto the ciphertext, matching the convention
             // BlazorDX.Security.Rust's decrypt_payload (and the aes-gcm crate) expects.
             ciphertextWithTag = [.. ciphertext, .. tag];
+
+            // Same raw shared secret, a *second*, differently-labeled HMAC derivation -- the
+            // session's signing key, kept independently of (and outliving, on the client side)
+            // the AES key above. Stored here so this broker can later sign a WITHDRAW push and
+            // verify the Access/Destruction receipts the client sends back.
+            signingKeys.Store(request.SessionId, DeriveSigningKey(sharedSecret));
         }
         finally
         {
@@ -144,20 +178,165 @@ public static class DemoAiChatBroker
     }
 
     private static async Task<IResult> HandleWithdrawAsync(
-        string sessionId, EphemeralSessionRegistry registry, CancellationToken cancellationToken)
+        string sessionId,
+        EphemeralSessionRegistry registry,
+        DemoAiChatSigningKeyRegistry signingKeys,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(sessionId))
         {
             return Results.BadRequest(new { error = "sessionId is required." });
         }
 
+        if (!signingKeys.TryGet(sessionId, out byte[]? hmacKey))
+        {
+            // No handshake ever happened for this session (or it was already fully retired by a
+            // prior destruction receipt) -- nothing to sign, and the client-side wasm module
+            // would reject an unsigned/mismatched WITHDRAW as tampering anyway.
+            return Results.NotFound(new { error = $"no signing key on file for session '{sessionId}'." });
+        }
+
+        byte[] signature = Sign(hmacKey, $"{sessionId}|WITHDRAW");
+        string data = JsonSerializer.Serialize(new { signature = Convert.ToBase64String(signature) });
+
         // Real push through the real Conduit registry — the same method a production
         // McpBrokerClient/webhook relay would call. A session nobody is currently watching is a
         // silent no-op (the Conduit is an ephemeral relay, not a durable queue).
-        await registry.PushEphemeralEventAsync(sessionId, "WITHDRAW", "{}", cancellationToken).ConfigureAwait(false);
+        await registry.PushEphemeralEventAsync(sessionId, "WITHDRAW", data, cancellationToken).ConfigureAwait(false);
         return Results.Accepted();
     }
+
+    private static Task<IResult> HandleAccessTelemetryAsync(
+        TelemetryReceipt receipt, DemoAiChatSigningKeyRegistry signingKeys)
+    {
+        if (!signingKeys.TryGet(receipt.SessionId, out byte[]? hmacKey))
+        {
+            return Task.FromResult(Results.NotFound(new { error = $"no signing key on file for session '{receipt.SessionId}'." }));
+        }
+
+        bool valid = VerifySignature(hmacKey, $"{receipt.SessionId}|ACCESS_CONFIRMED", receipt.ClientSignature);
+        DemoTelemetryAudit.Record(receipt.SessionId, "ACCESS_CONFIRMED", trigger: null, valid);
+
+        // A failed verification is itself an audit-worthy signal (see the receipt's own
+        // Compliance-as-Telemetry framing in docs/adr/0016) -- but it never becomes an
+        // exception or a 500; the client already made its own trust decisions before this
+        // receipt was ever sent, and a broker is exactly as "blind" to *why* a signature failed
+        // as the Conduit Router is to plaintext.
+        return Task.FromResult(valid ? Results.Accepted() : Results.BadRequest(new { error = "signature did not verify." }));
+    }
+
+    private static Task<IResult> HandleDestructionTelemetryAsync(
+        TelemetryReceipt receipt, DemoAiChatSigningKeyRegistry signingKeys)
+    {
+        if (!signingKeys.TryGet(receipt.SessionId, out byte[]? hmacKey))
+        {
+            return Task.FromResult(Results.NotFound(new { error = $"no signing key on file for session '{receipt.SessionId}'." }));
+        }
+
+        string trigger = string.IsNullOrEmpty(receipt.Trigger) ? "UNSPECIFIED" : receipt.Trigger;
+        bool valid = VerifySignature(hmacKey, $"{receipt.SessionId}|{trigger}", receipt.ClientSignature);
+        DemoTelemetryAudit.Record(receipt.SessionId, "MEMORY_ZEROED", trigger, valid);
+
+        if (valid)
+        {
+            // The session's signing material is now retired on the broker side too -- mirrors
+            // the client-side dx_security store, where end_with_receipt/verify_and_end already
+            // removed and zeroized it before this receipt was ever sent.
+            signingKeys.Remove(receipt.SessionId);
+        }
+
+        return Task.FromResult(valid ? Results.Accepted() : Results.BadRequest(new { error = "signature did not verify." }));
+    }
+
+    private static Task<IResult> HandleTelemetryAuditAsync() =>
+        Task.FromResult(Results.Json(DemoTelemetryAudit.Recent(MaxAuditEntries)));
+
+    /// <summary>
+    /// HMAC-SHA256(sharedSecret, <see cref="HmacKeyDerivationLabel"/>) -- byte-for-byte the same
+    /// construction as <c>dx_security::session::derive_signing_key</c>, so a signature produced
+    /// on either side of the ECDH handshake verifies on the other.
+    /// </summary>
+    private static byte[] DeriveSigningKey(byte[] sharedSecret)
+    {
+        using HMACSHA256 hmac = new(sharedSecret);
+        return hmac.ComputeHash(Encoding.UTF8.GetBytes(HmacKeyDerivationLabel));
+    }
+
+    private static byte[] Sign(byte[] hmacKey, string message)
+    {
+        using HMACSHA256 hmac = new(hmacKey);
+        return hmac.ComputeHash(Encoding.UTF8.GetBytes(message));
+    }
+
+    private static bool VerifySignature(byte[] hmacKey, string message, string? clientSignatureBase64)
+    {
+        if (string.IsNullOrEmpty(clientSignatureBase64))
+        {
+            return false;
+        }
+
+        byte[] claimed;
+        try
+        {
+            claimed = Convert.FromBase64String(clientSignatureBase64);
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+
+        byte[] expected = Sign(hmacKey, message);
+        return CryptographicOperations.FixedTimeEquals(claimed, expected);
+    }
 }
+
+/// <summary>
+/// Demo-only in-memory store of each session's HMAC signing key, keyed by session id.
+/// Registered <c>AddSingleton</c> (must outlive any single request, like
+/// <see cref="EphemeralSessionRegistry"/>) — a real broker would back this with whatever
+/// short-lived session store it already keeps its own shared-secret material in (see
+/// <c>samples/BlazorDX.MockSecureBroker/src/SessionCache.ts</c> for the reference external
+/// broker's equivalent).
+/// </summary>
+public sealed class DemoAiChatSigningKeyRegistry
+{
+    private readonly ConcurrentDictionary<string, byte[]> keysBySessionId = new(StringComparer.Ordinal);
+
+    public void Store(string sessionId, byte[] hmacKey) => keysBySessionId[sessionId] = hmacKey;
+
+    public bool TryGet(string sessionId, [NotNullWhen(true)] out byte[]? hmacKey) =>
+        keysBySessionId.TryGetValue(sessionId, out hmacKey);
+
+    public void Remove(string sessionId) => keysBySessionId.TryRemove(sessionId, out _);
+}
+
+/// <summary>
+/// Demo-only, in-memory, bounded audit trail of every telemetry receipt this broker has
+/// checked (valid or not) -- a minimal stand-in for the "immutable, write-once audit vault"
+/// concept, purely so the "/ai-chat" demo can show the Compliance-as-Telemetry loop actually
+/// closing. Not persisted, not thread-safe beyond the concurrent queue's own guarantees, and
+/// intentionally capped so a long-running demo process cannot leak memory.
+/// </summary>
+internal static class DemoTelemetryAudit
+{
+    private static readonly ConcurrentQueue<TelemetryAuditEntry> entries = new();
+    private static int count;
+
+    public static void Record(string sessionId, string eventType, string? trigger, bool valid)
+    {
+        entries.Enqueue(new TelemetryAuditEntry(sessionId, eventType, trigger, valid, DateTimeOffset.UtcNow));
+        if (Interlocked.Increment(ref count) > 200)
+        {
+            entries.TryDequeue(out _);
+            Interlocked.Decrement(ref count);
+        }
+    }
+
+    public static IReadOnlyList<TelemetryAuditEntry> Recent(int max) =>
+        [.. entries.Reverse().Take(max)];
+}
+
+internal sealed record TelemetryAuditEntry(string SessionId, string EventType, string? Trigger, bool Valid, DateTimeOffset RecordedAt);
 
 /// <summary>Request body for <see cref="DemoAiChatBroker.HandshakeRoute"/>. Demo-local shape, not a BlazorDX.Conduit contract.</summary>
 internal sealed class HandshakeRequest
@@ -178,4 +357,23 @@ internal sealed class HandshakeResponse
     public string NonceBase64 { get; set; } = string.Empty;
 
     public string CiphertextBase64 { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Request body shared by <see cref="DemoAiChatBroker.TelemetryAccessRoute"/> and
+/// <see cref="DemoAiChatBroker.TelemetryDestructionRoute"/> — matches the JSON shape
+/// <c>ephemeral-chat.ts</c>'s <c>postTelemetryReceipt</c> sends (camelCase via ASP.NET Core's
+/// default naming policy). <see cref="Trigger"/> is present only on a destruction receipt.
+/// </summary>
+internal sealed class TelemetryReceipt
+{
+    public string SessionId { get; set; } = string.Empty;
+
+    public string EventType { get; set; } = string.Empty;
+
+    public string Timestamp { get; set; } = string.Empty;
+
+    public string? Trigger { get; set; }
+
+    public string ClientSignature { get; set; } = string.Empty;
 }

@@ -107,6 +107,18 @@ else if (state == MountState.Withdrawn)
     [Parameter]
     public string EventsBaseUrl { get; set; } = "/ephemeral-events";
 
+    /// <summary>
+    /// Optional (leave unset/<see langword="null"/> to disable): base path for the broker's
+    /// telemetry endpoint. When set, an Access Receipt is signed and posted to
+    /// <c>{TelemetryBaseUrl}/access</c> right after a successful mount, and a signed
+    /// Destruction Receipt is posted to <c>{TelemetryBaseUrl}/destruction</c> on every
+    /// termination path (WITHDRAW, tamper, or unmount) -- the Proof-of-Destruction protocol.
+    /// Both are signed with the session's HMAC key, the same one derived during the ECDH
+    /// handshake, so only a party that participated in that handshake can forge one.
+    /// </summary>
+    [Parameter]
+    public string? TelemetryBaseUrl { get; set; }
+
     /// <summary>Raised after the server pushes a <c>WITHDRAW</c> event and the node has been scrubbed.</summary>
     [Parameter]
     public EventCallback OnWithdrawn { get; set; }
@@ -153,6 +165,7 @@ else if (state == MountState.Withdrawn)
             NonceBase64,
             CiphertextBase64,
             EventsBaseUrl,
+            TelemetryBaseUrl,
             onWithdraw: () => _ = InvokeAsync(HandleWithdrawnAsync),
             onRefresh: () => _ = InvokeAsync(HandleRefreshedAsync),
             onTamper: () => _ = InvokeAsync(HandleTamperDetectedAsync)).AsTask();
@@ -192,6 +205,7 @@ else if (state == MountState.Withdrawn)
             response.NonceBase64,
             response.CiphertextBase64,
             EventsBaseUrl,
+            TelemetryBaseUrl,
             onWithdraw: () => _ = InvokeAsync(HandleWithdrawnAsync),
             onRefresh: () => _ = InvokeAsync(HandleRefreshedAsync),
             onTamper: () => _ = InvokeAsync(HandleTamperDetectedAsync));

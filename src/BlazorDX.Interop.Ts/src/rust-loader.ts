@@ -124,6 +124,41 @@ export interface SecurityWasmExports {
   ): number;
   clear_payload(pointer: number, byteLength: number): void;
   end_session(sessionIdPointer: number, sessionIdLength: number): void;
+  sign(
+    sessionIdPointer: number,
+    sessionIdLength: number,
+    messagePointer: number,
+    messageLength: number,
+    outSigPointer: number,
+  ): number;
+  verify_signal(
+    sessionIdPointer: number,
+    sessionIdLength: number,
+    messagePointer: number,
+    messageLength: number,
+    signaturePointer: number,
+    signatureLength: number,
+    outValidPointer: number,
+  ): number;
+  verify_and_end_session(
+    sessionIdPointer: number,
+    sessionIdLength: number,
+    messagePointer: number,
+    messageLength: number,
+    signaturePointer: number,
+    signatureLength: number,
+    destructionMessagePointer: number,
+    destructionMessageLength: number,
+    outValidPointer: number,
+    outDestructionSigPointer: number,
+  ): number;
+  end_with_receipt(
+    sessionIdPointer: number,
+    sessionIdLength: number,
+    messagePointer: number,
+    messageLength: number,
+    outSigPointer: number,
+  ): number;
 }
 
 let securityCached: SecurityWasmExports | null = null;

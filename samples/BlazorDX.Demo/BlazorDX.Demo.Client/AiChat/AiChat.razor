@@ -66,6 +66,7 @@
                             <SecureEphemeralChat UseLiveHandshake="true"
                                                   SessionId="@m.SessionId"
                                                   EstablishSession="@(pk => HandleEstablishAsync(m, pk))"
+                                                  TelemetryBaseUrl="/demo/ai-chat/telemetry"
                                                   OnWithdrawn="@(() => HandleWithdrawn(m))"
                                                   OnTamperDetected="@(() => HandleWithdrawn(m))" />
                             @if (!m.Withdrawn)

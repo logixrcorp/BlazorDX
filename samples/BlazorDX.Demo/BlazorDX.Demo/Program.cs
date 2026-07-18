@@ -97,6 +97,11 @@ builder.Services.AddHttpClient();
 // one gating a session id to its owning caller.
 builder.Services.AddSingleton<EphemeralSessionRegistry>();
 
+// DemoAiChatBroker's session signing-key store (see DemoAiChatBroker.cs) — Singleton for the
+// same reason as EphemeralSessionRegistry: a session's handshake and its later WITHDRAW/
+// telemetry calls arrive on unrelated requests.
+builder.Services.AddSingleton<BlazorDX.Demo.DemoAiChatSigningKeyRegistry>();
+
 var app = builder.Build();
 
 // Must run before UseHttpsRedirection so the forwarded https scheme is applied first.
