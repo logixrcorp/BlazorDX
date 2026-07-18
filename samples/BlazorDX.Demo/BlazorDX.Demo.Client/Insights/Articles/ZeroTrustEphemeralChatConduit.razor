@@ -78,7 +78,11 @@
         </EditorialScrollyStage>
     </EditorialScrollytelling>
 
-    <div class="dx-editorial-body">
+    <EditorialSpread ImageSrc="images/insights/zero-trust-ephemeral-chat-conduit/sovereignty-over-self.jpg"
+                      ImageAlt="A figure works at a lit surface inside a glass dome, streams of light passing by outside the glass without entering."
+                      Kicker="A real boundary" Title="Enclosed by its own edge"
+                      SpecLabel="Verified by" SpecValue="Playwright E2E"
+                      SpecCaption="Renders the real component, inspects the actual DOM.">
         <p>
             That last step is the one worth sitting with. A closed shadow root isn't a convention
             or a lint rule — it's a real boundary the DOM API enforces: code holding a reference to
@@ -89,12 +93,7 @@
             leak from a closed root — is something we didn't just design for. It's covered by an
             end-to-end Playwright test that renders the real component and inspects the actual DOM.
         </p>
-    </div>
-
-    <EditorialFigure Caption="Enclosed by its own boundary: what's inside is visible through the glass, but nothing outside can reach in and touch it.">
-        <img src="images/insights/zero-trust-ephemeral-chat-conduit/sovereignty-over-self.jpg"
-             alt="A figure works at a lit surface inside a glass dome, streams of light passing by outside the glass without entering." loading="lazy" />
-    </EditorialFigure>
+    </EditorialSpread>
 
     <EditorialPullQuote Attribution="From the Conduit's own design notes">
         A router that cannot read what it routes cannot be made to leak it — by policy, by bug, or

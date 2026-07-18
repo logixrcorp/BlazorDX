@@ -11,6 +11,16 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ### Added
 
+- **`EditorialSpread` — a two-column "classic meets modern" magazine layout** for Insights
+  pieces: an elevated, drop-shadowed photo collaged against body copy, with a small labeled
+  spec card overlapping its corner (the fashion-editorial "swatch card" device, adapted to show
+  a real fact — a test name, a cipher suite — instead of a color chip), and a serif-italic
+  kicker over a bold sans title (explicitly mixing "classic" serif with the "modern" sans used
+  throughout). Modeled on real print-magazine spread conventions, translated onto BlazorDX's own
+  `dx-theme.css` tokens rather than importing new brand colors. Used once in the flagship article
+  in place of a full-bleed figure, for rhythm — real magazines vary photo treatment across a
+  feature rather than repeating one pattern throughout.
+
 - **An Articles/Blog/Whitepapers "Insights" content area** (`/insights`), with the demo's own
   editorial design system — hero, pull-quotes, technical sidebars, a scroll-revealed narrative
   section, a three-card footer — built entirely on the existing `dx-theme.css` tokens (no
