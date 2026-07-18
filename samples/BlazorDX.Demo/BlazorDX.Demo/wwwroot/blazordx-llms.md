@@ -398,6 +398,16 @@ near the top of the page), `DxEditorialDropCap` (wrap the opening paragraph; pur
 @code { private static readonly IReadOnlyList<DxEditorialTableOfContents.TocEntry> toc = [new("A section", "a-section")]; }
 ```
 
+Discovery/navigation add-ons: `DxEditorialTagList` (topic pills, each a real `<a>` — not `DxChip`,
+which has no href), `DxEditorialRelated` (a "more like this" card row; renders nothing when
+`Entries` is empty, so it's safe to always include), `DxEditorialSeriesNav` (prev/next for a
+multi-part piece; either side may be omitted, renders nothing if both are).
+```razor
+<DxEditorialTagList Tags="[new("Security", "/insights/articles?tag=security")]" />
+<DxEditorialRelated Heading="More from Insights" Entries="related" />
+<DxEditorialSeriesNav NextTitle="Part Two" NextRoute="/insights/articles/part-two" />
+```
+
 ---
 
 ## 5. Full component catalog
@@ -433,7 +443,8 @@ near the top of the page), `DxEditorialDropCap` (wrap the opening paragraph; pur
 - **Editorial & long-form:** DxEditorialLayout, DxEditorialFigure, DxEditorialSpread,
   DxEditorialPullQuote, DxEditorialSidebar, DxEditorialScrollytelling, DxEditorialScrollyStage,
   DxEditorialDissipation, DxEditorialFooter, DxEditorialTableOfContents,
-  DxEditorialReadingProgress, DxEditorialDropCap, DxEditorialAuthorBio
+  DxEditorialReadingProgress, DxEditorialDropCap, DxEditorialAuthorBio, DxEditorialTagList,
+  DxEditorialRelated, DxEditorialSeriesNav
 - **Barcodes & QR:** DxQrCode, DxBarcode, DxEan13
 
 ---

@@ -649,6 +649,131 @@
   }
 }
 
+/* ---- Tags: topic pills, the web counterpart to a print department label. ---- */
+.dx-editorial-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  max-width: var(--measure);
+  margin: 1.5rem auto 0;
+  padding: 0 24px;
+}
+.dx-editorial-tag {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--dx-border, #e2e8f0);
+  background: var(--dx-surface-alt, #f8fafc);
+  color: var(--dx-text-muted, #64748b);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color 150ms ease, color 150ms ease;
+}
+.dx-editorial-tag:hover,
+.dx-editorial-tag:focus-visible {
+  border-color: var(--dx-accent, #2563eb);
+  color: var(--dx-accent, #2563eb);
+}
+
+/* ---- Related: a "more like this" card row, typically placed near the end of a piece. ---- */
+.dx-editorial-related {
+  max-width: 72rem;
+  margin: clamp(64px, 10vw, 120px) auto;
+  padding: 0 24px;
+}
+.dx-editorial-related-heading {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dx-text-muted, #64748b);
+  margin: 0 0 16px;
+}
+.dx-editorial-related-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+}
+.dx-editorial-related-card {
+  display: block;
+  padding: 20px;
+  border-radius: 14px;
+  border: 1px solid var(--dx-border, #e2e8f0);
+  background: var(--dx-surface, #ffffff);
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 200ms ease, transform 200ms ease;
+}
+.dx-editorial-related-card:hover,
+.dx-editorial-related-card:focus-visible {
+  box-shadow: var(--dx-shadow, 0 12px 32px rgba(15, 23, 42, 0.22));
+  transform: translateY(-2px);
+}
+.dx-editorial-related-card-category {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dx-accent, #2563eb);
+  margin: 0 0 8px;
+}
+.dx-editorial-related-card-title {
+  font-weight: 700;
+  margin: 0 0 6px;
+  line-height: 1.35;
+}
+.dx-editorial-related-card-summary {
+  font-size: 0.9rem;
+  line-height: 1.5rem;
+  color: var(--dx-text-muted, #64748b);
+  margin: 0;
+}
+
+/* ---- Series nav: prev/next for a multi-part piece — the web analogue of a jump line. ---- */
+.dx-editorial-series-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  max-width: 72rem;
+  margin: clamp(48px, 8vw, 88px) auto;
+  padding: 0 24px;
+}
+.dx-editorial-series-nav--single {
+  grid-template-columns: 1fr;
+}
+.dx-editorial-series-link {
+  display: block;
+  padding: 20px 24px;
+  border-radius: 14px;
+  border: 1px solid var(--dx-border, #e2e8f0);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 150ms ease;
+}
+.dx-editorial-series-link:hover,
+.dx-editorial-series-link:focus-visible {
+  border-color: var(--dx-accent, #2563eb);
+}
+.dx-editorial-series-link--next {
+  text-align: right;
+}
+.dx-editorial-series-eyebrow {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dx-text-muted, #64748b);
+  margin-bottom: 6px;
+}
+.dx-editorial-series-title {
+  display: block;
+  font-weight: 700;
+  font-size: 1.02rem;
+}
+
 /* ---- Footer: three-tiered grid ---- */
 .dx-editorial-footer {
   max-width: 72rem;

@@ -237,4 +237,76 @@ public sealed class EditorialTests : TestContext
         Assert.Equal("Grace Hopper", bio.Find(".dx-editorial-author-bio-name").TextContent);
         Assert.Equal("GH", bio.Find(".dx-avatar-initials").TextContent);
     }
+
+    [Fact]
+    public void TagList_renders_a_link_per_tag()
+    {
+        DxEditorialTagList.Tag[] tags = [new("Security", "/topics/security"), new("WebAssembly", "/topics/wasm")];
+        IRenderedComponent<DxEditorialTagList> list = RenderComponent<DxEditorialTagList>(p => p.Add(t => t.Tags, tags));
+
+        var links = list.FindAll("a.dx-editorial-tag");
+        Assert.Equal(2, links.Count);
+        Assert.Equal("/topics/security", links[0].GetAttribute("href"));
+        Assert.Equal("WebAssembly", links[1].TextContent);
+    }
+
+    [Fact]
+    public void Related_renders_a_card_per_entry_and_omits_the_category_line_when_unset()
+    {
+        DxEditorialRelated.RelatedEntry[] entries =
+        [
+            new("Title A", "Summary A", "/a", "Article"),
+            new("Title B", "Summary B", "/b"),
+        ];
+        IRenderedComponent<DxEditorialRelated> related = RenderComponent<DxEditorialRelated>(p => p
+            .Add(r => r.Entries, entries).Add(r => r.Heading, "More reading"));
+
+        Assert.Equal("More reading", related.Find(".dx-editorial-related-heading").TextContent);
+        var cards = related.FindAll("a.dx-editorial-related-card");
+        Assert.Equal(2, cards.Count);
+        Assert.Equal("Article", related.FindAll(".dx-editorial-related-card-category")[0].TextContent);
+        Assert.Single(related.FindAll(".dx-editorial-related-card-category"));
+    }
+
+    [Fact]
+    public void Related_renders_nothing_when_entries_are_empty()
+    {
+        IRenderedComponent<DxEditorialRelated> related = RenderComponent<DxEditorialRelated>(p => p
+            .Add(r => r.Entries, Array.Empty<DxEditorialRelated.RelatedEntry>()));
+
+        Assert.Empty(related.FindAll("section"));
+    }
+
+    [Fact]
+    public void SeriesNav_renders_both_links_when_both_sides_given()
+    {
+        IRenderedComponent<DxEditorialSeriesNav> nav = RenderComponent<DxEditorialSeriesNav>(p => p
+            .Add(n => n.PreviousTitle, "Part One").Add(n => n.PreviousRoute, "/part-one")
+            .Add(n => n.NextTitle, "Part Three").Add(n => n.NextRoute, "/part-three"));
+
+        var root = nav.Find("nav.dx-editorial-series-nav");
+        Assert.DoesNotContain("dx-editorial-series-nav--single", root.ClassName);
+        Assert.Equal("Part One", nav.Find(".dx-editorial-series-link--previous .dx-editorial-series-title").TextContent);
+        Assert.Equal("Part Three", nav.Find(".dx-editorial-series-link--next .dx-editorial-series-title").TextContent);
+    }
+
+    [Fact]
+    public void SeriesNav_renders_only_next_and_applies_the_single_modifier_when_previous_is_omitted()
+    {
+        IRenderedComponent<DxEditorialSeriesNav> nav = RenderComponent<DxEditorialSeriesNav>(p => p
+            .Add(n => n.NextTitle, "Part Two").Add(n => n.NextRoute, "/part-two"));
+
+        var root = nav.Find("nav.dx-editorial-series-nav");
+        Assert.Contains("dx-editorial-series-nav--single", root.ClassName);
+        Assert.Empty(nav.FindAll(".dx-editorial-series-link--previous"));
+        Assert.Single(nav.FindAll(".dx-editorial-series-link--next"));
+    }
+
+    [Fact]
+    public void SeriesNav_renders_nothing_when_neither_side_is_given()
+    {
+        IRenderedComponent<DxEditorialSeriesNav> nav = RenderComponent<DxEditorialSeriesNav>();
+
+        Assert.Empty(nav.FindAll("nav"));
+    }
 }

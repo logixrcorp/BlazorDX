@@ -11,6 +11,20 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ### Added
 
+- **Three new `DxEditorial*` components (Phase 2 of the reading-experience roadmap)**:
+  `DxEditorialTagList` (topic pills, each a real `<a>` — not `DxChip`, which has no href),
+  `DxEditorialRelated` (a "more like this" card row; renders nothing when `Entries` is empty,
+  so it's always safe to include), and `DxEditorialSeriesNav` (previous/next navigation for a
+  multi-part piece — the web analogue of a print jump line; either side may be omitted, and it
+  renders nothing if both are).
+  Unlike Phase 1, these aren't wired into the flagship article: `DxEditorialLayout` only has one
+  real published piece to relate/tag/series-navigate, and per this project's standing "no seeded
+  placeholder content" rule, faking a second piece or a topic archive just to demo the wiring
+  would be dishonest. They ship with full test coverage (6 new bUnit tests, 1046 total passing)
+  and curated usage examples in the docs catalog instead — the `/docs` pages for all three are
+  honest that there's no live demo route yet, pointing to `/insights` rather than falsely
+  implying they're rendered in the article.
+
 - **Four new `DxEditorial*` components (Phase 1 of the reading-experience roadmap)**:
   `DxEditorialTableOfContents` (plain jump links to caller-supplied section IDs — the web
   descendant of a print magazine's contents page; no scrollspy in this version, a deliberate

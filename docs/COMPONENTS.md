@@ -184,6 +184,9 @@ end in the flagship piece at `/insights/articles/zero-trust-ephemeral-chat-condu
 | `DxEditorialReadingProgress` | A fixed top progress bar, filled via scroll-driven CSS (`animation-timeline: scroll(root)`) — no scroll-position listener | `/insights/articles/zero-trust-ephemeral-chat-conduit` |
 | `DxEditorialDropCap` | An enlarged first-letter treatment (`::first-letter`) for an opening paragraph — the oldest device in the magazine glossary | `/insights/articles/zero-trust-ephemeral-chat-conduit` |
 | `DxEditorialAuthorBio` | A richer "about the author" block composing `DxAvatar` — avatar, name, role, and a short bio | `/insights/articles/zero-trust-ephemeral-chat-conduit` |
+| `DxEditorialTagList` | A row of topic pills, each a real link (not `DxChip`, which has no href) | not wired into a live piece yet — no topic archive exists to link to |
+| `DxEditorialRelated` | A "more like this" card row for the end of a piece; renders nothing when `Entries` is empty | not wired into a live piece yet — there's only one published piece to relate |
+| `DxEditorialSeriesNav` | Previous/next navigation for a multi-part piece — the web analogue of a print jump line; either side may be omitted | not wired into a live piece yet — no multi-part series exists |
 
 ---
 

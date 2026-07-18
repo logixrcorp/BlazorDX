@@ -1045,11 +1045,38 @@
         <member name="P:BlazorDX.Components.DxEan13.Class">
             <summary>Extra CSS classes for the root <c>svg</c>.</summary>
         </member>
+        <member name="T:BlazorDX.Components.DxEditorialAuthorBio">
+            <summary>
+            A richer byline for a <see cref="T:BlazorDX.Components.DxEditorialLayout"/> piece — avatar, name, role, and a short
+            bio — composing the library's own <see cref="T:BlazorDX.Components.DxAvatar"/> rather than a plain text line.
+            Typically placed once, near the end of a piece (the common "about the author" convention),
+            leaving <see cref="T:BlazorDX.Components.DxEditorialLayout"/>'s own hero byline as the compact top-of-page credit.
+            </summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxEditorialAuthorBio.Initials">
+            <summary>Defaults to the first letter of the first and last words of <see cref="P:BlazorDX.Components.DxEditorialAuthorBio.Name"/>.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxEditorialAuthorBio.ProfileUrl">
+            <summary>If set, the name links here (e.g. a profile page or the author's site).</summary>
+        </member>
+        <member name="P:BlazorDX.Components.DxEditorialAuthorBio.ChildContent">
+            <summary>The bio text.</summary>
+        </member>
         <member name="T:BlazorDX.Components.DxEditorialDissipation">
             <summary>
             A "data-as-art" moment for a <see cref="T:BlazorDX.Components.DxEditorialScrollyStage"/>: a grid of dots that
             fade, shrink, and blur away once the parent stage gains its reveal class (see
             dx-editorial.css) — a CSS-only study, no canvas/WebGL.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxEditorialDropCap">
+            <summary>
+            Wraps a paragraph — normally the opening paragraph of a <see cref="T:BlazorDX.Components.DxEditorialLayout"/>
+            piece — in an enlarged first-letter treatment, the oldest device in the magazine glossary
+            (scribes used it to mark the start of a new section as early as the 15th century). Pure
+            CSS (<c>::first-letter</c>) — the component's only job is applying the marker class to a
+            real paragraph, since splitting the first character out in C# would break any inline markup
+            (an <c>&lt;em&gt;</c>, a link) that happens to start the text.
             </summary>
         </member>
         <member name="T:BlazorDX.Components.DxEditorialFigure">
@@ -1093,6 +1120,26 @@
         <member name="T:BlazorDX.Components.DxEditorialPullQuote">
             <summary>A large, italicized, serif-accented pull-quote to punctuate a long-form piece.</summary>
         </member>
+        <member name="T:BlazorDX.Components.DxEditorialReadingProgress">
+            <summary>
+            A thin fixed bar across the top of the viewport that fills as the reader scrolls through a
+            <see cref="T:BlazorDX.Components.DxEditorialLayout"/> piece. Pure CSS via <c>animation-timeline: scroll(root)</c> —
+            the scroll-driven-animations API, the same family as <see cref="T:BlazorDX.Components.DxEditorialFigure"/>'s
+            reveal — so there is no scroll-position listener and nothing runs per scroll frame. Because
+            the fill is tied 1:1 to the reader's own scroll input rather than auto-playing, it's exempt
+            from <c>prefers-reduced-motion</c> concerns (unlike the hero's Ken Burns zoom). Renders inert
+            (0-width, invisible) in browsers without scroll-driven-animation support — never misleading,
+            just absent. Purely decorative, so it's <c>aria-hidden</c>.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxEditorialRelated">
+            <summary>
+            A "more like this" card row for the end of a <see cref="T:BlazorDX.Components.DxEditorialLayout"/> piece. Plain
+            non-generic entries (mirroring <see cref="T:BlazorDX.Components.DxEditorialFooter.FooterCard"/>) rather than a
+            generic type parameter — map your own content model to <see cref="T:BlazorDX.Components.DxEditorialRelated.RelatedEntry"/> with a
+            simple <c>Select</c> before passing it in.
+            </summary>
+        </member>
         <member name="T:BlazorDX.Components.DxEditorialScrollyStage">
             <summary>
             One stage of a <see cref="T:BlazorDX.Components.DxEditorialScrollytelling"/> sequence — starts hidden/offset, then
@@ -1119,6 +1166,15 @@
             stages render fully visible under the <c>(scripting: none)</c> CSS guard — but if scripting
             is enabled and the script tag is simply omitted, that guard won't apply, so stages stay
             hidden. The script is required, not optional, for the reveal to work.
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxEditorialSeriesNav">
+            <summary>
+            Previous/next navigation for a multi-part <see cref="T:BlazorDX.Components.DxEditorialLayout"/> piece — the web
+            equivalent of a print magazine's jump line ("continued on p. 34"), except it moves forward
+            into the next part rather than just resuming the current one. Either side may be omitted
+            (the opening piece in a series has no previous; the closer has no next); when only one side
+            is given, it's rendered alone rather than leaving an empty grid cell.
             </summary>
         </member>
         <member name="T:BlazorDX.Components.DxEditorialSidebar">
@@ -1152,6 +1208,28 @@
         </member>
         <member name="P:BlazorDX.Components.DxEditorialSpread.Reverse">
             <summary>Puts the photo on the right instead of the left, for rhythm across a piece with more than one spread.</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxEditorialTableOfContents">
+            <summary>
+            A jump-link table of contents for a <see cref="T:BlazorDX.Components.DxEditorialLayout"/> piece — the web
+            descendant of a print magazine's contents page. Plain anchor links to caller-supplied
+            target IDs; no scrollspy/active-section tracking in this version (a deliberate scope cut,
+            not an oversight — most TOCs work fine without it).
+            </summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxEditorialTableOfContents.TocEntry">
+            <summary>One entry: the link text and the id of the section it jumps to (without the leading '#').</summary>
+        </member>
+        <member name="M:BlazorDX.Components.DxEditorialTableOfContents.TocEntry.#ctor(System.String,System.String)">
+            <summary>One entry: the link text and the id of the section it jumps to (without the leading '#').</summary>
+        </member>
+        <member name="T:BlazorDX.Components.DxEditorialTagList">
+            <summary>
+            A row of topic/category pills for a <see cref="T:BlazorDX.Components.DxEditorialLayout"/> piece — the web
+            counterpart to a print magazine's "department" labeling. Each tag is a real link (not a
+            <see cref="T:BlazorDX.Components.DxChip"/>, which has no href) since tags typically navigate to a filtered or
+            archive view.
+            </summary>
         </member>
         <member name="T:BlazorDX.Components.DxErrorBoundary">
             <summary>

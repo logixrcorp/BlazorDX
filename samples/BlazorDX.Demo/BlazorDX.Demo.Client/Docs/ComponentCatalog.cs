@@ -161,6 +161,9 @@ public static class ComponentCatalog
         new("editorialreadingprogress", "DxEditorialReadingProgress", "Editorial & long-form", "A fixed top progress bar filled via scroll-driven CSS — no scroll-position listener.", "/insights/articles/zero-trust-ephemeral-chat-conduit", "DxEditorialReadingProgress"),
         new("editorialdropcap", "DxEditorialDropCap", "Editorial & long-form", "An enlarged first-letter treatment for an opening paragraph — the oldest device in the magazine glossary.", "/insights/articles/zero-trust-ephemeral-chat-conduit", "DxEditorialDropCap"),
         new("editorialauthorbio", "DxEditorialAuthorBio", "Editorial & long-form", "A richer \"about the author\" block composing DxAvatar.", "/insights/articles/zero-trust-ephemeral-chat-conduit", "DxEditorialAuthorBio"),
+        new("editorialtaglist", "DxEditorialTagList", "Editorial & long-form", "A row of topic pills, each a real link.", "/insights", "DxEditorialTagList"),
+        new("editorialrelated", "DxEditorialRelated", "Editorial & long-form", "A \"more like this\" card row; renders nothing when Entries is empty.", "/insights", "DxEditorialRelated"),
+        new("editorialseriesnav", "DxEditorialSeriesNav", "Editorial & long-form", "Previous/next navigation for a multi-part piece.", "/insights", "DxEditorialSeriesNav"),
     ];
 
     // Curated usage examples, keyed by slug. Components without an entry fall back to
@@ -407,6 +410,29 @@ public static class ComponentCatalog
             <DxEditorialAuthorBio Name="Ada Lovelace" Role="Contributor" ProfileUrl="/authors/ada">
                 A short bio goes here.
             </DxEditorialAuthorBio>
+            """,
+        ["editorialtaglist"] = """
+            <DxEditorialTagList Tags="tags" />
+            @code {
+                private static readonly IReadOnlyList<DxEditorialTagList.Tag> tags =
+                [
+                    new("Security", "/insights/articles?tag=security"),
+                    new("WebAssembly", "/insights/articles?tag=webassembly"),
+                ];
+            }
+            """,
+        ["editorialrelated"] = """
+            <DxEditorialRelated Heading="More from Insights" Entries="entries" />
+            @code {
+                private static readonly IReadOnlyList<DxEditorialRelated.RelatedEntry> entries =
+                [
+                    new("Another Piece", "One-line summary.", "/insights/articles/another-piece", "Article"),
+                ];
+            }
+            """,
+        ["editorialseriesnav"] = """
+            <DxEditorialSeriesNav PreviousTitle="Part One" PreviousRoute="/insights/articles/part-one"
+                                   NextTitle="Part Three" NextRoute="/insights/articles/part-three" />
             """,
     };
 
