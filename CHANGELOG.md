@@ -11,6 +11,24 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ### Fixed
 
+- **Production (`blazordx.com/ai-chat`): `dx_security.wasm` 404'd, so every assistant reply
+  failed verification and rendered "This message could not be verified and was not shown."**
+  Reported directly from the browser console on the live site. Root cause: the Dockerfile's
+  explicit Rust build step (added specifically because the in-build MSBuild targets only
+  *warn*, not fail, when cargo doesn't run — silently shipping an image missing the wasm the
+  components import at runtime) only ever built `BlazorDX.Compute.Rust` → `dx_grid.wasm`. It
+  predates `BlazorDX.Security.Rust` → `dx_security.wasm` — the ephemeral chat conduit's
+  ECDH/AES-GCM crypto core, added later for the Zero-Trust Ephemeral Chat Conduit feature — and
+  was never updated to build it too. The image build's own asset gate only checked for
+  `dx_grid.wasm`, so a missing `dx_security.wasm` shipped silently instead of failing loudly,
+  exactly the failure mode the gate exists to prevent.
+  Fixed by building both wasm32 crates and gating on both artifacts in the publish output.
+  Verified for real, not just "the file exists": ran the exact `cargo build`/`cp` sequence from
+  the Dockerfile locally, confirmed `dx_security.wasm` serves 200 at the exact production path,
+  then drove a real ephemeral-chat handshake end-to-end in a browser — the assistant reply now
+  renders "ASSISTANT · ENCRYPTED" instead of the verification-failed state, reproducing and
+  fixing the exact symptom from the live site.
+
 - **Production (`blazordx.com`): every redeploy invalidated all outstanding sessions'
   antiforgery tokens, breaking in-flight form submissions with `AntiforgeryValidationException`.**
   Reported directly from the live site's container logs. Root cause: ASP.NET Core's

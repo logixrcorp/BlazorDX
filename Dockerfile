@@ -29,17 +29,25 @@ RUN dotnet workload install wasm-tools
 WORKDIR /src
 COPY . .
 
-# Build BOTH native tiers explicitly into the interop static-asset folder. The in-build
+# Build ALL native tiers explicitly into the interop static-asset folder. The in-build
 # MSBuild targets degrade to a *warning* if cargo/esbuild don't run, which silently ships an
 # image missing the wasm/JS the components import at runtime (the prod 404s). Doing it here
 # fails the image build loudly instead, and guarantees the assets exist before publish.
 # The interop asset folder isn't in the build context (.dockerignore strips its only files,
 # the generated wasm/JS, leaving an empty dir Docker omits), so create it before writing.
+# Two separate wasm32 crates: dx_grid (BlazorDX.Compute.Rust, the grid compute kernel) and
+# dx_security (BlazorDX.Security.Rust, the ephemeral chat conduit's ECDH/AES-GCM crypto core).
+# Missing either one silently breaks a different feature at runtime with no build-time signal
+# unless it's built and gated here explicitly, same as dx_grid always was.
 RUN mkdir -p src/BlazorDX.Interop/wwwroot/dx \
  && cargo build --release --target wasm32-unknown-unknown \
       --manifest-path src/BlazorDX.Compute.Rust/Cargo.toml \
  && cp src/BlazorDX.Compute.Rust/target/wasm32-unknown-unknown/release/dx_grid.wasm \
-       src/BlazorDX.Interop/wwwroot/dx/dx_grid.wasm
+       src/BlazorDX.Interop/wwwroot/dx/dx_grid.wasm \
+ && cargo build --release --target wasm32-unknown-unknown \
+      --manifest-path src/BlazorDX.Security.Rust/Cargo.toml \
+ && cp src/BlazorDX.Security.Rust/target/wasm32-unknown-unknown/release/dx_security.wasm \
+       src/BlazorDX.Interop/wwwroot/dx/dx_security.wasm
 RUN cd src/BlazorDX.Interop.Ts && npm ci && node build.mjs
 
 # Publish the server host + WASM client, reusing the bundles built above (skip the
@@ -51,9 +59,10 @@ RUN dotnet publish samples/BlazorDX.Demo/BlazorDX.Demo/BlazorDX.Demo.csproj \
 # Gate: the interop assets must be in the publish output. If not, print where they actually
 # landed (so the failure is diagnosable) and fail — a broken image must never ship.
 RUN if [ ! -f /app/publish/wwwroot/_content/BlazorDX.Interop/dx/grid-interop.js ] \
-    || [ ! -f /app/publish/wwwroot/_content/BlazorDX.Interop/dx/dx_grid.wasm ]; then \
+    || [ ! -f /app/publish/wwwroot/_content/BlazorDX.Interop/dx/dx_grid.wasm ] \
+    || [ ! -f /app/publish/wwwroot/_content/BlazorDX.Interop/dx/dx_security.wasm ]; then \
       echo '=== interop assets actually present in publish: ==='; \
-      find /app/publish/wwwroot -iname 'grid-interop.js' -o -iname 'dx_grid.wasm' -o -iname 'grid-dom.js'; \
+      find /app/publish/wwwroot -iname 'grid-interop.js' -o -iname 'dx_grid.wasm' -o -iname 'dx_security.wasm' -o -iname 'grid-dom.js'; \
       echo '=== _content tree (depth 3): ==='; \
       find /app/publish/wwwroot/_content -maxdepth 3 2>/dev/null | head -60; \
       echo 'ERROR: BlazorDX.Interop static assets missing from expected publish path'; exit 1; \

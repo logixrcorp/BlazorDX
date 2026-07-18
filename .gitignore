@@ -29,3 +29,6 @@ Backup/
 
 # Deployment secrets (the Cloudflare tunnel token) — never commit
 deploy/.env
+
+# Local DataProtection key ring (unencrypted key material) — never commit
+**/dataprotection-keys/
