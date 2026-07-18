@@ -17,6 +17,8 @@ public sealed class NullEphemeralChatInterop : IEphemeralChatInterop
         string nonceBase64,
         string ciphertextBase64,
         string eventsBaseUrl,
+        string? telemetryBaseUrl,
+        int? ttlSeconds,
         Action onWithdraw,
         Action onRefresh,
         Action onTamper) =>
@@ -31,6 +33,8 @@ public sealed class NullEphemeralChatInterop : IEphemeralChatInterop
         string nonceBase64,
         string ciphertextBase64,
         string eventsBaseUrl,
+        string? telemetryBaseUrl,
+        int? ttlSeconds,
         Action onWithdraw,
         Action onRefresh,
         Action onTamper) =>

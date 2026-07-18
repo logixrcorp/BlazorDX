@@ -20,7 +20,16 @@
 @using static Microsoft.AspNetCore.Components.Web.RenderMode
 @inject IEphemeralChatInterop Interop
 
-<div id="@hostElementId" class="dx-ephemeral-chat" aria-live="polite" aria-label="Encrypted message"></div>
+@* contain: layout paint isolates this subtree's layout calculations and clips its paint to its
+   own box, without contain: strict's `size` containment -- size containment forces a box to
+   ignore its descendants' actual size entirely, which collapsed this element to min-height and
+   silently clipped every mounted message inside the (already-unreadable-from-outside) shadow
+   root when tried locally against a live handshake. The whitepaper's §3.4 wants full `size`
+   containment too, to stop message length from being inferred via how the box displaces later
+   siblings -- but that specific property requires a fixed, content-independent height, which
+   this bubble's current variable-height design does not have. Left as layout+paint only rather
+   than force a fixed-height/scrollable-bubble UX change unasked for. *@
+<div id="@hostElementId" class="dx-ephemeral-chat" style="contain: layout paint;" aria-live="polite" aria-label="Encrypted message"></div>
 
 @if (state == MountState.Decrypting)
 {
@@ -107,6 +116,29 @@ else if (state == MountState.Withdrawn)
     [Parameter]
     public string EventsBaseUrl { get; set; } = "/ephemeral-events";
 
+    /// <summary>
+    /// Optional (leave unset/<see langword="null"/> to disable): base path for the broker's
+    /// telemetry endpoint. When set, an Access Receipt is signed and posted to
+    /// <c>{TelemetryBaseUrl}/access</c> right after a successful mount, and a signed
+    /// Destruction Receipt is posted to <c>{TelemetryBaseUrl}/destruction</c> on every
+    /// termination path (WITHDRAW, tamper, or unmount) -- the Proof-of-Destruction protocol.
+    /// Both are signed with the session's HMAC key, the same one derived during the ECDH
+    /// handshake, so only a party that participated in that handshake can forge one.
+    /// </summary>
+    [Parameter]
+    public string? TelemetryBaseUrl { get; set; }
+
+    /// <summary>
+    /// Optional cryptographic time-to-live, in seconds: when set, the session self-destructs
+    /// (a Destruction Receipt with trigger <c>TTL_EXPIRY</c>) this many seconds after mounting,
+    /// even with no WITHDRAW, tamper, or unmount. Leave unset/<see langword="null"/> for a
+    /// session that lives until one of those other triggers fires. In
+    /// <see cref="UseLiveHandshake"/> mode this parameter is ignored in favor of the broker's
+    /// own <see cref="EphemeralHandshakeResult.TtlSeconds"/>.
+    /// </summary>
+    [Parameter]
+    public int? TtlSeconds { get; set; }
+
     /// <summary>Raised after the server pushes a <c>WITHDRAW</c> event and the node has been scrubbed.</summary>
     [Parameter]
     public EventCallback OnWithdrawn { get; set; }
@@ -153,6 +185,8 @@ else if (state == MountState.Withdrawn)
             NonceBase64,
             CiphertextBase64,
             EventsBaseUrl,
+            TelemetryBaseUrl,
+            TtlSeconds,
             onWithdraw: () => _ = InvokeAsync(HandleWithdrawnAsync),
             onRefresh: () => _ = InvokeAsync(HandleRefreshedAsync),
             onTamper: () => _ = InvokeAsync(HandleTamperDetectedAsync)).AsTask();
@@ -192,6 +226,8 @@ else if (state == MountState.Withdrawn)
             response.NonceBase64,
             response.CiphertextBase64,
             EventsBaseUrl,
+            TelemetryBaseUrl,
+            response.TtlSeconds,
             onWithdraw: () => _ = InvokeAsync(HandleWithdrawnAsync),
             onRefresh: () => _ = InvokeAsync(HandleRefreshedAsync),
             onTamper: () => _ = InvokeAsync(HandleTamperDetectedAsync));

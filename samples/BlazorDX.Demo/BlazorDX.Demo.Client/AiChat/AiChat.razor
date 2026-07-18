@@ -66,6 +66,7 @@
                             <SecureEphemeralChat UseLiveHandshake="true"
                                                   SessionId="@m.SessionId"
                                                   EstablishSession="@(pk => HandleEstablishAsync(m, pk))"
+                                                  TelemetryBaseUrl="/demo/ai-chat/telemetry"
                                                   OnWithdrawn="@(() => HandleWithdrawn(m))"
                                                   OnTamperDetected="@(() => HandleWithdrawn(m))" />
                             @if (!m.Withdrawn)
@@ -241,8 +242,14 @@
         HttpResponseMessage response = await Http.PostAsJsonAsync("/demo/ai-chat/handshake", request);
         response.EnsureSuccessStatusCode();
 
-        EphemeralHandshakeResult? result = await response.Content.ReadFromJsonAsync<EphemeralHandshakeResult>(
-            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        // Not ReadFromJsonAsync: the broker deliberately serves this body as
+        // application/x-blazordx-ephemeral (see DemoAiChatBroker.HandshakeContentType, matching
+        // the whitepaper's §8.2 MIME-type requirement), and ReadFromJsonAsync rejects any
+        // content type that isn't application/json or *+json regardless of whether the body
+        // itself is valid JSON. The bytes are ordinary JSON, so a manual deserialize works fine.
+        string json = await response.Content.ReadAsStringAsync();
+        EphemeralHandshakeResult? result = JsonSerializer.Deserialize<EphemeralHandshakeResult>(
+            json, new JsonSerializerOptions(JsonSerializerDefaults.Web));
         return result ?? throw new InvalidOperationException("The demo broker returned an empty handshake response.");
     }
 

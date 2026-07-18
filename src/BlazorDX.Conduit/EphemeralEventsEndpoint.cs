@@ -11,8 +11,9 @@ namespace BlazorDX.Conduit;
 /// The Conduit Router's outbound half: a GET endpoint at <see cref="RoutePattern"/> that
 /// upgrades to a Server-Sent Events stream, plus <see cref="PushEphemeralEventAsync"/> — the
 /// internal push method other services (<see cref="McpBrokerClient"/>, via
-/// <see cref="McpProxyEndpoint"/> too) call to fan a "WITHDRAW"/"REFRESH"/"PAYLOAD" event out to
-/// every live connection on a session.
+/// <see cref="McpProxyEndpoint"/> too) call to fan an event out to every live connection on a
+/// session: a "PAYLOAD" delivering the initial ciphertext, or a "security/lifecycle" WITHDRAW/
+/// REFRESH notification (see <see cref="McpBrokerClient"/>'s own doc comment for that envelope).
 ///
 /// No SignalR: this is plain Server-Sent Events over a minimal-API endpoint, matching the style
 /// of the existing <c>app.MapPost("/mcp", ...)</c> endpoint in samples/BlazorDX.Demo.
@@ -102,8 +103,8 @@ public static class EphemeralEventsEndpoint
     }
 
     /// <summary>
-    /// The internal push method other services call to emit a "WITHDRAW"/"REFRESH"/"PAYLOAD"
-    /// event to every live connection on <paramref name="sessionId"/>. Never inspects
+    /// The internal push method other services call to emit an event (typically "PAYLOAD" or
+    /// "security/lifecycle") to every live connection on <paramref name="sessionId"/>. Never inspects
     /// <paramref name="data"/> — it is forwarded verbatim, opaque to this router. A session
     /// nobody is currently watching is a silent no-op: the Conduit is an ephemeral relay, not a
     /// durable queue, so an event with no listener is simply not delivered to anyone.

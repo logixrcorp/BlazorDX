@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using Microsoft.Extensions.Hosting;
 
 namespace BlazorDX.Conduit;
@@ -18,8 +19,10 @@ public enum ConduitAction
 
 /// <summary>
 /// One <c>notifications/resources/updated</c> event from the external MCP resource-provider,
-/// already mapped to the BlazorDX session it concerns. <see cref="MessageId"/> is opaque to the
-/// Conduit — it is never interpreted, only forwarded as the SSE event's <c>data</c>.
+/// already mapped to the BlazorDX session it concerns. <see cref="MessageId"/>'s content is
+/// opaque to the Conduit — it is never interpreted, only carried verbatim as the
+/// <c>messageId</c> field of the <c>security/lifecycle</c> SSE event's JSON <c>data</c> (see
+/// <see cref="McpBrokerClient.RunAsync"/>).
 /// </summary>
 public sealed record ConduitNotification(string MessageId, string SessionId, ConduitAction Action);
 
@@ -52,7 +55,10 @@ public interface IConduitNotificationSource
 /// WITHDRAW/REFRESH notification to the right session's SSE stream via
 /// <see cref="RouteToSessionAsync"/> — the same routing primitive <c>McpProxyEndpoint</c> uses
 /// for the initial encrypted payload delivery, so there is exactly one place in the codebase
-/// that knows how "a session id plus an event" becomes an SSE push.
+/// that knows how "a session id plus an event" becomes an SSE push. Every notification is sent
+/// as a single <c>security/lifecycle</c> SSE event carrying an <c>action</c> field (WITHDRAW or
+/// REFRESH), matching the wire schema documented in docs/adr/0016 — not two distinct SSE event
+/// names.
 /// </summary>
 public sealed class McpBrokerClient : BackgroundService
 {
@@ -83,8 +89,25 @@ public sealed class McpBrokerClient : BackgroundService
                 .WithCancellation(cancellationToken)
                 .ConfigureAwait(false))
             {
-                string eventType = notification.Action == ConduitAction.Withdraw ? "WITHDRAW" : "REFRESH";
-                await RouteToSessionAsync(registry, notification.SessionId, eventType, notification.MessageId, cancellationToken)
+                string action = notification.Action == ConduitAction.Withdraw ? "WITHDRAW" : "REFRESH";
+
+                // The envelope itself (action/correlationId/messageId) is constructed here, at
+                // the call site -- RouteToSessionAsync below still never inspects data, it only
+                // forwards whatever this method hands it. MessageId is carried as its own field
+                // rather than folded into the envelope's meaning: this class has no signing key
+                // (Zero-Knowledge Routing -- it never touches cryptographic material), so unlike
+                // DemoAiChatBroker's WITHDRAW push, there is no `signature` field here. A host
+                // wiring up a real IConduitNotificationSource that wants signed lifecycle events
+                // must have its source embed a signature inside MessageId itself.
+                string data = JsonSerializer.Serialize(
+                    new SecurityLifecycleEnvelope
+                    {
+                        Action = action,
+                        CorrelationId = notification.SessionId,
+                        MessageId = notification.MessageId,
+                    },
+                    ConduitJsonContext.Default.SecurityLifecycleEnvelope);
+                await RouteToSessionAsync(registry, notification.SessionId, "security/lifecycle", data, cancellationToken)
                     .ConfigureAwait(false);
             }
         }

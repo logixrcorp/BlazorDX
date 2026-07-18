@@ -24,6 +24,13 @@ p256 = { version = "0.13", default-features = false, features = ["ecdh", "arithm
 # Explicit, guaranteed-not-optimized-away scrubbing of decrypted plaintext and
 # session key material.
 zeroize = { version = "1", default-features = false, features = ["alloc"] }
+# HMAC-SHA256 for the session's transient signing key (domain-separated from the
+# AES-GCM key via a second HMAC derivation over the same raw ECDH secret): signs
+# outgoing telemetry receipts and verifies incoming WITHDRAW/REFRESH control
+# signals, so the Conduit Router -- which never has this key -- cannot forge
+# either direction. `Hmac::verify_slice` compares in constant time internally.
+hmac = { version = "0.12", default-features = false }
+sha2 = { version = "0.10", default-features = false }
 
 [profile.release]
 # Mirrors BlazorDX.Compute.Rust/Cargo.toml: size-tuned by default so the shipped

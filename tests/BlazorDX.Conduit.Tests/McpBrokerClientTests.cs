@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using BlazorDX.Conduit;
 using Moq;
 using Xunit;
@@ -8,14 +9,18 @@ namespace BlazorDX.Conduit.Tests;
 public sealed class McpBrokerClientTests
 {
     [Fact]
-    public async Task RunAsync_RoutesEachNotificationToItsOwnSession_MappingActionToTheDocumentedEventName()
+    public async Task RunAsync_RoutesEachNotificationToItsOwnSession_AsASecurityLifecycleEnvelope()
     {
         var registry = new EphemeralSessionRegistry();
         var writerA = new Mock<IEphemeralEventWriter>();
         var writerB = new Mock<IEphemeralEventWriter>();
+        string? capturedDataA = null;
+        string? capturedDataB = null;
         writerA.Setup(w => w.WriteEventAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Callback<string, string, CancellationToken>((_, data, _) => capturedDataA = data)
             .Returns(Task.CompletedTask);
         writerB.Setup(w => w.WriteEventAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Callback<string, string, CancellationToken>((_, data, _) => capturedDataB = data)
             .Returns(Task.CompletedTask);
         registry.Register("session-a", writerA.Object);
         registry.Register("session-b", writerB.Object);
@@ -34,8 +39,20 @@ public sealed class McpBrokerClientTests
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         await client.RunAsync(cts.Token);
 
-        writerA.Verify(w => w.WriteEventAsync("WITHDRAW", "m1", It.IsAny<CancellationToken>()), Times.Once);
-        writerB.Verify(w => w.WriteEventAsync("REFRESH", "m2", It.IsAny<CancellationToken>()), Times.Once);
+        // Every notification -- WITHDRAW or REFRESH -- goes out as the same SSE event name; the
+        // action lives in the JSON data, matching the whitepaper's §8.3 envelope.
+        writerA.Verify(w => w.WriteEventAsync("security/lifecycle", It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+        writerB.Verify(w => w.WriteEventAsync("security/lifecycle", It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+
+        using JsonDocument docA = JsonDocument.Parse(capturedDataA!);
+        Assert.Equal("WITHDRAW", docA.RootElement.GetProperty("action").GetString());
+        Assert.Equal("session-a", docA.RootElement.GetProperty("correlationId").GetString());
+        Assert.Equal("m1", docA.RootElement.GetProperty("messageId").GetString());
+
+        using JsonDocument docB = JsonDocument.Parse(capturedDataB!);
+        Assert.Equal("REFRESH", docB.RootElement.GetProperty("action").GetString());
+        Assert.Equal("session-b", docB.RootElement.GetProperty("correlationId").GetString());
+        Assert.Equal("m2", docB.RootElement.GetProperty("messageId").GetString());
     }
 
     [Fact]

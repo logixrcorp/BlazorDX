@@ -1,14 +1,15 @@
 // Unit tests for ephemeral-chat.ts. The dx_security wasm module itself is
 // exercised by cargo test (crypto/session logic) and the Playwright E2E suite
 // (real in-browser tamper detection + zeroing timing) -- here we fake
-// rust-loader's exports entirely so we can drive every begin/complete/decrypt
-// success and failure path deterministically, and assert on the DOM/EventSource
-// side effects that are this module's actual job.
+// rust-loader's exports entirely so we can drive every begin/complete/decrypt/
+// sign/verify success and failure path deterministically, and assert on the
+// DOM/EventSource/fetch side effects that are this module's actual job.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const PUBLIC_KEY_LEN = 65;
 const NONCE_LEN = 12;
+const SIGNATURE_LEN = 32;
 
 // --- Fake dx_security wasm module -------------------------------------------
 // A tiny bump allocator over a real ArrayBuffer, so pointer arithmetic and
@@ -18,10 +19,14 @@ function createFakeWasm() {
   const memory = { buffer: new ArrayBuffer(1 << 16) } as WebAssembly.Memory;
   let nextPointer = 8; // never hand out 0; ephemeral-chat.ts treats 0 as "null"
 
-  const calls: { clearPayload: Array<[number, number]>; endSession: number; dealloc: number } = {
-    clearPayload: [],
+  const calls = {
+    clearPayload: [] as Array<[number, number]>,
     endSession: 0,
     dealloc: 0,
+    sign: 0,
+    verifySignal: 0,
+    verifyAndEnd: 0,
+    endWithReceipt: 0,
   };
 
   const control = {
@@ -31,10 +36,43 @@ function createFakeWasm() {
     plaintext: "hello from the household channel",
   };
 
+  // Sessions with a live "signing key" -- mirrors dx_security's EstablishedKeys.hmac_key,
+  // which (unlike the AES key) survives decrypt_payload and is only removed by end_session /
+  // verify_and_end_session / end_with_receipt.
+  const signingKeys = new Set<string>();
+
   function alloc(len: number): number {
     const pointer = nextPointer;
     nextPointer += Math.max(len, 1);
     return pointer;
+  }
+
+  function readString(ptr: number, len: number): string {
+    return new TextDecoder().decode(new Uint8Array(memory.buffer, ptr, len));
+  }
+
+  function readBytes(ptr: number, len: number): Uint8Array {
+    return new Uint8Array(memory.buffer, ptr, len).slice();
+  }
+
+  function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
+    return a.length === b.length && a.every((byte, i) => byte === b[i]);
+  }
+
+  // Deterministic, non-cryptographic stand-in for HMAC-SHA256: stable per (sessionId, message),
+  // so a test can independently compute "the signature the broker would have sent" and forge a
+  // mismatched one just by signing a different sessionId or message. Exposed on the returned
+  // object so tests can construct valid/forged signatures without reaching into wasm internals.
+  function fakeSignature(sessionId: string, message: Uint8Array): Uint8Array {
+    const sig = new Uint8Array(SIGNATURE_LEN);
+    const idBytes = new TextEncoder().encode(sessionId);
+    for (let i = 0; i < idBytes.length; i++) {
+      sig[i % SIGNATURE_LEN] ^= idBytes[i];
+    }
+    for (let i = 0; i < message.length; i++) {
+      sig[(i + 7) % SIGNATURE_LEN] ^= message[i];
+    }
+    return sig;
   }
 
   const wasm = {
@@ -51,7 +89,12 @@ function createFakeWasm() {
       }
       return control.beginStatus;
     }),
-    complete_session: vi.fn(() => control.completeStatus),
+    complete_session: vi.fn((sessionIdPtr: number, sessionIdLen: number) => {
+      if (control.completeStatus === 0) {
+        signingKeys.add(readString(sessionIdPtr, sessionIdLen));
+      }
+      return control.completeStatus;
+    }),
     decrypt_payload: vi.fn(
       (
         _sessionIdPtr: number,
@@ -76,12 +119,90 @@ function createFakeWasm() {
       calls.clearPayload.push([pointer, len]);
       new Uint8Array(memory.buffer, pointer, len).fill(0);
     }),
-    end_session: vi.fn(() => {
+    end_session: vi.fn((sessionIdPtr: number, sessionIdLen: number) => {
       calls.endSession += 1;
+      signingKeys.delete(readString(sessionIdPtr, sessionIdLen));
     }),
+    sign: vi.fn(
+      (sessionIdPtr: number, sessionIdLen: number, messagePtr: number, messageLen: number, outSigPtr: number) => {
+        calls.sign += 1;
+        const sessionId = readString(sessionIdPtr, sessionIdLen);
+        if (!signingKeys.has(sessionId)) {
+          return -6; // ERR_NO_SIGNING_KEY
+        }
+        const message = readBytes(messagePtr, messageLen);
+        new Uint8Array(memory.buffer, outSigPtr, SIGNATURE_LEN).set(fakeSignature(sessionId, message));
+        return 0;
+      },
+    ),
+    verify_signal: vi.fn(
+      (
+        sessionIdPtr: number,
+        sessionIdLen: number,
+        messagePtr: number,
+        messageLen: number,
+        signaturePtr: number,
+        signatureLen: number,
+        outValidPtr: number,
+      ) => {
+        calls.verifySignal += 1;
+        const sessionId = readString(sessionIdPtr, sessionIdLen);
+        if (!signingKeys.has(sessionId)) {
+          return -6;
+        }
+        const message = readBytes(messagePtr, messageLen);
+        const signature = readBytes(signaturePtr, signatureLen);
+        const valid = bytesEqual(signature, fakeSignature(sessionId, message));
+        new Uint8Array(memory.buffer, outValidPtr, 1)[0] = valid ? 1 : 0;
+        return 0;
+      },
+    ),
+    verify_and_end_session: vi.fn(
+      (
+        sessionIdPtr: number,
+        sessionIdLen: number,
+        messagePtr: number,
+        messageLen: number,
+        signaturePtr: number,
+        signatureLen: number,
+        destructionMessagePtr: number,
+        destructionMessageLen: number,
+        outValidPtr: number,
+        outDestructionSigPtr: number,
+      ) => {
+        calls.verifyAndEnd += 1;
+        const sessionId = readString(sessionIdPtr, sessionIdLen);
+        if (!signingKeys.has(sessionId)) {
+          return -6;
+        }
+        const message = readBytes(messagePtr, messageLen);
+        const signature = readBytes(signaturePtr, signatureLen);
+        const destructionMessage = readBytes(destructionMessagePtr, destructionMessageLen);
+        const valid = bytesEqual(signature, fakeSignature(sessionId, message));
+        new Uint8Array(memory.buffer, outValidPtr, 1)[0] = valid ? 1 : 0;
+        new Uint8Array(memory.buffer, outDestructionSigPtr, SIGNATURE_LEN).set(
+          fakeSignature(sessionId, destructionMessage),
+        );
+        signingKeys.delete(sessionId);
+        return 0;
+      },
+    ),
+    end_with_receipt: vi.fn(
+      (sessionIdPtr: number, sessionIdLen: number, messagePtr: number, messageLen: number, outSigPtr: number) => {
+        calls.endWithReceipt += 1;
+        const sessionId = readString(sessionIdPtr, sessionIdLen);
+        if (!signingKeys.has(sessionId)) {
+          return -6;
+        }
+        const message = readBytes(messagePtr, messageLen);
+        new Uint8Array(memory.buffer, outSigPtr, SIGNATURE_LEN).set(fakeSignature(sessionId, message));
+        signingKeys.delete(sessionId);
+        return 0;
+      },
+    ),
   };
 
-  return { wasm, control, calls };
+  return { wasm, control, calls, fakeSignature, signingKeys };
 }
 
 let fake: ReturnType<typeof createFakeWasm>;
@@ -93,19 +214,19 @@ vi.mock("../src/rust-loader", () => ({
 
 // jsdom does not implement EventSource. A minimal fake that records the last
 // constructed instance (one per decryptAndMount call in these tests) and lets
-// tests dispatch WITHDRAW/REFRESH synthetically.
+// tests dispatch WITHDRAW/REFRESH synthetically, with an SSE-shaped `data` field.
 class FakeEventSource {
   static instances: FakeEventSource[] = [];
   url: string;
   closed = false;
-  private listeners = new Map<string, Array<() => void>>();
+  private listeners = new Map<string, Array<(event: { data: string }) => void>>();
 
   constructor(url: string, _init?: unknown) {
     this.url = url;
     FakeEventSource.instances.push(this);
   }
 
-  addEventListener(type: string, callback: () => void): void {
+  addEventListener(type: string, callback: (event: { data: string }) => void): void {
     const list = this.listeners.get(type) ?? [];
     list.push(callback);
     this.listeners.set(type, list);
@@ -115,9 +236,9 @@ class FakeEventSource {
     this.closed = true;
   }
 
-  dispatch(type: string): void {
+  dispatch(type: string, data: string = "{}"): void {
     for (const callback of this.listeners.get(type) ?? []) {
-      callback();
+      callback({ data });
     }
   }
 }
@@ -133,13 +254,20 @@ const VALID_PUBLIC_KEY_B64 = btoa(String.fromCharCode(...new Uint8Array(PUBLIC_K
 const VALID_NONCE_B64 = btoa(String.fromCharCode(...new Uint8Array(NONCE_LEN).fill(3)));
 const VALID_CIPHERTEXT_B64 = btoa("irrelevant-to-the-fake-decrypt");
 
+function bytesToBase64(bytes: Uint8Array): string {
+  return btoa(String.fromCharCode(...bytes));
+}
+
 describe("ephemeral-chat", () => {
   let hostElementId: string;
+  let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     fake = createFakeWasm();
     FakeEventSource.instances = [];
     vi.stubGlobal("EventSource", FakeEventSource);
+    fetchMock = vi.fn(async () => new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
 
     hostElementId = "dx-ephemeral-chat-test";
     const host = document.createElement("div");
@@ -154,28 +282,36 @@ describe("ephemeral-chat", () => {
   });
 
   async function mount(overrides: Partial<{
+    sessionId: string;
+    telemetryBaseUrl: string | null;
+    ttlSeconds: number | null;
     onWithdraw: () => void;
     onRefresh: () => void;
     onTamper: () => void;
   }> = {}) {
     const { decryptAndMount } = await import("../src/ephemeral-chat");
+    const sessionId = overrides.sessionId ?? "session-123";
+    const telemetryBaseUrl = overrides.telemetryBaseUrl === undefined ? null : overrides.telemetryBaseUrl;
+    const ttlSeconds = overrides.ttlSeconds === undefined ? null : overrides.ttlSeconds;
     const onWithdraw = overrides.onWithdraw ?? vi.fn();
     const onRefresh = overrides.onRefresh ?? vi.fn();
     const onTamper = overrides.onTamper ?? vi.fn();
 
     const ok = await decryptAndMount(
       hostElementId,
-      "session-123",
+      sessionId,
       VALID_PUBLIC_KEY_B64,
       VALID_NONCE_B64,
       VALID_CIPHERTEXT_B64,
       "/ephemeral-events",
+      telemetryBaseUrl,
+      ttlSeconds,
       onWithdraw,
       onRefresh,
       onTamper,
     );
 
-    return { ok, onWithdraw, onRefresh, onTamper };
+    return { ok, sessionId, telemetryBaseUrl, ttlSeconds, onWithdraw, onRefresh, onTamper };
   }
 
   it("mounts the decrypted text into a closed shadow root, never the light DOM", async () => {
@@ -218,6 +354,8 @@ describe("ephemeral-chat", () => {
         VALID_NONCE_B64,
         VALID_CIPHERTEXT_B64,
         "/ephemeral-events",
+        null,
+        null,
         vi.fn(),
         vi.fn(),
         vi.fn(),
@@ -228,8 +366,20 @@ describe("ephemeral-chat", () => {
     host.attachShadow = originalAttachShadow;
   });
 
-  it("ends the wasm session after a successful mount (one payload per handshake)", async () => {
+  it("does NOT end the wasm session after a successful mount -- the signing key must survive for a later WITHDRAW/receipt", async () => {
+    const { sessionId } = await mount();
+
+    expect(fake.calls.endSession).toBe(0);
+    expect(fake.signingKeys.has(sessionId)).toBe(true);
+  });
+
+  it("ends the wasm session when a mount attempt fails (nothing to keep a signing key alive for)", async () => {
+    fake = createFakeWasm();
+    fake.control.decryptSucceeds = false;
+    vi.stubGlobal("EventSource", FakeEventSource);
+
     await mount();
+
     expect(fake.calls.endSession).toBe(1);
   });
 
@@ -242,6 +392,8 @@ describe("ephemeral-chat", () => {
       VALID_NONCE_B64,
       VALID_CIPHERTEXT_B64,
       "/ephemeral-events",
+      null,
+      null,
       vi.fn(),
       vi.fn(),
       vi.fn(),
@@ -291,7 +443,7 @@ describe("ephemeral-chat", () => {
     expect(FakeEventSource.instances[0].url).toBe("/ephemeral-events/session-123");
   });
 
-  it("self-destructs and reports tampering when the mounted node is mutated externally", async () => {
+  it("self-destructs and reports tampering when the mounted node is mutated externally, and posts a signed Destruction Receipt", async () => {
     // "closed" mode means `host.shadowRoot` is null to ordinary callers -- the
     // one documented way a page-context attacker can still reach in is by
     // monkey-patching Element.prototype.attachShadow *before* our code calls
@@ -306,7 +458,7 @@ describe("ephemeral-chat", () => {
       return root;
     };
 
-    const { onTamper } = await mount();
+    const { onTamper, sessionId } = await mount({ telemetryBaseUrl: "/telemetry" });
     Element.prototype.attachShadow = originalAttachShadow;
 
     expect(capturedRoot).not.toBeNull();
@@ -321,16 +473,30 @@ describe("ephemeral-chat", () => {
     expect(onTamper).toHaveBeenCalledOnce();
     expect(eventSource.closed).toBe(true);
     expect(capturedRoot!.childNodes).toHaveLength(0); // scrubbed
+    expect(fake.calls.endWithReceipt).toBe(1);
+    expect(fake.signingKeys.has(sessionId)).toBe(false);
+
+    expect(fetchMock).toHaveBeenCalledWith("/telemetry/destruction", expect.objectContaining({ method: "POST" }));
+    const [, init] = fetchMock.mock.calls.find(([url]) => url === "/telemetry/destruction")!;
+    const body = JSON.parse((init as RequestInit).body as string);
+    expect(body.trigger).toBe("TAMPER_DETECTED");
+    expect(body.eventType).toBe("MEMORY_ZEROED");
+    expect(body.sessionId).toBe(sessionId);
   });
 
-  it("scrubNode overwrites the node and closes its EventSource", async () => {
-    await mount();
+  it("scrubNode overwrites the node, closes its EventSource, and posts a COMPONENT_UNMOUNT Destruction Receipt", async () => {
+    const { sessionId } = await mount({ telemetryBaseUrl: "/telemetry" });
     const { scrubNode } = await import("../src/ephemeral-chat");
     const eventSource = FakeEventSource.instances[0];
 
     scrubNode(hostElementId);
 
     expect(eventSource.closed).toBe(true);
+    expect(fake.calls.endWithReceipt).toBe(1);
+    const [, init] = fetchMock.mock.calls.find(([url]) => url === "/telemetry/destruction")!;
+    const body = JSON.parse((init as RequestInit).body as string);
+    expect(body.trigger).toBe("COMPONENT_UNMOUNT");
+    expect(body.sessionId).toBe(sessionId);
   });
 
   it("scrubNode on an unknown host id is a harmless no-op", async () => {
@@ -338,25 +504,204 @@ describe("ephemeral-chat", () => {
     expect(() => scrubNode("no-such-host")).not.toThrow();
   });
 
-  it("a server WITHDRAW event scrubs the node and calls onWithdraw, not onTamper", async () => {
-    const { onWithdraw, onTamper } = await mount();
-    const eventSource = FakeEventSource.instances[0];
+  it("scrubNode posts no telemetry when telemetryBaseUrl was null", async () => {
+    await mount({ telemetryBaseUrl: null });
+    const { scrubNode } = await import("../src/ephemeral-chat");
 
-    eventSource.dispatch("WITHDRAW");
+    scrubNode(hostElementId);
 
-    expect(eventSource.closed).toBe(true);
-    expect(onWithdraw).toHaveBeenCalledOnce();
-    expect(onTamper).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("a server REFRESH event calls onRefresh without tearing the node down", async () => {
-    const { onRefresh } = await mount();
-    const eventSource = FakeEventSource.instances[0];
+  describe("Access Receipt (S5 Telemetry_Pulse)", () => {
+    it("signs and posts an Access Receipt right after a successful mount", async () => {
+      const { sessionId } = await mount({ telemetryBaseUrl: "/telemetry" });
 
-    eventSource.dispatch("REFRESH");
+      expect(fake.calls.sign).toBe(1);
+      const [url, init] = fetchMock.mock.calls[0];
+      expect(url).toBe("/telemetry/access");
+      const body = JSON.parse((init as RequestInit).body as string);
+      expect(body.eventType).toBe("ACCESS_CONFIRMED");
+      expect(body.sessionId).toBe(sessionId);
+      expect(typeof body.clientSignature).toBe("string");
+    });
 
-    expect(onRefresh).toHaveBeenCalledOnce();
-    expect(eventSource.closed).toBe(false);
+    it("posts no Access Receipt when telemetryBaseUrl is null", async () => {
+      await mount({ telemetryBaseUrl: null });
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("a fetch rejection for the Access Receipt never fails the mount", async () => {
+      fetchMock.mockRejectedValue(new Error("network down"));
+      const { ok } = await mount({ telemetryBaseUrl: "/telemetry" });
+      expect(ok).toBe(true);
+    });
+  });
+
+  // WITHDRAW and REFRESH both arrive as one "security/lifecycle" SSE event, distinguished by an
+  // `action` field in the JSON data -- matching the whitepaper's §8.3 wire schema.
+  function lifecycleData(action: string, signature: Uint8Array): string {
+    return JSON.stringify({ action, correlationId: "irrelevant-to-the-fake-dispatch", signature: bytesToBase64(signature) });
+  }
+
+  describe("a server WITHDRAW event", () => {
+    it("with a valid signature: scrubs the node, calls onWithdraw (not onTamper), and posts a WITHDRAW_EVENT Destruction Receipt", async () => {
+      const { onWithdraw, onTamper, sessionId } = await mount({ telemetryBaseUrl: "/telemetry" });
+      const eventSource = FakeEventSource.instances[0];
+      const signature = fake.fakeSignature(sessionId, new TextEncoder().encode(`${sessionId}|WITHDRAW`));
+
+      eventSource.dispatch("security/lifecycle", lifecycleData("WITHDRAW", signature));
+
+      expect(eventSource.closed).toBe(true);
+      expect(onWithdraw).toHaveBeenCalledOnce();
+      expect(onTamper).not.toHaveBeenCalled();
+      expect(fake.calls.verifyAndEnd).toBe(1);
+
+      const [, init] = fetchMock.mock.calls.find(([url]) => url === "/telemetry/destruction")!;
+      const body = JSON.parse((init as RequestInit).body as string);
+      expect(body.trigger).toBe("WITHDRAW_EVENT");
+    });
+
+    it("with a forged signature: still tears down, but calls onTamper (not onWithdraw), and reports TAMPER_DETECTED", async () => {
+      const { onWithdraw, onTamper } = await mount({ telemetryBaseUrl: "/telemetry" });
+      const eventSource = FakeEventSource.instances[0];
+      const forgedSignature = new Uint8Array(SIGNATURE_LEN); // all-zero -- never a real signature
+
+      eventSource.dispatch("security/lifecycle", lifecycleData("WITHDRAW", forgedSignature));
+
+      expect(eventSource.closed).toBe(true);
+      expect(onWithdraw).not.toHaveBeenCalled();
+      expect(onTamper).toHaveBeenCalledOnce();
+
+      const [, init] = fetchMock.mock.calls.find(([url]) => url === "/telemetry/destruction")!;
+      const body = JSON.parse((init as RequestInit).body as string);
+      expect(body.trigger).toBe("TAMPER_DETECTED");
+    });
+
+    it("with malformed/missing signature data: treated the same as a forged signature", async () => {
+      const { onWithdraw, onTamper } = await mount();
+      const eventSource = FakeEventSource.instances[0];
+
+      eventSource.dispatch("security/lifecycle", "not even json");
+
+      expect(onWithdraw).not.toHaveBeenCalled();
+      expect(onTamper).toHaveBeenCalledOnce();
+    });
+
+    it("a signature valid for REFRESH must not verify as a WITHDRAW (message-bound, not just session-bound)", async () => {
+      const { onWithdraw, onTamper, sessionId } = await mount();
+      const eventSource = FakeEventSource.instances[0];
+      const refreshSignature = fake.fakeSignature(sessionId, new TextEncoder().encode(`${sessionId}|REFRESH`));
+
+      eventSource.dispatch("security/lifecycle", lifecycleData("WITHDRAW", refreshSignature));
+
+      expect(onWithdraw).not.toHaveBeenCalled();
+      expect(onTamper).toHaveBeenCalledOnce();
+    });
+
+    it("a second WITHDRAW after the first (no signing key left) is a harmless no-op", async () => {
+      const { onWithdraw, onTamper, sessionId } = await mount();
+      const eventSource = FakeEventSource.instances[0];
+      const signature = fake.fakeSignature(sessionId, new TextEncoder().encode(`${sessionId}|WITHDRAW`));
+
+      eventSource.dispatch("security/lifecycle", lifecycleData("WITHDRAW", signature));
+      vi.mocked(onWithdraw).mockClear();
+      vi.mocked(onTamper).mockClear();
+      eventSource.dispatch("security/lifecycle", lifecycleData("WITHDRAW", signature));
+
+      expect(onWithdraw).not.toHaveBeenCalled();
+      expect(onTamper).not.toHaveBeenCalled();
+    });
+
+    it("an unrecognized action on the lifecycle channel is treated as tampering, not silently ignored", async () => {
+      const { onWithdraw, onRefresh, onTamper, sessionId } = await mount();
+      const eventSource = FakeEventSource.instances[0];
+      const signature = fake.fakeSignature(sessionId, new TextEncoder().encode(`${sessionId}|WITHDRAW`));
+
+      eventSource.dispatch("security/lifecycle", lifecycleData("SOMETHING_ELSE", signature));
+
+      expect(onWithdraw).not.toHaveBeenCalled();
+      expect(onRefresh).not.toHaveBeenCalled();
+      expect(onTamper).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe("a server REFRESH event", () => {
+    it("with a valid signature: calls onRefresh without tearing the node down", async () => {
+      const { onRefresh, sessionId } = await mount();
+      const eventSource = FakeEventSource.instances[0];
+      const signature = fake.fakeSignature(sessionId, new TextEncoder().encode(`${sessionId}|REFRESH`));
+
+      eventSource.dispatch("security/lifecycle", lifecycleData("REFRESH", signature));
+
+      expect(onRefresh).toHaveBeenCalledOnce();
+      expect(eventSource.closed).toBe(false);
+      expect(fake.signingKeys.has(sessionId)).toBe(true);
+    });
+
+    it("with a forged signature: does not call onRefresh, and instead tears down as tampering", async () => {
+      const { onRefresh, onTamper } = await mount({ telemetryBaseUrl: "/telemetry" });
+      const eventSource = FakeEventSource.instances[0];
+      const forgedSignature = new Uint8Array(SIGNATURE_LEN);
+
+      eventSource.dispatch("security/lifecycle", lifecycleData("REFRESH", forgedSignature));
+
+      expect(onRefresh).not.toHaveBeenCalled();
+      expect(onTamper).toHaveBeenCalledOnce();
+      expect(eventSource.closed).toBe(true);
+      const [, init] = fetchMock.mock.calls.find(([url]) => url === "/telemetry/destruction")!;
+      expect(JSON.parse((init as RequestInit).body as string).trigger).toBe("TAMPER_DETECTED");
+    });
+  });
+
+  describe("TTL expiry (S6 self-destruction with no other trigger)", () => {
+    it("with ttlSeconds set: self-destructs and posts a TTL_EXPIRY Destruction Receipt after the given duration", async () => {
+      vi.useFakeTimers();
+      try {
+        const { onWithdraw, onTamper } = await mount({ telemetryBaseUrl: "/telemetry", ttlSeconds: 30 });
+
+        await vi.advanceTimersByTimeAsync(30_000);
+
+        expect(onWithdraw).not.toHaveBeenCalled(); // TTL expiry is not a WITHDRAW
+        expect(onTamper).not.toHaveBeenCalled(); // nor tampering
+        const [, init] = fetchMock.mock.calls.find(([url]) => url === "/telemetry/destruction")!;
+        expect(JSON.parse((init as RequestInit).body as string).trigger).toBe("TTL_EXPIRY");
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("with ttlSeconds null: no timer is scheduled, and the session survives past what would have been the deadline", async () => {
+      vi.useFakeTimers();
+      try {
+        await mount({ telemetryBaseUrl: "/telemetry", ttlSeconds: null });
+
+        await vi.advanceTimersByTimeAsync(60 * 60 * 1000);
+
+        expect(fetchMock.mock.calls.find(([url]) => url === "/telemetry/destruction")).toBeUndefined();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("a WITHDRAW before the TTL deadline cancels the pending timer (no double-destruction later)", async () => {
+      vi.useFakeTimers();
+      try {
+        const { sessionId } = await mount({ telemetryBaseUrl: "/telemetry", ttlSeconds: 30 });
+        const eventSource = FakeEventSource.instances[0];
+        const signature = fake.fakeSignature(sessionId, new TextEncoder().encode(`${sessionId}|WITHDRAW`));
+
+        eventSource.dispatch("security/lifecycle", lifecycleData("WITHDRAW", signature));
+        fetchMock.mockClear();
+
+        await vi.advanceTimersByTimeAsync(30_000);
+
+        // Nothing further was posted -- the TTL timer never fired a second destruction.
+        expect(fetchMock).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 
   it("returns false immediately when the host element does not exist", async () => {
@@ -368,6 +713,8 @@ describe("ephemeral-chat", () => {
       VALID_NONCE_B64,
       VALID_CIPHERTEXT_B64,
       "/ephemeral-events",
+      null,
+      null,
       vi.fn(),
       vi.fn(),
       vi.fn(),
@@ -425,6 +772,8 @@ describe("ephemeral-chat", () => {
         VALID_NONCE_B64,
         VALID_CIPHERTEXT_B64,
         "/ephemeral-events",
+        null,
+        null,
         onWithdraw,
         onRefresh,
         onTamper,
@@ -450,6 +799,8 @@ describe("ephemeral-chat", () => {
         VALID_NONCE_B64,
         VALID_CIPHERTEXT_B64,
         "/ephemeral-events",
+        null,
+        null,
         vi.fn(),
         vi.fn(),
         vi.fn(),
@@ -471,6 +822,8 @@ describe("ephemeral-chat", () => {
         VALID_NONCE_B64,
         VALID_CIPHERTEXT_B64,
         "/ephemeral-events",
+        null,
+        null,
         vi.fn(),
         vi.fn(),
         vi.fn(),
@@ -478,7 +831,31 @@ describe("ephemeral-chat", () => {
 
       expect(ok).toBe(false);
       expect(fake.calls.clearPayload).toHaveLength(0); // nothing decrypted, nothing to scrub
-      expect(fake.calls.endSession).toBe(1); // still torn down
+      expect(fake.calls.endSession).toBe(1); // still torn down (mount never succeeded)
+    });
+
+    it("completeAndMount does NOT end the session after a successful mount, and signs an Access Receipt", async () => {
+      const { beginHandshake, completeAndMount } = await import("../src/ephemeral-chat");
+      await beginHandshake("live-session-access-receipt");
+
+      const ok = await completeAndMount(
+        hostElementId,
+        "live-session-access-receipt",
+        VALID_PUBLIC_KEY_B64,
+        VALID_NONCE_B64,
+        VALID_CIPHERTEXT_B64,
+        "/ephemeral-events",
+        "/telemetry",
+        null,
+        vi.fn(),
+        vi.fn(),
+        vi.fn(),
+      );
+
+      expect(ok).toBe(true);
+      expect(fake.calls.endSession).toBe(0);
+      expect(fake.signingKeys.has("live-session-access-receipt")).toBe(true);
+      expect(fetchMock).toHaveBeenCalledWith("/telemetry/access", expect.objectContaining({ method: "POST" }));
     });
   });
 });
