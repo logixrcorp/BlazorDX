@@ -157,6 +157,10 @@ public static class ComponentCatalog
         new("editorialscrollystage", "DxEditorialScrollyStage", "Editorial & long-form", "One stage of a DxEditorialScrollytelling sequence.", "/insights/articles/zero-trust-ephemeral-chat-conduit", "DxEditorialScrollyStage"),
         new("editorialdissipation", "DxEditorialDissipation", "Editorial & long-form", "A CSS-only \"data-as-art\" dot-grid dissolve, no canvas/WebGL.", "/insights/articles/zero-trust-ephemeral-chat-conduit", "DxEditorialDissipation"),
         new("editorialfooter", "DxEditorialFooter", "Editorial & long-form", "A three-card footer grid, with sensible defaults.", "/insights/articles/zero-trust-ephemeral-chat-conduit", "DxEditorialFooter"),
+        new("editorialtoc", "DxEditorialTableOfContents", "Editorial & long-form", "A jump-link contents list — the web descendant of a print magazine's contents page.", "/insights/articles/zero-trust-ephemeral-chat-conduit", "DxEditorialTableOfContents"),
+        new("editorialreadingprogress", "DxEditorialReadingProgress", "Editorial & long-form", "A fixed top progress bar filled via scroll-driven CSS — no scroll-position listener.", "/insights/articles/zero-trust-ephemeral-chat-conduit", "DxEditorialReadingProgress"),
+        new("editorialdropcap", "DxEditorialDropCap", "Editorial & long-form", "An enlarged first-letter treatment for an opening paragraph — the oldest device in the magazine glossary.", "/insights/articles/zero-trust-ephemeral-chat-conduit", "DxEditorialDropCap"),
+        new("editorialauthorbio", "DxEditorialAuthorBio", "Editorial & long-form", "A richer \"about the author\" block composing DxAvatar.", "/insights/articles/zero-trust-ephemeral-chat-conduit", "DxEditorialAuthorBio"),
     ];
 
     // Curated usage examples, keyed by slug. Components without an entry fall back to
@@ -388,6 +392,21 @@ public static class ComponentCatalog
                     Stage body copy.
                 </DxEditorialScrollyStage>
             </DxEditorialScrollytelling>
+            """,
+        ["editorialtoc"] = """
+            <DxEditorialTableOfContents Heading="On this page" Entries="entries" />
+            @code {
+                private static readonly IReadOnlyList<DxEditorialTableOfContents.TocEntry> entries =
+                [
+                    new("Section one", "section-one"),
+                    new("Section two", "section-two"),
+                ];
+            }
+            """,
+        ["editorialauthorbio"] = """
+            <DxEditorialAuthorBio Name="Ada Lovelace" Role="Contributor" ProfileUrl="/authors/ada">
+                A short bio goes here.
+            </DxEditorialAuthorBio>
             """,
     };
 

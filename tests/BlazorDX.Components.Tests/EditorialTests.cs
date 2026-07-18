@@ -171,4 +171,70 @@ public sealed class EditorialTests : TestContext
         Assert.Equal("Follow along", scrolly.Find(".dx-editorial-scrolly-intro").TextContent);
         Assert.NotEmpty(scrolly.FindAll(".dx-editorial-scrolly-stage"));
     }
+
+    [Fact]
+    public void TableOfContents_renders_a_link_per_entry_targeting_its_id()
+    {
+        DxEditorialTableOfContents.TocEntry[] entries =
+        [
+            new("First section", "first"),
+            new("Second section", "second"),
+        ];
+        IRenderedComponent<DxEditorialTableOfContents> toc = RenderComponent<DxEditorialTableOfContents>(p => p
+            .Add(t => t.Entries, entries).Add(t => t.Heading, "On this page"));
+
+        Assert.Equal("On this page", toc.Find(".dx-editorial-toc-heading").TextContent);
+        Assert.Equal("On this page", toc.Find("nav").GetAttribute("aria-label"));
+        var links = toc.FindAll(".dx-editorial-toc-list a");
+        Assert.Equal(2, links.Count);
+        Assert.Equal("#first", links[0].GetAttribute("href"));
+        Assert.Equal("Second section", links[1].TextContent);
+    }
+
+    [Fact]
+    public void ReadingProgress_renders_a_decorative_fixed_bar()
+    {
+        IRenderedComponent<DxEditorialReadingProgress> bar = RenderComponent<DxEditorialReadingProgress>();
+
+        var root = bar.Find(".dx-editorial-reading-progress");
+        Assert.Equal("true", root.GetAttribute("aria-hidden"));
+    }
+
+    [Fact]
+    public void DropCap_wraps_content_in_a_marker_paragraph_without_altering_it()
+    {
+        IRenderedComponent<DxEditorialDropCap> p = RenderComponent<DxEditorialDropCap>(cfg => cfg
+            .AddChildContent("Once upon a time."));
+
+        var root = p.Find("p.dx-editorial-dropcap");
+        Assert.Equal("Once upon a time.", root.TextContent);
+    }
+
+    [Fact]
+    public void AuthorBio_derives_initials_from_name_and_links_the_name_when_a_profile_url_is_set()
+    {
+        IRenderedComponent<DxEditorialAuthorBio> bio = RenderComponent<DxEditorialAuthorBio>(p => p
+            .Add(a => a.Name, "Ada Lovelace")
+            .Add(a => a.Role, "Contributor")
+            .Add(a => a.ProfileUrl, "/authors/ada")
+            .AddChildContent("A short bio."));
+
+        Assert.Equal("AL", bio.Find(".dx-avatar-initials").TextContent);
+        var nameLink = bio.Find(".dx-editorial-author-bio-name a");
+        Assert.Equal("/authors/ada", nameLink.GetAttribute("href"));
+        Assert.Equal("Ada Lovelace", nameLink.TextContent);
+        Assert.Equal("Contributor", bio.Find(".dx-editorial-author-bio-role").TextContent);
+        Assert.Equal("A short bio.", bio.Find(".dx-editorial-author-bio-body").TextContent);
+    }
+
+    [Fact]
+    public void AuthorBio_renders_plain_name_text_without_a_profile_url()
+    {
+        IRenderedComponent<DxEditorialAuthorBio> bio = RenderComponent<DxEditorialAuthorBio>(p => p
+            .Add(a => a.Name, "Grace Hopper"));
+
+        Assert.Empty(bio.FindAll(".dx-editorial-author-bio-name a"));
+        Assert.Equal("Grace Hopper", bio.Find(".dx-editorial-author-bio-name").TextContent);
+        Assert.Equal("GH", bio.Find(".dx-avatar-initials").TextContent);
+    }
 }

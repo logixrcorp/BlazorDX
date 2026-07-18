@@ -378,6 +378,26 @@ automatically). Inside it, compose `DxEditorialFigure` (full-bleed image), `DxEd
 required, not optional; omitting it leaves stages hidden (a `(scripting: none)` CSS guard only
 covers scripting genuinely disabled, not "script tag forgotten").
 
+Reading-experience add-ons: `DxEditorialTableOfContents` (plain jump links, no scrollspy —
+`Entries: IReadOnlyList<DxEditorialTableOfContents.TocEntry>` of `(Label, TargetId)`, targets are
+caller-supplied `id`s on your own section wrappers), `DxEditorialReadingProgress` (a fixed top
+bar, pure CSS via `animation-timeline: scroll(root)`, no companion script needed — place it once
+near the top of the page), `DxEditorialDropCap` (wrap the opening paragraph; pure
+`::first-letter` CSS, don't try to split the string yourself), `DxEditorialAuthorBio` (composes
+`DxAvatar`; `Initials` auto-derives from `Name` if omitted).
+```razor
+<DxEditorialReadingProgress />
+<DxEditorialLayout ...>
+    <div class="dx-editorial-body">
+        <DxEditorialDropCap>Opening paragraph text.</DxEditorialDropCap>
+    </div>
+    <DxEditorialTableOfContents Heading="On this page" Entries="toc" />
+    <div id="a-section"> ... </div>
+    <DxEditorialAuthorBio Name="..." Role="..." ProfileUrl="...">Bio text.</DxEditorialAuthorBio>
+</DxEditorialLayout>
+@code { private static readonly IReadOnlyList<DxEditorialTableOfContents.TocEntry> toc = [new("A section", "a-section")]; }
+```
+
 ---
 
 ## 5. Full component catalog
@@ -412,7 +432,8 @@ covers scripting genuinely disabled, not "script tag forgotten").
 - **Feedback:** DxToastHost, DxAlert, DxSpinner, DxProgress, DxSkeleton, DxErrorBoundary
 - **Editorial & long-form:** DxEditorialLayout, DxEditorialFigure, DxEditorialSpread,
   DxEditorialPullQuote, DxEditorialSidebar, DxEditorialScrollytelling, DxEditorialScrollyStage,
-  DxEditorialDissipation, DxEditorialFooter
+  DxEditorialDissipation, DxEditorialFooter, DxEditorialTableOfContents,
+  DxEditorialReadingProgress, DxEditorialDropCap, DxEditorialAuthorBio
 - **Barcodes & QR:** DxQrCode, DxBarcode, DxEan13
 
 ---

@@ -180,6 +180,10 @@ end in the flagship piece at `/insights/articles/zero-trust-ephemeral-chat-condu
 | `DxEditorialScrollytelling` / `DxEditorialScrollyStage` | A scroll-revealed narrative sequence — `IntersectionObserver`-only, never a scroll-position listener. Requires a companion `<script type="module" src="_content/BlazorDX.Components/dx-editorial-scrollytelling.js">` tag, added once alongside the `dx-editorial.css` `<link>` | `/insights/articles/zero-trust-ephemeral-chat-conduit` |
 | `DxEditorialDissipation` | A CSS-only "data-as-art" dot-grid dissolve, no canvas/WebGL | `/insights/articles/zero-trust-ephemeral-chat-conduit` |
 | `DxEditorialFooter` | A three-card footer grid, with sensible defaults | `/insights/articles/zero-trust-ephemeral-chat-conduit` |
+| `DxEditorialTableOfContents` | A jump-link contents list — the web descendant of a print magazine's contents page | `/insights/articles/zero-trust-ephemeral-chat-conduit` |
+| `DxEditorialReadingProgress` | A fixed top progress bar, filled via scroll-driven CSS (`animation-timeline: scroll(root)`) — no scroll-position listener | `/insights/articles/zero-trust-ephemeral-chat-conduit` |
+| `DxEditorialDropCap` | An enlarged first-letter treatment (`::first-letter`) for an opening paragraph — the oldest device in the magazine glossary | `/insights/articles/zero-trust-ephemeral-chat-conduit` |
+| `DxEditorialAuthorBio` | A richer "about the author" block composing `DxAvatar` — avatar, name, role, and a short bio | `/insights/articles/zero-trust-ephemeral-chat-conduit` |
 
 ---
 

@@ -72,6 +72,12 @@ Mark each: ✅ pass / ⚠ issue (link) / ⬜ not yet run.
 - [ ] `DxEditorialFigure`/`DxEditorialSpread` images have meaningful alt text in practice, not
       just in the one flagship article — this is an authoring discipline the component can't
       enforce.
+- [ ] `DxEditorialTableOfContents` links move focus to the target section on activation (not just
+      scroll it into view) — confirm with a keyboard/AT pass, not just visually.
+- [ ] `DxEditorialReadingProgress` is correctly `aria-hidden` and never the only way information
+      (e.g. "you're near the end") is conveyed.
+- [ ] `DxEditorialDropCap`'s enlarged first letter doesn't get read twice or oddly by a screen
+      reader (some AT combinations mis-handle `::first-letter` with generated-content styling).
 
 > Record results (date, AT/browser versions, findings) in the PR that performs the pass. The four
 > "pending manual pass" sections above were added when this checklist was last audited for drift —

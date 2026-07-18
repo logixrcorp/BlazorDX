@@ -3,6 +3,8 @@
 
 <PageTitle>The Architecture of Silence — BlazorDX Insights</PageTitle>
 
+<DxEditorialReadingProgress />
+
 <DxEditorialLayout Kicker="Article" Title="The Architecture of Silence"
                  Subtitle="Inside the Zero-Trust Ephemeral Chat Conduit: a server that never sees plaintext, a browser-sandboxed crypto core, and a closed room that tears itself down the moment it's disturbed."
                  Published="new DateOnly(2026, 7, 17)" ReadingMinutes="7"
@@ -16,13 +18,13 @@
     </DxEditorialFigure>
 
     <div class="dx-editorial-body">
-        <p>
+        <DxEditorialDropCap>
             Most chat features start from the same question: how do we store this conversation
             safely? The Ephemeral Chat Conduit starts from a different one — what if, for certain
             messages, the right answer is <em>we don't store it at all</em>? Not "we delete it
             later." Not "we encrypt it at rest." We never hold a copy in the first place, and the
             server that carries it never has the ability to read it.
-        </p>
+        </DxEditorialDropCap>
         <p>
             That's a harder engineering problem than it sounds, because a server that routes a
             message usually has to understand a little about it — who it's for, whether it's still
@@ -33,6 +35,9 @@
         </p>
     </div>
 
+    <DxEditorialTableOfContents Heading="On this page" Entries="tocEntries" />
+
+    <div id="zero-trust-meaning">
     <DxEditorialSidebar Title="What 'zero-trust' means here" Icon="🔒">
         Not a marketing gloss — a structural claim. The server component,
         <code>BlazorDX.Conduit</code>, documents itself as a <strong>blind router</strong>: every
@@ -44,7 +49,9 @@
             claim about authorization — see the sidebar further down.
         </span>
     </DxEditorialSidebar>
+    </div>
 
+    <div id="the-pipeline">
     <DxEditorialScrollytelling Intro="Four steps, four trust boundaries. Scroll to follow one message through the pipeline.">
         <DxEditorialScrollyStage Index="01" Title="A provider encrypts, once" Glyph="✉">
             Before a message reaches BlazorDX at all, the MCP resource-provider that owns it
@@ -76,7 +83,9 @@
             alter it from outside, the node tears itself down.
         </DxEditorialScrollyStage>
     </DxEditorialScrollytelling>
+    </div>
 
+    <div id="enclosed-by-its-own-edge">
     <DxEditorialSpread ImageSrc="images/insights/zero-trust-ephemeral-chat-conduit/sovereignty-over-self.jpg"
                       ImageAlt="A figure works at a lit surface inside a glass dome, streams of light passing by outside the glass without entering."
                       Kicker="A real boundary" Title="Enclosed by its own edge"
@@ -93,12 +102,14 @@
             end-to-end Playwright test that renders the real component and inspects the actual DOM.
         </p>
     </DxEditorialSpread>
+    </div>
 
     <DxEditorialPullQuote Attribution="From the Conduit's own design notes">
         A router that cannot read what it routes cannot be made to leak it — by policy, by bug, or
         by subpoena.
     </DxEditorialPullQuote>
 
+    <div id="state-machine">
     <DxEditorialSidebar Title="The client-side state machine" Icon="◐">
         <p>The Blazor component (<code>SecureEphemeralChat</code>) tracks a small, real FSM as the message moves through its life:</p>
         <dl>
@@ -108,7 +119,9 @@
             <dt>Failed</dt><dd>Handshake or decrypt failed; nothing was ever mounted.</dd>
         </dl>
     </DxEditorialSidebar>
+    </div>
 
+    <div id="what-this-doesnt-claim">
     <DxEditorialSidebar Title="What this doesn't claim" Icon="⚠">
         <p>Two gaps worth naming plainly, because a "zero-trust" label invites exactly that kind of scrutiny:</p>
         <p><strong>No authorization ships by default.</strong> Deciding who's allowed to open a
@@ -118,7 +131,9 @@
         replay and no queuing. A disconnected client simply misses a <code>WITHDRAW</code> or
         <code>REFRESH</code> event; there's no retry.</p>
     </DxEditorialSidebar>
+    </div>
 
+    <div id="deliberate-impermanence">
     <DxEditorialScrollytelling Intro="One more stage — the moment a message stops existing.">
         <DxEditorialScrollyStage Index="05" Title="Deliberate impermanence" Glyph="○">
             When a session ends, the Rust module zeroizes the buffer holding the plaintext, and the
@@ -132,6 +147,7 @@
             <DxEditorialDissipation AriaLabel="An illustration of a message's on-screen presence dissolving once its session ends." />
         </DxEditorialScrollyStage>
     </DxEditorialScrollytelling>
+    </div>
 
     <DxEditorialFigure Caption="The moment a session ends: a buffer is zeroized, a node is overwritten, and the light goes out — not because it's magic, but because nothing on the other side kept a copy.">
         <img src="images/insights/zero-trust-ephemeral-chat-conduit/right-to-erasure.jpg"
@@ -139,7 +155,7 @@
     </DxEditorialFigure>
 
     <div class="dx-editorial-body">
-        <h2>Why build it this way</h2>
+        <h2 id="why-build-it-this-way">Why build it this way</h2>
         <p>
             None of this is about distrust of any particular server operator. It's about not
             asking anyone to trust one at all for the specific, narrow case of a message that was
@@ -165,9 +181,27 @@
         <img src="images/insights/zero-trust-ephemeral-chat-conduit/freedom-from-digital-footprints.jpg"
              alt="A figure stands in an open field at dusk, releasing a stream of light particles into the sky." loading="lazy" />
     </DxEditorialFigure>
+
+    <DxEditorialAuthorBio Name="BlazorDX Team" Role="Maintainers">
+        We write these the same way we build the library: read the actual code and tests before
+        describing what they do, and say plainly what's still ahead. This piece was checked
+        against the real ADR, the Conduit implementation, and its Playwright E2E test before a
+        word of the copy was final.
+    </DxEditorialAuthorBio>
 </DxEditorialLayout>
 
 @code {
+    private static readonly IReadOnlyList<DxEditorialTableOfContents.TocEntry> tocEntries =
+    [
+        new("What 'zero-trust' means", "zero-trust-meaning"),
+        new("The four-step pipeline", "the-pipeline"),
+        new("Enclosed by its own edge", "enclosed-by-its-own-edge"),
+        new("The client-side state machine", "state-machine"),
+        new("What this doesn't claim", "what-this-doesnt-claim"),
+        new("Deliberate impermanence", "deliberate-impermanence"),
+        new("Why build it this way", "why-build-it-this-way"),
+    ];
+
     private readonly IReadOnlyList<DxEditorialFooter.FooterCard> footerCards =
     [
         new("Verified", "What's actually E2E-tested",

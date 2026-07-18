@@ -11,6 +11,28 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ### Added
 
+- **Four new `DxEditorial*` components (Phase 1 of the reading-experience roadmap)**:
+  `DxEditorialTableOfContents` (plain jump links to caller-supplied section IDs — the web
+  descendant of a print magazine's contents page; no scrollspy in this version, a deliberate
+  scope cut), `DxEditorialReadingProgress` (a fixed top bar filled via
+  `animation-timeline: scroll(root)` — scroll-driven CSS, not a scroll-position listener, and
+  since the fill is tied 1:1 to the reader's own scroll rather than auto-playing, it's exempt
+  from `prefers-reduced-motion` the way the hero's Ken Burns zoom isn't), `DxEditorialDropCap`
+  (a `::first-letter` wrapper — the oldest device in the magazine glossary, dating to scribes
+  marking new sections as early as the 15th century), and `DxEditorialAuthorBio` (composes the
+  library's own `DxAvatar`; `Initials` auto-derives from `Name` when omitted).
+  Wired into the flagship article as real usage: a 7-entry table of contents linking to real
+  `id`s added on the article's own section wrappers, the opening paragraph as a drop cap, and an
+  author bio before the footer. 5 new bUnit tests (1040 total passing). Documented in
+  `docs/COMPONENTS.md`, `ComponentCatalog.cs`, `blazordx-llms.md`, and three new checklist items
+  under Editorial's existing pending-manual-pass accessibility section.
+  This was scoped from a roadmap built by cross-referencing the current `DxEditorial*` family
+  against both modern digital-editorial patterns and classic print-magazine anatomy (masthead,
+  drop cap, kicker, deck, pull-quote, jump line, folio, callout, cutline, etc.) — see the roadmap
+  for Phases 2–4 (tags/related-articles/series-nav, an inset `shape-outside` figure variant,
+  stat rows, footnotes, a `DxTooltip`-based glossary term, share bar, newsletter block, audio
+  narration control shell).
+
 - **Promoted the Editorial family into the public library** as `DxEditorialLayout`,
   `DxEditorialFigure`, `DxEditorialSpread`, `DxEditorialPullQuote`, `DxEditorialSidebar`,
   `DxEditorialScrollytelling`/`DxEditorialScrollyStage`, `DxEditorialDissipation`, and
