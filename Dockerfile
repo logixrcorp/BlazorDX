@@ -13,9 +13,15 @@
 # ---- Build stage ------------------------------------------------------------
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
-# Node.js 20 (esbuild bundling) + Rust (wasm32 compute kernel).
+# Node.js 20 (esbuild bundling) + Rust (wasm32 compute + security kernels). build-essential
+# (gcc + a linker) is needed to build/link Rust *build scripts* on the host triple — not for the
+# wasm32 target itself, but a wasm32-unknown-unknown crate can still depend on a crate with a
+# build.rs (e.g. BlazorDX.Security.Rust's crypto dependency chain: aes-gcm/p256/sha2 pull in
+# generic-array, which has one). BlazorDX.Compute.Rust's dependency tree happens to have none, so
+# it built fine without this; GitHub Actions' ubuntu-latest runner ships gcc preinstalled, which is
+# why this gap never showed up in CI — only in a `docker build` from this minimal SDK base image.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends curl ca-certificates \
+ && apt-get install -y --no-install-recommends curl ca-certificates build-essential \
  && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
  && apt-get install -y --no-install-recommends nodejs \
  && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal \

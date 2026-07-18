@@ -11,6 +11,17 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ### Fixed
 
+- **`docker build` failed the moment the previous fix tried to actually build `dx_security.wasm`:
+  `error: linker \`cc\` not found`.** The Dockerfile's build stage never installed a C
+  toolchain — `BlazorDX.Compute.Rust`'s dependency tree has no crates with a `build.rs`, so it
+  never needed one. `BlazorDX.Security.Rust`'s crypto dependency chain
+  (`aes-gcm`/`p256`/`sha2` → `generic-array`) does have one, and compiling *any* Rust build
+  script — even for a `wasm32-unknown-unknown` target — links a small host-triple binary first,
+  which needs a linker. GitHub Actions' `ubuntu-latest` runner ships `gcc` preinstalled, which is
+  exactly why CI never caught this — only a `docker build` from the minimal
+  `mcr.microsoft.com/dotnet/sdk:10.0` base image did. Added `build-essential` to the image's
+  `apt-get install` line.
+
 - **Production (`blazordx.com/ai-chat`): `dx_security.wasm` 404'd, so every assistant reply
   failed verification and rendered "This message could not be verified and was not shown."**
   Reported directly from the browser console on the live site. Root cause: the Dockerfile's
