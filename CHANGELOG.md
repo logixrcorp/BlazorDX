@@ -11,6 +11,16 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ### Fixed
 
+- **Every route logged a console error: "An import map is added after module script load was
+  triggered."** Fixing the CI build gate (below) let the E2E suite actually run for the first
+  time in days, and it immediately caught this — the scrollytelling `<script type="module">` tag
+  sat in `<head>` *above* `<ImportMap />` in `App.razor`. Per spec, the browser locks out further
+  import maps once a module script starts loading, so any module script placed before `<ImportMap
+  />` breaks it for the whole page, not just the one route that uses it. Moved the scrollytelling
+  script tag below `<ImportMap />`. Verified live (console clean on `/keyboard`, `/powerbi`, and
+  the Insights article that actually uses the script) and via the full local E2E suite (48/48
+  passing, all three browsers covered by CI).
+
 - **CI was red on every push since the "classic-meets-modern" editorial CSS pass (2026-07-18) —
   `dotnet build BlazorDX.slnx -c Release` failing on `NU1902`.** A fresh restore (CI always does
   one; a long-lived local checkout with cached `obj/` state doesn't re-audit) surfaced a moderate

@@ -79,7 +79,6 @@
     <link rel="stylesheet" href="_content/BlazorDX.Components/dx-display.css" />
     <link rel="stylesheet" href="_content/BlazorDX.Components/dx-editorial.css" />
     <link rel="stylesheet" href="_content/BlazorDX.Components/dx-editorial-extras.css" />
-    <script type="module" src="_content/BlazorDX.Components/dx-editorial-scrollytelling.js"></script>
     <link rel="stylesheet" href="_content/BlazorDX.Documents/dx-spreadsheet.css" />
     <link rel="stylesheet" href="_content/BlazorDX.Documents/dx-word.css" />
     <link rel="stylesheet" href="_content/BlazorDX.Documents/dx-wordeditor.css" />
@@ -96,6 +95,10 @@
     }
     <script src="https://unpkg.com/htmx.org@2.0.3" integrity="sha384-0895/pl2MU10Hqc6jd4RvrthNlDiE9U1tWmX7WRESftEDRosgxNsQG/Ze9YMRzHq" crossorigin="anonymous"></script>
     <ImportMap />
+    @* Any <script type="module"> must come after <ImportMap /> — the browser locks
+       out further import maps once a module script has started loading, so a module
+       tag placed earlier in <head> breaks every route with a console error. *@
+    <script type="module" src="_content/BlazorDX.Components/dx-editorial-scrollytelling.js"></script>
     <HeadOutlet />
 </head>
 
