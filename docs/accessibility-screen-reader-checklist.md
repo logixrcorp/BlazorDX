@@ -61,7 +61,19 @@ Mark each: ✅ pass / ⚠ issue (link) / ⬜ not yet run.
 - [ ] Full-page navigation (this route intentionally skips Blazor's enhanced nav) doesn't strand
       focus — confirm focus lands somewhere sensible after the reload.
 
-> Record results (date, AT/browser versions, findings) in the PR that performs the pass. The three
+## Editorial (`DxEditorial*`, `/insights/articles/...`) — pending manual pass
+- [ ] Scrollytelling stages don't trap or steal focus, and the reveal transition respects
+      `prefers-reduced-motion` for an AT/keyboard user, not just visually.
+- [ ] Without the companion `dx-editorial-scrollytelling.js` script, stage content is still
+      reachable and readable in document order — a screen reader shouldn't depend on the
+      opacity/transform reveal to expose text that's already in the DOM.
+- [ ] Heading hierarchy in a real article (h1 hero title → h2/h3 within the body) is correct and
+      doesn't skip levels once `DxEditorialSpread`'s h2 and body h2/h3s are combined.
+- [ ] `DxEditorialFigure`/`DxEditorialSpread` images have meaningful alt text in practice, not
+      just in the one flagship article — this is an authoring discipline the component can't
+      enforce.
+
+> Record results (date, AT/browser versions, findings) in the PR that performs the pass. The four
 > "pending manual pass" sections above were added when this checklist was last audited for drift —
-> Phase 4 (Reporting/Power BI) already has recorded results; Documents (Excel/Word) and the HTMX
-> viewer route do not yet.
+> Phase 4 (Reporting/Power BI) already has recorded results; Documents (Excel/Word), the HTMX
+> viewer route, and Editorial do not yet.

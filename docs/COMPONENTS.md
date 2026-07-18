@@ -163,6 +163,24 @@ and [ADR-0010](adr/0010-documents-and-reporting-integration.md).
 | `DxBarcode` | Code 128 (Set B) with an independent decoder round-trip | `/barcodes` |
 | `DxEan13` | EAN-13 retail barcode with a computed check digit | `/barcodes` |
 
+## Editorial & long-form
+
+Magazine-style layout components for articles, blog posts, and whitepapers — hero, pull-quotes,
+technical sidebars, a scroll-revealed narrative section, a two-column "spread," a three-card
+footer. Built entirely on `dx-theme.css` tokens (no new color system). See it composed end to
+end in the flagship piece at `/insights/articles/zero-trust-ephemeral-chat-conduit`.
+
+| Component | What it does | Demo |
+|---|---|---|
+| `DxEditorialLayout` | The shell: hero (kicker/title/subtitle/byline, optionally a full-bleed photo) + a content slot, wraps a `DxEditorialFooter` on automatically | `/insights/articles/zero-trust-ephemeral-chat-conduit` |
+| `DxEditorialFigure` | A full-bleed narrative-break image | `/insights/articles/zero-trust-ephemeral-chat-conduit` |
+| `DxEditorialSpread` | A two-column "classic meets modern" spread: an elevated, drop-shadowed photo against body copy, with a labeled spec card overlapping its corner | `/insights/articles/zero-trust-ephemeral-chat-conduit` |
+| `DxEditorialPullQuote` | A large, italicized, serif-accented pull-quote | `/insights/articles/zero-trust-ephemeral-chat-conduit` |
+| `DxEditorialSidebar` | A floating technical-spec card that doesn't interrupt the reading flow | `/insights/articles/zero-trust-ephemeral-chat-conduit` |
+| `DxEditorialScrollytelling` / `DxEditorialScrollyStage` | A scroll-revealed narrative sequence — `IntersectionObserver`-only, never a scroll-position listener. Requires a companion `<script type="module" src="_content/BlazorDX.Components/dx-editorial-scrollytelling.js">` tag, added once alongside the `dx-editorial.css` `<link>` | `/insights/articles/zero-trust-ephemeral-chat-conduit` |
+| `DxEditorialDissipation` | A CSS-only "data-as-art" dot-grid dissolve, no canvas/WebGL | `/insights/articles/zero-trust-ephemeral-chat-conduit` |
+| `DxEditorialFooter` | A three-card footer grid, with sensible defaults | `/insights/articles/zero-trust-ephemeral-chat-conduit` |
+
 ---
 
 ## Under the hood

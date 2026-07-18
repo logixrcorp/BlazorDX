@@ -24,7 +24,7 @@ public static class ComponentCatalog
     [
         "Overlays & popups", "Selection & input", "Buttons & display", "Navigation & layout",
         "Data grids", "Data visualization", "Scheduling", "Editors, files & AI",
-        "Feedback", "Barcodes & QR",
+        "Feedback", "Barcodes & QR", "Editorial & long-form",
     ];
 
     public static readonly IReadOnlyList<DocEntry> Entries =
@@ -147,6 +147,16 @@ public static class ComponentCatalog
         new("qrcode", "DxQrCode", "Barcodes & QR", "QR code (versions 1–4, all EC levels), verified against published vectors.", "/barcodes", "DxQrCode"),
         new("barcode", "DxBarcode", "Barcodes & QR", "Code 128 (Set B) with an independent decoder round-trip.", "/barcodes", "DxBarcode"),
         new("ean13", "DxEan13", "Barcodes & QR", "EAN-13 retail barcode with computed check digit.", "/barcodes", "DxEan13"),
+
+        new("editoriallayout", "DxEditorialLayout", "Editorial & long-form", "Magazine-style article shell: hero + byline + a content slot, wraps a DxEditorialFooter on automatically.", "/insights/articles/zero-trust-ephemeral-chat-conduit", "DxEditorialLayout"),
+        new("editorialfigure", "DxEditorialFigure", "Editorial & long-form", "A full-bleed narrative-break image.", "/insights/articles/zero-trust-ephemeral-chat-conduit", "DxEditorialFigure"),
+        new("editorialspread", "DxEditorialSpread", "Editorial & long-form", "A two-column \"classic meets modern\" spread: an elevated photo against body copy, with a labeled spec card overlapping its corner.", "/insights/articles/zero-trust-ephemeral-chat-conduit", "DxEditorialSpread"),
+        new("editorialpullquote", "DxEditorialPullQuote", "Editorial & long-form", "A large, italicized, serif-accented pull-quote.", "/insights/articles/zero-trust-ephemeral-chat-conduit", "DxEditorialPullQuote"),
+        new("editorialsidebar", "DxEditorialSidebar", "Editorial & long-form", "A floating technical-spec card that doesn't interrupt the reading flow.", "/insights/articles/zero-trust-ephemeral-chat-conduit", "DxEditorialSidebar"),
+        new("editorialscrollytelling", "DxEditorialScrollytelling", "Editorial & long-form", "A scroll-revealed narrative sequence of DxEditorialScrollyStages — IntersectionObserver-only, never a scroll-position listener.", "/insights/articles/zero-trust-ephemeral-chat-conduit", "DxEditorialScrollytelling"),
+        new("editorialscrollystage", "DxEditorialScrollyStage", "Editorial & long-form", "One stage of a DxEditorialScrollytelling sequence.", "/insights/articles/zero-trust-ephemeral-chat-conduit", "DxEditorialScrollyStage"),
+        new("editorialdissipation", "DxEditorialDissipation", "Editorial & long-form", "A CSS-only \"data-as-art\" dot-grid dissolve, no canvas/WebGL.", "/insights/articles/zero-trust-ephemeral-chat-conduit", "DxEditorialDissipation"),
+        new("editorialfooter", "DxEditorialFooter", "Editorial & long-form", "A three-card footer grid, with sensible defaults.", "/insights/articles/zero-trust-ephemeral-chat-conduit", "DxEditorialFooter"),
     ];
 
     // Curated usage examples, keyed by slug. Components without an entry fall back to
@@ -351,6 +361,33 @@ public static class ComponentCatalog
                 <First>Navigator</First>
                 <Second>Editor</Second>
             </DxSplitter>
+            """,
+        ["editoriallayout"] = """
+            <DxEditorialLayout Kicker="Article" Title="The Architecture of Silence"
+                                Published="new DateOnly(2026, 7, 17)" ReadingMinutes="7"
+                                HeroImageSrc="hero.jpg" HeroImageAlt="...">
+                <DxEditorialFigure Caption="...">
+                    <img src="figure.jpg" alt="..." loading="lazy" />
+                </DxEditorialFigure>
+                <div class="dx-editorial-body">
+                    <p>Body copy goes here.</p>
+                </div>
+            </DxEditorialLayout>
+            """,
+        ["editorialspread"] = """
+            <DxEditorialSpread ImageSrc="photo.jpg" ImageAlt="..."
+                                Kicker="A real boundary" Title="Enclosed by its own edge"
+                                SpecLabel="Verified by" SpecValue="Playwright E2E"
+                                SpecCaption="Renders the real component, inspects the actual DOM.">
+                <p>Body copy for this spread.</p>
+            </DxEditorialSpread>
+            """,
+        ["editorialscrollytelling"] = """
+            <DxEditorialScrollytelling Intro="Four steps, four trust boundaries.">
+                <DxEditorialScrollyStage Index="01" Title="A provider encrypts, once" Glyph="✉">
+                    Stage body copy.
+                </DxEditorialScrollyStage>
+            </DxEditorialScrollytelling>
             """,
     };
 

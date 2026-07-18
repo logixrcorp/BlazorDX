@@ -52,6 +52,8 @@ builder.Services.AddScoped<MyAppStore>();
 <link rel="stylesheet" href="_content/BlazorDX.Components/dx-display.css" />
 <link rel="stylesheet" href="_content/BlazorDX.Components/dx-scheduler.css" />   <!-- DxScheduler / DxGantt -->
 <link rel="stylesheet" href="_content/BlazorDX.Components/dx-filemanager.css" /> <!-- DxFileManager -->
+<link rel="stylesheet" href="_content/BlazorDX.Components/dx-editorial.css" />   <!-- DxEditorial* -->
+<script type="module" src="_content/BlazorDX.Components/dx-editorial-scrollytelling.js"></script> <!-- DxEditorialScrollytelling reveal; required, not optional -->
 ```
 
 ### Render modes & usings
@@ -355,6 +357,27 @@ through `OnUploadVerified` — refuse to write a file whose `Verified` is false.
 Server-side, re-hash any stream with the same primitive: `BlazorDX.Primitives.Files.FileHasher`
 (`ComputeHexAsync` / `VerifyAsync`) — streaming `IncrementalHash`, constant-time compare.
 
+### DxEditorial* (magazine-style long-form layout)
+`DxEditorialLayout` is the shell (hero + byline + a content slot; wraps `DxEditorialFooter` on
+automatically). Inside it, compose `DxEditorialFigure` (full-bleed image), `DxEditorialSpread`
+(two-column photo + copy with a labeled spec card), `DxEditorialPullQuote`,
+`DxEditorialSidebar` (floating spec card), and `DxEditorialScrollytelling` /
+`DxEditorialScrollyStage` (scroll-revealed sequence). All plain markup composition, all on
+`dx-theme.css` tokens — no new color system to theme separately.
+```razor
+<DxEditorialLayout Kicker="Article" Title="..." Published="new DateOnly(2026, 7, 17)"
+                    ReadingMinutes="7" HeroImageSrc="hero.jpg" HeroImageAlt="...">
+    <DxEditorialFigure Caption="...">
+        <img src="figure.jpg" alt="..." loading="lazy" />
+    </DxEditorialFigure>
+    <div class="dx-editorial-body"><p>Body copy.</p></div>
+    <DxEditorialPullQuote Attribution="...">A quote.</DxEditorialPullQuote>
+</DxEditorialLayout>
+```
+`DxEditorialScrollytelling`'s reveal needs its companion script tag (see Styles above) — it is
+required, not optional; omitting it leaves stages hidden (a `(scripting: none)` CSS guard only
+covers scripting genuinely disabled, not "script tag forgotten").
+
 ---
 
 ## 5. Full component catalog
@@ -387,6 +410,9 @@ Server-side, re-hash any stream with the same primitive: `BlazorDX.Primitives.Fi
   DxReportViewer (SSRS over HTMX, `BlazorDX.Integrations.Reporting`), DxPowerBiReport
   (`BlazorDX.Integrations.PowerBI`), DxHtmxDocumentViewer (static-SSR, `BlazorDX.Htmx`)
 - **Feedback:** DxToastHost, DxAlert, DxSpinner, DxProgress, DxSkeleton, DxErrorBoundary
+- **Editorial & long-form:** DxEditorialLayout, DxEditorialFigure, DxEditorialSpread,
+  DxEditorialPullQuote, DxEditorialSidebar, DxEditorialScrollytelling, DxEditorialScrollyStage,
+  DxEditorialDissipation, DxEditorialFooter
 - **Barcodes & QR:** DxQrCode, DxBarcode, DxEan13
 
 ---

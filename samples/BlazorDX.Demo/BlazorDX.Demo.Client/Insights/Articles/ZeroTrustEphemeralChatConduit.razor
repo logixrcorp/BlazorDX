@@ -1,20 +1,19 @@
 @page "/insights/articles/zero-trust-ephemeral-chat-conduit"
 @rendermode InteractiveWebAssembly
-@using BlazorDX.Demo.Client.Insights
 
 <PageTitle>The Architecture of Silence — BlazorDX Insights</PageTitle>
 
-<EditorialLayout Kicker="Article" Title="The Architecture of Silence"
+<DxEditorialLayout Kicker="Article" Title="The Architecture of Silence"
                  Subtitle="Inside the Zero-Trust Ephemeral Chat Conduit: a server that never sees plaintext, a browser-sandboxed crypto core, and a closed room that tears itself down the moment it's disturbed."
                  Published="new DateOnly(2026, 7, 17)" ReadingMinutes="7"
                  HeroImageSrc="images/insights/zero-trust-ephemeral-chat-conduit/sanctuary-hero.jpg"
                  HeroImageAlt="A lone figure works at a minimalist, geometric desk lit from within, in an empty room overlooking a city skyline at dusk."
                  FooterCards="footerCards">
 
-    <EditorialFigure Caption="A message travels from provider to browser as a single unbroken thread — the router in between never touches what passes through it.">
+    <DxEditorialFigure Caption="A message travels from provider to browser as a single unbroken thread — the router in between never touches what passes through it.">
         <img src="images/insights/zero-trust-ephemeral-chat-conduit/transparent-connection.jpg"
              alt="Two figures in profile face each other, connected by a single strand of light passing from one to the other." loading="lazy" />
-    </EditorialFigure>
+    </DxEditorialFigure>
 
     <div class="dx-editorial-body">
         <p>
@@ -34,7 +33,7 @@
         </p>
     </div>
 
-    <EditorialSidebar Title="What 'zero-trust' means here" Icon="🔒">
+    <DxEditorialSidebar Title="What 'zero-trust' means here" Icon="🔒">
         Not a marketing gloss — a structural claim. The server component,
         <code>BlazorDX.Conduit</code>, documents itself as a <strong>blind router</strong>: every
         payload and event it forwards is opaque bytes it never parses, inspects, or decrypts. If
@@ -44,41 +43,41 @@
             This describes message confidentiality in transit through the router. It is not a
             claim about authorization — see the sidebar further down.
         </span>
-    </EditorialSidebar>
+    </DxEditorialSidebar>
 
-    <EditorialScrollytelling Intro="Four steps, four trust boundaries. Scroll to follow one message through the pipeline.">
-        <EditorialScrollyStage Index="01" Title="A provider encrypts, once" Glyph="✉">
+    <DxEditorialScrollytelling Intro="Four steps, four trust boundaries. Scroll to follow one message through the pipeline.">
+        <DxEditorialScrollyStage Index="01" Title="A provider encrypts, once" Glyph="✉">
             Before a message reaches BlazorDX at all, the MCP resource-provider that owns it
             encrypts it. The Conduit never receives plaintext — there's no point in the pipeline
             where it could, even if you wanted it to.
-        </EditorialScrollyStage>
+        </DxEditorialScrollyStage>
 
-        <EditorialScrollyStage Index="02" Title="The Conduit relays blind" Glyph="↯">
+        <DxEditorialScrollyStage Index="02" Title="The Conduit relays blind" Glyph="↯">
             <code>BlazorDX.Conduit</code> pushes the ciphertext to the browser over Server-Sent
             Events — a <code>PAYLOAD</code> event, alongside <code>WITHDRAW</code> and
             <code>REFRESH</code> for revocation and rotation. The relay is best-effort: if nobody's
             listening when an event fires, it's simply gone. No queue, no replay, no guaranteed
             delivery — a deliberate trade against ever holding state that could leak.
-        </EditorialScrollyStage>
+        </DxEditorialScrollyStage>
 
-        <EditorialScrollyStage Index="03" Title="The browser decrypts, alone" Glyph="🔑">
+        <DxEditorialScrollyStage Index="03" Title="The browser decrypts, alone" Glyph="🔑">
             A Rust crate compiled to WebAssembly (<code>dx_security</code>) runs the actual
             handshake — P-256 ECDH, then AES-256-GCM — entirely inside the browser's own sandbox.
             No hardware enclave, no secure element; this is an ordinary wasm module, isolated the
             same way any browser tab is isolated from any other. The private key material never
             crosses back to the server, and it never touches JavaScript's garbage-collected heap.
-        </EditorialScrollyStage>
+        </DxEditorialScrollyStage>
 
-        <EditorialScrollyStage Index="04" Title="A closed room, self-aware" Glyph="◈">
+        <DxEditorialScrollyStage Index="04" Title="A closed room, self-aware" Glyph="◈">
             The decrypted text is written — via <code>textContent</code>, never
             <code>innerHTML</code> — into a <strong>closed-mode Shadow DOM</strong> node: a part of
             the page that JavaScript outside that exact closure genuinely cannot read back out. A
             <code>MutationObserver</code> watches it continuously; the instant something tries to
             alter it from outside, the node tears itself down.
-        </EditorialScrollyStage>
-    </EditorialScrollytelling>
+        </DxEditorialScrollyStage>
+    </DxEditorialScrollytelling>
 
-    <EditorialSpread ImageSrc="images/insights/zero-trust-ephemeral-chat-conduit/sovereignty-over-self.jpg"
+    <DxEditorialSpread ImageSrc="images/insights/zero-trust-ephemeral-chat-conduit/sovereignty-over-self.jpg"
                       ImageAlt="A figure works at a lit surface inside a glass dome, streams of light passing by outside the glass without entering."
                       Kicker="A real boundary" Title="Enclosed by its own edge"
                       SpecLabel="Verified by" SpecValue="Playwright E2E"
@@ -93,14 +92,14 @@
             leak from a closed root — is something we didn't just design for. It's covered by an
             end-to-end Playwright test that renders the real component and inspects the actual DOM.
         </p>
-    </EditorialSpread>
+    </DxEditorialSpread>
 
-    <EditorialPullQuote Attribution="From the Conduit's own design notes">
+    <DxEditorialPullQuote Attribution="From the Conduit's own design notes">
         A router that cannot read what it routes cannot be made to leak it — by policy, by bug, or
         by subpoena.
-    </EditorialPullQuote>
+    </DxEditorialPullQuote>
 
-    <EditorialSidebar Title="The client-side state machine" Icon="◐">
+    <DxEditorialSidebar Title="The client-side state machine" Icon="◐">
         <p>The Blazor component (<code>SecureEphemeralChat</code>) tracks a small, real FSM as the message moves through its life:</p>
         <dl>
             <dt>Decrypting</dt><dd>Handshake and AES-GCM decrypt in progress inside the wasm module.</dd>
@@ -108,9 +107,9 @@
             <dt>Withdrawn</dt><dd>The provider revoked it, or the observer caught tampering — content is gone.</dd>
             <dt>Failed</dt><dd>Handshake or decrypt failed; nothing was ever mounted.</dd>
         </dl>
-    </EditorialSidebar>
+    </DxEditorialSidebar>
 
-    <EditorialSidebar Title="What this doesn't claim" Icon="⚠">
+    <DxEditorialSidebar Title="What this doesn't claim" Icon="⚠">
         <p>Two gaps worth naming plainly, because a "zero-trust" label invites exactly that kind of scrutiny:</p>
         <p><strong>No authorization ships by default.</strong> Deciding who's allowed to open a
         session is an explicit extension point (<code>IEphemeralSessionAuthorizer</code>) a host
@@ -118,10 +117,10 @@
         <p><strong>Delivery is best-effort, not guaranteed.</strong> The SSE transport has no
         replay and no queuing. A disconnected client simply misses a <code>WITHDRAW</code> or
         <code>REFRESH</code> event; there's no retry.</p>
-    </EditorialSidebar>
+    </DxEditorialSidebar>
 
-    <EditorialScrollytelling Intro="One more stage — the moment a message stops existing.">
-        <EditorialScrollyStage Index="05" Title="Deliberate impermanence" Glyph="○">
+    <DxEditorialScrollytelling Intro="One more stage — the moment a message stops existing.">
+        <DxEditorialScrollyStage Index="05" Title="Deliberate impermanence" Glyph="○">
             When a session ends, the Rust module zeroizes the buffer holding the plaintext, and the
             browser bridge overwrites the shadow-root text node before removing it. We're
             deliberately not calling this a <em>proof</em> of anything. It's a best-effort erasure:
@@ -130,14 +129,14 @@
             guarantee to keep. What we can and do verify is narrower and more honest: that the
             content is unreachable through the API surface a consumer of this component actually
             has.
-            <EditorialDissipation AriaLabel="An illustration of a message's on-screen presence dissolving once its session ends." />
-        </EditorialScrollyStage>
-    </EditorialScrollytelling>
+            <DxEditorialDissipation AriaLabel="An illustration of a message's on-screen presence dissolving once its session ends." />
+        </DxEditorialScrollyStage>
+    </DxEditorialScrollytelling>
 
-    <EditorialFigure Caption="The moment a session ends: a buffer is zeroized, a node is overwritten, and the light goes out — not because it's magic, but because nothing on the other side kept a copy.">
+    <DxEditorialFigure Caption="The moment a session ends: a buffer is zeroized, a node is overwritten, and the light goes out — not because it's magic, but because nothing on the other side kept a copy.">
         <img src="images/insights/zero-trust-ephemeral-chat-conduit/right-to-erasure.jpg"
              alt="A hand closes a glowing laptop-like panel, the light dimming as it shuts." loading="lazy" />
-    </EditorialFigure>
+    </DxEditorialFigure>
 
     <div class="dx-editorial-body">
         <h2>Why build it this way</h2>
@@ -162,14 +161,14 @@
         </p>
     </div>
 
-    <EditorialFigure Caption="The point was never distrust. It was building an architecture that doesn't ask anyone to keep a promise it could accidentally break.">
+    <DxEditorialFigure Caption="The point was never distrust. It was building an architecture that doesn't ask anyone to keep a promise it could accidentally break.">
         <img src="images/insights/zero-trust-ephemeral-chat-conduit/freedom-from-digital-footprints.jpg"
              alt="A figure stands in an open field at dusk, releasing a stream of light particles into the sky." loading="lazy" />
-    </EditorialFigure>
-</EditorialLayout>
+    </DxEditorialFigure>
+</DxEditorialLayout>
 
 @code {
-    private readonly IReadOnlyList<EditorialFooter.FooterCard> footerCards =
+    private readonly IReadOnlyList<DxEditorialFooter.FooterCard> footerCards =
     [
         new("Verified", "What's actually E2E-tested",
             "Closed shadow root, no light-DOM leak, tamper self-destruct — run in CI on every change.",

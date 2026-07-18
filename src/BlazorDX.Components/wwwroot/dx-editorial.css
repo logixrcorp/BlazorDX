@@ -524,6 +524,17 @@
   }
 }
 
+/* If scripting is unavailable, DxEditorialScrollytelling's reveal script never runs — stages
+   must not stay invisible forever. (This only catches scripting genuinely disabled; if
+   scripting is on but the companion dx-editorial-scrollytelling.js tag was simply omitted,
+   this guard doesn't apply — the script is required, not optional, for the reveal.) */
+@media (scripting: none) {
+  .dx-editorial-scrolly-stage {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* ---- Footer: three-tiered grid ---- */
 .dx-editorial-footer {
   max-width: 72rem;

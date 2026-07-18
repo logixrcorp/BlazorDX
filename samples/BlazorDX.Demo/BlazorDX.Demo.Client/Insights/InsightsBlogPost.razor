@@ -17,7 +17,7 @@
 }
 else if (entry is not null)
 {
-    <EditorialLayout Kicker="Insights / Blog" Title="@entry.Title" Author="@entry.Author" Published="@entry.Published">
+    <DxEditorialLayout Kicker="Insights / Blog" Title="@entry.Title" Author="@entry.Author" Published="@entry.Published">
         <div class="dx-editorial-body">
             @if (markdown is null)
             {
@@ -28,7 +28,7 @@ else if (entry is not null)
                 <DxMarkdown Value="@markdown" />
             }
         </div>
-    </EditorialLayout>
+    </DxEditorialLayout>
 }
 
 @code {

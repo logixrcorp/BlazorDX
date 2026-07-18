@@ -11,6 +11,28 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ### Added
 
+- **Promoted the Editorial family into the public library** as `DxEditorialLayout`,
+  `DxEditorialFigure`, `DxEditorialSpread`, `DxEditorialPullQuote`, `DxEditorialSidebar`,
+  `DxEditorialScrollytelling`/`DxEditorialScrollyStage`, `DxEditorialDissipation`, and
+  `DxEditorialFooter` — previously demo-app-only `.razor` files, now hand-authored
+  `RenderTreeBuilder` classes in `BlazorDX.Components` matching the rest of the library's
+  zero-reflection convention (every other component but one is written this way; `.razor` is the
+  exception, not the rule). Each has bUnit coverage, XML doc comments (surfaced on their new
+  `/docs` pages via reflection, same as every other component), and an entry in the new
+  "Editorial & long-form" category across `docs/COMPONENTS.md`, `ComponentCatalog.cs`, and
+  `blazordx-llms.md`.
+  `DxEditorialScrollytelling`'s reveal script moved from a co-located `.razor.js` (which required
+  a matching `.razor` file) to a plain static asset, `dx-editorial-scrollytelling.js` — add it via
+  one `<script type="module">` tag alongside the `dx-editorial.css` `<link>`, the same opt-in
+  pattern as every other stylesheet in the library. A new `(scripting: none)` CSS guard keeps
+  scrollytelling stages visible if scripting is genuinely disabled (the original had no such
+  fallback); if scripting is enabled but the script tag is simply omitted, stages still won't
+  reveal — the script is required, not optional, and is now documented as such everywhere the
+  component is described. Added an "Editorial" section to the accessibility checklist
+  (pending manual pass, like Excel/Word/HTMX docviewer already listed there).
+  No consumer besides the demo app existed before this, so there's no breaking change — this is
+  the family's first appearance in the installable package.
+
 - **`EditorialSpread` — a two-column "classic meets modern" magazine layout** for Insights
   pieces: an elevated, drop-shadowed photo collaged against body copy, with a small labeled
   spec card overlapping its corner (the fashion-editorial "swatch card" device, adapted to show
