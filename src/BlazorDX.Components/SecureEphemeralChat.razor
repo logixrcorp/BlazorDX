@@ -202,12 +202,20 @@ else if (state == MountState.Withdrawn)
 
     private async Task<bool> MountViaLiveHandshakeAsync()
     {
+        // TEMPORARY DIAGNOSTIC (2026-07-19): tracing a production-only decrypt failure. Neither
+        // the JS-side completeAndMount trace nor OnAfterRenderAsync's outer catch ever fires on
+        // production, meaning this method returns false somewhere above the
+        // Interop.CompleteAndMountAsync call below, without throwing past this method's own
+        // boundary. Remove alongside the rest once the root cause is found.
+        Console.WriteLine($"[DIAGNOSTIC] MountViaLiveHandshakeAsync start: session={SessionId}, EstablishSession is null={EstablishSession is null}");
+
         if (EstablishSession is null)
         {
             return false;
         }
 
         string? clientPublicKeyBase64 = await Interop.BeginHandshakeAsync(SessionId);
+        Console.WriteLine($"[DIAGNOSTIC] MountViaLiveHandshakeAsync: BeginHandshakeAsync returned {(clientPublicKeyBase64 is null ? "null" : $"{clientPublicKeyBase64.Length} base64 chars")}");
         if (clientPublicKeyBase64 is null)
         {
             return false;
@@ -217,14 +225,26 @@ else if (state == MountState.Withdrawn)
         try
         {
             response = await EstablishSession(clientPublicKeyBase64);
+            string serverPublicKeyBase64ForLog = response.ServerPublicKeyBase64;
+            string nonceBase64ForLog = response.NonceBase64;
+            string ciphertextBase64ForLog = response.CiphertextBase64;
+            Console.WriteLine(
+                $"[DIAGNOSTIC] MountViaLiveHandshakeAsync: EstablishSession returned " +
+                $"serverPublicKeyBase64.Length={serverPublicKeyBase64ForLog.Length}, " +
+                $"nonceBase64.Length={nonceBase64ForLog.Length}, " +
+                $"ciphertextBase64.Length={ciphertextBase64ForLog.Length}");
         }
-        catch
+        catch (Exception ex)
         {
             // The broker call failed (network, rejected session, etc.) -- there is no
             // ciphertext to mount, and the wasm module's pending handshake state for this
             // session id is simply left to be overwritten by a future begin_session call
             // (see SessionStore::begin_session: a second call for the same id always
             // overwrites, so this cannot leak or accumulate).
+            //
+            // TEMPORARY DIAGNOSTIC (2026-07-19): this catch previously swallowed the exception
+            // entirely. Remove alongside the rest once the root cause is found.
+            Console.WriteLine($"[DIAGNOSTIC] MountViaLiveHandshakeAsync: EstablishSession threw: {ex}");
             return false;
         }
 
