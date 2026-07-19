@@ -114,9 +114,6 @@ export interface SecurityWasmExports {
     serverPublicKeyPointer: number,
     serverPublicKeyLength: number,
   ): number;
-  // TEMPORARY DIAGNOSTIC (2026-07-19): see dx_security::session::SessionStore::debug_aes_key_sha256.
-  // Remove alongside it once the root cause of the production-only decrypt failure is found.
-  debug_aes_key_hash(sessionIdPointer: number, sessionIdLength: number, outHashPointer: number): number;
   decrypt_payload(
     sessionIdPointer: number,
     sessionIdLength: number,

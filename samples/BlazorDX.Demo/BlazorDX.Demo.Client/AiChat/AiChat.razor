@@ -247,9 +247,14 @@
         // the whitepaper's §8.2 MIME-type requirement), and ReadFromJsonAsync rejects any
         // content type that isn't application/json or *+json regardless of whether the body
         // itself is valid JSON. The bytes are ordinary JSON, so a manual deserialize works fine.
+        //
+        // The source-generated AiChatJsonContext, not the reflection-based Deserialize<T>
+        // overload: EphemeralHandshakeResult is a positional record, and reflecting over its
+        // constructor to deserialize it is exactly the metadata a trimmed Release WASM publish
+        // removes -- this broke in production (NotSupportedException: DeserializeNoConstructor)
+        // while never reproducing locally, since only `dotnet publish` trims the WASM client.
         string json = await response.Content.ReadAsStringAsync();
-        EphemeralHandshakeResult? result = JsonSerializer.Deserialize<EphemeralHandshakeResult>(
-            json, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        EphemeralHandshakeResult? result = JsonSerializer.Deserialize(json, AiChatJsonContext.Default.EphemeralHandshakeResult);
         return result ?? throw new InvalidOperationException("The demo broker returned an empty handshake response.");
     }
 

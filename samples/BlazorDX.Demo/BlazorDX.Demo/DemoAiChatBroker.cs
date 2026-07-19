@@ -177,14 +177,6 @@ public static class DemoAiChatBroker
         byte[] ciphertextWithTag;
         byte[] sharedSecret = server.DeriveRawSecretAgreement(clientPublicKey.PublicKey);
 
-        // TEMPORARY DIAGNOSTIC (2026-07-19): tracking down a production-only ephemeral-chat
-        // decrypt failure that doesn't reproduce locally. Logs SHA-256 of the raw shared
-        // secret (used directly as the AES key below) -- never the secret itself -- to
-        // compare against a matching client-side log added to ephemeral-chat.ts's
-        // completeAndMount. Remove this line, the matching client log, and the
-        // debug_aes_key_hash wasm export once the root cause is found.
-        Console.WriteLine($"[DIAGNOSTIC] server aes_key sha256: {Convert.ToHexStringLower(SHA256.HashData(sharedSecret))} (session {request.SessionId})");
-
         try
         {
             byte[] plaintext = Encoding.UTF8.GetBytes(replyText);

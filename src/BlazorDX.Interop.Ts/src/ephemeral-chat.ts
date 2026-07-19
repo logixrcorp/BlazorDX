@@ -667,33 +667,18 @@ export async function completeAndMount(
   onRefresh: () => void,
   onTamper: () => void,
 ): Promise<boolean> {
-  // TEMPORARY DIAGNOSTIC (2026-07-19): see the earlier diagnostic block below. This one
-  // traces every early-return point in this function, since the first diagnostic (which
-  // only logs after complete_session succeeds) produced zero output on production --
-  // meaning the failure happens before that point, not at decrypt as originally assumed.
-  // Remove alongside the rest once the root cause is found.
-  console.log(`[DIAGNOSTIC] completeAndMount start: session=${sessionId}`);
-
   const host = document.getElementById(hostElementId);
   if (host === null) {
-    console.log("[DIAGNOSTIC] completeAndMount: host element not found, returning false");
     return false;
   }
 
   await ensureSecurityWasm();
   const wasm = securityWasm();
-  console.log(`[DIAGNOSTIC] completeAndMount: wasm loaded, has debug_aes_key_hash=${typeof wasm.debug_aes_key_hash}`);
 
   const serverPublicKey = base64ToBytes(serverPublicKeyBase64);
   const nonce = base64ToBytes(nonceBase64);
   const ciphertext = base64ToBytes(ciphertextBase64);
-  console.log(
-    `[DIAGNOSTIC] completeAndMount: serverPublicKey.length=${serverPublicKey.length} ` +
-      `(expected ${PUBLIC_KEY_LEN}), nonce.length=${nonce.length} (expected ${NONCE_LEN}), ` +
-      `ciphertext.length=${ciphertext.length}`,
-  );
   if (serverPublicKey.length !== PUBLIC_KEY_LEN || nonce.length !== NONCE_LEN) {
-    console.log("[DIAGNOSTIC] completeAndMount: length check failed, returning false");
     return false;
   }
 
@@ -717,31 +702,8 @@ export async function completeAndMount(
     } finally {
       wasm.dealloc(serverPublicKeyPointer, serverPublicKey.length);
     }
-    console.log(`[DIAGNOSTIC] completeAndMount: complete_session status=${completeStatus}`);
     if (completeStatus !== 0) {
-      console.log("[DIAGNOSTIC] completeAndMount: complete_session failed, returning false");
       return false;
-    }
-
-    // TEMPORARY DIAGNOSTIC (2026-07-19): tracking down a production-only decrypt failure
-    // that doesn't reproduce locally. Logs SHA-256 of the client-derived AES key -- never
-    // the key itself -- to compare against a matching server-side log in
-    // DemoAiChatBroker.cs. Remove this block, the wasm export, and the server log once the
-    // root cause is found.
-    {
-      const outHashPointer = wasm.alloc(32);
-      try {
-        const hashStatus = wasm.debug_aes_key_hash(sessionIdPointer, sessionIdBytes.length, outHashPointer);
-        if (hashStatus === 0) {
-          const hashBytes = new Uint8Array(wasm.memory.buffer, outHashPointer, 32).slice();
-          const hex = Array.from(hashBytes).map((b) => b.toString(16).padStart(2, "0")).join("");
-          console.log(`[DIAGNOSTIC] client aes_key sha256: ${hex} (session ${sessionId})`);
-        } else {
-          console.log(`[DIAGNOSTIC] client aes_key sha256: unavailable (status ${hashStatus})`);
-        }
-      } finally {
-        wasm.dealloc(outHashPointer, 32);
-      }
     }
 
     const noncePointer = writeBytes(wasm, nonce);
@@ -762,13 +724,7 @@ export async function completeAndMount(
       wasm.dealloc(ciphertextPointer, ciphertext.length || 1);
       wasm.dealloc(outLengthPointer, USIZE_BYTES);
     }
-    // TEMPORARY DIAGNOSTIC (2026-07-19): see the block above. Remove alongside it.
-    console.log(
-      `[DIAGNOSTIC] completeAndMount: decrypt_payload plaintextPointer=${plaintextPointer}, ` +
-        `plaintextLength=${plaintextLength}`,
-    );
     if (plaintextPointer === 0 || plaintextLength === 0) {
-      console.log("[DIAGNOSTIC] completeAndMount: decrypt_payload failed (bad key/nonce/tag), returning false");
       return false;
     }
 

@@ -11,6 +11,35 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ### Fixed
 
+- **Production (`blazordx.com/ai-chat`), the actual final layer of the "could not be verified"
+  saga: every real handshake still failed even after the DataProtection, `dx_security.wasm`, and
+  `build-essential` fixes above all landed and were confirmed working.** Root-caused by adding
+  temporary diagnostic logging across the full client-side handshake path (`ephemeral-chat.ts`,
+  `SecureEphemeralChat.razor`, and a matching SHA-256-of-AES-key log on the server broker) and
+  driving the live production site directly with browser automation until a real stack trace
+  surfaced: `System.NotSupportedException: DeserializeNoConstructor` inside
+  `AiChat.razor`'s `HandleEstablishAsync`, deserializing the broker's handshake response into
+  `EphemeralHandshakeResult` — a positional record — via
+  `JsonSerializer.Deserialize<EphemeralHandshakeResult>`'s reflection-based overload. Blazor
+  WASM's default trimmer strips the constructor metadata that overload's reflection needs on a
+  real `dotnet publish` (what every production image ships), but never on `dotnet build`/`dotnet
+  run` (what every local dev loop uses) — which is exactly why this shipped untested against the
+  one failure mode it actually hit, and why it took a real trimmed-publish reproduction, not just
+  another local run, to catch. The exception was swallowed by `SecureEphemeralChat`'s outer catch
+  and surfaced as an ordinary decrypt failure, indistinguishable from a real one without the
+  exception text. Fixed by adding a source-generated `JsonSerializerContext`
+  (`AiChatJsonContext`, following the existing `BlazorDX.Conduit/ConduitJson.cs` convention) and
+  switching `HandleEstablishAsync` to the source-generated `Deserialize` overload — trim-safe by
+  construction, no reflection involved. Verified for real: ran the exact `dotnet publish -c
+  Release -p:UseAppHost=false` the Dockerfile uses, served the trimmed output locally, and drove a
+  live saved-prompt handshake through a real browser — the assistant reply mounted and rendered
+  "ASSISTANT · ENCRYPTED" with no exception, where the same steps against the unfixed trimmed
+  build threw `DeserializeNoConstructor` every time. All temporary diagnostic logging added during
+  the investigation (`session.rs`'s `debug_aes_key_sha256`, its `lib.rs` FFI export and
+  `rust-loader.ts` binding, and the console/log instrumentation in `ephemeral-chat.ts`,
+  `SecureEphemeralChat.razor`, and `DemoAiChatBroker.cs`) has been removed now that the root
+  cause is fixed.
+
 - **`docker build` failed the moment the previous fix tried to actually build `dx_security.wasm`:
   `error: linker \`cc\` not found`.** The Dockerfile's build stage never installed a C
   toolchain — `BlazorDX.Compute.Rust`'s dependency tree has no crates with a `build.rs`, so it
