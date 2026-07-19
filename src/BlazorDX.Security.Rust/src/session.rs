@@ -354,6 +354,26 @@ impl SessionStore {
             Some(SessionState::Established(EstablishedKeys { aes_key: Some(_), .. }))
         )
     }
+
+    // TEMPORARY DIAGNOSTIC (2026-07-19): tracking down a production-only ephemeral-chat
+    // decrypt failure that doesn't reproduce locally. Returns SHA-256(aes_key) -- never the
+    // key itself -- so the client-computed hash can be compared against a matching
+    // SHA-256(sharedSecret) log added to DemoAiChatBroker.cs, to determine whether the two
+    // sides are actually deriving the same shared secret. Peeks (does not consume) the key,
+    // unlike `decrypt`. Remove this method, its FFI export in lib.rs, and both temporary log
+    // lines once the root cause is found.
+    pub fn debug_aes_key_sha256(&self, session_id: &str) -> Option<[u8; 32]> {
+        use sha2::Digest;
+
+        match self.sessions.get(session_id) {
+            Some(SessionState::Established(EstablishedKeys { aes_key: Some(key), .. })) => {
+                let mut hasher = Sha256::new();
+                hasher.update(key.as_slice());
+                Some(hasher.finalize().into())
+            }
+            _ => None,
+        }
+    }
 }
 
 #[cfg(test)]

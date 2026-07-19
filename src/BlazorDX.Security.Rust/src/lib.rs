@@ -47,6 +47,8 @@ pub mod status {
     pub const ERR_INVALID_PUBLIC_KEY: i32 = -4;
     pub const ERR_NOT_PENDING: i32 = -5;
     pub const ERR_NO_SIGNING_KEY: i32 = -6;
+    // TEMPORARY DIAGNOSTIC (2026-07-19): see debug_aes_key_hash. Remove alongside it.
+    pub const ERR_UNKNOWN_SESSION: i32 = -7;
 }
 
 fn map_begin_error(e: SessionError) -> i32 {
@@ -193,6 +195,38 @@ pub unsafe extern "C" fn complete_session(
     match result {
         Ok(()) => status::OK,
         Err(e) => map_complete_error(e),
+    }
+}
+
+/// TEMPORARY DIAGNOSTIC (2026-07-19): see the matching comment on
+/// [`session::SessionStore::debug_aes_key_sha256`]. Writes 32 bytes (SHA-256 of the
+/// session's AES key -- never the key itself) to `out_hash_ptr` and returns
+/// [`status::OK`], or writes nothing and returns [`status::ERR_UNKNOWN_SESSION`] if the
+/// session has no established, unconsumed AES key. Remove alongside that method once the
+/// root cause is found.
+///
+/// # Safety
+/// `session_id_ptr`/`session_id_len` must describe a valid UTF-8 byte range. `out_hash_ptr`
+/// must be valid for exactly 32 bytes (allocate it with [`alloc`]).
+#[no_mangle]
+pub unsafe extern "C" fn debug_aes_key_hash(
+    session_id_ptr: *const u8,
+    session_id_len: usize,
+    out_hash_ptr: *mut u8,
+) -> i32 {
+    let Some(session_id) = read_string(session_id_ptr, session_id_len) else {
+        return status::ERR_INVALID_UTF8;
+    };
+    if out_hash_ptr.is_null() {
+        return status::ERR_NULL_POINTER;
+    }
+
+    match STORE.with(|store| store.borrow().debug_aes_key_sha256(&session_id)) {
+        Some(hash) => {
+            core::ptr::copy_nonoverlapping(hash.as_ptr(), out_hash_ptr, 32);
+            status::OK
+        }
+        None => status::ERR_UNKNOWN_SESSION,
     }
 }
 

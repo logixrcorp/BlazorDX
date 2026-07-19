@@ -706,6 +706,27 @@ export async function completeAndMount(
       return false;
     }
 
+    // TEMPORARY DIAGNOSTIC (2026-07-19): tracking down a production-only decrypt failure
+    // that doesn't reproduce locally. Logs SHA-256 of the client-derived AES key -- never
+    // the key itself -- to compare against a matching server-side log in
+    // DemoAiChatBroker.cs. Remove this block, the wasm export, and the server log once the
+    // root cause is found.
+    {
+      const outHashPointer = wasm.alloc(32);
+      try {
+        const hashStatus = wasm.debug_aes_key_hash(sessionIdPointer, sessionIdBytes.length, outHashPointer);
+        if (hashStatus === 0) {
+          const hashBytes = new Uint8Array(wasm.memory.buffer, outHashPointer, 32).slice();
+          const hex = Array.from(hashBytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+          console.log(`[DIAGNOSTIC] client aes_key sha256: ${hex} (session ${sessionId})`);
+        } else {
+          console.log(`[DIAGNOSTIC] client aes_key sha256: unavailable (status ${hashStatus})`);
+        }
+      } finally {
+        wasm.dealloc(outHashPointer, 32);
+      }
+    }
+
     const noncePointer = writeBytes(wasm, nonce);
     const ciphertextPointer = writeBytes(wasm, ciphertext);
     const outLengthPointer = wasm.alloc(USIZE_BYTES);
