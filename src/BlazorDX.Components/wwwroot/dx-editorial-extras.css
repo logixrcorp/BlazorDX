@@ -2,37 +2,38 @@
    contents, reading progress, author bio, tags, related, series nav, inset figure, stat row,
    footnotes, and glossary term. Split out of dx-editorial.css once that file hit the library's
    own 1000-line file cap (DX1000) — load both stylesheets together. All selectors here are
-   rendered as descendants of .dx-editorial (from DxEditorialLayout), so --measure and the rest
-   of dx-theme.css's tokens resolve normally across the file boundary. */
+   rendered as descendants of .dx-editorial (from DxEditorialLayout), so the --dx-ed-* tokens and
+   --measure defined there resolve normally across the file boundary. */
 
 /* ---- Drop cap: the oldest device in the glossary — a first-letter treatment, pure CSS. ---- */
 .dx-editorial-dropcap::first-letter {
   float: left;
-  font-family: Georgia, "Times New Roman", serif;
-  font-weight: 700;
-  font-size: 4.2rem;
-  line-height: 0.82;
+  font-family: var(--dx-ed-display);
+  font-weight: 600;
+  font-size: 4.6rem;
+  line-height: 0.8;
   padding-right: 10px;
-  padding-top: 6px;
-  color: var(--dx-accent, #2563eb);
+  padding-top: 8px;
+  color: var(--dx-ed-accent);
 }
 
-/* ---- Table of contents: the web descendant of a print contents page. ---- */
+/* ---- Table of contents: the web descendant of a print contents page — bounded by rules top
+   and bottom rather than a bordered card, an italic serif heading standing in for the usual
+   uppercase-tracked UI label. ---- */
 .dx-editorial-toc {
   max-width: 46rem;
   margin: 2.5rem auto;
-  padding: 20px 28px;
-  background: var(--dx-surface-alt, #f8fafc);
-  border: 1px solid var(--dx-border, #e2e8f0);
-  border-radius: 14px;
+  padding: 20px 4px;
+  border-top: 1px solid var(--dx-ed-rule);
+  border-bottom: 1px solid var(--dx-ed-rule);
 }
 .dx-editorial-toc-heading {
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--dx-text-muted, #64748b);
-  margin: 0 0 10px;
+  font-family: var(--dx-ed-display);
+  font-style: italic;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--dx-ed-accent);
+  margin: 0 0 12px;
 }
 .dx-editorial-toc-list {
   margin: 0;
@@ -40,16 +41,27 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+}
+.dx-editorial-toc-list li {
+  counter-increment: dx-editorial-toc;
+}
+.dx-editorial-toc-list {
+  counter-reset: dx-editorial-toc;
+}
+.dx-editorial-toc-list li::before {
+  content: counter(dx-editorial-toc, decimal-leading-zero) " — ";
+  color: var(--dx-ed-ink-muted);
+  font-variant-numeric: tabular-nums;
 }
 .dx-editorial-toc-list a {
-  color: var(--dx-text, #0f172a);
+  color: var(--dx-ed-ink);
   text-decoration: none;
-  font-size: 0.98rem;
+  font-size: 1rem;
 }
 .dx-editorial-toc-list a:hover,
 .dx-editorial-toc-list a:focus-visible {
-  color: var(--dx-accent, #2563eb);
+  color: var(--dx-ed-accent);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -64,7 +76,7 @@
   left: 0;
   width: 100%;
   height: 3px;
-  background: var(--dx-accent, #2563eb);
+  background: var(--dx-ed-accent, #a23b2e);
   transform-origin: left;
   transform: scaleX(0);
   z-index: 1000;
@@ -88,14 +100,16 @@
   align-items: flex-start;
   max-width: var(--measure);
   margin: clamp(48px, 8vw, 88px) auto;
-  padding: 0 24px;
+  padding: 24px;
+  border-top: 1px solid var(--dx-ed-rule);
 }
 .dx-editorial-author-bio-avatar {
   flex: 0 0 auto;
 }
 .dx-editorial-author-bio-name {
   margin: 0;
-  font-weight: 700;
+  font-family: var(--dx-ed-display);
+  font-weight: 600;
   font-size: 1.05rem;
 }
 .dx-editorial-author-bio-name a {
@@ -110,13 +124,13 @@
 .dx-editorial-author-bio-role {
   margin: 2px 0 0;
   font-size: 0.85rem;
-  color: var(--dx-text-muted, #64748b);
+  color: var(--dx-ed-ink-muted);
 }
 .dx-editorial-author-bio-body {
   margin-top: 8px;
   font-size: 0.98rem;
   line-height: 1.6rem;
-  color: var(--dx-text-muted, #64748b);
+  color: var(--dx-ed-ink-muted);
 }
 
 /* ---- Tags: topic pills, the web counterpart to a print department label. ---- */
@@ -131,20 +145,19 @@
 }
 .dx-editorial-tag {
   display: inline-block;
-  padding: 5px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--dx-border, #e2e8f0);
-  background: var(--dx-surface-alt, #f8fafc);
-  color: var(--dx-text-muted, #64748b);
-  font-size: 0.82rem;
-  font-weight: 600;
+  padding: 4px 12px;
+  border: 1px solid var(--dx-ed-rule);
+  color: var(--dx-ed-ink-muted);
+  font-size: 0.8rem;
+  font-style: italic;
+  font-family: var(--dx-ed-display);
   text-decoration: none;
   transition: border-color 150ms ease, color 150ms ease;
 }
 .dx-editorial-tag:hover,
 .dx-editorial-tag:focus-visible {
-  border-color: var(--dx-accent, #2563eb);
-  color: var(--dx-accent, #2563eb);
+  border-color: var(--dx-ed-accent);
+  color: var(--dx-ed-accent);
 }
 
 /* ---- Related: a "more like this" card row, typically placed near the end of a piece. ---- */
@@ -154,50 +167,48 @@
   padding: 0 24px;
 }
 .dx-editorial-related-heading {
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--dx-text-muted, #64748b);
+  font-family: var(--dx-ed-display);
+  font-style: italic;
+  font-size: 0.95rem;
+  color: var(--dx-ed-accent);
   margin: 0 0 16px;
 }
 .dx-editorial-related-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1px;
+  background: var(--dx-ed-rule);
+  border: 1px solid var(--dx-ed-rule);
 }
 .dx-editorial-related-card {
   display: block;
-  padding: 20px;
-  border-radius: 14px;
-  border: 1px solid var(--dx-border, #e2e8f0);
-  background: var(--dx-surface, #ffffff);
+  padding: 22px 20px;
+  background: var(--dx-ed-paper);
   text-decoration: none;
   color: inherit;
-  transition: box-shadow 200ms ease, transform 200ms ease;
+  transition: background 200ms ease;
 }
 .dx-editorial-related-card:hover,
 .dx-editorial-related-card:focus-visible {
-  box-shadow: var(--dx-shadow, 0 12px 32px rgba(15, 23, 42, 0.22));
-  transform: translateY(-2px);
+  background: var(--dx-ed-paper-alt);
 }
 .dx-editorial-related-card-category {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--dx-accent, #2563eb);
+  font-family: var(--dx-ed-display);
+  font-style: italic;
+  font-size: 0.82rem;
+  color: var(--dx-ed-accent);
   margin: 0 0 8px;
 }
 .dx-editorial-related-card-title {
-  font-weight: 700;
+  font-family: var(--dx-ed-display);
+  font-weight: 600;
   margin: 0 0 6px;
   line-height: 1.35;
 }
 .dx-editorial-related-card-summary {
   font-size: 0.9rem;
   line-height: 1.5rem;
-  color: var(--dx-text-muted, #64748b);
+  color: var(--dx-ed-ink-muted);
   margin: 0;
 }
 
@@ -205,10 +216,12 @@
 .dx-editorial-series-nav {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 1px;
+  background: var(--dx-ed-rule);
+  border-top: 1px solid var(--dx-ed-rule);
+  border-bottom: 1px solid var(--dx-ed-rule);
   max-width: 72rem;
   margin: clamp(48px, 8vw, 88px) auto;
-  padding: 0 24px;
 }
 .dx-editorial-series-nav--single {
   grid-template-columns: 1fr;
@@ -216,32 +229,31 @@
 .dx-editorial-series-link {
   display: block;
   padding: 20px 24px;
-  border-radius: 14px;
-  border: 1px solid var(--dx-border, #e2e8f0);
+  background: var(--dx-ed-paper);
   text-decoration: none;
   color: inherit;
-  transition: border-color 150ms ease;
+  transition: background 150ms ease;
 }
 .dx-editorial-series-link:hover,
 .dx-editorial-series-link:focus-visible {
-  border-color: var(--dx-accent, #2563eb);
+  background: var(--dx-ed-paper-alt);
 }
 .dx-editorial-series-link--next {
   text-align: right;
 }
 .dx-editorial-series-eyebrow {
   display: block;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--dx-text-muted, #64748b);
+  font-family: var(--dx-ed-display);
+  font-style: italic;
+  font-size: 0.8rem;
+  color: var(--dx-ed-accent);
   margin-bottom: 6px;
 }
 .dx-editorial-series-title {
   display: block;
-  font-weight: 700;
-  font-size: 1.02rem;
+  font-family: var(--dx-ed-display);
+  font-weight: 600;
+  font-size: 1.05rem;
 }
 
 /* ---- Inset figure: a small floated image, text wrapping around it via shape-outside — a
@@ -262,13 +274,14 @@
 .dx-editorial-inset-figure svg {
   width: 100%;
   display: block;
-  border-radius: var(--dx-radius, 8px);
 }
 .dx-editorial-inset-figure-caption {
   margin-top: 8px;
-  font-size: 0.78rem;
+  font-family: var(--dx-ed-body);
+  font-style: italic;
+  font-size: 0.8rem;
   line-height: 1.4;
-  color: var(--dx-text-muted, #64748b);
+  color: var(--dx-ed-ink-muted);
 }
 
 /* ---- Stat row: oversized numeric callouts, the data-journalism "big number" device. ---- */
@@ -282,29 +295,29 @@
   text-align: left;
 }
 .dx-editorial-stat-value {
-  font-family: Georgia, "Times New Roman", serif;
-  font-weight: 700;
-  font-size: clamp(2.4rem, 5vw, 3.6rem);
+  font-family: var(--dx-ed-display);
+  font-weight: 600;
+  font-size: clamp(2.6rem, 5vw, 3.8rem);
   line-height: 1;
-  color: var(--dx-accent, #2563eb);
+  color: var(--dx-ed-accent);
   margin: 0 0 6px;
 }
 .dx-editorial-stat-label {
   font-size: 0.9rem;
   font-weight: 600;
-  color: var(--dx-text, #0f172a);
+  color: var(--dx-ed-ink);
   margin: 0;
 }
 .dx-editorial-stat-detail {
   font-size: 0.82rem;
-  color: var(--dx-text-muted, #64748b);
+  color: var(--dx-ed-ink-muted);
   margin: 4px 0 0;
   line-height: 1.4;
 }
 
 /* ---- Footnotes: the web analogue of a print footnote/endnote, with a back-link. ---- */
 .dx-editorial-footnote-ref a {
-  color: var(--dx-accent, #2563eb);
+  color: var(--dx-ed-accent);
   text-decoration: none;
   font-weight: 600;
   padding: 0 1px;
@@ -317,33 +330,34 @@
   max-width: var(--measure);
   margin: clamp(48px, 8vw, 88px) auto 0;
   padding: 24px 24px 0;
-  border-top: 1px solid var(--dx-border, #e2e8f0);
+  border-top: 1px solid var(--dx-ed-rule);
 }
 .dx-editorial-footnotes ol {
   margin: 0;
   padding-left: 1.4rem;
   font-size: 0.92rem;
   line-height: 1.6rem;
-  color: var(--dx-text-muted, #64748b);
+  color: var(--dx-ed-ink-muted);
 }
 .dx-editorial-footnotes li {
   margin-bottom: 8px;
 }
 .dx-editorial-footnote-back {
-  color: var(--dx-accent, #2563eb);
-  text-decoration: none;
+  color: var(--dx-ed-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
   margin-left: 4px;
 }
 
 /* ---- Glossary term: an inline DxTooltip trigger, dashed underline as the hover affordance. ---- */
 .dx-editorial-glossary-term {
-  border-bottom: 1px dashed var(--dx-text-muted, #64748b);
+  border-bottom: 1px dashed var(--dx-ed-ink-muted);
   cursor: help;
 }
 .dx-editorial-glossary-term:hover,
 .dx-editorial-glossary-term:focus-visible {
-  border-bottom-color: var(--dx-accent, #2563eb);
-  color: var(--dx-accent, #2563eb);
+  border-bottom-color: var(--dx-ed-accent);
+  color: var(--dx-ed-accent);
 }
 .dx-editorial-glossary-panel {
   max-width: 260px;
@@ -363,10 +377,9 @@
 }
 .dx-editorial-share-link {
   display: inline-block;
-  padding: 6px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--dx-border, #e2e8f0);
-  color: var(--dx-text, #0f172a);
+  padding: 5px 14px;
+  border: 1px solid var(--dx-ed-rule);
+  color: var(--dx-ed-ink);
   font-size: 0.85rem;
   font-weight: 600;
   text-decoration: none;
@@ -374,8 +387,8 @@
 }
 .dx-editorial-share-link:hover,
 .dx-editorial-share-link:focus-visible {
-  border-color: var(--dx-accent, #2563eb);
-  color: var(--dx-accent, #2563eb);
+  border-color: var(--dx-ed-accent);
+  color: var(--dx-ed-accent);
 }
 
 /* ---- Newsletter signup: composes DxTextBox + DxButton. No backend of its own — OnSubscribe
@@ -384,18 +397,18 @@
   max-width: var(--measure);
   margin: clamp(48px, 8vw, 88px) auto;
   padding: 28px 28px 32px;
-  background: var(--dx-surface-alt, #f8fafc);
-  border: 1px solid var(--dx-border, #e2e8f0);
-  border-radius: 14px;
+  background: var(--dx-ed-paper-alt);
+  border-left: 3px solid var(--dx-ed-accent);
 }
 .dx-editorial-newsletter-heading {
-  font-weight: 700;
-  font-size: 1.1rem;
+  font-family: var(--dx-ed-display);
+  font-weight: 600;
+  font-size: 1.15rem;
   margin: 0 0 6px;
 }
 .dx-editorial-newsletter-description {
   font-size: 0.92rem;
-  color: var(--dx-text-muted, #64748b);
+  color: var(--dx-ed-ink-muted);
   line-height: 1.5rem;
   margin: 0 0 16px;
 }
@@ -419,7 +432,7 @@
 .dx-editorial-listen-label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--dx-text-muted, #64748b);
+  color: var(--dx-ed-ink-muted);
   margin: 0 0 8px;
 }
 .dx-editorial-listen-audio {
@@ -432,7 +445,7 @@
     padding-left: 20px;
     padding-right: 20px;
   }
-  .dx-editorial-dropcap::first-letter { font-size: 3.2rem; }
+  .dx-editorial-dropcap::first-letter { font-size: 3.4rem; }
   .dx-editorial-inset-figure,
   .dx-editorial-inset-figure--right {
     float: none;

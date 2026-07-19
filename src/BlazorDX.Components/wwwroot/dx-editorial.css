@@ -1,6 +1,10 @@
-/* BlazorDX editorial system — "Architecture of Silence": wide-measure, typography-first,
-   negative-space-driven long-form layout for Insights (articles/blog/whitepapers). Built
-   entirely on the existing design tokens (dx-theme.css) — no new color system, no Tailwind.
+/* BlazorDX editorial system — "Architecture of Silence": a self-contained ink-on-paper reading
+   system for Insights (articles/blog/whitepapers), deliberately NOT built from the library's
+   generic dx-theme.css tokens (--dx-accent/--dx-surface/--dx-border read as the same component
+   chrome everywhere else in the app — a Data Grid, a Dialog, and a magazine feature should not
+   share one palette). Its own scoped tokens (--dx-ed-*, defined below on .dx-editorial) are a
+   warm paper/ink palette plus a Fraunces (display) + Source Serif 4 (body/reading) pairing,
+   loaded in App.razor's <head>. Falls back to Georgia everywhere the webfont hasn't loaded yet.
    Core layout only (hero, figures, spread, body, pull-quotes, sidebars, scrollytelling,
    dissipation, footer, index pages) — reading-experience/discovery add-ons (drop cap, table of
    contents, reading progress, author bio, tags, related, series nav, inset figure, stat row,
@@ -8,26 +12,51 @@
    library's own 1000-line file cap. Load both. */
 
 .dx-editorial {
-  --measure: 42rem;
-  color: var(--dx-text, #0f172a);
-  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --dx-ed-paper: #fbf6ee;
+  --dx-ed-paper-alt: #f2e9da;
+  --dx-ed-ink: #1c1712;
+  --dx-ed-ink-muted: #6e6255;
+  --dx-ed-rule: #ddd0ba;
+  --dx-ed-accent: #a23b2e;
+  --dx-ed-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --dx-ed-body: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --measure: 38rem;
+
+  /* Full-bleed paper: breaks .dx-editorial itself out to 100vw (same trick used below for the
+     hero/figures), so the reading surface runs edge-to-edge under the app's persistent top nav
+     rather than sitting as a tinted rectangle inside the page shell's ~1000px cap. */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  padding-bottom: clamp(48px, 8vw, 96px);
+  background: var(--dx-ed-paper);
+  color: var(--dx-ed-ink);
+  font-family: var(--dx-ed-body);
+  font-size: 1.0625rem;
   /* Full-bleed hero/figures break out to 100vw via the left:50%/-50vw trick below; this
      guards against the sub-pixel scrollbar-width overflow that trick can introduce. */
   overflow-x: hidden;
 }
+[data-dx-theme="dark"] .dx-editorial {
+  --dx-ed-paper: #161009;
+  --dx-ed-paper-alt: #211a11;
+  --dx-ed-ink: #f3ecdf;
+  --dx-ed-ink-muted: #b6a891;
+  --dx-ed-rule: #392c1d;
+  --dx-ed-accent: #e08469;
+}
 
 /* ---- Hero ---- */
 .dx-editorial-hero {
-  max-width: 64rem;
+  max-width: 44rem;
   margin: 0 auto;
   padding: clamp(48px, 10vw, 120px) 24px clamp(32px, 6vw, 64px);
   text-align: left;
 }
 /* Cinematic variant: applied alongside .dx-editorial-hero when a HeroImageSrc is set.
-   Breaks out to full viewport width regardless of any ancestor's max-width/padding
-   (the page shell caps <main> at 1000px) — this is the one deliberate exception to the
-   token-driven theme, since white-on-photo text needs to read against an unknown image,
-   not against --dx-surface. */
+   Breaks out to full viewport width regardless of any ancestor's max-width/padding — the
+   parent .dx-editorial is already full-bleed (see above), so this now resolves to a no-op
+   offset, but stays written the same way as every other full-bleed block in this file. */
 .dx-editorial-hero--photo {
   position: relative;
   width: 100vw;
@@ -56,14 +85,14 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(2, 6, 15, 0.22);
+  background: rgba(10, 6, 2, 0.22);
   z-index: 1;
 }
 .dx-editorial-hero--photo::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(2, 6, 15, 0) 10%, rgba(2, 6, 15, 0.55) 55%, rgba(2, 6, 15, 0.94) 100%);
+  background: linear-gradient(180deg, rgba(10, 6, 2, 0) 10%, rgba(10, 6, 2, 0.58) 55%, rgba(8, 5, 2, 0.95) 100%);
   z-index: 1;
 }
 .dx-editorial-hero-content {
@@ -73,17 +102,15 @@
   box-sizing: border-box;
 }
 .dx-editorial-hero--photo .dx-editorial-hero-content {
-  max-width: 64rem;
+  max-width: 44rem;
   margin: 0 auto;
   padding: 0 clamp(24px, 5vw, 56px) clamp(56px, 9vw, 104px);
 }
+/* No pill/badge chrome over the photo — a thin rule under a tracked italic label reads as
+   editorial typesetting, not a UI component borrowed from a settings screen. */
 .dx-editorial-hero--photo .dx-editorial-kicker {
   color: #fff;
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.32);
-  padding: 5px 14px;
-  border-radius: 999px;
-  backdrop-filter: blur(4px);
+  border-bottom-color: rgba(255, 255, 255, 0.6);
 }
 .dx-editorial-hero--photo .dx-editorial-title,
 .dx-editorial-hero--photo .dx-editorial-subtitle,
@@ -91,35 +118,44 @@
   color: #fff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7), 0 4px 16px rgba(0, 0, 0, 0.5);
 }
-.dx-editorial-hero--photo .dx-editorial-subtitle { color: rgba(255, 255, 255, 0.9); }
-.dx-editorial-hero--photo .dx-editorial-meta { color: rgba(255, 255, 255, 0.78); }
+.dx-editorial-hero--photo .dx-editorial-subtitle { color: rgba(255, 255, 255, 0.92); }
+.dx-editorial-hero--photo .dx-editorial-meta { color: rgba(255, 255, 255, 0.8); }
 
 @keyframes dx-editorial-kenburns {
   from { transform: scale(1.09); }
   to { transform: scale(1); }
 }
+/* A rubric, not a badge: italic, tracked, serif — the small-caps-adjacent label print magazines
+   use above a headline, set off by a short rule rather than a pill/border. */
 .dx-editorial-kicker {
   display: inline-block;
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--dx-accent, #2563eb);
-  margin-bottom: 20px;
+  font-family: var(--dx-ed-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 0.92rem;
+  letter-spacing: 0.05em;
+  color: var(--dx-ed-accent);
+  border-bottom: 1px solid color-mix(in srgb, var(--dx-ed-accent) 45%, transparent);
+  padding-bottom: 6px;
+  margin-bottom: 24px;
 }
 .dx-editorial-title {
-  font-size: clamp(2.75rem, 6vw, 5rem);
+  font-family: var(--dx-ed-display);
+  font-optical-sizing: auto;
+  font-size: clamp(2.75rem, 6vw, 5.25rem);
   line-height: 1.02;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   margin: 0 0 24px;
-  max-width: 20ch;
+  max-width: 18ch;
 }
 .dx-editorial-subtitle {
-  font-size: clamp(1.15rem, 2vw, 1.5rem);
-  line-height: 1.5;
+  font-family: var(--dx-ed-body);
+  font-style: italic;
+  font-size: clamp(1.15rem, 2vw, 1.4rem);
+  line-height: 1.55;
   font-weight: 400;
-  color: var(--dx-text-muted, #64748b);
+  color: var(--dx-ed-ink-muted);
   max-width: 38ch;
   margin: 0 0 32px;
 }
@@ -127,8 +163,8 @@
   display: flex;
   gap: 16px;
   align-items: center;
-  font-size: 0.9rem;
-  color: var(--dx-text-muted, #64748b);
+  font-size: 0.88rem;
+  color: var(--dx-ed-ink-muted);
 }
 .dx-editorial-meta-dot {
   width: 3px;
@@ -158,14 +194,16 @@
   object-fit: cover;
   display: block;
 }
+/* A photo credit line, not a UI label: small italic serif, a thin rule standing in for the
+   caption's usual leading dash. */
 .dx-editorial-figure-caption {
   margin-top: 16px;
   padding: 0 24px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--dx-text-muted, #64748b);
+  font-family: var(--dx-ed-body);
+  font-style: italic;
+  font-size: 0.86rem;
+  line-height: 1.4;
+  color: var(--dx-ed-ink-muted);
   max-width: var(--measure);
   margin-left: auto;
   margin-right: auto;
@@ -207,8 +245,8 @@
 }
 .dx-editorial-spread-photo {
   overflow: hidden;
-  border-radius: var(--dx-radius, 8px);
-  box-shadow: var(--dx-shadow, 0 12px 32px rgba(15, 23, 42, 0.22));
+  border-radius: 2px;
+  box-shadow: 0 18px 40px rgba(28, 23, 18, 0.28);
 }
 .dx-editorial-spread-photo img {
   width: 100%;
@@ -225,58 +263,59 @@
   gap: 2px;
   min-width: 168px;
   padding: 14px 16px;
-  background: var(--dx-surface, #ffffff);
-  border: 1px solid var(--dx-border, #e2e8f0);
-  border-radius: 10px;
-  box-shadow: var(--dx-shadow, 0 12px 32px rgba(15, 23, 42, 0.22));
+  background: var(--dx-ed-paper);
+  border: 1px solid var(--dx-ed-rule);
+  box-shadow: 0 18px 40px rgba(28, 23, 18, 0.28);
 }
 .dx-editorial-spread-spec-label {
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-size: 0.66rem;
+  font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--dx-text-muted, #64748b);
+  color: var(--dx-ed-ink-muted);
 }
 .dx-editorial-spread-spec-value {
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--dx-ed-display);
   font-style: italic;
-  font-size: 1.15rem;
-  color: var(--dx-accent, #2563eb);
+  font-size: 1.2rem;
+  color: var(--dx-ed-accent);
 }
 .dx-editorial-spread-spec-caption {
   font-size: 0.75rem;
   line-height: 1.3;
-  color: var(--dx-text-muted, #64748b);
+  color: var(--dx-ed-ink-muted);
   margin-top: 4px;
 }
 .dx-editorial-spread-kicker {
   display: inline-block;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--dx-ed-display);
   font-style: italic;
   font-size: 1.05rem;
-  color: var(--dx-accent, #2563eb);
+  color: var(--dx-ed-accent);
   margin-bottom: 8px;
 }
 .dx-editorial-spread-title {
+  font-family: var(--dx-ed-display);
   font-size: clamp(1.75rem, 3vw, 2.5rem);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.1;
   margin: 0 0 16px;
 }
 .dx-editorial-spread-body {
+  font-family: var(--dx-ed-body);
   font-size: 1.05rem;
   line-height: 1.7rem;
-  color: var(--dx-text-muted, #64748b);
+  color: var(--dx-ed-ink-muted);
 }
 .dx-editorial-spread-body > * + * { margin-top: 1rem; }
 .dx-editorial-spread-body code {
-  background: var(--dx-surface-alt, #f8fafc);
-  border: 1px solid var(--dx-border, #e2e8f0);
+  background: var(--dx-ed-paper-alt);
+  border: 1px solid var(--dx-ed-rule);
   border-radius: 4px;
   padding: 1px 6px;
   font-size: 0.88em;
-  color: var(--dx-text, #0f172a);
+  color: var(--dx-ed-ink);
 }
 
 /* ---- Body copy ---- */
@@ -284,32 +323,36 @@
   max-width: var(--measure);
   margin: 0 auto;
   padding: 0 24px;
-  font-size: 1.125rem;
-  line-height: 1.75rem;
+  font-size: 1.0625rem;
+  line-height: 1.8rem;
   font-weight: 400;
 }
 .dx-editorial-body > * + * { margin-top: 1.5rem; }
 .dx-editorial-body h2 {
-  font-size: 1.75rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  margin-top: 3rem;
+  font-family: var(--dx-ed-display);
+  font-size: 1.9rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  margin-top: 3.5rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--dx-ed-rule);
   line-height: 1.25;
 }
 .dx-editorial-body h3 {
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-family: var(--dx-ed-display);
+  font-size: 1.3rem;
+  font-weight: 600;
   margin-top: 2.25rem;
 }
 .dx-editorial-body a {
-  color: var(--dx-accent, #2563eb);
+  color: var(--dx-ed-accent);
   text-underline-offset: 3px;
 }
 
 /* ---- Pull quotes ---- */
 .dx-editorial-pullquote {
   position: relative;
-  max-width: 52rem;
+  max-width: 46rem;
   margin: clamp(48px, 8vw, 88px) auto;
   padding: 0 24px;
   text-align: left;
@@ -318,13 +361,13 @@
 .dx-editorial-pullquote::before {
   content: "\201C";
   position: absolute;
-  top: -3.4rem;
+  top: -3.6rem;
   left: 12px;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--dx-ed-display);
   font-size: 10rem;
   line-height: 1;
-  color: var(--dx-accent, #2563eb);
-  opacity: 0.14;
+  color: var(--dx-ed-accent);
+  opacity: 0.16;
   z-index: 0;
   pointer-events: none;
 }
@@ -332,12 +375,13 @@
   position: relative;
   z-index: 1;
   margin: 0;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--dx-ed-display);
   font-style: italic;
+  font-weight: 500;
   font-size: clamp(1.6rem, 3.4vw, 2.5rem);
   line-height: 1.3;
-  color: var(--dx-text, #0f172a);
-  border-left: 3px solid var(--dx-accent, #2563eb);
+  color: var(--dx-ed-ink);
+  border-left: 3px solid var(--dx-ed-accent);
   padding-left: 28px;
 }
 .dx-editorial-pullquote cite {
@@ -347,40 +391,43 @@
   margin-top: 16px;
   padding-left: 31px;
   font-style: normal;
-  font-family: inherit;
+  font-family: var(--dx-ed-body);
   font-size: 0.9rem;
   font-weight: 600;
-  color: var(--dx-text-muted, #64748b);
+  color: var(--dx-ed-ink-muted);
 }
 
-/* ---- Technical sidebars: floating card, subtle bg shift, doesn't break body flow ---- */
+/* ---- Technical sidebars: an inset marginal note — a left rule (echoing the pull-quote
+   device) instead of a bordered-and-rounded card, so it reads as a typeset aside rather than
+   a UI panel borrowed from a settings screen. ---- */
 .dx-editorial-sidebar {
   max-width: 46rem;
   margin: 2.5rem auto;
-  padding: 24px 28px;
-  background: var(--dx-surface-alt, #f8fafc);
-  border: 1px solid var(--dx-border, #e2e8f0);
-  border-radius: 14px;
+  padding: 20px 28px;
+  background: var(--dx-ed-paper-alt);
+  border-left: 3px solid var(--dx-ed-accent);
 }
 .dx-editorial-sidebar-title {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--dx-text-muted, #64748b);
+  font-family: var(--dx-ed-display);
+  font-style: italic;
+  font-size: 0.92rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--dx-ed-accent);
   margin: 0 0 12px;
 }
 .dx-editorial-sidebar-body {
+  font-family: var(--dx-ed-body);
   font-size: 0.98rem;
   line-height: 1.6rem;
-  color: var(--dx-text, #0f172a);
+  color: var(--dx-ed-ink);
 }
 .dx-editorial-sidebar-body code {
-  background: var(--dx-surface, #ffffff);
-  border: 1px solid var(--dx-border, #e2e8f0);
+  background: var(--dx-ed-paper);
+  border: 1px solid var(--dx-ed-rule);
   border-radius: 4px;
   padding: 1px 6px;
   font-size: 0.88em;
@@ -393,15 +440,15 @@
 }
 .dx-editorial-sidebar dt {
   font-weight: 600;
-  color: var(--dx-text-muted, #64748b);
+  color: var(--dx-ed-ink-muted);
 }
 .dx-editorial-sidebar dd { margin: 0; }
 .dx-editorial-sidebar-caveat {
   margin-top: 14px;
   padding-top: 14px;
-  border-top: 1px dashed var(--dx-border, #e2e8f0);
+  border-top: 1px dashed var(--dx-ed-rule);
   font-size: 0.88rem;
-  color: var(--dx-text-muted, #64748b);
+  color: var(--dx-ed-ink-muted);
 }
 
 /* ---- Scrollytelling: pure CSS transitions, classes toggled by IntersectionObserver
@@ -415,6 +462,8 @@
 .dx-editorial-scrolly-intro {
   max-width: var(--measure);
   margin: 0 auto 3rem;
+  font-style: italic;
+  color: var(--dx-ed-ink-muted);
   text-align: left;
 }
 .dx-editorial-scrolly-stage {
@@ -427,9 +476,8 @@
   gap: 8px;
   padding: 2.5rem 2rem;
   margin-bottom: 1.5rem;
-  border-radius: 18px;
-  background: var(--dx-surface-alt, #f8fafc);
-  border: 1px solid var(--dx-border, #e2e8f0);
+  border-top: 1px solid var(--dx-ed-rule);
+  background: var(--dx-ed-paper-alt);
   opacity: 0;
   transform: translateY(24px);
   transition: opacity 620ms cubic-bezier(0.16, 1, 0.3, 1), transform 620ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -443,13 +491,14 @@
 .dx-editorial-scrolly-stage::before {
   content: attr(data-index);
   position: absolute;
-  top: -0.28em;
-  right: 0.15em;
+  top: -0.32em;
+  right: 0.1em;
+  font-family: var(--dx-ed-display);
   font-size: clamp(6rem, 16vw, 11rem);
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1;
-  color: var(--dx-text, #0f172a);
-  opacity: 0.05;
+  color: var(--dx-ed-accent);
+  opacity: 0.09;
   z-index: 0;
   pointer-events: none;
   user-select: none;
@@ -459,32 +508,35 @@
   z-index: 1;
 }
 .dx-editorial-scrolly-stage-index {
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: var(--dx-accent, #2563eb);
+  font-family: var(--dx-ed-display);
+  font-style: italic;
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--dx-ed-accent);
 }
 .dx-editorial-scrolly-stage-title {
+  font-family: var(--dx-ed-display);
   font-size: clamp(1.4rem, 2.8vw, 2rem);
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.01em;
 }
 .dx-editorial-scrolly-stage-body {
+  font-family: var(--dx-ed-body);
   font-size: 1.05rem;
   line-height: 1.7rem;
-  color: var(--dx-text-muted, #64748b);
+  color: var(--dx-ed-ink-muted);
   max-width: 46rem;
 }
 .dx-editorial-scrolly-glyph {
   align-self: flex-start;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--dx-surface, #ffffff);
-  border: 1px solid var(--dx-border, #e2e8f0);
+  background: var(--dx-ed-paper);
+  border: 1px solid var(--dx-ed-rule);
   margin-bottom: 4px;
 }
 
@@ -501,7 +553,7 @@
   width: 100%;
   aspect-ratio: 1;
   border-radius: 50%;
-  background: var(--dx-accent, #2563eb);
+  background: var(--dx-ed-accent);
   opacity: 0.85;
   transform: scale(1);
   transition: opacity 1400ms ease, transform 1400ms ease, filter 1400ms ease;
@@ -549,92 +601,89 @@
 .dx-editorial-footer-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  gap: 1px;
+  background: var(--dx-ed-rule);
+  border-top: 1px solid var(--dx-ed-rule);
+  border-bottom: 1px solid var(--dx-ed-rule);
 }
 .dx-editorial-footer-card {
   padding: 28px 24px;
-  border-radius: 16px;
-  border: 1px solid var(--dx-border, #e2e8f0);
-  background: var(--dx-surface, #ffffff);
+  background: var(--dx-ed-paper);
   text-decoration: none;
   color: inherit;
   display: block;
-  transition: box-shadow 200ms ease, transform 200ms ease, border-color 200ms ease;
+  transition: background 200ms ease;
 }
 .dx-editorial-footer-card:hover,
 .dx-editorial-footer-card:focus-visible {
-  box-shadow: var(--dx-shadow, 0 12px 32px rgba(15, 23, 42, 0.22));
-  transform: translateY(-3px);
-  border-color: var(--dx-accent, #2563eb);
+  background: var(--dx-ed-paper-alt);
 }
 .dx-editorial-footer-eyebrow {
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--dx-accent, #2563eb);
+  font-family: var(--dx-ed-display);
+  font-style: italic;
+  font-size: 0.85rem;
+  color: var(--dx-ed-accent);
   margin-bottom: 10px;
 }
 .dx-editorial-footer-card-title {
-  font-size: 1.15rem;
-  font-weight: 700;
+  font-family: var(--dx-ed-display);
+  font-size: 1.2rem;
+  font-weight: 600;
   margin-bottom: 8px;
 }
 .dx-editorial-footer-card-body {
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   line-height: 1.5rem;
-  color: var(--dx-text-muted, #64748b);
+  color: var(--dx-ed-ink-muted);
 }
 
 /* ---- Index / card-grid pages (Articles / Blog / Whitepapers) ---- */
 .dx-insights-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1px;
+  background: var(--dx-ed-rule);
+  border: 1px solid var(--dx-ed-rule);
   max-width: 72rem;
   margin: 0 auto;
-  padding: 0 24px;
 }
 .dx-insights-card {
   display: block;
-  padding: 24px;
-  border-radius: 14px;
-  border: 1px solid var(--dx-border, #e2e8f0);
-  background: var(--dx-surface, #ffffff);
+  padding: 28px 24px;
+  background: var(--dx-ed-paper);
   text-decoration: none;
   color: inherit;
-  transition: box-shadow 200ms ease, transform 200ms ease;
+  transition: background 200ms ease;
 }
 .dx-insights-card:hover,
 .dx-insights-card:focus-visible {
-  box-shadow: var(--dx-shadow, 0 12px 32px rgba(15, 23, 42, 0.22));
-  transform: translateY(-2px);
+  background: var(--dx-ed-paper-alt);
 }
 .dx-insights-card-category {
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--dx-accent, #2563eb);
+  font-family: var(--dx-ed-display);
+  font-style: italic;
+  font-size: 0.88rem;
+  color: var(--dx-ed-accent);
   margin-bottom: 10px;
 }
 .dx-insights-card-title {
-  font-size: 1.2rem;
-  font-weight: 700;
+  font-family: var(--dx-ed-display);
+  font-size: 1.25rem;
+  font-weight: 600;
   margin-bottom: 8px;
-  line-height: 1.35;
+  line-height: 1.3;
 }
 .dx-insights-card-summary {
   font-size: 0.92rem;
   line-height: 1.5rem;
-  color: var(--dx-text-muted, #64748b);
+  color: var(--dx-ed-ink-muted);
 }
 .dx-insights-empty {
   max-width: 72rem;
   margin: 0 auto;
   padding: 48px 24px;
   text-align: center;
-  color: var(--dx-text-muted, #64748b);
+  color: var(--dx-ed-ink-muted);
 }
 
 /* ---- Responsive ---- */

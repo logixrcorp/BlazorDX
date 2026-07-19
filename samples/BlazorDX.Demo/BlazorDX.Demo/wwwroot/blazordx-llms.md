@@ -362,9 +362,10 @@ Server-side, re-hash any stream with the same primitive: `BlazorDX.Primitives.Fi
 `DxEditorialLayout` is the shell (hero + byline + a content slot; wraps `DxEditorialFooter` on
 automatically). Inside it, compose `DxEditorialFigure` (full-bleed image), `DxEditorialSpread`
 (two-column photo + copy with a labeled spec card), `DxEditorialPullQuote`,
-`DxEditorialSidebar` (floating spec card), and `DxEditorialScrollytelling` /
-`DxEditorialScrollyStage` (scroll-revealed sequence). All plain markup composition, all on
-`dx-theme.css` tokens — no new color system to theme separately.
+`DxEditorialSidebar` (an inset marginal note), and `DxEditorialScrollytelling` /
+`DxEditorialScrollyStage` (scroll-revealed sequence). All plain markup composition, styled by its
+own self-contained `--dx-ed-*` tokens (warm ink-on-paper palette, Fraunces + Source Serif 4) —
+scoped to `.dx-editorial`, not the library's shared `dx-theme.css` tokens.
 ```razor
 <DxEditorialLayout Kicker="Article" Title="..." Published="new DateOnly(2026, 7, 17)"
                     ReadingMinutes="7" HeroImageSrc="hero.jpg" HeroImageAlt="...">

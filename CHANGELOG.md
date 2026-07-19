@@ -9,6 +9,48 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ## [Unreleased]
 
+### Changed
+
+- **Editorial system ("Architecture of Silence"): redesigned from a generic component-library
+  look to a self-contained, bespoke magazine reading system.** The prior design reused the
+  library's shared `dx-theme.css` tokens throughout (`--dx-accent`'s default `#2563eb`,
+  `--dx-surface-alt`'s `#f8fafc`, `--dx-border`'s `#e2e8f0`) and Inter/Georgia for type — the same
+  palette a Data Grid or a Dialog reads, which is exactly why the result read as generic SaaS
+  chrome dressed up as "editorial" rather than something genuinely designed for long-form
+  reading. Replaced with its own scoped token set (`--dx-ed-*`, defined on `.dx-editorial`): a
+  warm ink-on-paper palette (cream paper, near-black ink, a deep oxblood accent) and a Fraunces
+  (display) + Source Serif 4 (body) pairing, loaded once in `App.razor`'s `<head>` — nothing else
+  in the app references these families or tokens, so this has zero effect outside Insights
+  content. The recurring "grey-bordered, rounded-corner, drop-shadowed card" used for the table of
+  contents, technical sidebars, scrollytelling stages, and footer/related/index cards is gone,
+  replaced with devices that actually read as print: a left-rule inset note for sidebars (echoing
+  the pull-quote's own left rule), a rule-bounded numbered contents box for the TOC, sharp-edged
+  panels for scrollytelling stages, and hairline-divider card grids for the footer/related/index
+  listings. `.dx-editorial` itself now breaks out to full viewport width (the same
+  `left:50%/-50vw` technique the hero and full-bleed figures already used), so the paper
+  background runs edge-to-edge under the site's nav instead of sitting as a tinted rectangle
+  inside the page shell's ~1000px cap.
+  Two real, previously-uncaught accessibility bugs surfaced by this pass (found by adding the
+  flagship article to the axe-core E2E sweep for the first time — see below): `.dx-avatar`'s
+  default initials color (`--dx-accent` at full saturation over an 18%-tinted background)
+  computed to ~4:1, just under WCAG AA's 4.5:1 for text — a pre-existing bug in the shared
+  `DxAvatar` component, unrelated to this redesign specifically, just never exercised by an
+  a11y-tested route before. Fixed by darkening the initials color toward `--dx-text` instead of
+  further lightening an already-near-white background — this is a global fix, verified against
+  the full 24-route axe-core sweep to confirm no other page regressed. Separately,
+  `.dx-editorial-footnote-back`'s "↩" link relied on color alone to distinguish it from
+  surrounding text (`link-in-text-block`) — fixed with an underline.
+  Verified visually end to end (every section of the flagship article, the Insights hub/index
+  grid) via real local browser rendering, not just "it compiles" — including one real layout bug
+  the pass introduced and fixed before shipping: `.dx-insights-grid`/`.dx-editorial-related-grid`
+  used `auto-fill`, which reserves empty grid tracks even with fewer cards than columns; once the
+  container itself carried a background (for the hairline-divider look), an empty track rendered
+  as a visible, ugly filled rectangle. Switched to `auto-fit`, which collapses empty tracks to
+  zero width.
+  Also added `/insights/articles/zero-trust-ephemeral-chat-conduit` to the axe-core accessibility
+  E2E sweep (`AccessibilityE2ETests.cs`) — previously untested; this pass is what found both real
+  violations above.
+
 ### Fixed
 
 - **Production (`blazordx.com/ai-chat`), the actual final layer of the "could not be verified"

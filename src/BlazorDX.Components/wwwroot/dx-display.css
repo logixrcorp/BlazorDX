@@ -66,7 +66,11 @@
   overflow: hidden;
   border-radius: 999px;
   background: color-mix(in srgb, var(--dx-accent, #2563eb) 18%, var(--dx-surface, #ffffff));
-  color: var(--dx-accent, #2563eb);
+  /* The raw accent color against this 18%-tint background computes to ~4:1, just under
+     WCAG AA's 4.5:1 for the initials text -- darkened toward --dx-text (which itself flips
+     light/dark with the theme) rather than lightening the background further, which was
+     already close to its ceiling. */
+  color: color-mix(in srgb, var(--dx-accent, #2563eb) 70%, var(--dx-text, #0f172a) 30%);
   font-weight: 600;
   vertical-align: middle;
 }

@@ -167,8 +167,12 @@ and [ADR-0010](adr/0010-documents-and-reporting-integration.md).
 
 Magazine-style layout components for articles, blog posts, and whitepapers — hero, pull-quotes,
 technical sidebars, a scroll-revealed narrative section, a two-column "spread," a three-card
-footer. Built entirely on `dx-theme.css` tokens (no new color system). See it composed end to
-end in the flagship piece at `/insights/articles/zero-trust-ephemeral-chat-conduit`.
+footer. Its own self-contained warm ink-on-paper palette and a Fraunces (display) + Source Serif
+4 (body) type pairing — scoped entirely to `.dx-editorial` (`--dx-ed-*` custom properties), not
+the library's shared `dx-theme.css` tokens every other component reads, so a magazine feature
+doesn't share one palette with a Data Grid or a Dialog. Webfonts loaded once in `App.razor`'s
+`<head>`. See it composed end to end in the flagship piece at
+`/insights/articles/zero-trust-ephemeral-chat-conduit`.
 Two stylesheets: `dx-editorial.css` (core layout) and `dx-editorial-extras.css`
 (reading-experience/discovery add-ons below, split out once the core file hit the library's own
 1000-line cap) — load both.
