@@ -163,13 +163,22 @@ else if (state == MountState.Withdrawn)
         {
             mounted = UseLiveHandshake ? await MountViaLiveHandshakeAsync() : await MountViaSuppliedCiphertextAsync();
         }
-        catch
+        catch (Exception ex)
         {
             // Any unexpected failure below this point (the wasm module 404ing behind a stale
             // deploy, a network blip, any other JS interop exception) must still resolve to the
             // same safe "could not be verified" state as an ordinary failed decrypt -- never
             // leave the component stuck on "Decrypting..." with an unhandled exception the user
             // has no way to see or recover from.
+            //
+            // TEMPORARY DIAGNOSTIC (2026-07-19): this catch previously swallowed the exception
+            // entirely -- tracking down a production-only decrypt failure whose earlier JS-side
+            // logging (ephemeral-chat.ts's completeAndMount) never fires at all, meaning
+            // whatever fails happens at the JSImport marshaling boundary, before the JS
+            // function body is ever entered -- outside anything JS-side logging can see. Console
+            // .WriteLine routes to the browser console under Blazor WebAssembly. Remove
+            // alongside the rest once the root cause is found.
+            Console.WriteLine($"[DIAGNOSTIC] SecureEphemeralChat mount threw: {ex}");
             mounted = false;
         }
 
