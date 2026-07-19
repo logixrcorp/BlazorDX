@@ -667,18 +667,33 @@ export async function completeAndMount(
   onRefresh: () => void,
   onTamper: () => void,
 ): Promise<boolean> {
+  // TEMPORARY DIAGNOSTIC (2026-07-19): see the earlier diagnostic block below. This one
+  // traces every early-return point in this function, since the first diagnostic (which
+  // only logs after complete_session succeeds) produced zero output on production --
+  // meaning the failure happens before that point, not at decrypt as originally assumed.
+  // Remove alongside the rest once the root cause is found.
+  console.log(`[DIAGNOSTIC] completeAndMount start: session=${sessionId}`);
+
   const host = document.getElementById(hostElementId);
   if (host === null) {
+    console.log("[DIAGNOSTIC] completeAndMount: host element not found, returning false");
     return false;
   }
 
   await ensureSecurityWasm();
   const wasm = securityWasm();
+  console.log(`[DIAGNOSTIC] completeAndMount: wasm loaded, has debug_aes_key_hash=${typeof wasm.debug_aes_key_hash}`);
 
   const serverPublicKey = base64ToBytes(serverPublicKeyBase64);
   const nonce = base64ToBytes(nonceBase64);
   const ciphertext = base64ToBytes(ciphertextBase64);
+  console.log(
+    `[DIAGNOSTIC] completeAndMount: serverPublicKey.length=${serverPublicKey.length} ` +
+      `(expected ${PUBLIC_KEY_LEN}), nonce.length=${nonce.length} (expected ${NONCE_LEN}), ` +
+      `ciphertext.length=${ciphertext.length}`,
+  );
   if (serverPublicKey.length !== PUBLIC_KEY_LEN || nonce.length !== NONCE_LEN) {
+    console.log("[DIAGNOSTIC] completeAndMount: length check failed, returning false");
     return false;
   }
 
@@ -702,7 +717,9 @@ export async function completeAndMount(
     } finally {
       wasm.dealloc(serverPublicKeyPointer, serverPublicKey.length);
     }
+    console.log(`[DIAGNOSTIC] completeAndMount: complete_session status=${completeStatus}`);
     if (completeStatus !== 0) {
+      console.log("[DIAGNOSTIC] completeAndMount: complete_session failed, returning false");
       return false;
     }
 
@@ -745,7 +762,13 @@ export async function completeAndMount(
       wasm.dealloc(ciphertextPointer, ciphertext.length || 1);
       wasm.dealloc(outLengthPointer, USIZE_BYTES);
     }
+    // TEMPORARY DIAGNOSTIC (2026-07-19): see the block above. Remove alongside it.
+    console.log(
+      `[DIAGNOSTIC] completeAndMount: decrypt_payload plaintextPointer=${plaintextPointer}, ` +
+        `plaintextLength=${plaintextLength}`,
+    );
     if (plaintextPointer === 0 || plaintextLength === 0) {
+      console.log("[DIAGNOSTIC] completeAndMount: decrypt_payload failed (bad key/nonce/tag), returning false");
       return false;
     }
 
