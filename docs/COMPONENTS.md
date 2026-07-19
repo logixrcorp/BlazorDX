@@ -167,12 +167,13 @@ and [ADR-0010](adr/0010-documents-and-reporting-integration.md).
 
 Magazine-style layout components for articles, blog posts, and whitepapers — hero, pull-quotes,
 technical sidebars, a scroll-revealed narrative section, a two-column "spread," a three-card
-footer. Its own self-contained warm ink-on-paper palette and a Fraunces (display) + Source Serif
-4 (body) type pairing — scoped entirely to `.dx-editorial` (`--dx-ed-*` custom properties), not
-the library's shared `dx-theme.css` tokens every other component reads, so a magazine feature
-doesn't share one palette with a Data Grid or a Dialog. Webfonts loaded once in `App.razor`'s
-`<head>`. See it composed end to end in the flagship piece at
-`/insights/articles/zero-trust-ephemeral-chat-conduit`.
+footer. A Fraunces (display) + Source Serif 4 (body) type pairing scoped entirely to
+`.dx-editorial`, webfonts loaded once in `App.razor`'s `<head>`. Its color palette
+(`--dx-ed-paper`/`--dx-ed-ink`/`--dx-ed-rule`/`--dx-ed-accent`) is deliberately NOT its own —
+each token is `var(...)` over the matching shared `dx-theme.css` token
+(`--dx-surface`/`--dx-text`/`--dx-border`/`--dx-accent`), so a magazine feature reads as part of
+the same product as a Data Grid or a Dialog, and follows dark mode automatically. See it composed
+end to end in the flagship piece at `/insights/articles/zero-trust-ephemeral-chat-conduit`.
 Two stylesheets: `dx-editorial.css` (core layout) and `dx-editorial-extras.css`
 (reading-experience/discovery add-ons below, split out once the core file hit the library's own
 1000-line cap) — load both.

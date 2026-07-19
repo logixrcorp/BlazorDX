@@ -17,11 +17,18 @@ All notable changes to BlazorDX are documented here. The format is loosely based
   `--dx-surface-alt`'s `#f8fafc`, `--dx-border`'s `#e2e8f0`) and Inter/Georgia for type — the same
   palette a Data Grid or a Dialog reads, which is exactly why the result read as generic SaaS
   chrome dressed up as "editorial" rather than something genuinely designed for long-form
-  reading. Replaced with its own scoped token set (`--dx-ed-*`, defined on `.dx-editorial`): a
-  warm ink-on-paper palette (cream paper, near-black ink, a deep oxblood accent) and a Fraunces
-  (display) + Source Serif 4 (body) pairing, loaded once in `App.razor`'s `<head>` — nothing else
-  in the app references these families or tokens, so this has zero effect outside Insights
-  content. The recurring "grey-bordered, rounded-corner, drop-shadowed card" used for the table of
+  reading. Replaced with its own scoped token set (`--dx-ed-*`, defined on `.dx-editorial`) and a
+  Fraunces (display) + Source Serif 4 (body) type pairing, loaded once in `App.razor`'s `<head>` —
+  nothing else in the app references these font families, so this has zero effect outside
+  Insights content. The color side of `--dx-ed-*` is deliberately NOT a competing palette: each
+  token (`--dx-ed-paper`/`--dx-ed-ink`/`--dx-ed-rule`/`--dx-ed-accent`) is defined as `var(...)`
+  over the corresponding shared `dx-theme.css` token (`--dx-surface`/`--dx-text`/`--dx-border`/
+  `--dx-accent`) — an initial pass used a fully independent warm ink-on-paper/oxblood palette,
+  which read as more distinctive in isolation but didn't match the rest of the site (the same
+  blue/slate every nav bar, button, and other component uses); this indirection makes the
+  editorial section look like part of the same product, and it also means dark mode now follows
+  automatically through the same tokens rather than needing its own duplicate override block.
+  The recurring "grey-bordered, rounded-corner, drop-shadowed card" used for the table of
   contents, technical sidebars, scrollytelling stages, and footer/related/index cards is gone,
   replaced with devices that actually read as print: a left-rule inset note for sidebars (echoing
   the pull-quote's own left rule), a rule-bounded numbered contents box for the TOC, sharp-edged

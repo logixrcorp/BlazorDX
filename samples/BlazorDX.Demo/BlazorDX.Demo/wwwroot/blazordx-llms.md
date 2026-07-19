@@ -363,9 +363,11 @@ Server-side, re-hash any stream with the same primitive: `BlazorDX.Primitives.Fi
 automatically). Inside it, compose `DxEditorialFigure` (full-bleed image), `DxEditorialSpread`
 (two-column photo + copy with a labeled spec card), `DxEditorialPullQuote`,
 `DxEditorialSidebar` (an inset marginal note), and `DxEditorialScrollytelling` /
-`DxEditorialScrollyStage` (scroll-revealed sequence). All plain markup composition, styled by its
-own self-contained `--dx-ed-*` tokens (warm ink-on-paper palette, Fraunces + Source Serif 4) —
-scoped to `.dx-editorial`, not the library's shared `dx-theme.css` tokens.
+`DxEditorialScrollyStage` (scroll-revealed sequence). All plain markup composition, styled by
+`--dx-ed-*` tokens scoped to `.dx-editorial`: its own Fraunces + Source Serif 4 type pairing, but
+colors (`--dx-ed-paper`/`--dx-ed-ink`/`--dx-ed-rule`/`--dx-ed-accent`) are `var(...)` over the
+matching shared `dx-theme.css` token, so it matches the rest of the app's palette rather than
+inventing a competing one.
 ```razor
 <DxEditorialLayout Kicker="Article" Title="..." Published="new DateOnly(2026, 7, 17)"
                     ReadingMinutes="7" HeroImageSrc="hero.jpg" HeroImageAlt="...">

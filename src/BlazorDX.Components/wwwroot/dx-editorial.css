@@ -1,10 +1,14 @@
-/* BlazorDX editorial system — "Architecture of Silence": a self-contained ink-on-paper reading
-   system for Insights (articles/blog/whitepapers), deliberately NOT built from the library's
-   generic dx-theme.css tokens (--dx-accent/--dx-surface/--dx-border read as the same component
-   chrome everywhere else in the app — a Data Grid, a Dialog, and a magazine feature should not
-   share one palette). Its own scoped tokens (--dx-ed-*, defined below on .dx-editorial) are a
-   warm paper/ink palette plus a Fraunces (display) + Source Serif 4 (body/reading) pairing,
-   loaded in App.razor's <head>. Falls back to Georgia everywhere the webfont hasn't loaded yet.
+/* BlazorDX editorial system — "Architecture of Silence": a magazine-style reading system for
+   Insights (articles/blog/whitepapers). Its color palette (--dx-ed-paper/--dx-ed-ink/--dx-ed-rule/
+   --dx-ed-accent, defined below on .dx-editorial) is DERIVED from the library's own dx-theme.css
+   tokens (--dx-surface/--dx-text/--dx-border/--dx-accent) — this deliberately matches the rest of
+   the app (the same slate/blue the nav bar, buttons, and every other component use) rather than
+   inventing a competing palette, and follows dark mode automatically via that same indirection.
+   What IS its own, scoped to .dx-editorial and not shared with the rest of the library: a Fraunces
+   (display) + Source Serif 4 (body/reading) type pairing, loaded in App.razor's <head> (falls back
+   to Georgia until the webfont loads), and the structural devices below it (full-bleed paper, a
+   rule-bounded contents box, left-rule sidebars, hairline-divider card grids) that replace the
+   generic bordered-rounded-card look shared components default to.
    Core layout only (hero, figures, spread, body, pull-quotes, sidebars, scrollytelling,
    dissipation, footer, index pages) — reading-experience/discovery add-ons (drop cap, table of
    contents, reading progress, author bio, tags, related, series nav, inset figure, stat row,
@@ -12,12 +16,12 @@
    library's own 1000-line file cap. Load both. */
 
 .dx-editorial {
-  --dx-ed-paper: #fbf6ee;
-  --dx-ed-paper-alt: #f2e9da;
-  --dx-ed-ink: #1c1712;
-  --dx-ed-ink-muted: #6e6255;
-  --dx-ed-rule: #ddd0ba;
-  --dx-ed-accent: #a23b2e;
+  --dx-ed-paper: var(--dx-surface, #ffffff);
+  --dx-ed-paper-alt: var(--dx-surface-alt, #f8fafc);
+  --dx-ed-ink: var(--dx-text, #0f172a);
+  --dx-ed-ink-muted: var(--dx-text-muted, #64748b);
+  --dx-ed-rule: var(--dx-border, #e2e8f0);
+  --dx-ed-accent: var(--dx-accent, #2563eb);
   --dx-ed-display: "Fraunces", Georgia, "Times New Roman", serif;
   --dx-ed-body: "Source Serif 4", Georgia, "Times New Roman", serif;
   --measure: 38rem;
@@ -36,14 +40,6 @@
   /* Full-bleed hero/figures break out to 100vw via the left:50%/-50vw trick below; this
      guards against the sub-pixel scrollbar-width overflow that trick can introduce. */
   overflow-x: hidden;
-}
-[data-dx-theme="dark"] .dx-editorial {
-  --dx-ed-paper: #161009;
-  --dx-ed-paper-alt: #211a11;
-  --dx-ed-ink: #f3ecdf;
-  --dx-ed-ink-muted: #b6a891;
-  --dx-ed-rule: #392c1d;
-  --dx-ed-accent: #e08469;
 }
 
 /* ---- Hero ---- */
