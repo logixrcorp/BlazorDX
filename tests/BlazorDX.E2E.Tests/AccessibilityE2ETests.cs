@@ -39,6 +39,7 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
     [InlineData("/powerbi")]             // interactive Power BI embed (wrapper container, loading/error)
     [InlineData("/charts")]              // all 25 chart types, incl. interactive selection (Bar/Treemap/Network graph)
     [InlineData("/insights/articles/zero-trust-ephemeral-chat-conduit")]  // flagship editorial piece: hero, scrollytelling, sidebars, pull quotes, TOC
+    [InlineData("/insights/whitepapers/human-right-to-forget")]           // long-form Markdown whitepaper: tables, code blocks, sidebar disclaimer
     public async Task Page_has_no_serious_axe_violations(string route)
     {
         Skip.IfNot(fx.Ready, fx.SkipReason);

@@ -1,0 +1,84 @@
+@page "/insights/whitepapers/{Slug}"
+@rendermode InteractiveWebAssembly
+@using BlazorDX.Components
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<PageTitle>@(entry?.Title ?? "Not found") — Whitepapers</PageTitle>
+
+@if (notFound)
+{
+    <div class="dx-editorial">
+        <header class="dx-editorial-hero">
+            <h1 class="dx-editorial-title">Whitepaper not found</h1>
+            <p class="dx-editorial-subtitle"><a href="/insights/whitepapers">← Back to Whitepapers</a></p>
+        </header>
+    </div>
+}
+else if (entry is not null)
+{
+    <DxEditorialLayout Kicker="Insights / Whitepaper" Title="@entry.Title" Author="@entry.Author" Published="@entry.Published">
+        @* Whitepapers in this section describe target-state and illustrative architecture
+           alongside the shipped implementation — flagged up front rather than left for the
+           reader to sort out chapter by chapter. *@
+        <DxEditorialSidebar Title="A note on this document" Icon="⚠">
+            This whitepaper is a formal-specification exercise for the Zero-Trust Ephemeral Chat
+            Conduit concept — illustrative and aspirational in places, not a description of
+            BlazorDX's current shipped implementation. Several specifics go beyond what the
+            open-source library actually implements today: hardware-bound key attestation via
+            TPM/WebAuthn, an Azure Service Bus event pipeline, and the GDPR/HIPAA/PCI-DSS
+            compliance mappings describe a target architecture, not a certified one — BlazorDX is
+            unaudited beta software with no compliance certification of any kind.
+            <span class="dx-editorial-sidebar-caveat">
+                For the actual, currently-shipped implementation, see
+                <a href="/insights/articles/zero-trust-ephemeral-chat-conduit">The Architecture of
+                Silence</a> and the project's <a href="https://github.com/logixrcorp/BlazorDX/blob/main/docs/adr/0016-zero-trust-ephemeral-chat-conduit.md" target="_blank" rel="noopener">ADR</a>.
+            </span>
+        </DxEditorialSidebar>
+
+        <div class="dx-editorial-body">
+            @if (markdown is null)
+            {
+                <p>Loading…</p>
+            }
+            else
+            {
+                <DxMarkdown Value="@markdown" />
+            }
+        </div>
+    </DxEditorialLayout>
+}
+
+@code {
+    [Parameter] public string Slug { get; set; } = "";
+
+    private InsightEntry? entry;
+    private string? markdown;
+    private bool notFound;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        entry = InsightsCatalog.Entries.FirstOrDefault(e => e.Category == InsightCategory.Whitepaper && e.Slug == Slug);
+        if (entry is null)
+        {
+            notFound = true;
+            return;
+        }
+
+        notFound = false;
+        markdown = null;
+        try
+        {
+            // An absolute URI, built from NavigationManager.BaseUri, works both during the
+            // server-side prerender pass (where the injected HttpClient has no BaseAddress —
+            // AddHttpClient() registers a factory-created client, not a base-configured one)
+            // and once the WASM client takes over.
+            Uri absolute = new(new Uri(Nav.BaseUri), $"content/whitepapers/{Slug}.md");
+            markdown = await Http.GetStringAsync(absolute);
+        }
+        catch (HttpRequestException)
+        {
+            notFound = true;
+        }
+    }
+}

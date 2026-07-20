@@ -9,6 +9,35 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ## [Unreleased]
 
+### Added
+
+- **First published Whitepaper: "The Architecture of Silence: Designing for the Human Right to
+  Forget."** A formal-specification companion to the flagship article, at
+  `/insights/whitepapers/human-right-to-forget`. Whitepapers now render the same way Blog posts
+  already did — a Markdown file under `wwwroot/content/whitepapers/` fetched and rendered through
+  `DxMarkdown` at a dynamic `/insights/whitepapers/{Slug}` route — rather than the hand-built-Razor
+  path the original `InsightsCatalog` doc comment described for this category; a 12-chapter
+  prose-and-tables document is a much better fit for the Markdown pipeline than transcribing every
+  heading into `DxEditorial*` composition by hand.
+  This piece is explicitly a formal-specification exercise, not a description of BlazorDX's
+  current shipped implementation — it describes target-state and illustrative architecture
+  (hardware-bound TPM/WebAuthn attestation, an Azure Service Bus event pipeline, formal
+  GDPR/HIPAA/PCI-DSS compliance mappings) well beyond what the actual open-source library
+  implements today, which is a software-only browser-sandboxed handshake with no compliance
+  certification of any kind. Flagged with a `DxEditorialSidebar` disclaimer at the top of the
+  piece rather than silently mixed in with the shipped-implementation claims in the real flagship
+  article.
+  Added `/insights/whitepapers/human-right-to-forget` to the axe-core accessibility E2E sweep.
+
+- **`MarkdownRenderer`/`DxMarkdown`: GFM-lite table support.** This whitepaper's regulatory
+  compliance-mapping tables were the first content in the repo to need Markdown tables, and the
+  renderer had none — a `| a | b |` row rendered as a mangled run-on paragraph. Added a table
+  parser (header row + `:---:`-style separator row + body rows) using the same encode-then-format
+  security pattern as every other renderer path, plus `dx-markdown.css` table styling. Also fixed
+  a real axe-core `scrollable-region-focusable` violation the same content surfaced: fenced code
+  blocks are horizontally scrollable (`dx-markdown.css`'s `pre { overflow: auto }`) for long lines
+  but had no way to reach that scroll via keyboard — added `tabindex="0"` to every rendered `<pre>`.
+
 ### Changed
 
 - **Editorial system ("Architecture of Silence"): redesigned from a generic component-library

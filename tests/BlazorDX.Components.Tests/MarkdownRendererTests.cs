@@ -36,7 +36,7 @@ public sealed class MarkdownRendererTests
     public void Fenced_code_block_is_preformatted_and_literal()
     {
         string html = Render("```\nvar x = 1 < 2;\n```");
-        Assert.Contains("<pre><code>", html);
+        Assert.Contains("<pre tabindex=\"0\"><code>", html);   // keyboard-reachable when it scrolls
         Assert.Contains("var x = 1 &lt; 2;", html);   // encoded, not interpreted
     }
 
@@ -72,6 +72,23 @@ public sealed class MarkdownRendererTests
     {
         MarkupString result = MarkdownRenderer.Render("# Hi");
         Assert.Contains("<h1>Hi</h1>", result.Value);
+    }
+
+    [Fact]
+    public void Table_renders_header_and_body_rows()
+    {
+        string html = Render("| A | B |\n| :---- | :---- |\n| one | two |\n| **three** | four |");
+        Assert.Contains("<table><thead><tr><th>A</th><th>B</th></tr></thead><tbody>", html);
+        Assert.Contains("<tr><td>one</td><td>two</td></tr>", html);
+        Assert.Contains("<tr><td><strong>three</strong></td><td>four</td></tr></tbody></table>", html);
+    }
+
+    [Fact]
+    public void A_lone_pipe_in_a_paragraph_is_not_mistaken_for_a_table()
+    {
+        string html = Render("this | that, not a table");
+        Assert.DoesNotContain("<table>", html);
+        Assert.Contains("<p>this | that, not a table</p>", html);
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -23,6 +24,11 @@ public static class MarkdownRenderer
     private static readonly Regex Heading = new(@"^(#{1,6})\s+(.*)$", RegexOptions.Compiled);
     private static readonly Regex UnorderedItem = new(@"^[-*]\s+(.*)$", RegexOptions.Compiled);
     private static readonly Regex OrderedItem = new(@"^\d+\.\s+(.*)$", RegexOptions.Compiled);
+    // GFM-lite table: a "|"-delimited row followed by a separator row of dashes (optionally
+    // colon-flanked for alignment, which this renderer doesn't act on -- alignment is a CSS
+    // concern, not a content one). Matched two lines at a time so a lone "|" in a normal
+    // paragraph never gets misread as a table.
+    private static readonly Regex TableSeparatorRow = new(@"^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?$", RegexOptions.Compiled);
 
     /// <summary>Renders Markdown to a sanitized <see cref="MarkupString"/> ready to display.</summary>
     public static MarkupString Render(string? markdown)
@@ -49,6 +55,10 @@ public static class MarkdownRenderer
             if (line.StartsWith("```", StringComparison.Ordinal))
             {
                 i = AppendFencedCode(lines, i, html);
+            }
+            else if (IsTableRow(line) && i + 1 < lines.Length && TableSeparatorRow.IsMatch(lines[i + 1].Trim()))
+            {
+                i = AppendTable(lines, i, html);
             }
             else if (Heading.Match(line) is { Success: true } heading)
             {
@@ -89,8 +99,59 @@ public static class MarkdownRenderer
             i++;
         }
 
-        html.Append("<pre><code>").Append(code).Append("</code></pre>");
+        // tabindex="0": dx-markdown.css makes <pre> horizontally scrollable for long lines
+        // (the JSON schemas in the whitepapers are the first content to actually hit this) --
+        // axe-core's scrollable-region-focusable rule is right that a scrollable region with no
+        // other focusable content inside it needs to be reachable by keyboard on its own.
+        html.Append("<pre tabindex=\"0\"><code>").Append(code).Append("</code></pre>");
         return i < lines.Length ? i + 1 : i;   // skip the closing fence
+    }
+
+    private static bool IsTableRow(string line) => line.TrimStart().StartsWith('|');
+
+    // Splits a "| a | b |" row into its cell texts, tolerating a missing leading/trailing pipe
+    // ("a | b" is still a valid GFM row).
+    private static string[] SplitTableRow(string line)
+    {
+        string trimmed = line.Trim();
+        if (trimmed.StartsWith('|'))
+        {
+            trimmed = trimmed[1..];
+        }
+
+        if (trimmed.EndsWith('|'))
+        {
+            trimmed = trimmed[..^1];
+        }
+
+        return trimmed.Split('|').Select(cell => cell.Trim()).ToArray();
+    }
+
+    private static int AppendTable(string[] lines, int start, StringBuilder html)
+    {
+        html.Append("<table><thead><tr>");
+        foreach (string cell in SplitTableRow(lines[start]))
+        {
+            html.Append("<th>").Append(Inline(cell)).Append("</th>");
+        }
+
+        html.Append("</tr></thead><tbody>");
+
+        int i = start + 2;   // skip the header row and the separator row
+        while (i < lines.Length && IsTableRow(lines[i]))
+        {
+            html.Append("<tr>");
+            foreach (string cell in SplitTableRow(lines[i]))
+            {
+                html.Append("<td>").Append(Inline(cell)).Append("</td>");
+            }
+
+            html.Append("</tr>");
+            i++;
+        }
+
+        html.Append("</tbody></table>");
+        return i;
     }
 
     private static int AppendList(string[] lines, int start, StringBuilder html, string tag, Regex item)

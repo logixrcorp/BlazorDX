@@ -10,11 +10,16 @@ public enum InsightCategory
 
 /// <summary>
 /// One published piece: enough metadata to render it as a card on an index page and link to it.
-/// Articles/Whitepapers are hand-built Razor pages (their own route); Blog posts are Markdown
-/// files rendered through <see cref="BlazorDX.Components.DxMarkdown"/> via a dynamic
-/// <c>/insights/blog/{Slug}</c> route.
+/// Articles are hand-built Razor pages (their own route, bespoke <c>DxEditorial*</c>
+/// composition) — the format fits a flagship piece meant to showcase every layout device. Blog
+/// posts and Whitepapers are both Markdown files rendered through
+/// <see cref="BlazorDX.Components.DxMarkdown"/> via a dynamic <c>/insights/blog/{Slug}</c> /
+/// <c>/insights/whitepapers/{Slug}</c> route respectively — a better fit for prose-and-tables
+/// documents than hand-transcribing every heading into Razor markup.
 /// </summary>
-/// <param name="Slug">URL segment; for a Blog entry, also the Markdown filename (without extension) under <c>wwwroot/content/blog/</c>.</param>
+/// <param name="Slug">URL segment; for a Blog or Whitepaper entry, also the Markdown filename
+/// (without extension) under <c>wwwroot/content/blog/</c> or <c>wwwroot/content/whitepapers/</c>
+/// respectively.</param>
 /// <param name="Title">Display title.</param>
 /// <param name="Category">Which index page lists it.</param>
 /// <param name="Summary">One-to-two sentence teaser shown on the card.</param>
@@ -39,6 +44,16 @@ public static class InsightsCatalog
             "down the moment it's tampered with.",
             "/insights/articles/zero-trust-ephemeral-chat-conduit",
             new DateOnly(2026, 7, 17)),
+        new(
+            "human-right-to-forget",
+            "The Architecture of Silence: Designing for the Human Right to Forget",
+            InsightCategory.Whitepaper,
+            "A formal specification for the Zero-Trust, Ephemeral AI Chat Conduit — the " +
+            "cryptographic state machine, defense-in-depth browser containment, and compliance " +
+            "audit protocols behind treating erasure as a proof, not a promise.",
+            "/insights/whitepapers/human-right-to-forget",
+            new DateOnly(2026, 7, 17),
+            "Ehren Schlueter"),
     ];
 
     public static IEnumerable<InsightEntry> ByCategory(InsightCategory category) =>
