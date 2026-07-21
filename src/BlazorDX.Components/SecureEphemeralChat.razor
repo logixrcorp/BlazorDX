@@ -47,7 +47,28 @@ else if (state == MountState.Withdrawn)
 }
 
 @code {
-    private enum MountState { Decrypting, Mounted, Failed, Withdrawn }
+    /// <summary>
+    /// The component's lifecycle states, in the order a successful mount passes through them
+    /// (a failed or tampered mount goes straight from <see cref="Decrypting"/> to
+    /// <see cref="Failed"/>). Deliberately does not distinguish an ordinary decrypt failure from
+    /// a detected tamper attempt -- both render the same "could not be verified" status and both
+    /// land here as <see cref="Failed"/> -- that is intentional: an outside observer must not be
+    /// able to learn *why* a message failed to render. Subscribe to
+    /// <see cref="OnTamperDetected"/> specifically if a consumer genuinely needs to distinguish
+    /// the tamper case (e.g. to log a security event), separately from this general-purpose
+    /// state stream.
+    /// </summary>
+    public enum MountState
+    {
+        /// <summary>The wasm handshake/decrypt is in flight. The component's initial state.</summary>
+        Decrypting,
+        /// <summary>Plaintext is live inside the closed shadow root.</summary>
+        Mounted,
+        /// <summary>The handshake, decrypt, or authentication failed -- including a detected tamper attempt.</summary>
+        Failed,
+        /// <summary>The server pushed a valid WITHDRAW event and the node has been scrubbed.</summary>
+        Withdrawn,
+    }
 
     // Unique per component instance so multiple ephemeral messages can be on
     // screen at once without their Shadow DOM hosts, MutationObservers, or
@@ -151,12 +172,27 @@ else if (state == MountState.Withdrawn)
     [Parameter]
     public EventCallback OnTamperDetected { get; set; }
 
+    /// <summary>
+    /// Raised on every <see cref="MountState"/> transition -- the general-purpose hook for a
+    /// consumer that wants to log or monitor the component's lifecycle, as an alternative (or
+    /// complement) to the three narrower, business-meaning callbacks above.
+    /// </summary>
+    [Parameter]
+    public EventCallback<MountState> OnStateChanged { get; set; }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender)
         {
             return;
         }
+
+        // The render that just completed already showed "Decrypting..." (the field's initial
+        // value), but nothing has invoked OnStateChanged yet -- parameters aren't bound until
+        // after the field initializer runs. Fire it explicitly here so a consumer that only
+        // subscribes to the event stream (rather than also reading the rendered DOM) still sees
+        // every state, not just the ones after the first.
+        await OnStateChanged.InvokeAsync(MountState.Decrypting);
 
         bool mounted;
         try
@@ -173,8 +209,14 @@ else if (state == MountState.Withdrawn)
             mounted = false;
         }
 
-        state = mounted ? MountState.Mounted : MountState.Failed;
+        await SetStateAsync(mounted ? MountState.Mounted : MountState.Failed);
+    }
+
+    private async Task SetStateAsync(MountState newState)
+    {
+        state = newState;
         StateHasChanged();
+        await OnStateChanged.InvokeAsync(newState);
     }
 
     private Task<bool> MountViaSuppliedCiphertextAsync() =>
@@ -237,8 +279,7 @@ else if (state == MountState.Withdrawn)
     {
         // The TS bridge already scrubbed the node before raising this callback.
         scrubbed = true;
-        state = MountState.Withdrawn;
-        StateHasChanged();
+        await SetStateAsync(MountState.Withdrawn);
         await OnWithdrawn.InvokeAsync();
     }
 
@@ -253,8 +294,7 @@ else if (state == MountState.Withdrawn)
     private async Task HandleTamperDetectedAsync()
     {
         scrubbed = true;
-        state = MountState.Failed;
-        StateHasChanged();
+        await SetStateAsync(MountState.Failed);
         await OnTamperDetected.InvokeAsync();
     }
 

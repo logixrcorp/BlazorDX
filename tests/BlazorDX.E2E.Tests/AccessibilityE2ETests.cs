@@ -40,6 +40,7 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
     [InlineData("/charts")]              // all 25 chart types, incl. interactive selection (Bar/Treemap/Network graph)
     [InlineData("/insights/articles/zero-trust-ephemeral-chat-conduit")]  // flagship editorial piece: hero, scrollytelling, sidebars, pull quotes, TOC
     [InlineData("/insights/whitepapers/human-right-to-forget")]           // long-form Markdown whitepaper: tables, code blocks, sidebar disclaimer
+    [InlineData("/insights/blog/verifying-the-ephemeral-chat-conduit")]   // Markdown Blog post: code blocks, cross-links
     public async Task Page_has_no_serious_axe_violations(string route)
     {
         Skip.IfNot(fx.Ready, fx.SkipReason);

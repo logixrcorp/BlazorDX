@@ -122,6 +122,59 @@ public sealed class AiChatE2ETests(PlaywrightFixture fx)
     }
 
     [SkippableFact]
+    public async Task Pushing_a_forged_lifecycle_event_triggers_real_tamper_detection()
+    {
+        // Proves the verification technique documented for developers: mutating the mounted
+        // content from DevTools does NOT work (there is no reachable node inside a closed Shadow
+        // DOM to mutate) -- the one tamper vector actually reachable from outside the page is a
+        // forged lifecycle event on the SSE control channel, which is exactly what
+        // DemoAiChatBroker.SimulateTamperRoute exists to demonstrate: a real push, through the
+        // real EphemeralSessionRegistry, of a WITHDRAW with a deliberately wrong signature.
+        Skip.IfNot(fx.Ready, fx.SkipReason);
+        IPage page = await fx.NewPageAsync();
+
+        string? capturedSessionId = null;
+        await page.RouteAsync("**" + DemoAiChatBrokerRoutes.HandshakeRoute, async route =>
+        {
+            using JsonDocument body = JsonDocument.Parse(route.Request.PostData ?? "{}");
+            capturedSessionId = body.RootElement.GetProperty("sessionId").GetString();
+            await route.ContinueAsync();
+        });
+
+        await page.GotoInteractiveAsync($"{fx.BaseUrl}{Route}", ThreadSelector);
+        await page.FillAsync(ComposeSelector, Prompt);
+        await page.ClickAsync(SendSelector);
+        await page.WaitForSelectorAsync($".{HostClass}", new PageWaitForSelectorOptions { Timeout = 20_000 });
+        await WaitForMountedAsync(page);
+
+        Assert.NotNull(capturedSessionId);
+
+        // Same reasoning as the Revoke test: the component's EventSource needs a moment to
+        // finish connecting, or the push has no live listener yet and is silently dropped.
+        await page.WaitForTimeoutAsync(500);
+
+        // Runs as a fetch() from inside the page's own origin so the request carries the real
+        // visitor cookie DemoAiChatSessionAuthorizer checks -- exactly what a "Simulate tamper"
+        // dev-tool button wired to this endpoint would do, and the same shape of call a
+        // developer's own Playwright test can make against their own app.
+        int status = await page.EvaluateAsync<int>(
+            "sessionId => fetch(`/demo/ai-chat/simulate-tamper/${sessionId}`, { method: 'POST' }).then(r => r.status)",
+            capturedSessionId);
+        Assert.Equal(202, status);
+
+        await page.WaitForSelectorAsync($".{StatusClass}", new PageWaitForSelectorOptions { Timeout = 15_000 });
+
+        // The generic "could not be verified" error -- SecureEphemeralChat's Failed state, the
+        // same one an ordinary decrypt failure produces. That is deliberate (see MountState's own
+        // doc comment): an outside observer must not be able to tell a forged signal apart from
+        // an unrelated failure. Node teardown (no Revoke button left) is the real proof tamper
+        // detection fired, not the status wording.
+        Assert.NotEmpty(await page.Locator(".dx-ephemeral-chat-error").AllAsync());
+        int remainingRevokeButtons = await page.Locator(RevokeSelector).CountAsync();
+        Assert.Equal(0, remainingRevokeButtons);
+    }
+
+    [SkippableFact]
     public async Task A_stranger_with_no_owning_visitor_cookie_cannot_open_or_withdraw_someone_elses_session()
     {
         Skip.IfNot(fx.Ready, fx.SkipReason);

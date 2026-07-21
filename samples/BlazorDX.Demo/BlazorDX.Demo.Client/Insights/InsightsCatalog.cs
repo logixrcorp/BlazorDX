@@ -54,6 +54,15 @@ public static class InsightsCatalog
             "/insights/whitepapers/human-right-to-forget",
             new DateOnly(2026, 7, 17),
             "Ehren Schlueter"),
+        new(
+            "verifying-the-ephemeral-chat-conduit",
+            "Verifying the Ephemeral Chat Conduit",
+            InsightCategory.Blog,
+            "Four ways to check SecureEphemeralChat's zero-trust guarantees yourself instead of " +
+            "taking them on faith — including one popular idea (DevTools DOM tampering) that " +
+            "turns out not to work, and why that's the point.",
+            "/insights/blog/verifying-the-ephemeral-chat-conduit",
+            new DateOnly(2026, 7, 21)),
     ];
 
     public static IEnumerable<InsightEntry> ByCategory(InsightCategory category) =>

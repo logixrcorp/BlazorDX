@@ -144,6 +144,84 @@ public sealed class SecureEphemeralChatTests : TestContext
     }
 
     [Fact]
+    public void OnStateChanged_fires_Decrypting_then_Mounted_on_a_successful_mount()
+    {
+        List<SecureEphemeralChat.MountState> states = [];
+        RenderComponent<SecureEphemeralChat>(parameters => parameters
+            .Add(c => c.SessionId, SessionId)
+            .Add(c => c.ServerPublicKeyBase64, ServerPublicKeyBase64)
+            .Add(c => c.NonceBase64, NonceBase64)
+            .Add(c => c.CiphertextBase64, CiphertextBase64)
+            .Add(c => c.OnStateChanged, EventCallback.Factory.Create<SecureEphemeralChat.MountState>(this, s => states.Add(s))));
+
+        Assert.Equal([SecureEphemeralChat.MountState.Decrypting, SecureEphemeralChat.MountState.Mounted], states);
+    }
+
+    [Fact]
+    public void OnStateChanged_fires_Decrypting_then_Failed_on_a_failed_mount()
+    {
+        fake.MountSucceeds = false;
+        List<SecureEphemeralChat.MountState> states = [];
+        RenderComponent<SecureEphemeralChat>(parameters => parameters
+            .Add(c => c.SessionId, SessionId)
+            .Add(c => c.ServerPublicKeyBase64, ServerPublicKeyBase64)
+            .Add(c => c.NonceBase64, NonceBase64)
+            .Add(c => c.CiphertextBase64, CiphertextBase64)
+            .Add(c => c.OnStateChanged, EventCallback.Factory.Create<SecureEphemeralChat.MountState>(this, s => states.Add(s))));
+
+        Assert.Equal([SecureEphemeralChat.MountState.Decrypting, SecureEphemeralChat.MountState.Failed], states);
+    }
+
+    [Fact]
+    public void OnStateChanged_fires_Withdrawn_after_a_WITHDRAW_event()
+    {
+        List<SecureEphemeralChat.MountState> states = [];
+        IRenderedComponent<SecureEphemeralChat> chat = RenderComponent<SecureEphemeralChat>(parameters => parameters
+            .Add(c => c.SessionId, SessionId)
+            .Add(c => c.ServerPublicKeyBase64, ServerPublicKeyBase64)
+            .Add(c => c.NonceBase64, NonceBase64)
+            .Add(c => c.CiphertextBase64, CiphertextBase64)
+            .Add(c => c.OnStateChanged, EventCallback.Factory.Create<SecureEphemeralChat.MountState>(this, s => states.Add(s))));
+
+        chat.InvokeAsync(fake.RaiseWithdraw);
+
+        Assert.Equal(
+        [
+            SecureEphemeralChat.MountState.Decrypting,
+            SecureEphemeralChat.MountState.Mounted,
+            SecureEphemeralChat.MountState.Withdrawn,
+        ], states);
+    }
+
+    [Fact]
+    public void OnStateChanged_reports_Failed_for_a_tamper_event_while_OnTamperDetected_still_fires_separately()
+    {
+        // Deliberate: the general-purpose state stream does not leak *why* a mount failed --
+        // that distinction exists only via the dedicated OnTamperDetected callback, so an
+        // observer watching only OnStateChanged cannot tell an ordinary decrypt failure apart
+        // from a detected tamper attempt.
+        List<SecureEphemeralChat.MountState> states = [];
+        bool tamperRaised = false;
+        IRenderedComponent<SecureEphemeralChat> chat = RenderComponent<SecureEphemeralChat>(parameters => parameters
+            .Add(c => c.SessionId, SessionId)
+            .Add(c => c.ServerPublicKeyBase64, ServerPublicKeyBase64)
+            .Add(c => c.NonceBase64, NonceBase64)
+            .Add(c => c.CiphertextBase64, CiphertextBase64)
+            .Add(c => c.OnStateChanged, EventCallback.Factory.Create<SecureEphemeralChat.MountState>(this, s => states.Add(s)))
+            .Add(c => c.OnTamperDetected, EventCallback.Factory.Create(this, () => tamperRaised = true)));
+
+        chat.InvokeAsync(fake.RaiseTamper);
+
+        Assert.Equal(
+        [
+            SecureEphemeralChat.MountState.Decrypting,
+            SecureEphemeralChat.MountState.Mounted,
+            SecureEphemeralChat.MountState.Failed,
+        ], states);
+        Assert.True(tamperRaised);
+    }
+
+    [Fact]
     public void Withdraw_event_shows_withdrawn_status_and_raises_OnWithdrawn()
     {
         bool raised = false;

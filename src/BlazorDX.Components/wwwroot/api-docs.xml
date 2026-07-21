@@ -3018,6 +3018,31 @@
             <summary>Restarts auto-dismiss for every visible toast (e.g. when the pointer or focus
             leaves the region). Each toast gets a fresh countdown.</summary>
         </member>
+        <member name="T:BlazorDX.Components.SecureEphemeralChat.MountState">
+            <summary>
+            The component's lifecycle states, in the order a successful mount passes through them
+            (a failed or tampered mount goes straight from <see cref="F:BlazorDX.Components.SecureEphemeralChat.MountState.Decrypting"/> to
+            <see cref="F:BlazorDX.Components.SecureEphemeralChat.MountState.Failed"/>). Deliberately does not distinguish an ordinary decrypt failure from
+            a detected tamper attempt -- both render the same "could not be verified" status and both
+            land here as <see cref="F:BlazorDX.Components.SecureEphemeralChat.MountState.Failed"/> -- that is intentional: an outside observer must not be
+            able to learn *why* a message failed to render. Subscribe to
+            <see cref="P:BlazorDX.Components.SecureEphemeralChat.OnTamperDetected"/> specifically if a consumer genuinely needs to distinguish
+            the tamper case (e.g. to log a security event), separately from this general-purpose
+            state stream.
+            </summary>
+        </member>
+        <member name="F:BlazorDX.Components.SecureEphemeralChat.MountState.Decrypting">
+            <summary>The wasm handshake/decrypt is in flight. The component's initial state.</summary>
+        </member>
+        <member name="F:BlazorDX.Components.SecureEphemeralChat.MountState.Mounted">
+            <summary>Plaintext is live inside the closed shadow root.</summary>
+        </member>
+        <member name="F:BlazorDX.Components.SecureEphemeralChat.MountState.Failed">
+            <summary>The handshake, decrypt, or authentication failed -- including a detected tamper attempt.</summary>
+        </member>
+        <member name="F:BlazorDX.Components.SecureEphemeralChat.MountState.Withdrawn">
+            <summary>The server pushed a valid WITHDRAW event and the node has been scrubbed.</summary>
+        </member>
         <member name="P:BlazorDX.Components.SecureEphemeralChat.SessionId">
             <summary>Opaque session identifier from the host. No auth logic happens here.</summary>
         </member>
@@ -3099,6 +3124,13 @@
         </member>
         <member name="P:BlazorDX.Components.SecureEphemeralChat.OnTamperDetected">
             <summary>Raised if the MutationObserver detects tampering and the node self-destructs.</summary>
+        </member>
+        <member name="P:BlazorDX.Components.SecureEphemeralChat.OnStateChanged">
+            <summary>
+            Raised on every <see cref="T:BlazorDX.Components.SecureEphemeralChat.MountState"/> transition -- the general-purpose hook for a
+            consumer that wants to log or monitor the component's lifecycle, as an alternative (or
+            complement) to the three narrower, business-meaning callbacks above.
+            </summary>
         </member>
     </members>
 </doc>

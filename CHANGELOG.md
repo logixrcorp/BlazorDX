@@ -11,6 +11,35 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ### Added
 
+- **`SecureEphemeralChat.OnStateChanged`: a new public `EventCallback<MountState>`.** A
+  developer draft asked how to "log or monitor" the component's `Decrypting`/`Mounted`/
+  `Failed`/`Withdrawn` lifecycle by name — that enum existed but was `private`, so the claim
+  wasn't actually true; a consumer could only infer state from three narrower callbacks
+  (`OnWithdrawn`/`OnRefreshed`/`OnTamperDetected`) or the rendered status text. `MountState` is
+  now public and `OnStateChanged` fires on every transition, including an explicit `Decrypting`
+  fire at the start of the mount attempt (the field's initial value predates parameter binding,
+  so nothing would otherwise observe it). Deliberately does *not* distinguish an ordinary decrypt
+  failure from a detected tamper attempt in this general-purpose stream — both land as `Failed` —
+  matching the existing design intent that an outside observer must not learn *why* a message
+  failed to render; `OnTamperDetected` still exists specifically for a consumer that needs that
+  distinction. Covered by four new bUnit tests asserting the exact transition sequence for each
+  path.
+
+- **New Blog post: "Verifying the Ephemeral Chat Conduit."** A developer guide answering a
+  question a draft doc raised: how does someone actually *check* `SecureEphemeralChat`'s
+  zero-trust guarantees, rather than take them on faith? Investigated against the real code before
+  writing anything — and found the draft's tamper-test step didn't work as described: DevTools
+  can't mutate the mounted content because it lives in a `mode: "closed"` Shadow DOM specifically
+  so there is no node reachable from outside to mutate. The actually-reachable tamper vector is
+  the signed SSE lifecycle channel, so the post (and a new demo-only endpoint,
+  `DemoAiChatBroker.SimulateTamperRoute`, mirroring the existing `WithdrawRoute` but with a
+  deliberately wrong signature) demonstrates that instead — through the same
+  `EphemeralSessionRegistry.PushEphemeralEventAsync` a real broker's revoke action already calls,
+  not a mocked fixture. Added a new E2E test
+  (`AiChatE2ETests.Pushing_a_forged_lifecycle_event_triggers_real_tamper_detection`) proving this
+  end to end against the live `/ai-chat` demo — confirmed passing before the post was written, not
+  after. Added `/insights/blog/verifying-the-ephemeral-chat-conduit` to the axe-core E2E sweep.
+
 - **First published Whitepaper: "The Architecture of Silence: Designing for the Human Right to
   Forget."** A formal-specification companion to the flagship article, at
   `/insights/whitepapers/human-right-to-forget`. Whitepapers now render the same way Blog posts

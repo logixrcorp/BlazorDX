@@ -60,6 +60,22 @@ public static class DemoAiChatBroker
     /// </summary>
     public const string WithdrawRoute = "/demo/ai-chat/withdraw/{sessionId}";
 
+    /// <summary>
+    /// <c>POST /demo/ai-chat/simulate-tamper/{sessionId}</c> — pushes a <c>security/lifecycle</c>
+    /// WITHDRAW event with a deliberately WRONG signature, through the exact same
+    /// <see cref="EphemeralEventsEndpoint.PushEphemeralEventAsync"/> call <see cref="WithdrawRoute"/>
+    /// uses for a genuine one. A real broker never has a reason to call this; it exists purely so
+    /// a developer (or this repo's own E2E suite — see <c>AiChatE2ETests</c>) can trigger the
+    /// client's tamper-detection path deliberately. This is worth having because the obvious way
+    /// to "test tampering" — mutating the mounted content from DevTools — does not actually work:
+    /// the content lives inside a <c>mode: 'closed'</c> Shadow DOM specifically so there is no
+    /// node reachable from outside to mutate. Forging a lifecycle event over this channel is the
+    /// one tamper vector that genuinely is reachable from outside the page, which is exactly why
+    /// <c>dx_security::session::verify_and_end</c> (via <c>ephemeral-chat.ts</c>'s
+    /// <c>verifyAndEndWithWasm</c>) treats a bad signature as tampering rather than a bare no-op.
+    /// </summary>
+    public const string SimulateTamperRoute = "/demo/ai-chat/simulate-tamper/{sessionId}";
+
     /// <summary><c>POST /demo/ai-chat/telemetry/access</c> — Access Receipt intake (Proof of Access half of the PoD protocol).</summary>
     public const string TelemetryAccessRoute = "/demo/ai-chat/telemetry/access";
 
@@ -104,6 +120,7 @@ public static class DemoAiChatBroker
     {
         app.MapPost(HandshakeRoute, HandleHandshakeAsync).DisableAntiforgery();
         app.MapPost(WithdrawRoute, HandleWithdrawAsync).DisableAntiforgery();
+        app.MapPost(SimulateTamperRoute, HandleSimulateTamperAsync).DisableAntiforgery();
         app.MapPost(TelemetryAccessRoute, HandleAccessTelemetryAsync).DisableAntiforgery();
         app.MapPost(TelemetryDestructionRoute, HandleDestructionTelemetryAsync).DisableAntiforgery();
         app.MapGet(TelemetryAuditRoute, HandleTelemetryAuditAsync);
@@ -269,6 +286,39 @@ public static class DemoAiChatBroker
         // silent no-op (the Conduit is an ephemeral relay, not a durable queue). The event name
         // and envelope shape (an `action` field rather than a distinct SSE event per action)
         // match the whitepaper's §8.3 "security/lifecycle" wire schema.
+        await registry.PushEphemeralEventAsync(sessionId, "security/lifecycle", data, cancellationToken).ConfigureAwait(false);
+        return Results.Accepted();
+    }
+
+    private static async Task<IResult> HandleSimulateTamperAsync(
+        string sessionId,
+        HttpContext http,
+        EphemeralSessionRegistry registry,
+        DemoAiChatSessionOwnershipRegistry ownership,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(sessionId))
+        {
+            return Results.BadRequest(new { error = "sessionId is required." });
+        }
+
+        // Same ownership check HandleWithdrawAsync applies -- a stranger should not be able to
+        // force *any* lifecycle event, tamper included, onto a session they do not own.
+        if (!IsOwnedByCaller(sessionId, http, ownership))
+        {
+            return Results.Json(new { error = "you do not own this session." }, statusCode: StatusCodes.Status403Forbidden);
+        }
+
+        // The point of this endpoint: an intentionally wrong signature. No signing key lookup at
+        // all -- unlike HandleWithdrawAsync, this never needed to be a real WITHDRAW; the client
+        // rejects it identically whether the key was wrong or never involved.
+        string data = JsonSerializer.Serialize(new
+        {
+            action = "WITHDRAW",
+            correlationId = sessionId,
+            signature = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)),
+        });
+
         await registry.PushEphemeralEventAsync(sessionId, "security/lifecycle", data, cancellationToken).ConfigureAwait(false);
         return Results.Accepted();
     }
