@@ -17,13 +17,10 @@ internal static class E2EHelpers
     /// <para>
     /// Pass <see cref="WaitUntilState.Load"/> for any page that opens a persistent
     /// connection (EventSource/WebSocket) unconditionally as part of its <em>initial</em>
-    /// render — e.g. <c>/ephemeral-chat-fixture</c>, which mounts a SecureEphemeralChat
-    /// (and its EventSource) immediately on load. <c>networkidle</c> can never fire while
-    /// that connection is open, so it hangs until this method's own 60s timeout on every
-    /// run against such a page, deterministically, not just flakily. Pages where a
-    /// long-lived connection only opens later, in response to a user action (e.g.
-    /// <c>/ai-chat</c>, which has no SecureEphemeralChat mounted until a message is sent),
-    /// are unaffected and should keep the default.
+    /// render. <c>networkidle</c> can never fire while that connection is open, so it hangs
+    /// until this method's own 60s timeout on every run against such a page, deterministically,
+    /// not just flakily. Pages where a long-lived connection only opens later, in response to a
+    /// user action, are unaffected and should keep the default.
     /// </para>
     /// </param>
     public static async Task GotoInteractiveAsync(

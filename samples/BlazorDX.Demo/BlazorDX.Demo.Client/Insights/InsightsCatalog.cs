@@ -33,37 +33,12 @@ public sealed record InsightEntry(
 /// <summary>The single source of truth for what's published across Articles, Blog, and Whitepapers.</summary>
 public static class InsightsCatalog
 {
-    public static readonly IReadOnlyList<InsightEntry> Entries =
-    [
-        new(
-            "zero-trust-ephemeral-chat-conduit",
-            "The Architecture of Silence",
-            InsightCategory.Article,
-            "Inside the Zero-Trust Ephemeral Chat Conduit: a blind-router server that never sees " +
-            "plaintext, a browser-sandboxed crypto core, and a closed Shadow DOM that tears itself " +
-            "down the moment it's tampered with.",
-            "/insights/articles/zero-trust-ephemeral-chat-conduit",
-            new DateOnly(2026, 7, 17)),
-        new(
-            "human-right-to-forget",
-            "The Architecture of Silence: Designing for the Human Right to Forget",
-            InsightCategory.Whitepaper,
-            "A formal specification for the Zero-Trust, Ephemeral AI Chat Conduit — the " +
-            "cryptographic state machine, defense-in-depth browser containment, and compliance " +
-            "audit protocols behind treating erasure as a proof, not a promise.",
-            "/insights/whitepapers/human-right-to-forget",
-            new DateOnly(2026, 7, 17),
-            "Ehren Schlueter"),
-        new(
-            "verifying-the-ephemeral-chat-conduit",
-            "Verifying the Ephemeral Chat Conduit",
-            InsightCategory.Blog,
-            "Four ways to check SecureEphemeralChat's zero-trust guarantees yourself instead of " +
-            "taking them on faith — including one popular idea (DevTools DOM tampering) that " +
-            "turns out not to work, and why that's the point.",
-            "/insights/blog/verifying-the-ephemeral-chat-conduit",
-            new DateOnly(2026, 7, 21)),
-    ];
+    // Empty for now: the Zero-Trust Ephemeral Chat Conduit article, whitepaper, and verification
+    // blog post that used to populate this were removed when the feature they describe moved to
+    // its own repository (AIEphemeral) -- see that repo's own docs/whitepaper.md and
+    // docs/adr/0001-zero-trust-ephemeral-chat-conduit.md. Add new entries here as new Insights
+    // content is published.
+    public static readonly IReadOnlyList<InsightEntry> Entries = [];
 
     public static IEnumerable<InsightEntry> ByCategory(InsightCategory category) =>
         Entries.Where(e => e.Category == category).OrderByDescending(e => e.Published);

@@ -9,56 +9,21 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ## [Unreleased]
 
+### Removed
+
+- **The Zero-Trust, Ephemeral AI Chat Conduit moved to its own repository, [AIEphemeral](https://github.com/logixrcorp/AIEphemeral).**
+  `BlazorDX.Security.Rust`, `BlazorDX.Conduit`, `SecureEphemeralChat`/`EphemeralChatInterop`, the
+  `/ai-chat` demo, and their test suites are gone from this repo — it was never general Blazor
+  component-library infrastructure, and it can now version and release independently. This
+  includes work that had only just landed in this same Unreleased section: `OnStateChanged` (a
+  general-purpose `MountState` event stream), the `SimulateTamperRoute` dev-tool endpoint and its
+  E2E coverage, the "Verifying the Ephemeral Chat Conduit" blog post, and the "Human Right to
+  Forget" whitepaper — all ported over to AIEphemeral's own docs rather than lost. See that repo's
+  `docs/adr/0001-zero-trust-ephemeral-chat-conduit.md` and `docs/whitepaper.md`.
+
 ### Added
 
-- **`SecureEphemeralChat.OnStateChanged`: a new public `EventCallback<MountState>`.** A
-  developer draft asked how to "log or monitor" the component's `Decrypting`/`Mounted`/
-  `Failed`/`Withdrawn` lifecycle by name — that enum existed but was `private`, so the claim
-  wasn't actually true; a consumer could only infer state from three narrower callbacks
-  (`OnWithdrawn`/`OnRefreshed`/`OnTamperDetected`) or the rendered status text. `MountState` is
-  now public and `OnStateChanged` fires on every transition, including an explicit `Decrypting`
-  fire at the start of the mount attempt (the field's initial value predates parameter binding,
-  so nothing would otherwise observe it). Deliberately does *not* distinguish an ordinary decrypt
-  failure from a detected tamper attempt in this general-purpose stream — both land as `Failed` —
-  matching the existing design intent that an outside observer must not learn *why* a message
-  failed to render; `OnTamperDetected` still exists specifically for a consumer that needs that
-  distinction. Covered by four new bUnit tests asserting the exact transition sequence for each
-  path.
-
-- **New Blog post: "Verifying the Ephemeral Chat Conduit."** A developer guide answering a
-  question a draft doc raised: how does someone actually *check* `SecureEphemeralChat`'s
-  zero-trust guarantees, rather than take them on faith? Investigated against the real code before
-  writing anything — and found the draft's tamper-test step didn't work as described: DevTools
-  can't mutate the mounted content because it lives in a `mode: "closed"` Shadow DOM specifically
-  so there is no node reachable from outside to mutate. The actually-reachable tamper vector is
-  the signed SSE lifecycle channel, so the post (and a new demo-only endpoint,
-  `DemoAiChatBroker.SimulateTamperRoute`, mirroring the existing `WithdrawRoute` but with a
-  deliberately wrong signature) demonstrates that instead — through the same
-  `EphemeralSessionRegistry.PushEphemeralEventAsync` a real broker's revoke action already calls,
-  not a mocked fixture. Added a new E2E test
-  (`AiChatE2ETests.Pushing_a_forged_lifecycle_event_triggers_real_tamper_detection`) proving this
-  end to end against the live `/ai-chat` demo — confirmed passing before the post was written, not
-  after. Added `/insights/blog/verifying-the-ephemeral-chat-conduit` to the axe-core E2E sweep.
-
-- **First published Whitepaper: "The Architecture of Silence: Designing for the Human Right to
-  Forget."** A formal-specification companion to the flagship article, at
-  `/insights/whitepapers/human-right-to-forget`. Whitepapers now render the same way Blog posts
-  already did — a Markdown file under `wwwroot/content/whitepapers/` fetched and rendered through
-  `DxMarkdown` at a dynamic `/insights/whitepapers/{Slug}` route — rather than the hand-built-Razor
-  path the original `InsightsCatalog` doc comment described for this category; a 12-chapter
-  prose-and-tables document is a much better fit for the Markdown pipeline than transcribing every
-  heading into `DxEditorial*` composition by hand.
-  This piece is explicitly a formal-specification exercise, not a description of BlazorDX's
-  current shipped implementation — it describes target-state and illustrative architecture
-  (hardware-bound TPM/WebAuthn attestation, an Azure Service Bus event pipeline, formal
-  GDPR/HIPAA/PCI-DSS compliance mappings) well beyond what the actual open-source library
-  implements today, which is a software-only browser-sandboxed handshake with no compliance
-  certification of any kind. Flagged with a `DxEditorialSidebar` disclaimer at the top of the
-  piece rather than silently mixed in with the shipped-implementation claims in the real flagship
-  article.
-  Added `/insights/whitepapers/human-right-to-forget` to the axe-core accessibility E2E sweep.
-
-- **`MarkdownRenderer`/`DxMarkdown`: GFM-lite table support.** This whitepaper's regulatory
+- **`MarkdownRenderer`/`DxMarkdown`: GFM-lite table support.** The (now-moved) whitepaper's regulatory
   compliance-mapping tables were the first content in the repo to need Markdown tables, and the
   renderer had none — a `| a | b |` row rendered as a mangled run-on paragraph. Added a table
   parser (header row + `:---:`-style separator row + body rows) using the same encode-then-format

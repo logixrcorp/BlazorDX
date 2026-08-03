@@ -35,9 +35,6 @@ builder.Services.AddScoped<BlazorDX.Demo.Client.Ecm.EcmStore>();
 builder.Services.AddScoped<BlazorDX.Demo.Client.Mail.MailStore>();
 builder.Services.AddScoped<BlazorDX.Demo.Client.Hr.HrStore>();
 
-// Ephemeral AI Chat example app data (prompt library + thread list) — Scoped, same isolation rule.
-builder.Services.AddScoped<BlazorDX.Demo.Client.AiChat.AiChatStore>();
-
 // Demo observability sink: BlazorDX components report failures here (the /errors page shows them).
 builder.Services.AddScoped<BlazorDX.Demo.Client.DemoDiagnosticsLog>();
 builder.Services.AddScoped<BlazorDX.Primitives.Diagnostics.IDxDiagnostics>(

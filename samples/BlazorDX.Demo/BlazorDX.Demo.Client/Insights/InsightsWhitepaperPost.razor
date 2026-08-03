@@ -18,24 +18,6 @@
 else if (entry is not null)
 {
     <DxEditorialLayout Kicker="Insights / Whitepaper" Title="@entry.Title" Author="@entry.Author" Published="@entry.Published">
-        @* Whitepapers in this section describe target-state and illustrative architecture
-           alongside the shipped implementation — flagged up front rather than left for the
-           reader to sort out chapter by chapter. *@
-        <DxEditorialSidebar Title="A note on this document" Icon="⚠">
-            This whitepaper is a formal-specification exercise for the Zero-Trust Ephemeral Chat
-            Conduit concept — illustrative and aspirational in places, not a description of
-            BlazorDX's current shipped implementation. Several specifics go beyond what the
-            open-source library actually implements today: hardware-bound key attestation via
-            TPM/WebAuthn, an Azure Service Bus event pipeline, and the GDPR/HIPAA/PCI-DSS
-            compliance mappings describe a target architecture, not a certified one — BlazorDX is
-            unaudited beta software with no compliance certification of any kind.
-            <span class="dx-editorial-sidebar-caveat">
-                For the actual, currently-shipped implementation, see
-                <a href="/insights/articles/zero-trust-ephemeral-chat-conduit">The Architecture of
-                Silence</a> and the project's <a href="https://github.com/logixrcorp/BlazorDX/blob/main/docs/adr/0016-zero-trust-ephemeral-chat-conduit.md" target="_blank" rel="noopener">ADR</a>.
-            </span>
-        </DxEditorialSidebar>
-
         <div class="dx-editorial-body">
             @if (markdown is null)
             {
