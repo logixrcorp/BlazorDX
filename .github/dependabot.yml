@@ -1,0 +1,23 @@
+version: 2
+
+updates:
+  # The TypeScript bridge's toolchain (esbuild/vitest/jsdom/typescript, and their
+  # transitive deps like postcss) -- the source of the repo's only Dependabot
+  # alerts to date.
+  - package-ecosystem: "npm"
+    directory: "/src/BlazorDX.Interop.Ts"
+    schedule:
+      interval: "weekly"
+
+  # .NET package references across every src/tests/samples project, via NuGet's
+  # single central Directory.Packages.props.
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # Keep the CI/release/docs workflow actions themselves current.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

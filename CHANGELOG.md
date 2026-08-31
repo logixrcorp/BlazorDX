@@ -599,6 +599,123 @@ All notable changes to BlazorDX are documented here. The format is loosely based
   upstream playground backend host was retired. Repointed at the playground's current
   `GenerateToken` endpoint and fixed the (now lowercase) JSON key parsing.
 
+> **A note on 0.5.0:** `artifacts/releases/0.5.0/` holds a real local pack (built
+> 2026-07-17 from `feat/extended-document-handling` at commit `c4a95e2`), but it was
+> never tagged and `Directory.Build.props`'s declared `<Version>` was never bumped past
+> `0.4.4` — so it isn't a release in the sense every other entry here is. Left out of
+> this changelog rather than backfilled with an invented entry; the 0.3.8–0.4.4 entries
+> below are reconstructed from real tagged commits, this one deliberately isn't.
+
+## [0.4.4] — 2026-06-28
+
+### Added
+
+- **Horizontal table cell merge** (merge right / split) in the Word editor.
+
+## [0.4.3] — 2026-06-28
+
+### Added
+
+- **Table cell shading** in the Word editor.
+
+## [0.4.2] — 2026-06-27
+
+### Added
+
+- **Paragraph line spacing + indentation** in the Word editor.
+
+## [0.4.1] — 2026-06-27
+
+### Added
+
+- **Paragraph style dropdown** (Normal / Heading 1–3) in the Word editor.
+
+## [0.4.0] — 2026-06-27
+
+### Added
+
+- **Word editor typography**: font family, font size, superscript/subscript.
+
+## [0.3.19] — 2026-06-27
+
+### Changed
+
+- **Breaking: the Word editor now defaults to the model-driven core** ([ADR 0015](docs/adr/0015-model-driven-editing-core.md) Phase D) — `execCommand` parity is complete; the legacy `execCommand`-based path is no longer the default.
+
+### Added
+
+- **Insert images** into the Word editor (model-driven default + image insertion, flushing out the Phase D work).
+
+## [0.3.18] — 2026-06-27
+
+### Added
+
+- **Word editor keyboard shortcuts**: Ctrl/Cmd+B/I/U/K, undo/redo.
+
+## [0.3.17] — 2026-06-27
+
+### Performance
+
+- **2-D column virtualization** (column windowing) in the spreadsheet editor.
+
+## [0.3.16] — 2026-06-27
+
+### Performance
+
+- **Incremental recalculation** in the spreadsheet editor, built on the 0.3.15 engine.
+
+## [0.3.15] — 2026-06-27
+
+### Added
+
+- **Incremental recalc engine**: AST cache + dirty propagation for formula recalculation.
+
+## [0.3.14] — 2026-06-27
+
+### Added
+
+- **Model-driven links** in the Word editor — [ADR 0015](docs/adr/0015-model-driven-editing-core.md) Phase D, completing `execCommand` parity for links.
+
+## [0.3.13] — 2026-06-27
+
+### Added
+
+- **Model-driven lists** in the Word editor — [ADR 0015](docs/adr/0015-model-driven-editing-core.md) Phase D.
+
+## [0.3.12] — 2026-06-27
+
+### Added
+
+- **Model-driven headings + color** in the Word editor — [ADR 0015](docs/adr/0015-model-driven-editing-core.md) Phase D parity.
+
+## [0.3.11] — 2026-06-27
+
+### Added
+
+- **Model-driven alignment + clear-formatting** in the Word editor — [ADR 0015](docs/adr/0015-model-driven-editing-core.md) Phase D groundwork.
+
+## [0.3.10] — 2026-06-27
+
+### Added
+
+- **Model-state undo/redo** in the Word editor, without a re-mount — [ADR 0015](docs/adr/0015-model-driven-editing-core.md) Phase C.
+
+## [0.3.9] — 2026-06-27
+
+### Added
+
+- **Model-driven inline formatting** in the Word editor — [ADR 0015](docs/adr/0015-model-driven-editing-core.md) Phase B.
+
+## [0.3.8] — 2026-06-27
+
+### Added
+
+- **Table editing UI** in the Word editor — the final of six documented feature gaps, all now closed.
+
+### Fixed
+
+- **E2E:** retried a transient Mono-WASM runtime-load flake in the smoke test.
+
 ## [0.3.7] — 2026-06-26
 
 ### Added
