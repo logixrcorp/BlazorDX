@@ -17,6 +17,11 @@ node_modules/
 **/wwwroot/dx/*.js
 **/wwwroot/dx/*.js.map
 
+# Generated API reference (docs/apidocs) -- rebuilt from source XML doc comments by
+# `docfx metadata` + `docfx build` (see .github/workflows/docs.yml), never hand-edited.
+docs/apidocs/api/
+docs/apidocs/_site/
+
 # IDE
 .vs/
 .idea/
