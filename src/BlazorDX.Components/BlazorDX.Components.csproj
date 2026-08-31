@@ -12,6 +12,14 @@
          Suppress "missing XML comment" families so warnings-as-errors stays green. -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CS1591;CS1573;CS1572;CS1574;CS1710;CS1711;CS1712;CS1734</NoWarn>
+    <!-- .resx resources live at the project root, named after the component type
+         (DxAlert.resx / DxAlert.fr.resx / ...) — deliberately NOT under a ResourcesPath
+         subfolder: that MSBuild property changes where the .resx *file* lives without
+         changing the runtime IStringLocalizerFactory's expected resource name unless
+         AddLocalization(o => o.ResourcesPath = ...) is ALSO configured, identically, in
+         every consuming app AND every test project. Root-level resx keeps the default
+         manifest-name convention working with zero extra configuration anywhere — see
+         docs/adr/0016-localization-rtl-strategy.md for the real bug this avoided. -->
   </PropertyGroup>
 
   <!-- Stage the generated XML doc as a static web asset so the docs app can fetch it
@@ -24,6 +32,9 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+    <!-- IStringLocalizer<T> for user-facing strings (see DxAlert's Dismiss label) —
+         see docs/adr/0016-localization-rtl-strategy.md. -->
+    <PackageReference Include="Microsoft.Extensions.Localization" />
   </ItemGroup>
 
   <ItemGroup>

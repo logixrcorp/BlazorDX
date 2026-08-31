@@ -18,6 +18,7 @@ public sealed class DxDataGridKeyboardTests : TestContext
     {
         Services.AddScoped<IGridCompute, ManagedGridCompute>();
         Services.AddScoped<IGridDomInterop, NullGridDomInterop>();
+        Services.AddLocalization();
     }
 
     private static List<WidgetRow> Rows() =>

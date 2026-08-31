@@ -134,7 +134,7 @@
 .dx-menu-item {
   display: block;
   width: 100%;
-  text-align: left;
+  text-align: start;
   padding: 8px 10px;
   border: 0;
   border-radius: 6px;
@@ -165,7 +165,7 @@
   min-width: 12rem;
   padding: 8px 12px;
   font: inherit;
-  text-align: left;
+  text-align: start;
   background: #ffffff;
   color: #0f172a;
   border: 1px solid #cbd5e1;
@@ -209,7 +209,7 @@
 }
 .dx-select-option-selected::after {
   content: "✓";
-  margin-left: 12px;
+  margin-inline-start: 12px;
 }
 .dx-select-option-disabled {
   opacity: 0.5;
@@ -243,7 +243,7 @@
 }
 .dx-listbox-option-selected::after {
   content: "✓";
-  margin-left: 12px;
+  margin-inline-start: 12px;
 }
 .dx-listbox-option-disabled {
   opacity: 0.5;
@@ -287,6 +287,13 @@
   padding: 20px;
   overflow: auto;
 }
+/* Deliberately physical, not logical (ADR 0016): DxSheet's Side="left"/"right" is an
+   explicit "which physical screen edge" choice a developer makes, the same way it works
+   in every other sheet/drawer component -- not a reading-direction concern the way
+   text-align/margin above are. Converting these to inline-start/inline-end would make
+   Side="right" dock to the visual left under dir="rtl", contradicting the parameter's own
+   name. RTL support here means the sheet's *content* reads correctly, not that the sheet
+   silently swaps sides. */
 .dx-sheet-panel-right { top: 0; right: 0; bottom: 0; width: min(90vw, 22rem); }
 .dx-sheet-panel-left { top: 0; left: 0; bottom: 0; width: min(90vw, 22rem); }
 .dx-sheet-panel-top { top: 0; left: 0; right: 0; height: min(90vh, 18rem); }
@@ -390,7 +397,7 @@
   min-width: 12rem;
   padding: 8px 12px;
   font: inherit;
-  text-align: left;
+  text-align: start;
   background: #ffffff;
   color: #0f172a;
   border: 1px solid #cbd5e1;

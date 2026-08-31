@@ -14,6 +14,7 @@ public sealed class DxDataGridChooserTests : TestContext
     {
         Services.AddScoped<IGridCompute, ManagedGridCompute>();
         Services.AddScoped<IGridDomInterop, NullGridDomInterop>();
+        Services.AddLocalization();
     }
 
     private static List<WidgetRow> Rows() =>

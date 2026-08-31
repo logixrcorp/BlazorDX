@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
+using Microsoft.Extensions.Localization;
 
 namespace BlazorDX.Components;
 
@@ -9,6 +10,8 @@ namespace BlazorDX.Components;
 /// </summary>
 public sealed class DxAlert : ComponentBase
 {
+    [Inject] private IStringLocalizer<DxAlert> L { get; set; } = default!;
+
     [Parameter] public string Severity { get; set; } = "info";
 
     [Parameter] public string? Title { get; set; }
@@ -59,7 +62,7 @@ public sealed class DxAlert : ComponentBase
             builder.OpenElement(13, "button");
             builder.AddAttribute(14, "type", "button");
             builder.AddAttribute(15, "class", "dx-alert-close");
-            builder.AddAttribute(16, "aria-label", "Dismiss");
+            builder.AddAttribute(16, "aria-label", L["Dismiss"].Value);
             builder.AddAttribute(17, "onclick", OnDismiss);
             builder.AddContent(18, "✕");
             builder.CloseElement();
