@@ -56,7 +56,7 @@
   <ItemGroup Label="End-to-end (real browser)">
     <!-- Playwright drives a real Chromium/Firefox/WebKit against the running demo,
          covering what bUnit cannot (native drag-and-drop, canvas, focus). -->
-    <PackageVersion Include="Microsoft.Playwright" Version="1.49.0" />
+    <PackageVersion Include="Microsoft.Playwright" Version="1.62.0" />
     <!-- Lets the E2E tests skip cleanly (not fail) when no demo server is reachable,
          so the normal `dotnet test` stays green without one. -->
     <PackageVersion Include="Xunit.SkippableFact" Version="1.4.13" />
