@@ -85,8 +85,16 @@ enhancements. None of this should be read as "ready"; it is a beta with work ahe
   TicketDesk demo app, with zero serious/critical violations; wiring this up already caught
   and fixed real form-labeling and contrast gaps. The remaining work is to lift this to a
   screen-reader audit and an attested **WCAG / VPAT** statement procurement can cite.
-- **Hosted docs site + API reference** — the in-app docs and the
-  COMPONENTS/ARCHITECTURE/ADRs are the seed; publish a generated API reference.
+- **Hosted docs site + API reference** — the in-app docs (`/docs`, per-component parameter
+  reference) and the COMPONENTS/ARCHITECTURE/ADRs were the seed. A full, generated API
+  reference now exists (`docs/apidocs`, [DocFX](https://dotnet.github.io/docfx/)):
+  every public type and member across all ten packages, built directly from XML doc
+  comments, rebuilt from source on every change rather than hand-maintained. Verified
+  locally (`docfx metadata` + `docfx build` + `docfx serve` — 461 pages, 0 warnings that
+  aren't pre-existing doc-comment nits). `.github/workflows/docs.yml` builds and deploys it
+  to GitHub Pages on every push to `main`. *Remaining: flip on GitHub Pages for this repo
+  (Settings → Pages → Source: GitHub Actions) — a one-time, repo-owner-only step this
+  workflow can't do on its own — and this item is closed.*
 - **Independent senior review** — proof of the differentiating claims; see
   [docs/REVIEW.md](REVIEW.md).
 - **Production track record** — none yet. The deployed showcase is only a demo; the library
