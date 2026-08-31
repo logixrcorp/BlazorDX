@@ -24,7 +24,6 @@ public static class InteropServiceCollectionExtensions
             services.AddScoped<IFileHashInterop, FileHashInterop>();
             services.AddScoped<ISchedulerInterop, SchedulerInterop>();
             services.AddScoped<IDocumentViewerInterop, DocumentViewerInterop>();
-            services.AddScoped<IEphemeralChatInterop, EphemeralChatInterop>();
         }
         else
         {
@@ -41,7 +40,6 @@ public static class InteropServiceCollectionExtensions
             services.AddScoped<IFileHashInterop, NullFileHashInterop>();
             services.AddScoped<ISchedulerInterop, NullSchedulerInterop>();
             services.AddScoped<IDocumentViewerInterop, NullDocumentViewerInterop>();
-            services.AddScoped<IEphemeralChatInterop, NullEphemeralChatInterop>();
         }
 
         return services;
