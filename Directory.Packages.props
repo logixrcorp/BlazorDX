@@ -19,7 +19,7 @@
     <!-- Component base types for RCLs consumed by both server and browser-wasm.
          A package reference (not a framework reference) is what keeps these
          libraries usable from a WebAssembly client. -->
-    <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="10.0.11" />
     <!-- ILogger abstraction for the optional diagnostics→logging adapter. -->
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.8" />
     <!-- IHttpClientFactory for the SSRS reporting integration: a typed/named
