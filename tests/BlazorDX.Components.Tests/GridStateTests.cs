@@ -20,6 +20,7 @@ public sealed class GridStateTests : TestContext
     {
         Services.AddScoped<IGridCompute, ManagedGridCompute>();
         Services.AddScoped<IGridDomInterop, NullGridDomInterop>();
+        Services.AddLocalization();
     }
 
     private static List<WidgetRow> Rows() =>

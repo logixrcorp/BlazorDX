@@ -38,6 +38,8 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
     [InlineData("/reports")]             // static-SSR + HTMX SSRS report viewer (embed + parameter form)
     [InlineData("/powerbi")]             // interactive Power BI embed (wrapper container, loading/error)
     [InlineData("/charts")]              // all 25 chart types, incl. interactive selection (Bar/Treemap/Network graph)
+    [InlineData("/dialog")]              // Overlays family (dx-overlay.css): Dialog, backed by DxDialog/DialogPrimitive
+    [InlineData("/dialog?dir=rtl")]      // same route under dir="rtl" — ADR 0016's RTL pilot (logical-property CSS)
     public async Task Page_has_no_serious_axe_violations(string route)
     {
         Skip.IfNot(fx.Ready, fx.SkipReason);

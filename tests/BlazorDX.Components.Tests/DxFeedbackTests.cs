@@ -9,6 +9,11 @@ namespace BlazorDX.Components.Tests;
 /// <summary>Toast service/host, alert, progress, spinner.</summary>
 public sealed class DxFeedbackTests : TestContext
 {
+    public DxFeedbackTests()
+    {
+        Services.AddLocalization();
+    }
+
     [Fact]
     public void Toast_service_adds_and_removes_with_change_events()
     {

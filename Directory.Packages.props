@@ -25,6 +25,10 @@
     <!-- IHttpClientFactory for the SSRS reporting integration: a typed/named
          HttpClient is the supported way to reach the report server. -->
     <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.8" />
+    <!-- IStringLocalizer<T> — the localization spike (ADR 0016). Under evaluation
+         against this project's AOT/trim gate before it's adopted repo-wide; see
+         docs/adr/0016-localization-rtl-strategy.md for the outcome. -->
+    <PackageVersion Include="Microsoft.Extensions.Localization" Version="10.0.8" />
   </ItemGroup>
   <ItemGroup Label="Blazor Web App (demo)">
     <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.8" />

@@ -7,10 +7,15 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 // XML doc comments (/_content/<lib>/api-docs.xml) for parameter descriptions.
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
+// IStringLocalizer<T> resolution (ADR 0016's spike) -- needed on both the client
+// and server (the server's own AddLocalization() call is in its Program.cs) since
+// pages prerender server-side too.
+builder.Services.AddLocalization();
+
 // Registers IGridCompute; in the browser this resolves to the Rust/wasm backend.
 // (AddBlazorDXCompute also registers every BlazorDX.Interop bridge -- grid DOM/wasm,
-// overlay, richtext, hotkeys, image editor, file DnD/hash, scheduler, document viewer,
-// and the ephemeral chat crypto/DOM bridge -- with their real, browser-only implementations.)
+// overlay, richtext, hotkeys, image editor, file DnD/hash, scheduler, and document
+// viewer -- with their real, browser-only implementations.)
 builder.Services.AddBlazorDXCompute();
 
 // DxPowerBiReport's browser bridge (the [JSImport] wrapper over dx-powerbi.js).

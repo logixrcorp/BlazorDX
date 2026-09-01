@@ -47,6 +47,7 @@ public sealed class ObservabilityTests : TestContext
     {
         Services.AddScoped<IGridCompute, ManagedGridCompute>();
         Services.AddScoped<IGridDomInterop, NullGridDomInterop>();
+        Services.AddLocalization();
     }
 
     // ---- Diagnostics sink ----

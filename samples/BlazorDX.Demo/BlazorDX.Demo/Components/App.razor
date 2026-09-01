@@ -1,7 +1,7 @@
 ﻿@inject NavigationManager Nav
 @inject IConfiguration Configuration
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="@Dir">
 
 <head>
     <meta charset="utf-8" />
@@ -135,4 +135,12 @@
     // Canonical / og:url for the current request, without query string or fragment.
     // Behind the Cloudflare tunnel, forwarded headers make this the public https URL.
     private string CanonicalUrl => new Uri(Nav.Uri).GetLeftPart(UriPartial.Path);
+
+    // Demo-only RTL toggle for manually verifying logical-property CSS conversions and
+    // driving the axe-core RTL sweep (ADR 0016's spike): ?dir=rtl on any route sets the
+    // document direction. App.razor runs server-side (including for interactive-WASM
+    // pages' initial prerender), so this covers both the static-SSR and prerendered-WASM
+    // cases without any client-side wiring.
+    private string Dir =>
+        System.Web.HttpUtility.ParseQueryString(new Uri(Nav.Uri).Query)["dir"] == "rtl" ? "rtl" : "ltr";
 }

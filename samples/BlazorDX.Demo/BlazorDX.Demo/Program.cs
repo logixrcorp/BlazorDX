@@ -43,6 +43,10 @@ builder.Services.AddDataProtection()
     .SetApplicationName("BlazorDX.Demo")
     .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
 
+// IStringLocalizer<T> resolution (ADR 0016's spike) -- also registered client-side
+// (see BlazorDX.Demo.Client's Program.cs) since pages prerender server-side too.
+builder.Services.AddLocalization();
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()

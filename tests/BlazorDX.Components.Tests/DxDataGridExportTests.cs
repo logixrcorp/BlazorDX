@@ -91,6 +91,7 @@ public sealed class DxDataGridExportTests : TestContext
     {
         Services.AddScoped<IGridCompute, ManagedGridCompute>();
         Services.AddScoped<IGridDomInterop>(_ => dom);
+        Services.AddLocalization();
     }
 
     private static List<WidgetRow> Rows() =>
