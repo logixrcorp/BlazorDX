@@ -37,7 +37,7 @@
   <ItemGroup Label="Testing">
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
     <PackageVersion Include="xunit" Version="2.9.2" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
     <PackageVersion Include="bunit" Version="1.31.3" />
     <!-- Transitive pin: bunit 1.31.3 otherwise drags in a vulnerable preview of
          this package (NU1903). Central transitive pinning forces the patched one. -->
