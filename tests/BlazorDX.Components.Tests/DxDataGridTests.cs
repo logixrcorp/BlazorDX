@@ -1,9 +1,11 @@
+using AngleSharp.Dom;
 using BlazorDX.Components;
 using BlazorDX.Compute;
 using BlazorDX.Interop;
 using BlazorDX.Primitives.Grid;
 using Bunit;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Localization;
 using Xunit;
 
 namespace BlazorDX.Components.Tests;
@@ -37,6 +39,7 @@ public sealed class DxDataGridTests : TestContext
     {
         Services.AddScoped<IGridCompute, ManagedGridCompute>();
         Services.AddScoped<IGridDomInterop, NullGridDomInterop>();
+        Services.AddLocalization();
     }
 
     [Fact]
@@ -61,6 +64,39 @@ public sealed class DxDataGridTests : TestContext
             .Add(g => g.Accessor, new WidgetRowGridAccessor()));
 
         Assert.Contains("aria-rowcount=\"3\"", grid.Markup);
+    }
+
+    [Fact]
+    public void Select_all_aria_label_is_wired_through_the_localizer_not_hardcoded()
+    {
+        // Same reasoning as DxAlertTests's sentinel test: the real English resource value is
+        // also "Select all rows", so only a sentinel distinguishes "wired to
+        // IStringLocalizer<DxDataGridResources>" from "still a hardcoded literal." Registered
+        // against the non-generic marker type, not IStringLocalizer<DxDataGrid<WidgetRow>> --
+        // see the doc comment on DxDataGrid<TRow>'s own L field for why.
+        Services.AddSingleton<IStringLocalizer<DxDataGridResources>>(new FakeStringLocalizer<DxDataGridResources>());
+
+        IRenderedComponent<DxDataGrid<WidgetRow>> grid = RenderComponent<DxDataGrid<WidgetRow>>(parameters => parameters
+            .Add(g => g.Items, Rows)
+            .Add(g => g.Accessor, new WidgetRowGridAccessor())
+            .Add(g => g.Selectable, true));
+
+        IElement checkbox = grid.Find("input.dx-grid-select");
+        Assert.Equal("§§SELECTALLROWS§§", checkbox.GetAttribute("aria-label"));
+    }
+
+    [Fact]
+    public void Select_all_falls_back_to_the_invariant_resource_when_no_translation_is_registered()
+    {
+        // Services.AddLocalization() is already called in the constructor -- this proves
+        // DxDataGridResources.resx's own real value round-trips, not a registered fake.
+        IRenderedComponent<DxDataGrid<WidgetRow>> grid = RenderComponent<DxDataGrid<WidgetRow>>(parameters => parameters
+            .Add(g => g.Items, Rows)
+            .Add(g => g.Accessor, new WidgetRowGridAccessor())
+            .Add(g => g.Selectable, true));
+
+        IElement checkbox = grid.Find("input.dx-grid-select");
+        Assert.Equal("Select all rows", checkbox.GetAttribute("aria-label"));
     }
 
     private static readonly List<WidgetRow> Grouped =

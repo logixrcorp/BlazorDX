@@ -863,6 +863,14 @@
         <member name="P:BlazorDX.Components.DxDataGrid`1.Class">
             <summary>Optional extra CSS classes appended to the grid container.</summary>
         </member>
+        <member name="T:BlazorDX.Components.DxDataGridResources">
+            <summary>
+            Non-generic marker type <see cref="T:BlazorDX.Components.DxDataGrid`1"/> injects <see cref="T:Microsoft.Extensions.Localization.IStringLocalizer`1"/>
+            against, so its resource lookup has one stable name shared across every <c>TRow</c>
+            instantiation instead of one that varies per closed generic type. See the doc comment on
+            <see cref="T:BlazorDX.Components.DxDataGrid`1"/>'s own <c>L</c> field.
+            </summary>
+        </member>
         <member name="T:BlazorDX.Components.DxDatePicker">
             <summary>
             Tier 2 styled date picker. Inherits all behavior from

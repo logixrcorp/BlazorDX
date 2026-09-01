@@ -19,6 +19,7 @@ public sealed class RemoteGridTests : TestContext
     {
         Services.AddScoped<IGridCompute, ManagedGridCompute>();
         Services.AddScoped<IGridDomInterop, NullGridDomInterop>();
+        Services.AddLocalization();
     }
 
     // Records the last request and serves an in-memory dataset as if it were a server.

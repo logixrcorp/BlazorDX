@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ColumnsToggle" xml:space="preserve">
+    <value>Colonnes ({0}/{1})</value>
+  </data>
+  <data name="MoveColumnLeft" xml:space="preserve">
+    <value>Déplacer {0} vers la gauche</value>
+  </data>
+  <data name="MoveColumnRight" xml:space="preserve">
+    <value>Déplacer {0} vers la droite</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>Copier</value>
+  </data>
+  <data name="ExportCsv" xml:space="preserve">
+    <value>Exporter en CSV</value>
+  </data>
+  <data name="ExportExcel" xml:space="preserve">
+    <value>Exporter en Excel</value>
+  </data>
+  <data name="ExportPdf" xml:space="preserve">
+    <value>Exporter en PDF</value>
+  </data>
+  <data name="FilterPlaceholder" xml:space="preserve">
+    <value>Filtrer…</value>
+  </data>
+  <data name="FilterColumn" xml:space="preserve">
+    <value>Filtrer {0}</value>
+  </data>
+  <data name="SelectAllRows" xml:space="preserve">
+    <value>Sélectionner toutes les lignes</value>
+  </data>
+  <data name="DragToReorder" xml:space="preserve">
+    <value>Faire glisser, ou Ctrl+Flèche, pour réorganiser</value>
+  </data>
+  <data name="SortTitle" xml:space="preserve">
+    <value>Cliquer pour trier ; Maj+clic pour un tri multi-colonnes</value>
+  </data>
+  <data name="DragToResize" xml:space="preserve">
+    <value>Faire glisser pour redimensionner</value>
+  </data>
+  <data name="BlankValue" xml:space="preserve">
+    <value>(vide)</value>
+  </data>
+  <data name="ClearFilter" xml:space="preserve">
+    <value>Effacer le filtre</value>
+  </data>
+  <data name="SelectRow" xml:space="preserve">
+    <value>Sélectionner la ligne</value>
+  </data>
+  <data name="DoubleClickToEdit" xml:space="preserve">
+    <value>Double-cliquer pour modifier</value>
+  </data>
+  <data name="CollapseDetails" xml:space="preserve">
+    <value>Réduire les détails</value>
+  </data>
+  <data name="ExpandDetails" xml:space="preserve">
+    <value>Développer les détails</value>
+  </data>
+  <data name="EditColumn" xml:space="preserve">
+    <value>Modifier {0}</value>
+  </data>
+</root>
