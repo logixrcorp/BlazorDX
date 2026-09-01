@@ -13,13 +13,10 @@
 # ---- Build stage ------------------------------------------------------------
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
-# Node.js 20 (esbuild bundling) + Rust (wasm32 compute + security kernels). build-essential
-# (gcc + a linker) is needed to build/link Rust *build scripts* on the host triple — not for the
-# wasm32 target itself, but a wasm32-unknown-unknown crate can still depend on a crate with a
-# build.rs (e.g. BlazorDX.Security.Rust's crypto dependency chain: aes-gcm/p256/sha2 pull in
-# generic-array, which has one). BlazorDX.Compute.Rust's dependency tree happens to have none, so
-# it built fine without this; GitHub Actions' ubuntu-latest runner ships gcc preinstalled, which is
-# why this gap never showed up in CI — only in a `docker build` from this minimal SDK base image.
+# Node.js 20 (esbuild bundling) + Rust (wasm32 compute kernel). build-essential (gcc + a
+# linker) is needed to build/link Rust *build scripts* on the host triple — GitHub Actions'
+# ubuntu-latest runner ships gcc preinstalled, which is why a missing one never showed up in
+# CI, only in a `docker build` from this minimal SDK base image.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends curl ca-certificates build-essential \
  && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
@@ -35,25 +32,20 @@ RUN dotnet workload install wasm-tools
 WORKDIR /src
 COPY . .
 
-# Build ALL native tiers explicitly into the interop static-asset folder. The in-build
+# Build the native tier explicitly into the interop static-asset folder. The in-build
 # MSBuild targets degrade to a *warning* if cargo/esbuild don't run, which silently ships an
 # image missing the wasm/JS the components import at runtime (the prod 404s). Doing it here
 # fails the image build loudly instead, and guarantees the assets exist before publish.
 # The interop asset folder isn't in the build context (.dockerignore strips its only files,
 # the generated wasm/JS, leaving an empty dir Docker omits), so create it before writing.
-# Two separate wasm32 crates: dx_grid (BlazorDX.Compute.Rust, the grid compute kernel) and
-# dx_security (BlazorDX.Security.Rust, the ephemeral chat conduit's ECDH/AES-GCM crypto core).
-# Missing either one silently breaks a different feature at runtime with no build-time signal
-# unless it's built and gated here explicitly, same as dx_grid always was.
+# dx_grid is BlazorDX.Compute.Rust, the grid compute kernel. (dx_security, the ephemeral
+# chat conduit's crypto core, moved to its own repo — AIEphemeral — and is no longer built
+# here.)
 RUN mkdir -p src/BlazorDX.Interop/wwwroot/dx \
  && cargo build --release --target wasm32-unknown-unknown \
       --manifest-path src/BlazorDX.Compute.Rust/Cargo.toml \
  && cp src/BlazorDX.Compute.Rust/target/wasm32-unknown-unknown/release/dx_grid.wasm \
-       src/BlazorDX.Interop/wwwroot/dx/dx_grid.wasm \
- && cargo build --release --target wasm32-unknown-unknown \
-      --manifest-path src/BlazorDX.Security.Rust/Cargo.toml \
- && cp src/BlazorDX.Security.Rust/target/wasm32-unknown-unknown/release/dx_security.wasm \
-       src/BlazorDX.Interop/wwwroot/dx/dx_security.wasm
+       src/BlazorDX.Interop/wwwroot/dx/dx_grid.wasm
 RUN cd src/BlazorDX.Interop.Ts && npm ci && node build.mjs
 
 # Publish the server host + WASM client, reusing the bundles built above (skip the
@@ -65,10 +57,9 @@ RUN dotnet publish samples/BlazorDX.Demo/BlazorDX.Demo/BlazorDX.Demo.csproj \
 # Gate: the interop assets must be in the publish output. If not, print where they actually
 # landed (so the failure is diagnosable) and fail — a broken image must never ship.
 RUN if [ ! -f /app/publish/wwwroot/_content/BlazorDX.Interop/dx/grid-interop.js ] \
-    || [ ! -f /app/publish/wwwroot/_content/BlazorDX.Interop/dx/dx_grid.wasm ] \
-    || [ ! -f /app/publish/wwwroot/_content/BlazorDX.Interop/dx/dx_security.wasm ]; then \
+    || [ ! -f /app/publish/wwwroot/_content/BlazorDX.Interop/dx/dx_grid.wasm ]; then \
       echo '=== interop assets actually present in publish: ==='; \
-      find /app/publish/wwwroot -iname 'grid-interop.js' -o -iname 'dx_grid.wasm' -o -iname 'dx_security.wasm' -o -iname 'grid-dom.js'; \
+      find /app/publish/wwwroot -iname 'grid-interop.js' -o -iname 'dx_grid.wasm' -o -iname 'grid-dom.js'; \
       echo '=== _content tree (depth 3): ==='; \
       find /app/publish/wwwroot/_content -maxdepth 3 2>/dev/null | head -60; \
       echo 'ERROR: BlazorDX.Interop static assets missing from expected publish path'; exit 1; \
