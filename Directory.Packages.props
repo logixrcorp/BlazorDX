@@ -11,8 +11,8 @@
   </PropertyGroup>
   <ItemGroup Label="Roslyn (analyzers + source generators)">
     <PackageVersion Include="Deque.AxeCore.Playwright" Version="4.11.3" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="5.9.0-1.26328.17" />
   </ItemGroup>
   <ItemGroup Label="Runtime">
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />
