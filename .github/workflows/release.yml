@@ -21,7 +21,7 @@ jobs:
     name: Pack release artifacts (no publish)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Set up .NET 10
         uses: actions/setup-dotnet@v6
