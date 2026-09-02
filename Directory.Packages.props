@@ -21,7 +21,7 @@
          libraries usable from a WebAssembly client. -->
     <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="10.0.11" />
     <!-- ILogger abstraction for the optional diagnostics→logging adapter. -->
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.11" />
     <!-- IHttpClientFactory for the SSRS reporting integration: a typed/named
          HttpClient is the supported way to reach the report server. -->
     <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.8" />
