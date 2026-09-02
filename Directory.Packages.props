@@ -10,7 +10,7 @@
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
   <ItemGroup Label="Roslyn (analyzers + source generators)">
-    <PackageVersion Include="Deque.AxeCore.Playwright" Version="4.11.3" />
+    <PackageVersion Include="Deque.AxeCore.Playwright" Version="4.13.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="5.9.0-1.26328.17" />
   </ItemGroup>
@@ -21,7 +21,7 @@
          libraries usable from a WebAssembly client. -->
     <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="10.0.8" />
     <!-- ILogger abstraction for the optional diagnostics→logging adapter. -->
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.11" />
     <!-- IHttpClientFactory for the SSRS reporting integration: a typed/named
          HttpClient is the supported way to reach the report server. -->
     <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.8" />
@@ -36,7 +36,7 @@
   </ItemGroup>
   <ItemGroup Label="Testing">
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
-    <PackageVersion Include="xunit" Version="2.9.2" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
     <PackageVersion Include="bunit" Version="1.31.3" />
     <!-- Transitive pin: bunit 1.31.3 otherwise drags in a vulnerable preview of

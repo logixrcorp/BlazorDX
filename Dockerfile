@@ -13,13 +13,17 @@
 # ---- Build stage ------------------------------------------------------------
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
-# Node.js 20 (esbuild bundling) + Rust (wasm32 compute kernel). build-essential (gcc + a
+# Node.js 22 (esbuild bundling) + Rust (wasm32 compute kernel). build-essential (gcc + a
 # linker) is needed to build/link Rust *build scripts* on the host triple — GitHub Actions'
 # ubuntu-latest runner ships gcc preinstalled, which is why a missing one never showed up in
 # CI, only in a `docker build` from this minimal SDK base image.
+# Node 22, not 20: jsdom (a devDependency of the TS interop bridge) requires Node
+# ^22.22.2 || ^24.15.0 || >=26.0.0 as of jsdom 30 — Node 20 only produced non-fatal
+# EBADENGINE warnings, not a hard failure, but that's an unenforced coincidence, not a
+# supported combination.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends curl ca-certificates build-essential \
- && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+ && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
  && apt-get install -y --no-install-recommends nodejs \
  && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal \
  && rm -rf /var/lib/apt/lists/*

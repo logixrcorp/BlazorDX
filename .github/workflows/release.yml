@@ -21,7 +21,7 @@ jobs:
     name: Pack release artifacts (no publish)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Set up .NET 10
         uses: actions/setup-dotnet@v6
@@ -31,7 +31,7 @@ jobs:
       - name: Set up Node (esbuild for the TypeScript bridge)
         uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Add the wasm Rust target (dx_grid)
         run: rustup target add wasm32-unknown-unknown
