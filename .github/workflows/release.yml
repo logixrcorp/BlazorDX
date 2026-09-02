@@ -31,7 +31,7 @@ jobs:
       - name: Set up Node (esbuild for the TypeScript bridge)
         uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Add the wasm Rust target (dx_grid)
         run: rustup target add wasm32-unknown-unknown
