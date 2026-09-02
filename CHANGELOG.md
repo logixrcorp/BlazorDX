@@ -9,6 +9,8 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-09-02
+
 ### Removed
 
 - **The Zero-Trust, Ephemeral AI Chat Conduit moved to its own repository, [AIEphemeral](https://github.com/logixrcorp/AIEphemeral).**
@@ -599,12 +601,45 @@ All notable changes to BlazorDX are documented here. The format is loosely based
   upstream playground backend host was retired. Repointed at the playground's current
   `GenerateToken` endpoint and fixed the (now lowercase) JSON key parsing.
 
-> **A note on 0.5.0:** `artifacts/releases/0.5.0/` holds a real local pack (built
-> 2026-07-17 from `feat/extended-document-handling` at commit `c4a95e2`), but it was
-> never tagged and `Directory.Build.props`'s declared `<Version>` was never bumped past
-> `0.4.4` — so it isn't a release in the sense every other entry here is. Left out of
-> this changelog rather than backfilled with an invented entry; the 0.3.8–0.4.4 entries
-> below are reconstructed from real tagged commits, this one deliberately isn't.
+### Added
+
+- **Localization & RTL, Phase 0.** The completion audit's largest remaining item: BlazorDX had
+  zero localization infrastructure (no `IStringLocalizer`, no `.resx`) and 100% physical
+  directional CSS. This phase proves the mechanism end to end on a real pilot slice rather than
+  assuming one, and leaves the other ~130 components as a separate, later effort — see
+  [ADR 0016](docs/adr/0016-localization-rtl-strategy.md) for the full decision record.
+  `IStringLocalizer<T>` + root-level `.resx` was validated empirically against this repo's actual
+  AOT-publish CI gate before committing to it (clean, zero trim/AOT warnings) rather than assumed
+  safe. Piloted on `DxAlert` (a single-literal leaf case) and `DxDataGrid` (~20 literals; generic
+  components need a non-generic marker type — `DxDataGridResources` — since
+  `IStringLocalizer<DxDataGrid<TRow>>` would otherwise vary its resource name per closed `TRow`).
+  A real resource-manifest-naming bug was caught and fixed during the pilot (root-level `.resx`
+  instead of a `ResourcesPath` subfolder) before it could propagate across the other 130
+  components — see the ADR for the root cause. New tests follow a sentinel + real-fallback pattern
+  (`DxAlertTests.cs`, plus additions to `DxDataGridTests.cs`) that specifically catches this class
+  of bug, since a naive "does the English string render" test can pass even when localization is
+  silently broken. `dx-overlay.css` (backing `DxDialog`) converted from physical to logical CSS
+  properties (`margin-inline-start`, `text-align: start`, etc.) as the RTL pilot — the standard
+  browser-native fix that needs no `[dir="rtl"]` override for the common case — and the demo app
+  gained a working `?dir=rtl` toggle (`App.razor`). A live in-browser culture-switch demo was
+  attempted and deliberately not shipped; see the ADR's Consequences section for why, and what a
+  future attempt should try instead.
+
+### Fixed
+
+- **Docker builds failed at the wasm-compile step** (`error: manifest path
+  'src/BlazorDX.Security.Rust/Cargo.toml' does not exist`) since the Zero-Trust Ephemeral Chat
+  Conduit's extraction to its own repo (AIEphemeral, see above): every reference to
+  `BlazorDX.Security.Rust` in the C#/TS build chain was cleaned up at the time, but the root
+  `Dockerfile` lives outside that file list and was missed. Dropped the dead `cargo build`/`cp`
+  step and the `dx_security.wasm` publish-output gate; nothing downstream expects that file
+  anymore.
+- **CI silently ran on an unsupported Node version.** jsdom 30 (a `devDependency` of the TS
+  interop bridge's test suite) requires Node `^22.22.2 || ^24.15.0 || >=26.0.0`; CI and the
+  Dockerfile were still pinned to Node 20. This never surfaced as a build failure — `npm ci` only
+  emits non-fatal `EBADENGINE` warnings for jsdom and three of its transitive deps rather than
+  refusing to install — but it was never a supported combination. Bumped Node 20 → 22 across
+  `ci.yml` (all 3 jobs), `release.yml`, and the Dockerfile's NodeSource setup script.
 
 ## [0.4.4] — 2026-06-28
 
