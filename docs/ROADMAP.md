@@ -65,6 +65,12 @@ Raw component count is explicitly **not** the target — see *Out of scope*.
 - **Showcase**: the demo home page is now a developer landing — live previews,
   getting-started code, and a categorized catalog with copy-pasteable examples per
   component, behind a categorized nav.
+- **Hosted docs site + API reference**: a full, generated API reference
+  (`docs/apidocs`, [DocFX](https://dotnet.github.io/docfx/)) — every public type and
+  member across all ten packages, built directly from XML doc comments, rebuilt from
+  source on every change rather than hand-maintained. `.github/workflows/docs.yml`
+  builds and deploys it to GitHub Pages on every push to `main`; live at
+  [logixrcorp.github.io/BlazorDX](https://logixrcorp.github.io/BlazorDX/).
 
 ---
 
@@ -78,23 +84,18 @@ enhancements. None of this should be read as "ready"; it is a beta with work ahe
 ### Trust (the actual binding constraint)
 
 - **Localization & RTL** — `IStringLocalizer` integration for component-supplied strings
-  and a right-to-left layout pass. *Not yet started; a hard requirement for many
-  enterprise and international buyers.*
+  and a right-to-left layout pass. **Phase 0 done**: the `IStringLocalizer<T>` +
+  root-level `.resx` mechanism is proven end to end against the real AOT-publish CI gate
+  (not assumed), piloted on `DxAlert` and `DxDataGrid`, with a working RTL CSS pilot
+  (`dx-overlay.css` converted to logical properties) and a `?dir=rtl` demo toggle — see
+  [ADR 0016](adr/0016-localization-rtl-strategy.md). *Remaining: roll the proven pattern
+  out across the other ~130 components — still the single largest item on this list, and
+  a hard requirement for many enterprise and international buyers.*
 - **Formal accessibility audit + VPAT** — automated **axe-core checks now run in CI**
   (`AccessibilityE2ETests`, across Chromium/Firefox/WebKit) over the showcase and the
   TicketDesk demo app, with zero serious/critical violations; wiring this up already caught
   and fixed real form-labeling and contrast gaps. The remaining work is to lift this to a
   screen-reader audit and an attested **WCAG / VPAT** statement procurement can cite.
-- **Hosted docs site + API reference** — the in-app docs (`/docs`, per-component parameter
-  reference) and the COMPONENTS/ARCHITECTURE/ADRs were the seed. A full, generated API
-  reference now exists (`docs/apidocs`, [DocFX](https://dotnet.github.io/docfx/)):
-  every public type and member across all ten packages, built directly from XML doc
-  comments, rebuilt from source on every change rather than hand-maintained. Verified
-  locally (`docfx metadata` + `docfx build` + `docfx serve` — 461 pages, 0 warnings that
-  aren't pre-existing doc-comment nits). `.github/workflows/docs.yml` builds and deploys it
-  to GitHub Pages on every push to `main`. *Remaining: flip on GitHub Pages for this repo
-  (Settings → Pages → Source: GitHub Actions) — a one-time, repo-owner-only step this
-  workflow can't do on its own — and this item is closed.*
 - **Independent senior review** — proof of the differentiating claims; see
   [docs/REVIEW.md](REVIEW.md).
 - **Production track record** — none yet. The deployed showcase is only a demo; the library
@@ -144,7 +145,7 @@ the differentiator. Where it makes sense, we expose clean integration seams inst
 
 ## Sequencing
 
-With breadth and depth largely in place, the path to 1.0 is **trust-first**:
-localization/RTL and the accessibility audit/VPAT are the highest-leverage items for
-adoption, run alongside hosted docs and an independent review. Raw component count is
-explicitly **not** the target — only the trust work moves *adoption*.
+With breadth and depth largely in place and hosted docs now live, the path to 1.0 is
+**trust-first**: the localization/RTL rollout and the accessibility audit/VPAT are the
+highest-leverage remaining items for adoption, alongside an independent review. Raw
+component count is explicitly **not** the target — only the trust work moves *adoption*.
