@@ -26,7 +26,22 @@ public sealed class ChartZoomPrimitive
 
     private double DataSpan => DataMax - DataMin;
 
-    public bool IsZoomed => VisibleMin > DataMin || VisibleMax < DataMax;
+    /// <summary>
+    /// True when the visible window is meaningfully narrower than the full domain. Compares with
+    /// a small relative tolerance (not a strict <c>&gt;</c>/<c>&lt;</c>) — repeated zoom/pan
+    /// arithmetic (e.g. a <see cref="ZoomIn"/> exactly undone by a <see cref="ZoomOut"/>) can land
+    /// VisibleMin/VisibleMax a few ULPs off DataMin/DataMax rather than exactly on them; without
+    /// the tolerance, that floating-point residue alone would keep this true (and a reset button
+    /// visibly lingering) even though the view is, for every practical purpose, back to unzoomed.
+    /// </summary>
+    public bool IsZoomed
+    {
+        get
+        {
+            double epsilon = DataSpan * 1e-9;
+            return VisibleMin > DataMin + epsilon || VisibleMax < DataMax - epsilon;
+        }
+    }
 
     /// <summary>
     /// (Re)anchors the domain when the dataset changes. If the domain's extent hasn't actually
