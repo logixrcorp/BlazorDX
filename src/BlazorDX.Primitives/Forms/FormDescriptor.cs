@@ -26,6 +26,25 @@ public enum FormFieldKind
 }
 
 /// <summary>
+/// How a conditional field's <see cref="FormFieldInfo.DependsOn"/> value is compared
+/// against <see cref="FormFieldInfo.DependsOnValue"/> to decide whether the field is
+/// currently active. Comparison is always over the invariant-string form
+/// <see cref="IFormModel{TModel}.GetString"/> already produces for every field kind
+/// (bool → "True"/"False", enum → member name, ...) — no per-kind comparison logic.
+/// </summary>
+public enum FormFieldDependsOnOperator
+{
+    /// <summary>The dependency's current value equals <see cref="FormFieldInfo.DependsOnValue"/> (case-insensitive).</summary>
+    Equals,
+
+    /// <summary>The dependency's current value does not equal <see cref="FormFieldInfo.DependsOnValue"/> (case-insensitive).</summary>
+    NotEquals,
+
+    /// <summary>The dependency's current value is non-empty/non-whitespace. <see cref="FormFieldInfo.DependsOnValue"/> is ignored.</summary>
+    NotEmpty,
+}
+
+/// <summary>
 /// Static metadata for one field — everything <c>DxForm</c> needs to render and
 /// validate it, and everything <see cref="FormTool"/> needs to describe it to an AI.
 /// Generated, never reflected.
@@ -42,7 +61,13 @@ public sealed record FormFieldInfo(
     string? Pattern,
     string? Placeholder,
     IReadOnlyList<string>? Choices,
-    bool Sensitive = false);   // hidden from the AI tool surface (schema + ApplyArguments), still human-editable
+    bool Sensitive = false,   // hidden from the AI tool surface (schema + ApplyArguments), still human-editable
+    // Conditional fields: this field renders / validates / is AI-settable only while
+    // FormFieldActivity.IsActive(model, instance, this) holds. DependsOn is null for
+    // every unconditional field (the common case) — see docs/adr/0018-conditional-form-fields.md.
+    string? DependsOn = null,
+    string? DependsOnValue = null,
+    FormFieldDependsOnOperator DependsOnOperator = FormFieldDependsOnOperator.Equals);
 
 /// <summary>A single validation failure: which field, and why.</summary>
 public sealed record FormValidationError(string Field, string Message);

@@ -72,6 +72,7 @@ public sealed class DxForm<TModel> : ComponentBase
             Get = name => Descriptor.GetString(Model, name),
             SetAsync = SetFieldAsync,
             ErrorsFor = MessagesFor,
+            IsActive = field => FormFieldActivity.IsActive(Descriptor, Model, field),
             FieldTemplate = FieldTemplate,
             InputTemplate = InputTemplate,
             LabelTemplate = LabelTemplate,
@@ -161,8 +162,15 @@ public sealed class DxForm<TModel> : ComponentBase
             int region = 0;
             foreach (FormFieldInfo field in Descriptor.Fields)
             {
-                builder.OpenRegion(region++);   // isolate each iteration's sequence space
-                FormFieldRenderer.Render(builder, context!, field);
+                // The region is opened (and its sequence number consumed) for every field
+                // regardless of active state, so a field's diffing identity doesn't shift
+                // whenever an *earlier* field's active-state toggles.
+                builder.OpenRegion(region++);
+                if (context!.IsActive(field))
+                {
+                    FormFieldRenderer.Render(builder, context!, field);
+                }
+
                 builder.CloseRegion();
             }
         }

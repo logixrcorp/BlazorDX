@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -22,15 +23,22 @@ public sealed class FormModelGenerator : IIncrementalGenerator
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        IncrementalValuesProvider<FormModelDef> models = context.SyntaxProvider
+        IncrementalValuesProvider<(FormModelDef Model, ImmutableArray<Diagnostic> Diagnostics)> models = context.SyntaxProvider
             .ForAttributeWithMetadataName(
                 ModelAttribute,
                 predicate: static (node, _) => node is TypeDeclarationSyntax,
                 transform: static (ctx, _) =>
                     FormModelAnalysis.Build((INamedTypeSymbol)ctx.TargetSymbol, ctx.Attributes[0]));
 
-        context.RegisterSourceOutput(models, static (production, model) =>
-            production.AddSource($"{model.TypeName}FormModel.g.cs", Emit(model)));
+        context.RegisterSourceOutput(models, static (production, result) =>
+        {
+            foreach (Diagnostic diagnostic in result.Diagnostics)
+            {
+                production.ReportDiagnostic(diagnostic);
+            }
+
+            production.AddSource($"{result.Model.TypeName}FormModel.g.cs", Emit(result.Model));
+        });
     }
 
     private static SourceText Emit(FormModelDef model)
@@ -78,7 +86,8 @@ public sealed class FormModelGenerator : IIncrementalGenerator
             s.AppendLine(
                 $"        new {Ns}.FormFieldInfo({Literal(f.PropertyName)}, {Literal(f.Label)}, {Literal(f.Description)}, " +
                 $"{Ns}.FormFieldKind.{f.Kind}, {Bool(f.Required)}, {NDouble(f.Min)}, {NDouble(f.Max)}, " +
-                $"{NInt(f.MaxLength)}, {Literal(f.Pattern)}, {Literal(f.Placeholder)}, {choices}, {Bool(f.Sensitive)}),");
+                $"{NInt(f.MaxLength)}, {Literal(f.Pattern)}, {Literal(f.Placeholder)}, {choices}, {Bool(f.Sensitive)}, " +
+                $"{Literal(f.DependsOn)}, {Literal(f.DependsOnValue)}, {Ns}.FormFieldDependsOnOperator.{f.DependsOnOperator}),");
         }
 
         s.AppendLine("    };");
@@ -165,7 +174,22 @@ public sealed class FormModelGenerator : IIncrementalGenerator
         s.AppendLine($"        var errors = new global::System.Collections.Generic.List<{Ns}.FormValidationError>();");
         foreach (FormFieldDef f in model.Fields)
         {
+            if (f.DependsOn is null)
+            {
+                EmitFieldChecks(s, f);
+                continue;
+            }
+
+            // Conditional field: its constraints (Required included) only apply while
+            // FormFieldActivity.IsActive holds — the same evaluator DxForm's renderer,
+            // DxFormField, and FormTool.ApplyArguments all call, so there is exactly one
+            // implementation of "is this field currently active."
+            s.AppendLine(
+                $"        if ({Ns}.FormFieldActivity.IsActive(this, model, {Literal(f.DependsOn)}, " +
+                $"{Literal(f.DependsOnValue)}, {Ns}.FormFieldDependsOnOperator.{f.DependsOnOperator}))");
+            s.AppendLine("        {");
             EmitFieldChecks(s, f);
+            s.AppendLine("        }");
         }
 
         if (model.Validatable)
