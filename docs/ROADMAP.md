@@ -113,7 +113,12 @@ enhancements. None of this should be read as "ready"; it is a beta with work ahe
   [ADR 0017](adr/0017-chart-zoom-pan-strategy.md). Other continuous-domain chart kinds (scatter,
   etc.) remain future work — this pass was deliberately scoped to the two kinds
   `ChartSelectionPrimitive` always named as the intended target.
-- **Forms depth** — array / nested / conditional fields.
+- **Forms depth** — conditional fields have shipped: a field can gate on another field's
+  live value (`DependsOn`/`DependsOnValue`), governing visibility, requiredness, and the
+  AI/MCP tool schema together — see [ADR 0018](adr/0018-conditional-form-fields.md).
+  Array and nested-object fields remain future work — both need a real redesign of
+  `IFormModel<TModel>`'s scalar-only `GetString`/`SetString` contract, which this pass
+  deliberately didn't touch.
 - **Breadth tail** — a handful of leaves still worth adding (FAB/SpeedDial, Mention,
   standalone AutoComplete). The chart-family tail (heatmap, treemap, sankey, and beyond) and
   the month-view Calendar have both shipped since this was written.

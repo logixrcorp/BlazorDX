@@ -43,7 +43,7 @@ public sealed class DxFormField : ComponentBase, IDisposable
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         FormFieldInfo? field = Form?.Find(Name);
-        if (Form is null || field is null)
+        if (Form is null || field is null || !Form.IsActive(field))
         {
             return;
         }

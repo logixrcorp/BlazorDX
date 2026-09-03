@@ -52,6 +52,48 @@ All notable changes to BlazorDX are documented here. The format is loosely based
   - `DxGraph`'s `Line`/`Area` kinds needed explicit new `Zoomable`/`OnZoomChanged` plumbing —
     parameters forward via individually-named calls per kind there, not generically.
 
+- **Forms: conditional fields, via `[DxField(DependsOn = ...)]`.** The roadmap's "Forms depth"
+  item — a field can now gate on another field's live value, e.g. an escalation-notes field that
+  only applies (and is only required) when a priority field is `High`. Scoped deliberately to
+  conditional fields only: array and nested-object fields both need a real redesign of
+  `IFormModel<TModel>`'s scalar-only `GetString`/`SetString` contract, which this pass didn't
+  touch. Full design record in [ADR 0018](docs/adr/0018-conditional-form-fields.md); the short
+  version:
+  - Attribute-driven and generator-compiled, not a runtime delegate or an expression string —
+    the same shape `Required`/`Min`/`Max`/`Pattern` already use, and the only shape consistent
+    with ADR 0002's zero-reflection identity. A single hand-written evaluator,
+    `FormFieldActivity.IsActive`, is called by `DxForm`'s renderer, `DxFormField`, the generated
+    `Validate`, and `FormTool.ApplyArguments` alike — one implementation of "is this field
+    currently active," not one per consumer.
+  - One condition governs visibility *and* requiredness together (an inactive field is hidden,
+    and its constraints don't apply) — a decoupled always-visible-but-conditionally-required
+    model was considered and deliberately deferred, not overlooked.
+  - Flat, single-field dependencies only, enforced at **compile time**: four new source-generator
+    diagnostics, `DX2001`–`DX2004` (this repo's first — no existing generator reported any until
+    now, a deliberately separate ID range from `BlazorDX.Analyzers`' `DX10xx` block), catch a
+    `DependsOn` that doesn't name a real field, names a `Sensitive`/`[AiHidden]` field (an AI
+    could never legally satisfy a condition on a field it's never told exists), chains to another
+    conditional field, or references itself — each a compile error, not a silent gap.
+  - The AI/MCP tool path is kept in sync, not deferred, per this project's "one model, two faces"
+    identity. `FormTool.BuildInputSchema` emits a conditionally-required field via JSON Schema's
+    `allOf`/`if`/`then` (draft-07+) — since the schema declares no `$schema` draft today, adding
+    it is not a version bump, and any consumer that only reads `properties`/`required` (today's
+    whole shape) just ignores the new keyword, a graceful degrade for hosts that don't evaluate
+    conditionals. A plain-English clause is also appended to the field's `description` regardless
+    of required/optional, since many function-calling hosts (OpenAI/Anthropic) don't guarantee
+    they evaluate `allOf`/`if`/`then` at all — `description` is the more reliable signal in
+    practice. `FormTool.ApplyArguments` is the actual enforcement boundary, independent of what
+    the schema says: it now applies in two passes (every unconditional field first, then each
+    conditional field re-checked against the *now-updated* target), silently skipping a
+    conditionally-inactive field — the AI supplying a value for it in the same call has that
+    value ignored, the same posture the existing `Sensitive` gate already uses.
+  - Testing note: this repo has no Roslyn `CSharpGeneratorDriver`-based generator-test harness
+    (existing "generator tests" compile a real annotated fixture in the same test project and
+    inspect the output at runtime — they can't assert on a diagnostic that would fail that same
+    project's build). Rather than build new Roslyn test infrastructure for this pass, DX2001–2004
+    were verified once manually (a deliberately-bad model failing to compile with the expected
+    message) rather than covered by an automated test — a scoped, stated limitation.
+
 ## [0.5.0] — 2026-09-02
 
 ### Removed

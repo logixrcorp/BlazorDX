@@ -33,6 +33,10 @@ public sealed class FormContext
     public required Func<string, string, Task> SetAsync { get; init; }
     public required Func<string, IReadOnlyList<string>> ErrorsFor { get; init; }
 
+    /// <summary>Whether a (possibly conditional) field is currently active — see
+    /// <see cref="FormFieldActivity"/>. Always true for an unconditional field.</summary>
+    public required Func<FormFieldInfo, bool> IsActive { get; init; }
+
     public RenderFragment<FormFieldRenderContext>? FieldTemplate { get; init; }
     public RenderFragment<FormFieldRenderContext>? InputTemplate { get; init; }
     public RenderFragment<FormFieldInfo>? LabelTemplate { get; init; }

@@ -26,7 +26,8 @@ public sealed class MeetingRequest
     [DxField("Priority", Description = "Priority level.")]
     public Priority Priority { get; set; }
 
-    [DxField("Notes", Multiline = true, Description = "Extra notes.")]
+    [DxField("Notes", Multiline = true, Required = true, Description = "Extra notes.",
+        DependsOn = nameof(Priority), DependsOnValue = "High")]
     public string? Notes { get; set; }
 }
 
@@ -54,7 +55,13 @@ public sealed class FormModelTests
         Assert.Equal(new[] { "Low", "Normal", "High" }, priority.Choices);
 
         Assert.True(Field("Title").Required);
-        Assert.False(Field("Notes").Required);
+        Assert.True(Field("Notes").Required);   // conditionally required — see DependsOn below
+
+        Assert.Null(Field("Title").DependsOn);   // unconditional fields carry no DependsOn
+        FormFieldInfo notes = Field("Notes");
+        Assert.Equal("Priority", notes.DependsOn);
+        Assert.Equal("High", notes.DependsOnValue);
+        Assert.Equal(FormFieldDependsOnOperator.Equals, notes.DependsOnOperator);
     }
 
     [Fact]
@@ -72,6 +79,25 @@ public sealed class FormModelTests
 
         var ok = new MeetingRequest { Title = "Sync", Email = "a@b.co", Attendees = 3 };
         Assert.Empty(Model.Validate(ok));
+    }
+
+    [Fact]
+    public void Conditional_fields_constraint_only_fires_while_active()
+    {
+        var lowPriority = new MeetingRequest { Title = "Sync", Email = "a@b.co", Attendees = 3, Priority = Priority.Low };
+        Assert.DoesNotContain(Model.Validate(lowPriority), e => e.Field == "Notes");   // inactive: not required
+
+        var highPriorityNoNotes = new MeetingRequest
+        {
+            Title = "Sync", Email = "a@b.co", Attendees = 3, Priority = Priority.High,
+        };
+        Assert.Contains(Model.Validate(highPriorityNoNotes), e => e.Field == "Notes");   // active: required
+
+        var highPriorityWithNotes = new MeetingRequest
+        {
+            Title = "Sync", Email = "a@b.co", Attendees = 3, Priority = Priority.High, Notes = "Escalation context",
+        };
+        Assert.Empty(Model.Validate(highPriorityWithNotes));
     }
 
     [Fact]
@@ -112,19 +138,34 @@ public sealed class FormModelTests
         var roles = props.GetProperty("Priority").GetProperty("enum").EnumerateArray().Select(e => e.GetString()).ToList();
         Assert.Contains("High", roles);
 
-        // Required set carries the required fields only.
+        // Required set carries the unconditionally required fields only -- Notes is
+        // conditionally required, expressed via allOf/if/then below instead.
         var required = schema.GetProperty("required").EnumerateArray().Select(e => e.GetString()).ToList();
         Assert.Contains("Title", required);
         Assert.Contains("Email", required);
         Assert.DoesNotContain("Notes", required);
+
+        // The conditional-required clause: Notes is required only when Priority == High.
+        JsonElement allOf = schema.GetProperty("allOf");
+        Assert.Equal(1, allOf.GetArrayLength());
+        JsonElement clause = allOf[0];
+        Assert.Equal("High", clause.GetProperty("if").GetProperty("properties").GetProperty("Priority").GetProperty("const").GetString());
+        var thenRequired = clause.GetProperty("then").GetProperty("required").EnumerateArray().Select(e => e.GetString()).ToList();
+        Assert.Contains("Notes", thenRequired);
+
+        // Every function-calling host reads "description", even ones that don't
+        // evaluate allOf/if/then -- the conditional clause is also stated there.
+        Assert.Contains("Only applicable when Priority is High", props.GetProperty("Notes").GetProperty("description").GetString());
     }
 
     [Fact]
     public void Ai_tool_call_arguments_fill_and_validate_the_model()
     {
-        // What an AI host would pass when it decides to call the tool.
+        // What an AI host would pass when it decides to call the tool. Priority is
+        // High, so Notes is both active and required -- the AI must supply it too.
         const string toolCall = """
-            { "Title": "Sprint sync", "Attendees": 5, "Email": "lead@team.io", "Remote": true, "Priority": "High" }
+            { "Title": "Sprint sync", "Attendees": 5, "Email": "lead@team.io", "Remote": true,
+              "Priority": "High", "Notes": "Escalation context" }
             """;
 
         MeetingRequest target = new();
@@ -135,6 +176,22 @@ public sealed class FormModelTests
         Assert.Equal(5, target.Attendees);
         Assert.True(target.Remote);
         Assert.Equal(Priority.High, target.Priority);
+        Assert.Equal("Escalation context", target.Notes);
+    }
+
+    [Fact]
+    public void Ai_tool_call_cannot_set_a_conditionally_inactive_field()
+    {
+        // Priority is Low (the default), so Notes is inactive -- even though the AI
+        // supplies it, ApplyArguments must silently skip it (pass 2's activity check),
+        // same posture as a Sensitive field. The schema's allOf/if/then is advisory;
+        // this is the real enforcement boundary.
+        const string toolCall = """{ "Title": "Sync", "Email": "a@b.co", "Notes": "should not be set" }""";
+
+        MeetingRequest target = new();
+        FormTool.ApplyArguments(Model, target, toolCall);
+
+        Assert.Null(target.Notes);
     }
 
     [Fact]

@@ -67,6 +67,24 @@ public sealed class DxFieldAttribute : Attribute
     /// should neither see nor write. Equivalent to applying <see cref="AiHiddenAttribute"/>.
     /// </summary>
     public bool Sensitive { get; set; }
+
+    /// <summary>
+    /// Makes this field conditional: it renders, validates, and is AI-settable only while
+    /// the named field (a <c>nameof(...)</c> reference to another field on the same model)
+    /// currently satisfies <see cref="DependsOnOperator"/> against <see cref="DependsOnValue"/>.
+    /// The referenced field must itself be unconditional (no chaining — see
+    /// docs/adr/0018-conditional-form-fields.md) and must not be <see cref="Sensitive"/> or
+    /// <see cref="AiHiddenAttribute"/>-marked. Gates both visibility and requiredness together:
+    /// an inactive field is hidden, and its constraints (including <see cref="Required"/>)
+    /// do not apply.
+    /// </summary>
+    public string? DependsOn { get; set; }
+
+    /// <summary>The comparand for <see cref="DependsOnOperator"/> (ignored by <see cref="FormFieldDependsOnOperator.NotEmpty"/>).</summary>
+    public string? DependsOnValue { get; set; }
+
+    /// <summary>How <see cref="DependsOn"/>'s current value is compared. Defaults to <see cref="FormFieldDependsOnOperator.Equals"/>.</summary>
+    public FormFieldDependsOnOperator DependsOnOperator { get; set; } = FormFieldDependsOnOperator.Equals;
 }
 
 /// <summary>
