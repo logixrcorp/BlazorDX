@@ -55,6 +55,17 @@ public readonly record struct ChartPointEventArgs(int Index, ChartPoint Point);
 public readonly record struct ChartLegendToggledEventArgs(string Key, bool Visible);
 
 /// <summary>
+/// The visible domain changed on a zoomable continuous chart (line, area — see
+/// <see cref="BlazorDX.Primitives.Charts.ChartZoomPrimitive"/>), from a wheel, drag, or keyboard
+/// zoom/pan gesture, or a reset. The chart already applies the new view itself — this is for a
+/// host that wants to react (e.g. show "Showing Jan–Mar"), not required plumbing.
+/// </summary>
+/// <param name="VisibleMin">The visible window's lower bound, in the chart's own domain units (real X for line, point-index for area).</param>
+/// <param name="VisibleMax">The visible window's upper bound.</param>
+/// <param name="IsZoomed">Whether the view is currently narrower than the full data domain.</param>
+public readonly record struct ChartZoomChangedEventArgs(double VisibleMin, double VisibleMax, bool IsZoomed);
+
+/// <summary>
 /// Which <see cref="ChartPoint"/> field a <see cref="ChartValueAttribute"/>-tagged property maps
 /// onto. <see cref="Category"/>/<see cref="Series"/>/<see cref="Color"/> accept a property of any
 /// type (stringified via <c>Convert.ToString</c>, so an <c>int</c> or <c>enum</c> category works

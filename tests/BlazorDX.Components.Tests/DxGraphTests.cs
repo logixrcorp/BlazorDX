@@ -19,6 +19,7 @@ public sealed class DxGraphTests : TestContext
     {
         Services.AddScoped<IGridCompute, ManagedGridCompute>();
         Services.AddScoped<IGridDomInterop, NullGridDomInterop>();
+        Services.AddScoped<IChartZoomInterop, NullChartZoomInterop>();
     }
 
     private static IReadOnlyList<ChartPoint> Bars() =>
@@ -60,6 +61,24 @@ public sealed class DxGraphTests : TestContext
             .Add(c => c.Kind, GraphKind.Area)
             .Add(c => c.Points, series));
         Assert.Single(area.FindAll("polygon.dx-area-fill"));
+    }
+
+    [Fact]
+    public void Line_and_Area_kinds_forward_Zoomable_to_the_underlying_chart()
+    {
+        List<ChartPoint> series = [new(0, 0), new(1, 5), new(2, 2)];
+
+        IRenderedComponent<DxGraph> line = RenderComponent<DxGraph>(p => p
+            .Add(c => c.Kind, GraphKind.Line)
+            .Add(c => c.Points, series)
+            .Add(c => c.Zoomable, true));
+        Assert.Equal("application", line.Find("svg").GetAttribute("role"));
+
+        IRenderedComponent<DxGraph> area = RenderComponent<DxGraph>(p => p
+            .Add(c => c.Kind, GraphKind.Area)
+            .Add(c => c.Points, series)
+            .Add(c => c.Zoomable, true));
+        Assert.Equal("application", area.Find("svg").GetAttribute("role"));
     }
 
     [Fact]

@@ -144,6 +144,12 @@ public sealed class DxGraph : ComponentBase
 
     [Parameter] public EventCallback<ChartPointEventArgs> OnPointHovered { get; set; }
 
+    /// <summary>Used by <see cref="GraphKind.Line"/> and <see cref="GraphKind.Area"/>: opts into wheel/drag/keyboard zoom-pan.</summary>
+    [Parameter] public bool Zoomable { get; set; }
+
+    /// <summary>Used by <see cref="GraphKind.Line"/> and <see cref="GraphKind.Area"/>.</summary>
+    [Parameter] public EventCallback<ChartZoomChangedEventArgs> OnZoomChanged { get; set; }
+
     // ---- ChartTreeNode family (2 kinds) ----
 
     [Parameter] public ChartTreeNode? Root { get; set; }
@@ -213,6 +219,8 @@ public sealed class DxGraph : ComponentBase
         builder.AddComponentParameter(2, "Width", Width);
         builder.AddComponentParameter(3, "Height", Height);
         builder.AddComponentParameter(4, "Class", Class);
+        builder.AddComponentParameter(5, "Zoomable", Zoomable);
+        builder.AddComponentParameter(6, "OnZoomChanged", OnZoomChanged);
         builder.CloseComponent();
     }
 
@@ -223,6 +231,8 @@ public sealed class DxGraph : ComponentBase
         builder.AddComponentParameter(2, "Width", Width);
         builder.AddComponentParameter(3, "Height", Height);
         builder.AddComponentParameter(4, "Class", Class);
+        builder.AddComponentParameter(5, "Zoomable", Zoomable);
+        builder.AddComponentParameter(6, "OnZoomChanged", OnZoomChanged);
         builder.CloseComponent();
     }
 

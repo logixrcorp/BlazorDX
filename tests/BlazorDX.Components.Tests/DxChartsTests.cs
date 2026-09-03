@@ -14,6 +14,7 @@ public sealed class DxChartsTests : TestContext
     {
         Services.AddScoped<IGridCompute, ManagedGridCompute>();
         Services.AddScoped<IGridDomInterop, NullGridDomInterop>();
+        Services.AddScoped<IChartZoomInterop, NullChartZoomInterop>();
     }
 
     private static IReadOnlyList<ChartPoint> Bars() =>

@@ -9,6 +9,49 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ## [Unreleased]
 
+### Added
+
+- **`DxLineChart`/`DxAreaChart`: zoom/pan, opt in via `Zoomable`.** The roadmap's one remaining
+  "Chart interactivity" item — point selection, hover, and legend toggling had already shipped
+  for the discrete-mark charts, but `ChartSelectionPrimitive`'s own doc comment had always
+  excluded line/area precisely because they're "better served by a future zoom/pan interaction."
+  This is that interaction. Wheel to zoom (center-anchored), drag to pan, or use the keyboard
+  (arrows pan, `+`/`-`/Ctrl+ArrowUp/Down zoom, Home/`0` reset) — a reset button appears in the
+  chart's caption only while zoomed, and double-click also resets. Full design record in
+  [ADR 0017](docs/adr/0017-chart-zoom-pan-strategy.md); the short version:
+  - Both charts already set `preserveAspectRatio="none"` and `vector-effect="non-scaling-stroke"`
+    on their SVG — unused before this, but exactly what a **viewBox crop** needs. Zoom crops the
+    `viewBox`'s X extent to the visible domain window; the existing point-projection math
+    (`BuildPoints()`/`BuildPaths()`) is completely unchanged, still computed against the full
+    data domain. At full zoom-out the dynamic `viewBox` reduces exactly to the original static
+    string.
+  - Zoom never re-runs LTTB downsampling for the zoomed range — it re-projects the
+    already-downsampled point set. Zooming in past the initial downsample resolution reveals no
+    new real data points; re-downsampling mid-gesture would mean an async Rust/wasm round-trip
+    with real debounce/race surface this codebase has no precedent for.
+  - X-axis only — Y always covers the full dataset's range, matching how time-series zoom
+    conventionally works and avoiding `DxAreaChart`'s baseline-closing math needing a filtered Y
+    range.
+  - Wheel-zoom is center-anchored, not cursor-anchored: cursor-anchoring would need an async JS
+    interop call (the SVG's real rendered width — `dx-chart.css` makes it `width: 100%`, so the
+    `Width` parameter doesn't reflect the actual on-screen size) on **every wheel tick**, which
+    would be the first hot, continuous-input path in this codebase to do an async round-trip per
+    event. Drag-pan does need that same width measurement (there's no way around it for a
+    correct pan speed), but only once per gesture, at `onpointerdown` — cached and reused
+    synchronously for the rest of the drag. A new `IChartZoomInterop`/`ChartZoomInterop`/
+    `NullChartZoomInterop` pair carries just that one capability; if the measurement comes back 0
+    (server/prerender, or the element isn't in the DOM yet), the pan gesture simply doesn't start
+    for that attempt.
+  - `Zoomable` defaults to `false` — the existing chart-family convention gates interactivity on
+    "has the host wired a callback," which zoom/pan has no equivalent of (it's self-contained
+    view state, not something a host necessarily reacts to). Defaulting it on would have silently
+    hijacked the page's mouse-wheel scroll gesture on every existing line/area chart.
+  - New Tier-1 primitive `ChartZoomPrimitive` (`src/BlazorDX.Primitives/Charts/`) mirrors
+    `ChartSelectionPrimitive`'s shape: pure C# state, geometry-agnostic (real X units for the
+    line chart, point-index units for the area chart, which lays out by index).
+  - `DxGraph`'s `Line`/`Area` kinds needed explicit new `Zoomable`/`OnZoomChanged` plumbing —
+    parameters forward via individually-named calls per kind there, not generically.
+
 ## [0.5.0] — 2026-09-02
 
 ### Removed
