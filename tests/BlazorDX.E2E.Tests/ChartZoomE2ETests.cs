@@ -54,7 +54,7 @@ public sealed class ChartZoomE2ETests(PlaywrightFixture fx)
         ILocator chart = page.Locator(".dx-chart-zoomable").First;
         var box = await chart.BoundingBoxAsync();
         Assert.NotNull(box);
-        double centerY = box!.Y + (box.Height / 2);
+        float centerY = box!.Y + (box.Height / 2);
 
         // Zoom in first — panning at full zoom-out has nowhere to go (both edges already touch).
         await page.Mouse.MoveAsync(box.X + (box.Width / 2), centerY);
@@ -65,9 +65,9 @@ public sealed class ChartZoomE2ETests(PlaywrightFixture fx)
 
         // A real drag: down inside the chart, move across (still within the page — the pan
         // overlay is a full-viewport element so this is a realistic gesture), up.
-        await page.Mouse.MoveAsync(box.X + (box.Width * 0.3), centerY);
+        await page.Mouse.MoveAsync(box.X + (box.Width * 0.3f), centerY);
         await page.Mouse.DownAsync();
-        await page.Mouse.MoveAsync(box.X + (box.Width * 0.7), centerY, new MouseMoveOptions { Steps = 5 });
+        await page.Mouse.MoveAsync(box.X + (box.Width * 0.7f), centerY, new MouseMoveOptions { Steps = 5 });
         await page.Mouse.UpAsync();
 
         await page.WaitForFunctionAsync(
