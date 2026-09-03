@@ -14,6 +14,7 @@ public sealed class DxLineChartTests : TestContext
     {
         Services.AddScoped<IGridCompute, ManagedGridCompute>();
         Services.AddScoped<IGridDomInterop, NullGridDomInterop>();
+        Services.AddScoped<IChartZoomInterop, NullChartZoomInterop>();
     }
 
     [Fact]

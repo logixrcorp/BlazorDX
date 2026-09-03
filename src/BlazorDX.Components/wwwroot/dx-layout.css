@@ -247,6 +247,9 @@
   stroke-linecap: round;
 }
 .dx-chart-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-top: 6px;
   font-size: 13px;
   color: #475569;
