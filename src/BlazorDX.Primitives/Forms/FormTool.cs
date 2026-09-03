@@ -94,7 +94,9 @@ public static class FormTool
                 continue;   // shouldn't happen (DX2001/DX2002 forbid it at compile time); skip defensively
             }
 
-            sb.Append(any ? ',' : "\"allOf\":[");
+            // The leading comma separates "allOf" from the preceding "required" property;
+            // subsequent iterations need a comma between allOf entries instead.
+            sb.Append(any ? ',' : ",\"allOf\":[");
             any = true;
             sb.Append("{\"if\":{\"properties\":{");
             AppendString(sb, dependsOn.Name);
