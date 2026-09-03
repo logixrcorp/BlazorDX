@@ -26,6 +26,10 @@ public sealed class ChartZoomE2ETests(PlaywrightFixture fx)
 
         double scrollBefore = await page.EvaluateAsync<double>("() => window.scrollY");
 
+        // WebKit can report a null bounding box for an element that passed the selector's
+        // own visibility wait but hasn't settled layout/scroll position yet -- a documented
+        // Playwright gotcha, not specific to this chart.
+        await chart.ScrollIntoViewIfNeededAsync();
         var box = await chart.BoundingBoxAsync();
         Assert.NotNull(box);
         await page.Mouse.MoveAsync(box!.X + (box.Width / 2), box.Y + (box.Height / 2));
@@ -52,6 +56,7 @@ public sealed class ChartZoomE2ETests(PlaywrightFixture fx)
         await page.GotoInteractiveAsync($"{fx.BaseUrl}/charts", ".dx-chart-zoomable");
 
         ILocator chart = page.Locator(".dx-chart-zoomable").First;
+        await chart.ScrollIntoViewIfNeededAsync();
         var box = await chart.BoundingBoxAsync();
         Assert.NotNull(box);
         float centerY = box!.Y + (box.Height / 2);
