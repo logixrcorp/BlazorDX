@@ -9,14 +9,15 @@
 <p class="dx-demo-meta">
     A @points.Length.ToString("N0")-point series drawn as a single SVG polyline,
     LTTB-downsampled by the Rust/wasm kernel to keep the shape with only a few
-    hundred points. The caption shows the active compute backend.
+    hundred points. The caption shows the active compute backend. Zoomable: scroll
+    to zoom, drag to pan, or focus the chart and use the arrow keys / +/- / Home.
 </p>
 
-<DxLineChart Points="lineData" Threshold="400" Width="720" Height="240" />
+<DxLineChart Points="lineData" Threshold="400" Width="720" Height="240" Zoomable="true" />
 
 <h2 style="margin-top:32px">Area chart</h2>
-<p class="dx-demo-meta">A filled series, also Rust-downsampled.</p>
-<DxAreaChart Points="areaData" Threshold="300" Width="720" Height="200" />
+<p class="dx-demo-meta">A filled series, also Rust-downsampled. Also zoomable.</p>
+<DxAreaChart Points="areaData" Threshold="300" Width="720" Height="200" Zoomable="true" />
 
 <h2 style="margin-top:32px">Bar chart (interactive)</h2>
 <p class="dx-demo-meta">

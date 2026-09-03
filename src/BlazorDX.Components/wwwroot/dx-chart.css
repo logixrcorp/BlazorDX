@@ -346,6 +346,55 @@
   text-decoration: line-through;
 }
 
+/* ---- Zoom / pan (line & area — opt-in via Zoomable) ---- */
+
+/* The grab cursor signals a zoomable chart is draggable before the user even tries it. */
+.dx-chart-svg.dx-chart-zoomable { cursor: grab; }
+.dx-chart-svg.dx-chart-zoomable:active { cursor: grabbing; }
+
+/* A full-window overlay so a drag-pan gesture keeps tracking even if the cursor leaves the
+   (typically narrow) chart element — same technique as .dx-grid-resize-overlay. */
+.dx-chart-pan-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  cursor: grabbing;
+}
+
+/* Same borderless/transparent/hover-tint/focus-ring recipe as .dx-pie-legend-btn. Only
+   rendered while zoomed — no persistent chrome on a chart that isn't. */
+.dx-chart-zoom-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.dx-chart-zoom-reset:hover { background: var(--dx-surface-alt, #f1f5f9); }
+.dx-chart-zoom-reset:focus-visible {
+  outline: 2px solid var(--dx-accent, #2563eb);
+  outline-offset: 1px;
+}
+
+/* Visually-hidden live-region announcing zoom/pan changes to screen readers — the same
+   scoped-per-component technique as .dx-cal-sr (no shared sr-only utility in this codebase). */
+.dx-chart-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dx-chart-mark-hovered { filter: none; }
 }

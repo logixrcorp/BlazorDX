@@ -108,7 +108,11 @@ enhancements. None of this should be read as "ready"; it is a beta with work ahe
   a read tool over `IGridDataSource`, and the wider MCP surface (resources / prompts). See
   [docs/ai-integration.md](ai-integration.md).
 - **Chart interactivity** — point selection, hover, and legend toggling have shipped (title-tag
-  tooltips only, not a rich hover card); zoom/pan over the SVG charts is still open.
+  tooltips only, not a rich hover card). Zoom/pan has also shipped, for `DxLineChart` and
+  `DxAreaChart` (opt-in via `Zoomable` — wheel to zoom, drag to pan, keyboard alternative): see
+  [ADR 0017](adr/0017-chart-zoom-pan-strategy.md). Other continuous-domain chart kinds (scatter,
+  etc.) remain future work — this pass was deliberately scoped to the two kinds
+  `ChartSelectionPrimitive` always named as the intended target.
 - **Forms depth** — array / nested / conditional fields.
 - **Breadth tail** — a handful of leaves still worth adding (FAB/SpeedDial, Mention,
   standalone AutoComplete). The chart-family tail (heatmap, treemap, sankey, and beyond) and
