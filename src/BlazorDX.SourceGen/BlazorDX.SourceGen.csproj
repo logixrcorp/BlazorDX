@@ -12,6 +12,13 @@
     <IsRoslynComponent>true</IsRoslynComponent>
     <IsTrimmable>false</IsTrimmable>
     <IsAotCompatible>false</IsAotCompatible>
+    <!--
+      RS2008 demands analyzer-release-tracking files (this generator started reporting
+      diagnostics — DX2001-DX2004 — for the first time). That bookkeeping adds no value
+      to a single in-repo generator assembly, so we opt out explicitly — same suppression
+      BlazorDX.Analyzers.csproj already carries, for the same reason.
+    -->
+    <NoWarn>$(NoWarn);RS2008</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

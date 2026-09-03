@@ -38,14 +38,16 @@ public static class FormTool
             }
 
             first = false;
-            AppendProperty(sb, field);
+            AppendProperty(sb, field, model);
         }
 
         sb.Append("},\"required\":[");
         bool firstReq = true;
         foreach (FormFieldInfo field in model.Fields)
         {
-            if (!field.Required || field.Sensitive)
+            // A conditionally-required field is never in the unconditional "required" set —
+            // its requiredness is expressed per-condition below instead.
+            if (!field.Required || field.Sensitive || field.DependsOn is not null)
             {
                 continue;
             }
@@ -59,8 +61,121 @@ public static class FormTool
             AppendString(sb, field.Name);
         }
 
-        sb.Append("]}");
+        sb.Append(']');
+        AppendConditionalRequired(sb, model);
+        sb.Append('}');
         return sb.ToString();
+    }
+
+    // Fields that are both conditional and Required get a JSON-Schema "if this
+    // dependency holds, then this field is required" clause. Only draft-07+'s if/then
+    // idiom expresses "required when X has a specific value" (dependentRequired only
+    // expresses co-presence, not value-conditioned requirement) -- and since
+    // BuildInputSchema declares no "$schema" draft, adding it is not a version bump:
+    // any consumer that only reads properties/required (today's whole shape) simply
+    // ignores the unknown keyword and the field looks like any other optional field, a
+    // graceful degrade for hosts that don't evaluate conditionals. JSON Schema allows
+    // only one top-level "if" per schema object, so multiple such fields collect under
+    // one "allOf". This is advisory, not the enforcement boundary -- see
+    // ApplyArguments, which is.
+    private static void AppendConditionalRequired<TModel>(StringBuilder sb, IFormModel<TModel> model)
+    {
+        bool any = false;
+        foreach (FormFieldInfo field in model.Fields)
+        {
+            if (field.Sensitive || !field.Required || field.DependsOn is null)
+            {
+                continue;
+            }
+
+            FormFieldInfo? dependsOn = Find(model, field.DependsOn);
+            if (dependsOn is null || dependsOn.Sensitive)
+            {
+                continue;   // shouldn't happen (DX2001/DX2002 forbid it at compile time); skip defensively
+            }
+
+            // The leading comma separates "allOf" from the preceding "required" property;
+            // subsequent iterations need a comma between allOf entries instead.
+            sb.Append(any ? ',' : ",\"allOf\":[");
+            any = true;
+            sb.Append("{\"if\":{\"properties\":{");
+            AppendString(sb, dependsOn.Name);
+            sb.Append(':');
+            AppendConditionLiteral(sb, dependsOn, field.DependsOnOperator, field.DependsOnValue);
+            sb.Append("}},\"then\":{\"required\":[");
+            AppendString(sb, field.Name);
+            sb.Append("]}}");
+        }
+
+        if (any)
+        {
+            sb.Append(']');
+        }
+    }
+
+    // The JSON literal form of a DependsOn comparison, matching the dependency field's
+    // own declared JSON type (string for Enum/Text/Multiline/Date, bare true/false for
+    // Bool, bare number for Integer/Number).
+    private static void AppendConditionLiteral(
+        StringBuilder sb, FormFieldInfo dependsOn, FormFieldDependsOnOperator op, string? value)
+    {
+        if (op == FormFieldDependsOnOperator.NotEmpty)
+        {
+            // No exact JSON-Schema equivalent of "non-whitespace" -- minLength is the
+            // closest native constraint. Documented divergence: a whitespace-only value
+            // satisfies the runtime's IsNullOrWhiteSpace check but not this schema.
+            sb.Append("{\"minLength\":1}");
+            return;
+        }
+
+        if (op == FormFieldDependsOnOperator.NotEquals)
+        {
+            sb.Append("{\"not\":{\"const\":");
+            AppendConstValue(sb, dependsOn.Kind, value);
+            sb.Append("}}");
+            return;
+        }
+
+        sb.Append("{\"const\":");
+        AppendConstValue(sb, dependsOn.Kind, value);
+        sb.Append('}');
+    }
+
+    private static void AppendConstValue(StringBuilder sb, FormFieldKind kind, string? value)
+    {
+        switch (kind)
+        {
+            case FormFieldKind.Bool:
+                sb.Append(string.Equals(value, "True", StringComparison.OrdinalIgnoreCase) ? "true" : "false");
+                break;
+            case FormFieldKind.Integer or FormFieldKind.Number:
+                sb.Append(value is null ? "null" : value);
+                break;
+            default:
+                AppendString(sb, value ?? string.Empty);
+                break;
+        }
+    }
+
+    private static string ConditionDescription(FormFieldInfo dependsOn, FormFieldDependsOnOperator op, string? value) =>
+        op switch
+        {
+            FormFieldDependsOnOperator.NotEmpty => $"Only applicable when {dependsOn.Label} is set.",
+            FormFieldDependsOnOperator.NotEquals => $"Only applicable when {dependsOn.Label} is not {value}.",
+            _ => $"Only applicable when {dependsOn.Label} is {value}.",
+        };
+
+    private static FormFieldInfo? Find<TModel>(IFormModel<TModel> model, string name)
+    {
+        foreach (FormFieldInfo field in model.Fields)
+        {
+            if (field.Name == name)
+            {
+                return field;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -107,31 +222,60 @@ public static class FormTool
                 return new[] { new FormValidationError(string.Empty, "Tool arguments must be a JSON object.") };
             }
 
+            // Two passes, deliberately in this order: a conditional field's activity
+            // depends on its DependsOn field's value *from this same call*, not a stale
+            // previously-persisted one, so every unconditional field must be applied
+            // first. Pass 2 then re-checks activity against the now-updated target and
+            // silently skips a conditionally-inactive field -- same posture as the
+            // Sensitive skip above: the schema's if/then is advisory (many function-
+            // calling hosts don't guarantee they evaluate it), this is the real
+            // enforcement boundary. No chained DependsOn can reach here (DX2003 forbids
+            // it at compile time), so pass 2 never depends on another pass-2 result.
             foreach (FormFieldInfo field in model.Fields)
             {
-                if (field.Sensitive)
-                {
-                    continue;   // the hard gate: AI arguments can never set a sensitive field
-                }
-
-                if (!root.TryGetProperty(field.Name, out JsonElement value) || value.ValueKind == JsonValueKind.Null)
+                if (field.Sensitive || field.DependsOn is not null)
                 {
                     continue;
                 }
 
-                // String values come through unquoted; numbers/booleans use their JSON
-                // literal text, which the generated typed setter parses invariantly.
-                string raw = value.ValueKind == JsonValueKind.String
-                    ? value.GetString() ?? string.Empty
-                    : value.GetRawText();
-                model.SetString(target, field.Name, raw);
+                SetFromJson(model, target, root, field);
+            }
+
+            foreach (FormFieldInfo field in model.Fields)
+            {
+                if (field.Sensitive || field.DependsOn is null)
+                {
+                    continue;
+                }
+
+                if (!FormFieldActivity.IsActive(model, target, field))
+                {
+                    continue;   // conditionally inactive -- the AI cannot set it via this call
+                }
+
+                SetFromJson(model, target, root, field);
             }
         }
 
         return model.Validate(target);
     }
 
-    private static void AppendProperty(StringBuilder sb, FormFieldInfo field)
+    private static void SetFromJson<TModel>(IFormModel<TModel> model, TModel target, JsonElement root, FormFieldInfo field)
+    {
+        if (!root.TryGetProperty(field.Name, out JsonElement value) || value.ValueKind == JsonValueKind.Null)
+        {
+            return;
+        }
+
+        // String values come through unquoted; numbers/booleans use their JSON
+        // literal text, which the generated typed setter parses invariantly.
+        string raw = value.ValueKind == JsonValueKind.String
+            ? value.GetString() ?? string.Empty
+            : value.GetRawText();
+        model.SetString(target, field.Name, raw);
+    }
+
+    private static void AppendProperty<TModel>(StringBuilder sb, FormFieldInfo field, IFormModel<TModel> model)
     {
         AppendString(sb, field.Name);
         sb.Append(":{");
@@ -144,10 +288,22 @@ public static class FormTool
             sb.Append(",\"format\":\"date\"");
         }
 
-        if (!string.IsNullOrEmpty(field.Description))
+        // A conditional field's own description gets a plain-English clause appended
+        // regardless of whether it's Required -- cheap, and often the more reliable
+        // signal in practice: many function-calling hosts (OpenAI/Anthropic) implement
+        // only a subset of JSON Schema and don't guarantee they evaluate the allOf/if/
+        // then clause below at all, but every host reads "description".
+        string? description = field.Description;
+        if (field.DependsOn is not null && Find(model, field.DependsOn) is { } dependsOn)
+        {
+            string clause = ConditionDescription(dependsOn, field.DependsOnOperator, field.DependsOnValue);
+            description = string.IsNullOrEmpty(description) ? clause : $"{description} {clause}";
+        }
+
+        if (!string.IsNullOrEmpty(description))
         {
             sb.Append(",\"description\":");
-            AppendString(sb, field.Description!);
+            AppendString(sb, description!);
         }
 
         if (field.Kind is FormFieldKind.Integer or FormFieldKind.Number)

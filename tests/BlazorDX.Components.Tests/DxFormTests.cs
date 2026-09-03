@@ -25,13 +25,64 @@ public sealed class DxFormTests : TestContext
     [Fact]
     public void Auto_renders_an_input_per_field_by_kind()
     {
+        // Priority defaults to Low, so Notes (DependsOn = Priority == High) starts inactive
+        // and is skipped — 5 of the 6 declared fields render, not 6. See the
+        // Conditional_field_* tests below for the active case.
         IRenderedComponent<DxForm<MeetingRequest>> form = RenderForm(new MeetingRequest());
 
-        Assert.Equal(6, form.FindAll(".dx-field").Count);
+        Assert.Equal(5, form.FindAll(".dx-field").Count);
         Assert.Single(form.FindAll("input[type=number]"));    // Attendees
         Assert.Single(form.FindAll("input[type=checkbox]"));  // Remote
-        Assert.Single(form.FindAll("textarea"));              // Notes (multiline)
+        Assert.Empty(form.FindAll("textarea"));                // Notes (multiline) is inactive
         Assert.Equal(3, form.FindAll("select option").Count); // Priority enum choices
+    }
+
+    [Fact]
+    public void Conditional_field_is_hidden_until_its_dependency_matches()
+    {
+        MeetingRequest model = new();
+        IRenderedComponent<DxForm<MeetingRequest>> form = RenderForm(model, p => p.Add(f => f.ValidateOnChange, true));
+
+        Assert.Empty(form.FindAll("textarea"));   // Priority starts Low -> Notes inactive
+
+        form.Find("select").Change("High");
+        Assert.Single(form.FindAll("textarea"));   // Priority -> High -> Notes appears
+
+        form.Find("select").Change("Low");
+        Assert.Empty(form.FindAll("textarea"));   // back to Low -> Notes disappears again
+    }
+
+    [Fact]
+    public void Conditional_field_via_DxFormField_renders_only_while_active()
+    {
+        MeetingRequest model = new();
+        IRenderedComponent<DxForm<MeetingRequest>> form = RenderForm(model, p =>
+            p.Add(f => f.ChildContent, (RenderFragment)(b =>
+            {
+                b.OpenComponent<DxFormField>(0);
+                b.AddComponentParameter(1, nameof(DxFormField.Name), "Notes");
+                b.CloseComponent();
+            })));
+
+        Assert.Empty(form.FindAll(".dx-field"));   // Priority is Low -> Notes inactive
+
+        model.Priority = Priority.High;
+        form.InvokeAsync(() => form.Instance.Refresh());   // model changed from outside the form
+        Assert.Single(form.FindAll(".dx-field"));
+    }
+
+    [Fact]
+    public void Conditional_field_is_validated_only_while_active()
+    {
+        MeetingRequest lowPriority = new() { Title = "Sync", Email = "a@b.co", Attendees = 3 };
+        IRenderedComponent<DxForm<MeetingRequest>> lowForm = RenderForm(lowPriority);
+        lowForm.Find("form").Submit();
+        Assert.Empty(lowForm.FindAll(".dx-field-error"));   // Notes inactive, empty is fine
+
+        MeetingRequest highPriority = new() { Title = "Sync", Email = "a@b.co", Attendees = 3, Priority = Priority.High };
+        IRenderedComponent<DxForm<MeetingRequest>> highForm = RenderForm(highPriority);
+        highForm.Find("form").Submit();
+        Assert.NotEmpty(highForm.FindAll(".dx-field-error"));   // Notes active and empty -> required error
     }
 
     [Fact]
@@ -122,7 +173,9 @@ public sealed class DxFormTests : TestContext
                 b.CloseElement();
             })));
 
-        Assert.Equal(6, form.FindAll("input.my-custom-input").Count);
+        // 5, not 6: Priority defaults to Low, so Notes (conditional on Priority == High)
+        // is inactive and skipped, same as the auto-render case.
+        Assert.Equal(5, form.FindAll("input.my-custom-input").Count);
         Assert.Empty(form.FindAll("textarea"));   // default multiline control was replaced
     }
 

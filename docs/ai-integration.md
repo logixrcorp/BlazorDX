@@ -151,6 +151,34 @@ A sensitive field is **excluded from the generated schema** (the AI is never tol
 **and refused by `ApplyArguments`** (the hard gate — AI arguments can never set it), yet a human
 still sees and edits it in `DxForm`. Use it for PII and secrets.
 
+### Conditional fields — a field that only applies given another field's value
+
+Gate a field on another field's current value with `DependsOn`:
+
+```csharp
+[DxField("Priority")]                                    public Priority Priority { get; set; }
+[DxField("Escalation notes", Required = true,
+    DependsOn = nameof(Priority), DependsOnValue = "High")]
+public string? Notes { get; set; }   // only shown, required, and AI-settable when Priority == High
+```
+
+`DependsOn` must `nameof()` another *unconditional* field on the same model — chained
+conditions and referencing a `Sensitive`/`[AiHidden]` field are both compile errors (an AI can
+never legally satisfy a condition on a field it's never told exists). One condition governs
+visibility and requiredness together: an inactive field is hidden in `DxForm` and its
+constraints (`Required` included) don't apply.
+
+**Two enforcement layers, only one of which is guaranteed.** The generated schema expresses a
+conditionally-required field with JSON Schema's `allOf`/`if`/`then` (draft-07+), plus a
+plain-English clause appended to the field's own `description` regardless of whether it's
+required. The `allOf` clause is **advisory** — many function-calling hosts (OpenAI, Anthropic)
+implement only a subset of JSON Schema and don't guarantee they evaluate it, which is exactly
+why the `description` clause exists too, as a signal every host reads. The real enforcement
+boundary is `ApplyArguments` itself: it applies unconditional fields first, then re-checks each
+conditional field's activity against the *now-updated* target and silently skips a
+conditionally-inactive one — an AI supplying `Notes` while `Priority` isn't `High` in the same
+call simply has it ignored, the same posture as a `Sensitive` field.
+
 ### Input validation is the boundary
 
 Because arguments flow through the source-generated `Validate` and typed setters, the model's own

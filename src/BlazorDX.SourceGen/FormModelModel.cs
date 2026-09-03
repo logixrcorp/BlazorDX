@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -21,7 +22,10 @@ internal sealed record FormFieldDef(
     bool IsNullableValue,
     string UnderlyingFqn,     // non-nullable type FQN, for typed parse
     ImmutableArray<string> Choices,
-    bool Sensitive);          // hidden from the AI tool surface (schema + ApplyArguments)
+    bool Sensitive,           // hidden from the AI tool surface (schema + ApplyArguments)
+    string? DependsOn,        // PropertyName of the controlling field; null = always active
+    string? DependsOnValue,
+    string DependsOnOperator); // FormFieldDependsOnOperator member name
 
 /// <summary>Everything the form emitter needs about a <c>[DxFormModel]</c> type.</summary>
 internal sealed record FormModelDef(
@@ -63,7 +67,8 @@ internal static class FormModelAnalysis
     // A pragmatic email shape — also flows into the AI tool's JSON-Schema "pattern".
     private const string EmailPattern = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
 
-    public static FormModelDef Build(INamedTypeSymbol type, AttributeData modelAttribute)
+    public static (FormModelDef Model, ImmutableArray<Diagnostic> Diagnostics) Build(
+        INamedTypeSymbol type, AttributeData modelAttribute)
     {
         string? ns = type.ContainingNamespace.IsGlobalNamespace
             ? null
@@ -74,8 +79,34 @@ internal static class FormModelAnalysis
         string? toolDescription = ReadNamedString(modelAttribute, "Description");
         bool validatable = type.AllInterfaces.Any(i => i.ToDisplayString() == ValidatableInterface);
 
-        return new FormModelDef(
-            ns, type.Name, accessibility, toolName, toolDescription, ReadFields(type), validatable);
+        ImmutableArray<FormFieldDef> fields = ReadFields(type);
+
+        // Validate DependsOn references (DX2001-DX2004) after the full field set is known —
+        // each rule needs to see every field, not just the one being checked.
+        ImmutableArray<Diagnostic>.Builder diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
+        HashSet<string> badDependsOn = new();
+        foreach ((FormFieldDef field, DiagnosticDescriptor descriptor) in FormModelDiagnostics.Validate(fields))
+        {
+            Location location = type.GetMembers(field.PropertyName)
+                .OfType<IPropertySymbol>()
+                .FirstOrDefault()
+                ?.Locations.FirstOrDefault() ?? Location.None;
+            diagnostics.Add(Diagnostic.Create(descriptor, location, field.PropertyName, field.DependsOn));
+            badDependsOn.Add(field.PropertyName);
+        }
+
+        if (badDependsOn.Count > 0)
+        {
+            // Best-effort: strip the bad DependsOn so the emitted .g.cs stays syntactically
+            // valid. The diagnostic above is what the author sees, not a cascade of
+            // secondary compiler errors from broken generated code.
+            fields = fields
+                .Select(f => badDependsOn.Contains(f.PropertyName) ? f with { DependsOn = null } : f)
+                .ToImmutableArray();
+        }
+
+        FormModelDef model = new(ns, type.Name, accessibility, toolName, toolDescription, fields, validatable);
+        return (model, diagnostics.ToImmutable());
     }
 
     private static ImmutableArray<FormFieldDef> ReadFields(INamedTypeSymbol type)
@@ -124,7 +155,10 @@ internal static class FormModelAnalysis
                 isNullableValue,
                 underlying.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                 choices,
-                ReadNamedBool(field, "Sensitive") || Has(property, AiHiddenAttribute)));
+                ReadNamedBool(field, "Sensitive") || Has(property, AiHiddenAttribute),
+                ReadNamedString(field, "DependsOn"),
+                ReadNamedString(field, "DependsOnValue"),
+                ReadNamedEnumMember(field, "DependsOnOperator") ?? "Equals"));
         }
 
         builder.Sort(static (a, b) => a.Order.CompareTo(b.Order));
@@ -347,6 +381,36 @@ internal static class FormModelAnalysis
             if (arg.Key == name && arg.Value.Value is int i)
             {
                 return i;
+            }
+        }
+
+        return null;
+    }
+
+    // An enum-typed named argument's TypedConstant.Value is the boxed underlying value
+    // (e.g. an int for a plain enum) -- map it back to the member name by matching
+    // against the enum type's own const fields, same technique ReadFields already uses
+    // to extract an enum's Choices list.
+    private static string? ReadNamedEnumMember(AttributeData? attribute, string name)
+    {
+        if (attribute is null)
+        {
+            return null;
+        }
+
+        foreach (KeyValuePair<string, TypedConstant> arg in attribute.NamedArguments)
+        {
+            if (arg.Key != name || arg.Value.Type is not { TypeKind: TypeKind.Enum } enumType)
+            {
+                continue;
+            }
+
+            foreach (IFieldSymbol member in enumType.GetMembers().OfType<IFieldSymbol>().Where(f => f.IsConst))
+            {
+                if (Equals(member.ConstantValue, arg.Value.Value))
+                {
+                    return member.Name;
+                }
             }
         }
 
