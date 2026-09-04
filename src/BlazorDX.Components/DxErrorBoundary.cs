@@ -20,13 +20,13 @@ public sealed class DxErrorBoundary : ErrorBoundaryBase
     [Parameter] public EventCallback<Exception> OnError { get; set; }
 
     /// <summary>Heading shown by the default fallback.</summary>
-    [Parameter] public string FallbackTitle { get; set; } = "Something went wrong.";
+    [Parameter] public string? FallbackTitle { get; set; }
 
     /// <summary>Show the exception message in the default fallback (use only in development).</summary>
     [Parameter] public bool ShowDetail { get; set; }
 
     /// <summary>Label for the default fallback's recover button.</summary>
-    [Parameter] public string RetryText { get; set; } = "Retry";
+    [Parameter] public string? RetryText { get; set; }
 
     /// <summary>Extra CSS classes appended to the default fallback.</summary>
     [Parameter] public string? Class { get; set; }
@@ -41,6 +41,12 @@ public sealed class DxErrorBoundary : ErrorBoundaryBase
             await OnError.InvokeAsync(exception);
         }
     }
+
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxErrorBoundary>? s;
+
+    private DxStrings<DxErrorBoundary> S => s ??= new(Services);
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
@@ -62,7 +68,7 @@ public sealed class DxErrorBoundary : ErrorBoundaryBase
 
         builder.OpenElement(5, "span");
         builder.AddAttribute(6, "class", "dx-errorboundary-title");
-        builder.AddContent(7, FallbackTitle);
+        builder.AddContent(7, FallbackTitle ?? S["FallbackTitle", "Something went wrong."]);
         builder.CloseElement();
 
         if (ShowDetail)
@@ -77,7 +83,7 @@ public sealed class DxErrorBoundary : ErrorBoundaryBase
         builder.AddAttribute(12, "type", "button");
         builder.AddAttribute(13, "class", "dx-errorboundary-retry");
         builder.AddAttribute(14, "onclick", EventCallback.Factory.Create(this, Recover));
-        builder.AddContent(15, RetryText);
+        builder.AddContent(15, RetryText ?? S["Retry", "Retry"]);
         builder.CloseElement();
 
         builder.CloseElement();

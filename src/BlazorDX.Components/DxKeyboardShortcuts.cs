@@ -25,7 +25,7 @@ public sealed class DxKeyboardShortcuts : ComponentBase
     [Parameter] public EventCallback<bool> OpenChanged { get; set; }
 
     /// <summary>Heading shown at the top of the panel.</summary>
-    [Parameter] public string Title { get; set; } = "Keyboard shortcuts";
+    [Parameter] public string? Title { get; set; }
 
     /// <summary>Exit animation duration in milliseconds.</summary>
     [Parameter] public int ExitDurationMs { get; set; } = 150;
@@ -37,6 +37,12 @@ public sealed class DxKeyboardShortcuts : ComponentBase
 
     private Task OnKeyDownAsync(KeyboardEventArgs e) =>
         e.Key == "Escape" ? CloseAsync() : Task.CompletedTask;
+
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxKeyboardShortcuts>? s;
+
+    private DxStrings<DxKeyboardShortcuts> S => s ??= new(Services);
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
@@ -60,19 +66,19 @@ public sealed class DxKeyboardShortcuts : ComponentBase
         builder.AddAttribute(5, "class", $"dx-keys-panel {Class}".TrimEnd());
         builder.AddAttribute(6, "role", "dialog");
         builder.AddAttribute(7, "aria-modal", "true");
-        builder.AddAttribute(8, "aria-label", Title);
+        builder.AddAttribute(8, "aria-label", Title ?? S["ShortcutsTitle", "Keyboard shortcuts"]);
         builder.AddEventStopPropagationAttribute(9, "onclick", true);
 
         // Header: title + close button.
         builder.OpenElement(10, "div");
         builder.AddAttribute(11, "class", "dx-keys-header");
         builder.OpenElement(12, "span");
-        builder.AddContent(13, Title);
+        builder.AddContent(13, Title ?? S["ShortcutsTitle", "Keyboard shortcuts"]);
         builder.CloseElement();
         builder.OpenElement(14, "button");
         builder.AddAttribute(15, "type", "button");
         builder.AddAttribute(16, "class", "dx-keys-close");
-        builder.AddAttribute(17, "aria-label", "Close");
+        builder.AddAttribute(17, "aria-label", S["Close", "Close"]);
         builder.AddAttribute(18, "autofocus", true);
         builder.AddAttribute(19, "onclick", EventCallback.Factory.Create(this, CloseAsync));
         builder.AddContent(20, "✕");
