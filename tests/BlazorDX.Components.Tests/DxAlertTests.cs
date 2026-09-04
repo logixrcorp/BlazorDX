@@ -1,3 +1,4 @@
+using System.Globalization;
 using AngleSharp.Dom;
 using Bunit;
 using Microsoft.AspNetCore.Components;
@@ -8,21 +9,18 @@ using Xunit;
 namespace BlazorDX.Components.Tests;
 
 /// <summary>
-/// <see cref="DxAlert"/>'s <c>Dismiss</c> aria-label is injected via
-/// <see cref="IStringLocalizer{DxAlert}"/> (ADR 0016's localization spike) -- every test that
-/// renders the component needs one registered (Blazor resolves <c>[Inject]</c> properties
-/// unconditionally at activation, whether or not the component logic ends up reading them),
-/// so each test explicitly registers either the real localizer (<see cref="Services"/>'s
-/// <c>AddLocalization()</c>, resolving <c>DxAlert.resx</c>'s real values) or
-/// <see cref="FakeStringLocalizer{T}"/> (a sentinel, for the one test that needs to prove the
-/// string is actually wired through the localizer rather than still hardcoded).
+/// <see cref="DxAlert"/>'s <c>Dismiss</c> aria-label goes through <c>DxStrings</c>, which
+/// resolves <see cref="IStringLocalizer{T}"/> <i>optionally</i> (ADR 0021): with none registered
+/// the English text at the call site renders, so a test only registers a localizer when it is
+/// asserting something about localization. The three that do cover the three states that can
+/// differ -- no localizer at all, a registered localizer (sentinel, proving the string is really
+/// routed through it), and the real resource pipeline.
 /// </summary>
 public sealed class DxAlertTests : TestContext
 {
     [Fact]
     public void Renders_severity_class_role_and_title()
     {
-        Services.AddLocalization();
         IRenderedComponent<DxAlert> alert = RenderComponent<DxAlert>(p => p
             .Add(a => a.Severity, "error")
             .Add(a => a.Title, "Build failed"));
@@ -46,10 +44,10 @@ public sealed class DxAlertTests : TestContext
     [Fact]
     public void Dismiss_aria_label_is_wired_through_the_localizer_not_hardcoded()
     {
-        // The real English resource value is also "Dismiss" -- asserting that string would
-        // pass whether or not the component actually calls the localizer. The sentinel is
-        // the only assertion that distinguishes "wired to IStringLocalizer<DxAlert>" from
-        // "still a hardcoded literal that happens to match."
+        // The English fallback is also "Dismiss" -- asserting that string would pass whether or
+        // not the component actually calls the localizer. The sentinel is the only assertion that
+        // distinguishes "routed through the localizer" from "still a hardcoded literal that
+        // happens to match" -- the exact confusion ADR 0016 hit during Phase 0.
         Services.AddSingleton<IStringLocalizer<DxAlert>>(new FakeStringLocalizer<DxAlert>());
 
         IRenderedComponent<DxAlert> alert = RenderComponent<DxAlert>(p => p
@@ -76,6 +74,45 @@ public sealed class DxAlertTests : TestContext
 
         IElement button = alert.Find("button.dx-alert-close");
         Assert.Equal("Dismiss", button.GetAttribute("aria-label"));
+    }
+
+    [Fact]
+    public void Dismiss_renders_English_when_no_localizer_is_registered_at_all()
+    {
+        // The reason DxStrings exists. A consumer who never calls AddLocalization() must get
+        // English, not an activation exception -- rendering this component with an empty service
+        // collection is the whole assertion. Before ADR 0021 this threw.
+        IRenderedComponent<DxAlert> alert = RenderComponent<DxAlert>(p => p
+            .Add(a => a.Severity, "error")
+            .Add(a => a.Dismissible, true)
+            .Add(a => a.OnDismiss, EventCallback.Factory.Create(this, () => { })));
+
+        Assert.Equal("Dismiss", alert.Find("button.dx-alert-close").GetAttribute("aria-label"));
+    }
+
+    [Fact]
+    public void Dismiss_resolves_the_French_resource_under_a_French_UI_culture()
+    {
+        // Nothing else in the suite sets a culture, so DxAlert.fr.resx was only ever validated by
+        // the AOT publish job noticing a satellite assembly. This is the assertion that the
+        // fr -> invariant fallback chain actually resolves a translated value.
+        CultureInfo original = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentUICulture = new CultureInfo("fr");
+            Services.AddLocalization();
+
+            IRenderedComponent<DxAlert> alert = RenderComponent<DxAlert>(p => p
+                .Add(a => a.Severity, "error")
+                .Add(a => a.Dismissible, true)
+                .Add(a => a.OnDismiss, EventCallback.Factory.Create(this, () => { })));
+
+            Assert.Equal("Ignorer", alert.Find("button.dx-alert-close").GetAttribute("aria-label"));
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = original;
+        }
     }
 
     [Fact]

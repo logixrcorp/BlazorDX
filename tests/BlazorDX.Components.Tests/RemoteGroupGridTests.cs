@@ -20,7 +20,6 @@ public sealed class RemoteGroupGridTests : TestContext
     {
         Services.AddScoped<IGridCompute, ManagedGridCompute>();
         Services.AddScoped<IGridDomInterop, NullGridDomInterop>();
-        Services.AddLocalization();
     }
 
     // An in-memory dataset answering both group-summary and per-group row queries like a server.

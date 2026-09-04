@@ -69,11 +69,11 @@ public sealed class DxDataGridTests : TestContext
     [Fact]
     public void Select_all_aria_label_is_wired_through_the_localizer_not_hardcoded()
     {
-        // Same reasoning as DxAlertTests's sentinel test: the real English resource value is
-        // also "Select all rows", so only a sentinel distinguishes "wired to
-        // IStringLocalizer<DxDataGridResources>" from "still a hardcoded literal." Registered
-        // against the non-generic marker type, not IStringLocalizer<DxDataGrid<WidgetRow>> --
-        // see the doc comment on DxDataGrid<TRow>'s own L field for why.
+        // Same reasoning as DxAlertTests's sentinel test: the English fallback is also
+        // "Select all rows", so only a sentinel distinguishes "routed through the localizer"
+        // from "still a hardcoded literal." Registered against the non-generic marker type,
+        // not IStringLocalizer<DxDataGrid<WidgetRow>> -- see the comment on DxDataGrid<TRow>'s
+        // own DxStrings<DxDataGridResources> field for why the closed generic would miss.
         Services.AddSingleton<IStringLocalizer<DxDataGridResources>>(new FakeStringLocalizer<DxDataGridResources>());
 
         IRenderedComponent<DxDataGrid<WidgetRow>> grid = RenderComponent<DxDataGrid<WidgetRow>>(parameters => parameters
