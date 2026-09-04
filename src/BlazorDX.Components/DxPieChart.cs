@@ -61,6 +61,12 @@ public sealed class DxPieChart : ComponentBase
         return visible;
     }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxChartResources>? s;
+
+    private DxStrings<DxChartResources> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         bool interactive = Interactive;
@@ -80,7 +86,7 @@ public sealed class DxPieChart : ComponentBase
         builder.AddAttribute(5, "width", Size);
         builder.AddAttribute(6, "height", Size);
         builder.AddAttribute(7, "role", interactive ? "application" : "img");
-        builder.AddAttribute(8, "aria-label", $"Pie chart with {visible.Count} slices");
+        builder.AddAttribute(8, "aria-label", S["PieChartLabel", "Pie chart with {0} slices", visible.Count]);
 
         if (interactive)
         {

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="BarChartLabel" xml:space="preserve">
+    <value>Bar chart with {0} categories</value>
+  </data>
+  <data name="BulletChartLabel" xml:space="preserve">
+    <value>Bullet chart with {0} KPIs</value>
+  </data>
+  <data name="CandlestickChartLabel" xml:space="preserve">
+    <value>Candlestick chart with {0} candles</value>
+  </data>
+  <data name="FunnelChartLabel" xml:space="preserve">
+    <value>Funnel chart with {0} stages</value>
+  </data>
+  <data name="GroupedBarChartLabel" xml:space="preserve">
+    <value>Grouped bar chart, {0} series across {1} categories</value>
+  </data>
+  <data name="NetworkGraphLabel" xml:space="preserve">
+    <value>Network graph with {0} nodes and {1} edges</value>
+  </data>
+  <data name="PieChartLabel" xml:space="preserve">
+    <value>Pie chart with {0} slices</value>
+  </data>
+  <data name="PointsCaption" xml:space="preserve">
+    <value>{0:N0} of {1:N0} points · {2}</value>
+  </data>
+  <data name="RadarChartLabel" xml:space="preserve">
+    <value>Radar chart of {0} series over {1} axes</value>
+  </data>
+  <data name="ResetZoom" xml:space="preserve">
+    <value>Reset zoom</value>
+  </data>
+  <data name="SankeyChartLabel" xml:space="preserve">
+    <value>Sankey diagram with {0} nodes and {1} flows</value>
+  </data>
+  <data name="SparklineLabel" xml:space="preserve">
+    <value>Sparkline of {0} points</value>
+  </data>
+  <data name="StackedBarChartLabel" xml:space="preserve">
+    <value>Stacked bar chart, {0} series across {1} categories</value>
+  </data>
+  <data name="WaterfallChartLabel" xml:space="preserve">
+    <value>Waterfall chart with {0} bars</value>
+  </data>
+  <data name="ZoomStatus" xml:space="preserve">
+    <value>Zoomed to {0}–{1} of {2}–{3}</value>
+  </data>
+  <data name="ZoomStatusPoint" xml:space="preserve">
+    <value>Zoomed to point {0}–{1} of {2}–{3}</value>
+  </data>
+  <data name="ZoomStatusXY" xml:space="preserve">
+    <value>Zoomed to X {0}–{1}, Y {2}–{3}</value>
+  </data>
+</root>
