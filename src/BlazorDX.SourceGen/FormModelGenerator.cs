@@ -321,8 +321,14 @@ public sealed class FormModelGenerator : IIncrementalGenerator
     // nested descriptor's own Validate and re-prefix each error's field path.
     private static void EmitNestedFieldValidation(StringBuilder s, FormFieldDef f)
     {
-        string prop = $"model.{f.PropertyName}";
-        s.AppendLine($"        if ({prop} is null)");
+        // Captured into a local rather than repeating "model.{Prop}" across the
+        // null-check and the else branch: nullable-flow narrowing of a LOCAL is
+        // unambiguously reliable, where narrowing a property re-accessed through its
+        // getter is a subtler case not worth relying on here (this repo builds with
+        // TreatWarningsAsErrors, so a possible-null-argument warning is a build break).
+        string local = $"__nested_{f.PropertyName}";
+        s.AppendLine($"        var {local} = model.{f.PropertyName};");
+        s.AppendLine($"        if ({local} is null)");
         s.AppendLine("        {");
         if (f.Required)
         {
@@ -333,7 +339,7 @@ public sealed class FormModelGenerator : IIncrementalGenerator
         s.AppendLine("        }");
         s.AppendLine("        else");
         s.AppendLine("        {");
-        s.AppendLine($"            foreach (var __e in new {f.NestedDescriptorFqn}().Validate({prop}))");
+        s.AppendLine($"            foreach (var __e in new {f.NestedDescriptorFqn}().Validate({local}))");
         s.AppendLine("            {");
         s.AppendLine($"                errors.Add(new {Ns}.FormValidationError($\"{f.PropertyName}.{{__e.Field}}\", __e.Message));");
         s.AppendLine("            }");

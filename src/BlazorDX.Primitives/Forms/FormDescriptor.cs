@@ -92,14 +92,9 @@ public sealed record FormValidationError(string Field, string Message);
 /// <typeparam name="TModel">The annotated model type.</typeparam>
 public interface IFormModel<TModel> : IFormModelUntyped
 {
-    /// <summary>Tool name for AI hosts (snake_case), from <c>[DxFormModel(Name=...)]</c> or the type name.</summary>
-    string ToolName { get; }
-
-    /// <summary>What the form/tool does, for the AI to decide when to call it.</summary>
-    string? ToolDescription { get; }
-
-    /// <summary>The fields, in declared order.</summary>
-    IReadOnlyList<FormFieldInfo> Fields { get; }
+    // ToolName/ToolDescription/Fields are inherited unchanged from IFormModelUntyped
+    // (identical signatures) -- redeclaring them here would just hide the inherited
+    // member (CS0108) for no reason, since nothing about them is TModel-specific.
 
     /// <summary>Reads a field as an invariant string (for binding / serialization).</summary>
     string GetString(TModel model, string field);
