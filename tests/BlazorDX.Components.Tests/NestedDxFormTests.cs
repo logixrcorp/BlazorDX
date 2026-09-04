@@ -54,7 +54,7 @@ public sealed class NestedDxFormTests : TestContext
         // Declared order: Attendees before Tags, so index 0 is Attendees' list.
         Assert.Equal(2, form.FindAll(".dx-fieldlist").Count);
         Assert.Equal(2, form.FindAll(".dx-fieldlist-add").Count);
-        Assert.Single(form.FindAll(".dx-fieldlist")[0].FindAll("[role=listitem]"));
+        Assert.Single(form.FindAll(".dx-fieldlist")[0].QuerySelectorAll("[role=listitem]"));
     }
 
     [Fact]
@@ -83,7 +83,7 @@ public sealed class NestedDxFormTests : TestContext
         };
         IRenderedComponent<DxForm<MeetingWithAttendees>> form = RenderForm(model);
 
-        form.FindAll(".dx-fieldlist")[0].Find(".dx-fieldlist-remove").Click();
+        form.FindAll(".dx-fieldlist")[0].QuerySelector(".dx-fieldlist-remove")!.Click();
 
         Assert.Single(model.Attendees);
     }
@@ -96,7 +96,7 @@ public sealed class NestedDxFormTests : TestContext
         MeetingWithAttendees model = new() { Title = "Sync", Attendees = { ada, lin } };
         IRenderedComponent<DxForm<MeetingWithAttendees>> form = RenderForm(model);
 
-        form.FindAll(".dx-fieldlist")[0].FindAll("[role=listitem]")[0]
+        form.FindAll(".dx-fieldlist")[0].QuerySelectorAll("[role=listitem]")[0]
             .KeyDown(new KeyboardEventArgs { Key = "ArrowDown", AltKey = true });
 
         Assert.Same(lin, model.Attendees[0]);
@@ -109,7 +109,7 @@ public sealed class NestedDxFormTests : TestContext
         MeetingWithAttendees model = new() { Title = "Sync", Tags = { "eng", "design" } };
         IRenderedComponent<DxForm<MeetingWithAttendees>> form = RenderForm(model);
 
-        Assert.Equal(2, form.FindAll(".dx-fieldlist")[1].FindAll("[role=listitem]").Count);
+        Assert.Equal(2, form.FindAll(".dx-fieldlist")[1].QuerySelectorAll("[role=listitem]").Length);
     }
 
     [Fact]
@@ -118,7 +118,7 @@ public sealed class NestedDxFormTests : TestContext
         MeetingWithAttendees model = new() { Title = "Sync", Tags = { "eng" } };
         IRenderedComponent<DxForm<MeetingWithAttendees>> form = RenderForm(model);
 
-        form.FindAll(".dx-fieldlist")[1].Find("input[type=text]").Input("design");
+        form.FindAll(".dx-fieldlist")[1].QuerySelector("input[type=text]")!.Input("design");
 
         Assert.Equal("design", model.Tags[0]);
     }
@@ -141,8 +141,8 @@ public sealed class NestedDxFormTests : TestContext
         Assert.Single(model.Attendees);
 
         var attendeesList = form.FindAll(".dx-fieldlist")[0];
-        var rowInputs = attendeesList.FindAll("input[type=text]");
-        Assert.Equal(2, rowInputs.Count);   // Name, Email
+        var rowInputs = attendeesList.QuerySelectorAll("input[type=text]");
+        Assert.Equal(2, rowInputs.Length);   // Name, Email
 
         rowInputs[0].Input("Ada");
         rowInputs[1].Input("ada@x.co");
