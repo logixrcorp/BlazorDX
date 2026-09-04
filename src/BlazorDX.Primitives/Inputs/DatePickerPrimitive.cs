@@ -25,7 +25,19 @@ public class DatePickerPrimitive : ComponentBase, IAsyncDisposable
     // Nullable to match Value, so @bind-Value works with a DateOnly? field.
     [Parameter] public EventCallback<DateOnly?> ValueChanged { get; set; }
 
-    [Parameter] public string Placeholder { get; set; } = "Select a date";
+    [Parameter] public string? Placeholder { get; set; }
+
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DatePickerPrimitive>? s;
+
+    private DxStrings<DatePickerPrimitive> S => s ??= new(Services);
+
+    /// <summary>
+    /// <see cref="Placeholder"/> if the consumer supplied one, otherwise the localized default.
+    /// </summary>
+    protected string ResolvedPlaceholder => Placeholder ?? S["DatePickerPlaceholder", "Select a date"];
+
 
     [Parameter] public string Side { get; set; } = "bottom";
 
@@ -56,7 +68,7 @@ public class DatePickerPrimitive : ComponentBase, IAsyncDisposable
 
     private CultureInfo Fmt => Culture ?? CultureInfo.CurrentCulture;
 
-    protected string DisplayText => Value?.ToString("d", Fmt) ?? Placeholder;
+    protected string DisplayText => Value?.ToString("d", Fmt) ?? ResolvedPlaceholder;
 
     protected string MonthLabel => viewMonth.ToString("MMMM yyyy", Fmt);
 

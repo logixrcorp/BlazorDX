@@ -48,6 +48,12 @@ public sealed partial class DxSpreadsheetViewer : SpreadsheetViewerPrimitive
         SyncEditState();
     }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxSpreadsheetViewer>? s;
+
+    private DxStrings<DxSpreadsheetViewer> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "div");
@@ -64,7 +70,7 @@ public sealed partial class DxSpreadsheetViewer : SpreadsheetViewerPrimitive
         builder.OpenElement(2, "div");
         builder.AddAttribute(3, "class", "dx-sheet-tabs");
         builder.AddAttribute(4, "role", "tablist");
-        builder.AddAttribute(5, "aria-label", "Worksheets");
+        builder.AddAttribute(5, "aria-label", S["Worksheets", "Worksheets"]);
         builder.AddAttribute(6, "onkeydown",
             EventCallback.Factory.Create<KeyboardEventArgs>(this, OnTabStripKeyDownAsync));
         builder.AddEventPreventDefaultAttribute(7, "onkeydown", true);
@@ -144,7 +150,7 @@ public sealed partial class DxSpreadsheetViewer : SpreadsheetViewerPrimitive
         builder.AddAttribute(31, "class", "dx-sheet-grid");
         builder.AddAttribute(32, "role", "grid");
         builder.AddAttribute(33, "aria-readonly", "true");
-        builder.AddAttribute(34, "aria-label", $"{sheet.Name} worksheet");
+        builder.AddAttribute(34, "aria-label", S["Worksheet", "{0} worksheet", sheet.Name]);
         builder.AddAttribute(35, "aria-rowcount", (sheet.Rows.Count).ToString(CultureInfo.InvariantCulture));
         builder.AddAttribute(36, "aria-colcount", (dataColumns + 1).ToString(CultureInfo.InvariantCulture));
 

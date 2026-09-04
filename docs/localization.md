@@ -256,8 +256,8 @@ file rather than the ones with user-facing text.)
 | `.cs` files in `BlazorDX.Components` | 142 |
 | …with zero user-facing strings (headless / parameter-driven) | 57 |
 | **Components to localize** | **83 — done** (~250–270 unique strings) |
-| …localized | **all of them** — 75 components hold a localizer |
-| …strings externalized | 267 call sites, across 52 resource files |
+| …localized | **all of them**, plus 5 more packages — 88 types hold a localizer |
+| …strings externalized | 309 call sites, across 62 resource files |
 | …with 1–3 strings each | 60 |
 | …heavy hitters (>10 strings) | 6, holding ~40% of all text |
 | Stylesheets converted | **25 of 25 — done** |
@@ -309,43 +309,36 @@ Four physical usages that a rewrite would have got wrong, kept as worked example
   `transform-origin` needed explicit `[dir="rtl"]` rules — the two places where CSS itself
   cannot express the flip.
 
-**Completion criterion: met for `BlazorDX.Components`.** DX1003 fires on every file there, and
+**Completion criterion: met.** DX1003 fires on every file in every package, and
 every stylesheet carries `rtl-clean`. Both ratchets existed to be removed, and both are gone —
 the per-type scoping and the opt-in CSS marker.
 
-### The other packages
+### Every package, not just the styled tier
 
-Retiring the ratchet surfaced **17 hardcoded strings outside `BlazorDX.Components`**, which no
-scan in this rollout had ever looked at:
+The rollout originally covered `BlazorDX.Components` only, and ADR 0016 had scoped it that way
+on a false premise — "zero in `src/BlazorDX.Primitives` — primitives are unlabeled by design".
+Four Tier-1 placeholder defaults live there and reach the DOM through the styled tier, so a
+French app rendered "Select a date" regardless of culture.
 
-| Package | Strings |
-|---|---|
-| `BlazorDX.Integrations.Reporting` | 5 |
-| `BlazorDX.Htmx` | 6 |
-| `BlazorDX.Primitives` | 4 — `"Select a date"`, `"Type to search..."`, `"Type a command..."`, `"Select..."` |
-| `BlazorDX.Integrations.PowerBI` | 2 |
+Retiring DX1003's scoping surfaced the rest: **38 strings in five packages** that no earlier
+scan had looked at — `BlazorDX.Documents` (21), `BlazorDX.Htmx` (8), `.Integrations.Reporting`
+(5), `.Primitives` (4), `.Integrations.PowerBI` (2). All are localized now.
 
-The `BlazorDX.Primitives` four are the "Tier-1 primitive English defaults" this document already
-listed as a separate track. They are also a contradiction with
-[ADR 0001](adr/0001-two-tier-headless.md), which says primitives are unlabeled by design.
+**`DxStrings` is shared source, not a shared package.** It lives at `src/Shared/DxStrings.cs`
+and is `<Compile Include>`-linked into each package that renders text, so every assembly
+compiles its own `internal` copy from one definition. A thirteenth published package was the
+obvious alternative and was rejected: `BlazorDX.Integrations.PowerBI` deliberately references
+no BlazorDX project at all, and the type is `internal`, so there is no public surface to share
+— taking a dependency to reach a forty-line helper would trade that independence for nothing.
+Each package adds only the `Microsoft.Extensions.Localization` reference the helper needs.
 
-**None of these packages references `BlazorDX.Components`**, so `DxStrings` is unreachable from
-all of them and DX1003 would demand a fix that cannot be written — the same trap the
-defaulted-`[Parameter]` rule fell into. The analyzer is therefore scoped to the one assembly
-where its advice holds, and the scoping has its own test.
+Its namespace is `BlazorDX`, not `BlazorDX.Components`, so every consuming namespace resolves
+it without a `using`.
 
-Widening it is a **packaging decision, not a retrofit**: `DxStrings` would have to move
-somewhere every package can reach — a new shared package (a thirteenth), or new dependencies
-from the integration packages onto an existing one. Either changes the published dependency
-graph, which is not a call to make as a side effect of finishing a string sweep.
-
-What that does and does not promise is worth keeping straight. It means **no hardcoded
-user-facing literal survives at a render call site, and no stylesheet uses a physical
-directional property without a written reason** — both mechanically enforced, on every future
-change. It does not mean the library is translated: the `.resx` files hold English, and
-`DxAlert` / `DxDataGridResources` are the only ones with a French counterpart. Externalizing
-the strings is what makes translation possible; supplying translations is separate work, and
-so is the visual RTL pass a static guard cannot do.
+**Partial classes.** `DxWordEditor.Find.cs` and `DxSpreadsheetViewer.Editing.cs` use `S[...]`
+but declare no field — the type declares it once in its main file. `LocalizedStringConsistency`
+`Tests` resolves a partial's resource from `Type.cs`; without that it skipped their call sites
+*and* reported the keys they use as orphaned, failing in both directions at once.
 
 ### Separate tracks, each needing a different mechanism
 

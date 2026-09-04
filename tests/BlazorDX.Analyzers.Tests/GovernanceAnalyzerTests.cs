@@ -252,16 +252,12 @@ public sealed class GovernanceAnalyzerTests
     }
 
     [Fact]
-    public async Task DX1003_stays_silent_outside_the_assembly_that_has_DxStrings()
+    public async Task DX1003_stays_silent_in_a_test_project()
     {
-        // DxStrings lives in BlazorDX.Components and nowhere else, so in BlazorDX.Primitives,
-        // BlazorDX.Htmx or the integration packages this diagnostic would demand a fix that
-        // cannot be written. Reporting there would be the same trap the defaulted-[Parameter]
-        // rule fell into — a correct observation with an impossible remedy.
-        //
-        // Widening it is a packaging decision (where should the helper live so every package can
-        // reach it), not an analyzer change, and until that is made the rule stays where its
-        // advice holds.
+        // The rule governs text a user reads in the product. A test building a render tree out of
+        // fixture strings is writing its own inputs -- routing those through a localizer would
+        // mean translating test data. Widening the rule beyond BlazorDX.Components turned every
+        // such fixture into a build error until this exclusion existed.
         string source = $$"""
             {{LocalizationPreamble}}
 
@@ -269,16 +265,16 @@ public sealed class GovernanceAnalyzerTests
             {
                 using Microsoft.AspNetCore.Components.Rendering;
 
-                public sealed class SomePrimitive
+                public sealed class SomeComponentTests
                 {
                     public void Render(RenderTreeBuilder builder) =>
-                        builder.AddAttribute(1, "placeholder", "Select a date");
+                        builder.AddContent(1, "Alpha body");
                 }
             }
             """;
 
         var diagnostics = await AnalyzerTestHarness.AnalyzeAsync(
-            source, new HardcodedStringAnalyzer(), assemblyName: "BlazorDX.Primitives");
+            source, new HardcodedStringAnalyzer(), assemblyName: "BlazorDX.Components.Tests");
 
         Assert.Empty(diagnostics.Where(d => d.Id == "DX1003"));
     }

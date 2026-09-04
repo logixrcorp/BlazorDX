@@ -51,7 +51,7 @@ public sealed class DxCommandPalette : CommandPalettePrimitive
         builder.AddAttribute(11, "role", "combobox");
         builder.AddAttribute(12, "aria-autocomplete", "list");
         builder.AddAttribute(13, "aria-controls", $"{PanelId}-list");
-        builder.AddAttribute(14, "placeholder", Placeholder);
+        builder.AddAttribute(14, "placeholder", ResolvedPlaceholder);
         builder.AddAttribute(15, "value", Filter);
         if (ActiveDescendantId.Length > 0)
         {

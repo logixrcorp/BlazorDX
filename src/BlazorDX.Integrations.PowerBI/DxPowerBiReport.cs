@@ -70,7 +70,7 @@ public sealed class DxPowerBiReport : ComponentBase, IAsyncDisposable
     [Parameter] public string? ConfigEndpoint { get; set; }
 
     /// <summary>The accessible name for the embed container (WCAG 4.1.2). Required-ish; defaults to a generic label.</summary>
-    [Parameter] public string Label { get; set; } = "Power BI report";
+    [Parameter] public string? Label { get; set; }
 
     /// <summary>Extra CSS classes appended to the component root.</summary>
     [Parameter] public string? Class { get; set; }
@@ -221,6 +221,11 @@ public sealed class DxPowerBiReport : ComponentBase, IAsyncDisposable
         }
     }
 
+    // Reuses the Services injection this component already had.
+    private DxStrings<DxPowerBiReport>? s;
+
+    private DxStrings<DxPowerBiReport> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "div");
@@ -247,7 +252,10 @@ public sealed class DxPowerBiReport : ComponentBase, IAsyncDisposable
         builder.AddAttribute(21, "id", elementId);
         builder.AddAttribute(22, "class", "dx-powerbi-frame");
         builder.AddAttribute(23, "role", "application");
-        builder.AddAttribute(24, "aria-label", string.IsNullOrWhiteSpace(Label) ? "Power BI report" : Label);
+        // Already coalesced before this change — the parameter's default and this fallback were
+        // the same English string in two places. Now there is one, and it is localized.
+        builder.AddAttribute(24, "aria-label",
+            string.IsNullOrWhiteSpace(Label) ? S["ReportLabel", "Power BI report"] : Label);
         builder.CloseElement();
 
         builder.CloseElement(); // root
@@ -266,7 +274,7 @@ public sealed class DxPowerBiReport : ComponentBase, IAsyncDisposable
         }
         else
         {
-            builder.AddContent(15, "Loading the report…");
+            builder.AddContent(15, S["LoadingReport", "Loading the report…"]);
         }
 
         builder.CloseElement();

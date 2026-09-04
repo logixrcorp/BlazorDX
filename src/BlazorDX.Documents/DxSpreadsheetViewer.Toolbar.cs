@@ -39,7 +39,7 @@ public sealed partial class DxSpreadsheetViewer
         builder.OpenElement(0, "div");
         builder.AddAttribute(1, "class", "dx-sheet-toolbar");
         builder.AddAttribute(2, "role", "toolbar");
-        builder.AddAttribute(3, "aria-label", "Spreadsheet editing");
+        builder.AddAttribute(3, "aria-label", S["SpreadsheetEditing", "Spreadsheet editing"]);
 
         ToolbarButton(builder, 10, "Insert row", "Insert row above the active cell", InsertRowAsync);
         ToolbarButton(builder, 20, "Delete row", "Delete the active row", DeleteRowAsync);

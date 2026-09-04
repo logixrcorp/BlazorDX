@@ -56,8 +56,8 @@ public sealed partial class DxWordEditor
         builder.OpenElement(3, "input");
         builder.AddAttribute(4, "type", "text");
         builder.AddAttribute(5, "class", "dx-word-find-input");
-        builder.AddAttribute(6, "placeholder", "Find");
-        builder.AddAttribute(7, "aria-label", "Find");
+        builder.AddAttribute(6, "placeholder", S["Find", "Find"]);
+        builder.AddAttribute(7, "aria-label", S["Find", "Find"]);
         builder.AddAttribute(8, "value", findText);
         builder.AddAttribute(9, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(this, OnFindInput));
         builder.CloseElement();
@@ -74,8 +74,8 @@ public sealed partial class DxWordEditor
         builder.OpenElement(14, "input");
         builder.AddAttribute(15, "type", "text");
         builder.AddAttribute(16, "class", "dx-word-replace-input");
-        builder.AddAttribute(17, "placeholder", "Replace with");
-        builder.AddAttribute(18, "aria-label", "Replace with");
+        builder.AddAttribute(17, "placeholder", S["ReplaceWith", "Replace with"]);
+        builder.AddAttribute(18, "aria-label", S["ReplaceWith", "Replace with"]);
         builder.AddAttribute(19, "value", replaceText);
         builder.AddAttribute(20, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(this, OnReplaceInput));
         builder.CloseElement();
@@ -87,7 +87,7 @@ public sealed partial class DxWordEditor
         builder.AddAttribute(25, "checked", caseSensitive);
         builder.AddAttribute(26, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this, OnCaseToggle));
         builder.CloseElement();
-        builder.AddContent(27, "Match case");
+        builder.AddContent(27, S["MatchCase", "Match case"]);
         builder.CloseElement();
 
         FindButton(builder, 30, "Replace", ReplaceOneAsync);

@@ -81,7 +81,7 @@ public sealed partial class DxWordEditor : ComponentBase
     [Parameter] public HtmlSanitizer? Sanitizer { get; set; }
 
     /// <summary>Accessible name for the editing surface. Defaults to "Document".</summary>
-    [Parameter] public string Label { get; set; } = "Document";
+    [Parameter] public string? Label { get; set; }
 
     /// <summary>
     /// When <see langword="true"/> (the default), a small status line shows whether there
@@ -157,6 +157,12 @@ public sealed partial class DxWordEditor : ComponentBase
         _baseline ??= new HistoryEntry(source, html, null);
     }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxWordEditor>? s;
+
+    private DxStrings<DxWordEditor> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "div");
@@ -167,25 +173,25 @@ public sealed partial class DxWordEditor : ComponentBase
             builder.OpenElement(2, "div");
             builder.AddAttribute(3, "class", "dx-word-toolbar");
             builder.AddAttribute(4, "role", "toolbar");
-            builder.AddAttribute(5, "aria-label", "Document");
+            builder.AddAttribute(5, "aria-label", S["Document", "Document"]);
 
             builder.OpenElement(6, "button");
             builder.AddAttribute(7, "type", "button");
             builder.AddAttribute(8, "class", "dx-word-toolbar-btn");
-            builder.AddAttribute(9, "aria-label", "Download the document as a .docx file");
-            builder.AddAttribute(10, "title", "Download the document as a .docx file");
+            builder.AddAttribute(9, "aria-label", S["DownloadDocumentAsDocx", "Download the document as a .docx file"]);
+            builder.AddAttribute(10, "title", S["DownloadDocumentAsDocx", "Download the document as a .docx file"]);
             builder.AddAttribute(11, "onclick", EventCallback.Factory.Create(this, DownloadAsync));
-            builder.AddContent(12, "Download .docx");
+            builder.AddContent(12, S["DownloadDocx", "Download .docx"]);
             builder.CloseElement();
 
             builder.OpenElement(13, "button");
             builder.AddAttribute(14, "type", "button");
             builder.AddAttribute(15, "class", "dx-word-toolbar-btn");
-            builder.AddAttribute(16, "aria-label", "Find and replace");
-            builder.AddAttribute(17, "title", "Find and replace");
+            builder.AddAttribute(16, "aria-label", S["FindReplace", "Find and replace"]);
+            builder.AddAttribute(17, "title", S["FindReplace", "Find and replace"]);
             builder.AddAttribute(18, "aria-expanded", showFind ? "true" : "false");
             builder.AddAttribute(19, "onclick", EventCallback.Factory.Create(this, ToggleFind));
-            builder.AddContent(20, "Find & replace");
+            builder.AddContent(20, S["FindReplace2", "Find & replace"]);
             builder.CloseElement();
 
             ToolbarButton(builder, 30, "Undo", "Undo", UndoAsync, !CanUndo);
@@ -219,7 +225,8 @@ public sealed partial class DxWordEditor : ComponentBase
         builder.AddComponentParameter(22, nameof(DxRichTextEditor.ValueChanged),
             EventCallback.Factory.Create<string?>(this, OnEditorHtmlChangedAsync));
         builder.AddComponentParameter(23, nameof(DxRichTextEditor.Sanitizer), Sanitizer);
-        builder.AddComponentParameter(24, nameof(DxRichTextEditor.AriaLabel), Label);
+        builder.AddComponentParameter(24, nameof(DxRichTextEditor.AriaLabel),
+            Label ?? S["Document", "Document"]);
         builder.AddComponentParameter(25, nameof(DxRichTextEditor.Class), "dx-word-editor-surface");
         // Keyboard undo/redo drive our model history (not the browser's), in both editing cores.
         builder.AddComponentParameter(26, nameof(DxRichTextEditor.OnUndo),
@@ -248,8 +255,11 @@ public sealed partial class DxWordEditor : ComponentBase
             builder.AddAttribute(31, "class", "dx-word-editor-status");
             builder.AddAttribute(32, "role", "status");
             builder.AddAttribute(33, "aria-live", "polite");
-            builder.AddContent(34, $"{(dirty ? "Unsaved changes" : "All changes saved")} · " +
-                $"{stats.Words:N0} words · {stats.Characters:N0} characters · {stats.Paragraphs:N0} paragraphs");
+            builder.AddContent(34, dirty
+                ? S["StatsUnsaved", "Unsaved changes · {0:N0} words · {1:N0} characters · {2:N0} paragraphs",
+                    stats.Words, stats.Characters, stats.Paragraphs]
+                : S["StatsSaved", "All changes saved · {0:N0} words · {1:N0} characters · {2:N0} paragraphs",
+                    stats.Words, stats.Characters, stats.Paragraphs]);
             builder.CloseElement();
         }
 

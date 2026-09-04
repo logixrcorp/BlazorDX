@@ -43,9 +43,15 @@ public sealed class DxWordViewer : ComponentBase
     /// Accessible name for the document region (the <c>aria-label</c> on the
     /// focusable <c>role="document"</c> container). Defaults to "Document".
     /// </summary>
-    [Parameter] public string Label { get; set; } = "Document";
+    [Parameter] public string? Label { get; set; }
 
     private IReadOnlyList<WordBlock> Blocks => Document?.Blocks ?? [];
+
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxWordViewer>? s;
+
+    private DxStrings<DxWordViewer> S => s ??= new(Services);
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
@@ -55,14 +61,14 @@ public sealed class DxWordViewer : ComponentBase
         builder.OpenElement(0, "div");
         builder.AddAttribute(1, "class", $"dx-word-viewer {Class}".TrimEnd());
         builder.AddAttribute(2, "role", "document");
-        builder.AddAttribute(3, "aria-label", Label);
+        builder.AddAttribute(3, "aria-label", Label ?? S["Document", "Document"]);
         builder.AddAttribute(4, "tabindex", "0");
 
         if (Blocks.Count == 0)
         {
             builder.OpenElement(5, "p");
             builder.AddAttribute(6, "class", "dx-word-empty");
-            builder.AddContent(7, "No document to display.");
+            builder.AddContent(7, S["NoDocumentDisplay", "No document to display."]);
             builder.CloseElement();
             builder.CloseElement();
             return;

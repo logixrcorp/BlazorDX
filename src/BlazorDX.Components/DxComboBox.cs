@@ -40,7 +40,7 @@ public sealed class DxComboBox<TValue> : ComboBoxPrimitive<TValue>
         builder.AddAttribute(7, "aria-autocomplete", "list");
         builder.AddAttribute(8, "aria-expanded", IsOpen ? "true" : "false");
         builder.AddAttribute(9, "aria-controls", PanelId);
-        builder.AddAttribute(10, "placeholder", Placeholder);
+        builder.AddAttribute(10, "placeholder", ResolvedPlaceholder);
         builder.AddAttribute(11, "value", Filter);
         if (ActiveOptionId.Length > 0)
         {

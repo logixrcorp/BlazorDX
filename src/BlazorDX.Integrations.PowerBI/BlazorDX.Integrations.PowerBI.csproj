@@ -42,4 +42,15 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- One definition, compiled into each package. See the header comment in the file for why
+         this is shared source rather than a shared (thirteenth) package. -->
+    <Compile Include="..\Shared\DxStrings.cs" Link="DxStrings.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Needed by the linked DxStrings.cs. -->
+    <PackageReference Include="Microsoft.Extensions.Localization" />
+  </ItemGroup>
+
 </Project>
