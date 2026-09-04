@@ -57,6 +57,12 @@ public sealed class DxRadarChart : ComponentBase
 
     protected override void OnParametersSet() => selection.ClampTo(VisibleSeriesNames().Count * Axes.Count);
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxChartResources>? s;
+
+    private DxStrings<DxChartResources> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         bool interactive = Interactive;
@@ -73,7 +79,7 @@ public sealed class DxRadarChart : ComponentBase
         builder.AddAttribute(2, "class", $"dx-chart-svg dx-radar {Class}".TrimEnd());
         builder.AddAttribute(3, "viewBox", Inv($"0 0 {Width} {Height}"));
         builder.AddAttribute(4, "role", interactive ? "application" : "img");
-        builder.AddAttribute(5, "aria-label", $"Radar chart of {names.Count} series over {n} axes");
+        builder.AddAttribute(5, "aria-label", S["RadarChartLabel", "Radar chart of {0} series over {1} axes", names.Count, n]);
 
         if (interactive)
         {

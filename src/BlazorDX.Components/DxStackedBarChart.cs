@@ -101,6 +101,12 @@ public sealed class DxStackedBarChart : ComponentBase
 
     protected override void OnParametersSet() => selection.ClampTo(Categories.Count * VisibleSeriesNames().Count);
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxChartResources>? s;
+
+    private DxStrings<DxChartResources> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         bool interactive = Interactive;
@@ -114,8 +120,9 @@ public sealed class DxStackedBarChart : ComponentBase
         builder.AddAttribute(3, "class", "dx-chart-svg");
         builder.AddAttribute(4, "viewBox", $"0 0 {Width} {Height}");
         builder.AddAttribute(5, "role", interactive ? "application" : "img");
-        builder.AddAttribute(6, "aria-label",
-            $"{(Stacked ? "Stacked" : "Grouped")} bar chart, {visible.Count} series across {Categories.Count} categories");
+        builder.AddAttribute(6, "aria-label", Stacked
+            ? S["StackedBarChartLabel", "Stacked bar chart, {0} series across {1} categories", visible.Count, Categories.Count]
+            : S["GroupedBarChartLabel", "Grouped bar chart, {0} series across {1} categories", visible.Count, Categories.Count]);
 
         if (interactive)
         {

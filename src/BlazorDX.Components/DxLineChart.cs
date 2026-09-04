@@ -91,6 +91,12 @@ public sealed class DxLineChart : ComponentBase
         }
     }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxChartResources>? s;
+
+    private DxStrings<DxChartResources> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         bool zoomed = zoom.IsZoomed;
@@ -148,7 +154,7 @@ public sealed class DxLineChart : ComponentBase
 
         builder.OpenElement(30, "div");
         builder.AddAttribute(31, "class", "dx-chart-caption");
-        builder.AddContent(32, $"{selected.Length:N0} of {Points.Count:N0} points · {Compute.Backend}");
+        builder.AddContent(32, S["PointsCaption", "{0:N0} of {1:N0} points · {2}", selected.Length, Points.Count, Compute.Backend]);
 
         if (zoomed)
         {
@@ -156,7 +162,7 @@ public sealed class DxLineChart : ComponentBase
             builder.AddAttribute(34, "type", "button");
             builder.AddAttribute(35, "class", "dx-chart-zoom-reset");
             builder.AddAttribute(36, "onclick", EventCallback.Factory.Create(this, ResetAsync));
-            builder.AddContent(37, "Reset zoom");
+            builder.AddContent(37, S["ResetZoom", "Reset zoom"]);
             builder.CloseElement();
         }
 
@@ -168,7 +174,7 @@ public sealed class DxLineChart : ComponentBase
             builder.AddAttribute(39, "class", "dx-chart-sr");
             builder.AddAttribute(40, "role", "status");
             builder.AddAttribute(41, "aria-live", "polite");
-            builder.AddContent(42, $"Zoomed to {F(zoom.VisibleMin)}–{F(zoom.VisibleMax)} of {F(zoom.DataMin)}–{F(zoom.DataMax)}");
+            builder.AddContent(42, S["ZoomStatus", "Zoomed to {0}–{1} of {2}–{3}", F(zoom.VisibleMin), F(zoom.VisibleMax), F(zoom.DataMin), F(zoom.DataMax)]);
             builder.CloseElement();
         }
 

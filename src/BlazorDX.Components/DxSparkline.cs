@@ -29,6 +29,12 @@ public sealed class DxSparkline : ComponentBase
 
     [Parameter] public string? Class { get; set; }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxChartResources>? s;
+
+    private DxStrings<DxChartResources> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "svg");
@@ -38,7 +44,7 @@ public sealed class DxSparkline : ComponentBase
         builder.AddAttribute(4, "height", Height);
         builder.AddAttribute(5, "preserveAspectRatio", "none");
         builder.AddAttribute(6, "role", "img");
-        builder.AddAttribute(7, "aria-label", $"Sparkline of {Points.Count} points");
+        builder.AddAttribute(7, "aria-label", S["SparklineLabel", "Sparkline of {0} points", Points.Count]);
 
         if (Points.Count > 0)
         {

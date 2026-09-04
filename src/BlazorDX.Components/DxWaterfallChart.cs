@@ -72,6 +72,12 @@ public sealed class DxWaterfallChart : ComponentBase
         return bars;
     }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxChartResources>? s;
+
+    private DxStrings<DxChartResources> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         bool interactive = Interactive;
@@ -84,7 +90,7 @@ public sealed class DxWaterfallChart : ComponentBase
         builder.AddAttribute(3, "class", "dx-chart-svg");
         builder.AddAttribute(4, "viewBox", $"0 0 {Width} {Height}");
         builder.AddAttribute(5, "role", interactive ? "application" : "img");
-        builder.AddAttribute(6, "aria-label", $"Waterfall chart with {Points.Count} bars");
+        builder.AddAttribute(6, "aria-label", S["WaterfallChartLabel", "Waterfall chart with {0} bars", Points.Count]);
 
         if (interactive)
         {

@@ -83,6 +83,12 @@ public sealed class DxBubbleChart : ComponentBase
         }
     }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxChartResources>? s;
+
+    private DxStrings<DxChartResources> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         bool interactive = Interactive;
@@ -172,7 +178,7 @@ public sealed class DxBubbleChart : ComponentBase
                 builder.AddAttribute(53, "type", "button");
                 builder.AddAttribute(54, "class", "dx-chart-zoom-reset");
                 builder.AddAttribute(55, "onclick", EventCallback.Factory.Create(this, ResetAsync));
-                builder.AddContent(56, "Reset zoom");
+                builder.AddContent(56, S["ResetZoom", "Reset zoom"]);
                 builder.CloseElement();
             }
 
@@ -184,8 +190,8 @@ public sealed class DxBubbleChart : ComponentBase
                 builder.AddAttribute(58, "class", "dx-chart-sr");
                 builder.AddAttribute(59, "role", "status");
                 builder.AddAttribute(60, "aria-live", "polite");
-                builder.AddContent(61,
-                    $"Zoomed to X {F(zoom.X.VisibleMin)}–{F(zoom.X.VisibleMax)}, Y {F(zoom.Y.VisibleMin)}–{F(zoom.Y.VisibleMax)}");
+                builder.AddContent(61, S["ZoomStatusXY", "Zoomed to X {0}–{1}, Y {2}–{3}",
+                    F(zoom.X.VisibleMin), F(zoom.X.VisibleMax), F(zoom.Y.VisibleMin), F(zoom.Y.VisibleMax)]);
                 builder.CloseElement();
             }
         }

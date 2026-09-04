@@ -37,6 +37,12 @@ public sealed class DxFunnelChart : ComponentBase
 
     protected override void OnParametersSet() => selection.ClampTo(Points.Count);
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxChartResources>? s;
+
+    private DxStrings<DxChartResources> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         bool interactive = Interactive;
@@ -56,7 +62,7 @@ public sealed class DxFunnelChart : ComponentBase
         builder.AddAttribute(2, "class", $"dx-chart-svg dx-funnel {Class}".TrimEnd());
         builder.AddAttribute(3, "viewBox", Inv($"0 0 {Width} {Height}"));
         builder.AddAttribute(4, "role", interactive ? "application" : "img");
-        builder.AddAttribute(5, "aria-label", $"Funnel chart with {n} stages");
+        builder.AddAttribute(5, "aria-label", S["FunnelChartLabel", "Funnel chart with {0} stages", n]);
 
         if (interactive)
         {
