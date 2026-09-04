@@ -50,7 +50,7 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
     // Added once every stylesheet was converted. These exercise the sheets whose bare
     // left/right positioning was flipped rather than merely mapped — the judgment calls, which
     // is where a conversion mistake would actually show.
-    [InlineData("/forms?dir=rtl")]       // dx-input: the affixed-input reveal button
+    [InlineData("/controls?dir=rtl")]    // dx-input: DxPassword's affixed reveal button
     [InlineData("/files?dir=rtl")]       // dx-filemanager, plus dx-layout's toast host
     [InlineData("/excel?dir=rtl")]       // dx-spreadsheet: the sticky row-number gutter
     public async Task Page_has_no_serious_axe_violations(string route)
