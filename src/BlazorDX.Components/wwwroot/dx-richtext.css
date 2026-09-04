@@ -1,3 +1,5 @@
+/* rtl-clean — converted to logical properties; physical usages that remain carry
+   an rtl-exempt reason. See docs/localization.md. */
 /* BlazorDX WYSIWYG editor. Token-driven (see dx-theme.css). */
 
 .dx-rte {
@@ -77,5 +79,5 @@
   color: var(--dx-text-muted, #94a3b8);
 }
 .dx-rte-surface h2 { font-size: 1.25rem; margin: 0.4em 0; }
-.dx-rte-surface ul, .dx-rte-surface ol { padding-left: 1.4em; margin: 0.4em 0; }
+.dx-rte-surface ul, .dx-rte-surface ol { padding-inline-start: 1.4em; margin: 0.4em 0; }
 .dx-rte-surface a { color: var(--dx-accent, #2563eb); }

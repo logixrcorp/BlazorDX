@@ -1,3 +1,5 @@
+/* rtl-clean — converted to logical properties; physical usages that remain carry
+   an rtl-exempt reason. See docs/localization.md. */
 /*
   Layout / content-organization components (Tabs, Accordion). CSS-variable driven.
 */
@@ -6,7 +8,7 @@
 /* Offscreen until focused; the 24px+ tap target and visible focus appear on focus. */
 .dx-skip-link {
   position: absolute;
-  left: 8px;
+  inset-inline-start: 8px;
   top: -48px;
   z-index: 2000;
   padding: 8px 14px;
@@ -78,7 +80,7 @@
   color: #0f172a;
   font: inherit;
   font-weight: 600;
-  text-align: left;
+  text-align: start;
   cursor: pointer;
 }
 .dx-accordion-header:hover {
@@ -127,7 +129,7 @@
   font-size: 18px;
   line-height: 1;
 }
-.dx-sortable-controls { display: inline-flex; gap: 2px; margin-left: auto; }
+.dx-sortable-controls { display: inline-flex; gap: 2px; margin-inline-start: auto; }
 /* No-drag reorder buttons, kept at the 24x24 CSS-px minimum (WCAG 2.5.8). */
 .dx-sortable-move,
 .dx-tile-move {
@@ -296,7 +298,7 @@
   content: "";
   position: absolute;
   top: 15px;
-  left: 50%;
+  inset-inline-start: 50%;
   width: 100%;
   height: 2px;
   background: #e2e8f0;
@@ -412,7 +414,7 @@
 .dx-switch-thumb {
   position: absolute;
   top: 2px;
-  left: 2px;
+  inset-inline-start: 2px;
   width: 18px;
   height: 18px;
   border-radius: 50%;
@@ -424,6 +426,11 @@
 }
 .dx-switch-input:checked + .dx-switch-track .dx-switch-thumb {
   transform: translateX(16px);
+}
+/* `transform` has no logical equivalent — translateX(16px) always travels right — so the
+   thumb's flipped travel has to be spelled out for RTL. */
+[dir="rtl"] .dx-switch-input:checked + .dx-switch-track .dx-switch-thumb {
+  transform: translateX(-16px);
 }
 .dx-switch-input:focus-visible + .dx-switch-track {
   outline: 2px solid var(--dx-accent, #2563eb);
@@ -570,7 +577,7 @@
 .dx-toast-host {
   position: fixed;
   bottom: 16px;
-  right: 16px;
+  inset-inline-end: 16px;
   z-index: 1200;
   display: flex;
   flex-direction: column;
@@ -647,5 +654,5 @@
 .dx-tile-header:active { cursor: grabbing; }
 .dx-tile-grip { color: var(--dx-text-muted, #94a3b8); }
 .dx-tile-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dx-tile-controls { display: inline-flex; gap: 2px; margin-left: auto; }
+.dx-tile-controls { display: inline-flex; gap: 2px; margin-inline-start: auto; }
 .dx-tile-body { padding: 14px; color: var(--dx-text, #0f172a); }

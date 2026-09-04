@@ -47,6 +47,12 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
     [InlineData("/scheduler?dir=rtl")]   // grid of day columns — the most direction-sensitive layout
     [InlineData("/app/records?dir=rtl")] // DxDataGrid: sort/filter affordances, sticky header, toolbar
     [InlineData("/charts?dir=rtl")]      // chart geometry is C#-computed, so RTL is unreviewed here by construction
+    // Added once every stylesheet was converted. These exercise the sheets whose bare
+    // left/right positioning was flipped rather than merely mapped — the judgment calls, which
+    // is where a conversion mistake would actually show.
+    [InlineData("/forms?dir=rtl")]       // dx-input: the affixed-input reveal button
+    [InlineData("/files?dir=rtl")]       // dx-filemanager, plus dx-layout's toast host
+    [InlineData("/excel?dir=rtl")]       // dx-spreadsheet: the sticky row-number gutter
     public async Task Page_has_no_serious_axe_violations(string route)
     {
         Skip.IfNot(fx.Ready, fx.SkipReason);

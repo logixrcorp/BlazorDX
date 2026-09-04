@@ -96,11 +96,16 @@ enhancements. None of this should be read as "ready"; it is a beta with work ahe
   bans hardcoded user-facing strings in any component already localized, and
   `RtlLogicalPropertyTests` bans physical directional CSS in any stylesheet marked
   converted — see [ADR 0021](adr/0021-optional-localization-and-rollout-guardrails.md) and
-  the runbook at [docs/localization.md](localization.md). *Remaining: the rollout itself —
-  **83 components** carrying ~250–270 strings (the "~130" here previously counted every
-  file; 57 have no user-facing text at all) and 24 stylesheets, ~131 declarations. Still
-  the single largest item on this list, and a hard requirement for many enterprise and
-  international buyers.*
+  the runbook at [docs/localization.md](localization.md). **RTL done**: all 25 stylesheets
+  are converted to logical properties, and the guard's marker is now **mandatory** rather
+  than opt-in, so a new stylesheet cannot skip the check by omitting it. The physical usages
+  that remain each carry a written reason — a screen-edge API (`DxSheet`'s `Side`), boxes
+  pinned to both edges, and the two places CSS has no logical form (`transform` and
+  `transform-origin`, handled with explicit `[dir="rtl"]` rules). *Remaining: the string
+  rollout — **43 of 83 components** still to localize, ~60–80 strings; 40 are done, carrying
+  205 externalized strings (the "~130 components" here previously counted every file; 57
+  have no user-facing text at all). A hard requirement for many enterprise and international
+  buyers.*
 - **Formal accessibility audit + VPAT** — automated **axe-core checks now run in CI**
   (`AccessibilityE2ETests`, across Chromium/Firefox/WebKit) over the showcase and the
   TicketDesk demo app, with zero serious/critical violations; wiring this up already caught

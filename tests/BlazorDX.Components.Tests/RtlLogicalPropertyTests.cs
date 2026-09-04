@@ -18,10 +18,11 @@ namespace BlazorDX.Components.Tests;
 /// the source rather than in a browser.
 /// </para>
 /// <para>
-/// <b>Opt-in by marker, deliberately.</b> Only files containing <c>rtl-clean</c> are enforced.
-/// The conversion backlog is 24 stylesheets and ~104 declarations; enforcing everything now would
-/// just fail. Each conversion batch adds the marker to the files it converts, and the end state
-/// is every stylesheet carrying it — the same ratchet DX1003 uses for hardcoded strings.
+/// <b>The ratchet is closed.</b> It began as an opt-in marker because enforcing 24 unconverted
+/// stylesheets at once would only have failed. All 25 are now converted, so
+/// <see cref="Every_shipped_stylesheet_is_marked_converted"/> makes the marker mandatory: a new
+/// stylesheet cannot quietly opt out of the check by omitting it, which is the one hole an
+/// opt-in ratchet always leaves.
 /// </para>
 /// <para>
 /// <b>Escape hatch.</b> A line carrying <c>rtl-exempt: &lt;reason&gt;</c> is allowed. Some
@@ -95,6 +96,26 @@ public sealed class RtlLogicalPropertyTests
             + $"properties (margin-inline-start, text-align: start, inset-inline-start, ...), or add "
             + $"`/* {ExemptMarker}: <reason> */` on the line if the usage is deliberately physical:"
             + Environment.NewLine + string.Join(Environment.NewLine, violations));
+    }
+
+    [Fact]
+    public void Every_shipped_stylesheet_is_marked_converted()
+    {
+        // What closing the ratchet means. While the marker was opt-in, the check could be
+        // sidestepped by simply not adding it — so a brand-new stylesheet full of margin-left
+        // would have passed. Now the marker is the requirement, and the test above is what the
+        // marker promises.
+        string[] unmarked = ShippedStylesheets()
+            .Where(path => !File.ReadAllText(path).Contains(ConvertedMarker, StringComparison.Ordinal))
+            .Select(Path.GetFileName)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray()!;
+
+        Assert.True(unmarked.Length == 0,
+            $"Stylesheets with no `{ConvertedMarker}` marker. Convert them to logical properties "
+            + $"and add the marker (docs/localization.md), or add `{ExemptMarker}: <reason>` to the "
+            + "individual lines that must stay physical:"
+            + Environment.NewLine + string.Join(Environment.NewLine, unmarked.Select(n => "  " + n)));
     }
 
     [Fact]

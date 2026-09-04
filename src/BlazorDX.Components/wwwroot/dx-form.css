@@ -1,3 +1,5 @@
+/* rtl-clean — converted to logical properties; physical usages that remain carry
+   an rtl-exempt reason. See docs/localization.md. */
 /* DxForm — layout, fields, validation, and containers. Inputs reuse .dx-input
    (dx-input.css); everything here is the form scaffold around them. */
 
@@ -85,7 +87,7 @@
   padding-top: 6px;
 }
 .dx-fieldlist-content { flex: 1; min-inline-size: 0; }
-.dx-fieldlist-controls { display: inline-flex; gap: 2px; margin-left: auto; padding-top: 2px; }
+.dx-fieldlist-controls { display: inline-flex; gap: 2px; margin-inline-start: auto; padding-top: 2px; }
 .dx-fieldlist-move {
   display: inline-grid;
   place-items: center;

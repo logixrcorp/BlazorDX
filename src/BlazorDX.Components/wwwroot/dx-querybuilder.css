@@ -1,3 +1,5 @@
+/* rtl-clean — converted to logical properties; physical usages that remain carry
+   an rtl-exempt reason. See docs/localization.md. */
 /* BlazorDX query builder. Token-driven (see dx-theme.css). */
 
 .dx-qb { color: var(--dx-text, #0f172a); }
@@ -22,7 +24,7 @@
   cursor: pointer;
 }
 .dx-qb-comb:first-child { border-radius: 6px 0 0 6px; }
-.dx-qb-comb:last-child { border-radius: 0 6px 6px 0; border-left: 0; }
+.dx-qb-comb:last-child { border-radius: 0 6px 6px 0; border-inline-start: 0; }
 .dx-qb-comb-active {
   color: #ffffff;
   background: var(--dx-accent, #2563eb);
