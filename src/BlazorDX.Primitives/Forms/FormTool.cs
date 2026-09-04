@@ -15,15 +15,38 @@ namespace BlazorDX.Primitives.Forms;
 /// </summary>
 public static class FormTool
 {
+    // Cycle safety net: DX2006 guarantees the Object/Array field-kind graph is
+    // acyclic for anything that actually compiles, so this recursion always
+    // terminates in practice. The depth guard is defensive insurance only — e.g.
+    // against a hand-rolled IFormModelUntyped implementer that bypasses the
+    // generator entirely — not something a normal [DxFormModel] graph can reach.
+    private const int MaxRecursionDepth = 16;
+
     /// <summary>
     /// Builds the JSON-Schema <c>object</c> describing the model's parameters
-    /// (types, constraints, descriptions, and the required set).
+    /// (types, constraints, descriptions, and the required set) — recursing into
+    /// nested/array-of-nested descriptors for an Object/Array field.
     /// </summary>
     public static string BuildInputSchema<TModel>(IFormModel<TModel> model)
     {
         StringBuilder sb = new();
-        sb.Append("{\"type\":\"object\",\"properties\":{");
+        AppendObjectSchema(sb, model, 0, null);
+        return sb.ToString();
+    }
 
+    // The full JSON-Schema "object" shape (properties/required/allOf) — shared by the
+    // top-level tool schema and, recursively, by an Object field's own nested schema,
+    // since both are structurally identical.
+    private static void AppendObjectSchema(StringBuilder sb, IFormModelUntyped model, int depth, string? description)
+    {
+        sb.Append("{\"type\":\"object\"");
+        if (!string.IsNullOrEmpty(description))
+        {
+            sb.Append(",\"description\":");
+            AppendString(sb, description!);
+        }
+
+        sb.Append(",\"properties\":{");
         bool first = true;
         foreach (FormFieldInfo field in model.Fields)
         {
@@ -38,7 +61,7 @@ public static class FormTool
             }
 
             first = false;
-            AppendProperty(sb, field, model);
+            AppendProperty(sb, field, model, depth);
         }
 
         sb.Append("},\"required\":[");
@@ -64,7 +87,6 @@ public static class FormTool
         sb.Append(']');
         AppendConditionalRequired(sb, model);
         sb.Append('}');
-        return sb.ToString();
     }
 
     // Fields that are both conditional and Required get a JSON-Schema "if this
@@ -78,7 +100,7 @@ public static class FormTool
     // only one top-level "if" per schema object, so multiple such fields collect under
     // one "allOf". This is advisory, not the enforcement boundary -- see
     // ApplyArguments, which is.
-    private static void AppendConditionalRequired<TModel>(StringBuilder sb, IFormModel<TModel> model)
+    private static void AppendConditionalRequired(StringBuilder sb, IFormModelUntyped model)
     {
         bool any = false;
         foreach (FormFieldInfo field in model.Fields)
@@ -165,7 +187,7 @@ public static class FormTool
             _ => $"Only applicable when {dependsOn.Label} is {value}.",
         };
 
-    private static FormFieldInfo? Find<TModel>(IFormModel<TModel> model, string name)
+    private static FormFieldInfo? Find(IFormModelUntyped model, string name)
     {
         foreach (FormFieldInfo field in model.Fields)
         {
@@ -222,45 +244,148 @@ public static class FormTool
                 return new[] { new FormValidationError(string.Empty, "Tool arguments must be a JSON object.") };
             }
 
-            // Two passes, deliberately in this order: a conditional field's activity
-            // depends on its DependsOn field's value *from this same call*, not a stale
-            // previously-persisted one, so every unconditional field must be applied
-            // first. Pass 2 then re-checks activity against the now-updated target and
-            // silently skips a conditionally-inactive field -- same posture as the
-            // Sensitive skip above: the schema's if/then is advisory (many function-
-            // calling hosts don't guarantee they evaluate it), this is the real
-            // enforcement boundary. No chained DependsOn can reach here (DX2003 forbids
-            // it at compile time), so pass 2 never depends on another pass-2 result.
-            foreach (FormFieldInfo field in model.Fields)
-            {
-                if (field.Sensitive || field.DependsOn is not null)
-                {
-                    continue;
-                }
-
-                SetFromJson(model, target, root, field);
-            }
-
-            foreach (FormFieldInfo field in model.Fields)
-            {
-                if (field.Sensitive || field.DependsOn is null)
-                {
-                    continue;
-                }
-
-                if (!FormFieldActivity.IsActive(model, target, field))
-                {
-                    continue;   // conditionally inactive -- the AI cannot set it via this call
-                }
-
-                SetFromJson(model, target, root, field);
-            }
+            ApplyObject(model, target!, root, 0);
         }
 
         return model.Validate(target);
     }
 
-    private static void SetFromJson<TModel>(IFormModel<TModel> model, TModel target, JsonElement root, FormFieldInfo field)
+    // The recursive core: three passes over IFormModelUntyped/object so it can call
+    // itself for a nested/array-element descriptor without generic gymnastics.
+    private static void ApplyObject(IFormModelUntyped model, object target, JsonElement root, int depth)
+    {
+        // Pass 1, unconditional scalar fields: a conditional field's activity depends
+        // on its DependsOn field's value *from this same call*, not a stale
+        // previously-persisted one, so every unconditional field must be applied
+        // first. No chained DependsOn can reach here (DX2003 forbids it at compile
+        // time), so pass 2 never depends on another pass-2 result.
+        foreach (FormFieldInfo field in model.Fields)
+        {
+            if (field.Sensitive || field.DependsOn is not null || field.Kind is FormFieldKind.Object or FormFieldKind.Array)
+            {
+                continue;
+            }
+
+            SetScalarFromJson(model, target, root, field);
+        }
+
+        // Pass 2, conditional scalar fields, re-checked against the now-updated
+        // target -- same posture as the Sensitive skip: the schema's if/then is
+        // advisory (many function-calling hosts don't guarantee they evaluate it),
+        // this is the real enforcement boundary.
+        foreach (FormFieldInfo field in model.Fields)
+        {
+            if (field.Sensitive || field.DependsOn is null || field.Kind is FormFieldKind.Object or FormFieldKind.Array)
+            {
+                continue;
+            }
+
+            if (!FormFieldActivity.IsActive(model, target, field))
+            {
+                continue;   // conditionally inactive -- the AI cannot set it via this call
+            }
+
+            SetScalarFromJson(model, target, root, field);
+        }
+
+        if (depth >= MaxRecursionDepth)
+        {
+            return;
+        }
+
+        // Pass 3, Object/Array fields. DX2007 guarantees neither kind ever
+        // participates in DependsOn (as source or target), so this pass has no
+        // activity gating and no ordering dependency on passes 1-2.
+        foreach (FormFieldInfo field in model.Fields)
+        {
+            if (field.Sensitive)
+            {
+                continue;
+            }
+
+            if (field.Kind == FormFieldKind.Object)
+            {
+                ApplyNestedField(model, target, root, field, depth);
+            }
+            else if (field.Kind == FormFieldKind.Array)
+            {
+                ApplyArrayField(model, target, root, field, depth);
+            }
+        }
+    }
+
+    // Materializes a currently-null nested instance the same way rendering does
+    // (new TNested(), guaranteed constructible by DX2009), then recurses.
+    private static void ApplyNestedField(IFormModelUntyped model, object target, JsonElement root, FormFieldInfo field, int depth)
+    {
+        if (!root.TryGetProperty(field.Name, out JsonElement value) || value.ValueKind != JsonValueKind.Object)
+        {
+            return;
+        }
+
+        IFormModelUntyped? nestedDescriptor = model.GetNestedDescriptor(field.Name);
+        if (nestedDescriptor is null)
+        {
+            return;
+        }
+
+        object instance = model.GetNestedInstance(target, field.Name) ?? model.NewNestedInstance(field.Name);
+        model.SetNestedInstance(target, field.Name, instance);
+        ApplyObject(nestedDescriptor, instance, value, depth + 1);
+    }
+
+    // Whole-collection replacement: the simplest correct semantic for a JSON payload
+    // that carries no natural per-element identity to merge against.
+    private static void ApplyArrayField(IFormModelUntyped model, object target, JsonElement root, FormFieldInfo field, int depth)
+    {
+        if (!root.TryGetProperty(field.Name, out JsonElement value) || value.ValueKind != JsonValueKind.Array)
+        {
+            return;
+        }
+
+        if (field.NestedType is not null)
+        {
+            IFormModelUntyped? elementDescriptor = model.GetArrayElementDescriptor(field.Name);
+            if (elementDescriptor is null)
+            {
+                return;
+            }
+
+            List<object> items = new();
+            foreach (JsonElement element in value.EnumerateArray())
+            {
+                if (element.ValueKind != JsonValueKind.Object)
+                {
+                    continue;
+                }
+
+                object item = model.NewArrayElement(field.Name);
+                ApplyObject(elementDescriptor, item, element, depth + 1);
+                items.Add(item);
+            }
+
+            model.SetArrayInstances(target, field.Name, items);
+        }
+        else
+        {
+            List<string> items = new();
+            foreach (JsonElement element in value.EnumerateArray())
+            {
+                if (element.ValueKind == JsonValueKind.Null)
+                {
+                    continue;
+                }
+
+                items.Add(element.ValueKind == JsonValueKind.String
+                    ? element.GetString() ?? string.Empty
+                    : element.GetRawText());
+            }
+
+            model.SetArrayStrings(target, field.Name, items);
+        }
+    }
+
+    private static void SetScalarFromJson(IFormModelUntyped model, object target, JsonElement root, FormFieldInfo field)
     {
         if (!root.TryGetProperty(field.Name, out JsonElement value) || value.ValueKind == JsonValueKind.Null)
         {
@@ -275,10 +400,24 @@ public static class FormTool
         model.SetString(target, field.Name, raw);
     }
 
-    private static void AppendProperty<TModel>(StringBuilder sb, FormFieldInfo field, IFormModel<TModel> model)
+    private static void AppendProperty(StringBuilder sb, FormFieldInfo field, IFormModelUntyped model, int depth)
     {
         AppendString(sb, field.Name);
-        sb.Append(":{");
+        sb.Append(':');
+
+        if (field.Kind == FormFieldKind.Object)
+        {
+            AppendObjectPropertySchema(sb, field, model, depth);
+            return;
+        }
+
+        if (field.Kind == FormFieldKind.Array)
+        {
+            AppendArrayPropertySchema(sb, field, model, depth);
+            return;
+        }
+
+        sb.Append('{');
 
         // type (+ format for dates)
         sb.Append("\"type\":");
@@ -352,11 +491,94 @@ public static class FormTool
         sb.Append('}');
     }
 
+    // An Object field's schema: its nested descriptor's own object schema, recursed —
+    // DX2006/2008/2009 guarantee GetNestedDescriptor never returns null for a field
+    // that actually compiled, but a defensive fallback keeps this from ever emitting
+    // invalid JSON if a hand-rolled IFormModelUntyped implementer violates that.
+    private static void AppendObjectPropertySchema(StringBuilder sb, FormFieldInfo field, IFormModelUntyped model, int depth)
+    {
+        IFormModelUntyped? nested = depth < MaxRecursionDepth ? model.GetNestedDescriptor(field.Name) : null;
+        if (nested is null)
+        {
+            sb.Append("{\"type\":\"object\"");
+            if (!string.IsNullOrEmpty(field.Description))
+            {
+                sb.Append(",\"description\":");
+                AppendString(sb, field.Description!);
+            }
+
+            sb.Append('}');
+            return;
+        }
+
+        AppendObjectSchema(sb, nested, depth + 1, field.Description);
+    }
+
+    // An Array field's schema: "items" is either the array-of-nested element's own
+    // object schema (recursed the same way as an Object field) or a plain scalar
+    // schema built from ArrayElementKind/Choices.
+    private static void AppendArrayPropertySchema(StringBuilder sb, FormFieldInfo field, IFormModelUntyped model, int depth)
+    {
+        sb.Append("{\"type\":\"array\"");
+        if (!string.IsNullOrEmpty(field.Description))
+        {
+            sb.Append(",\"description\":");
+            AppendString(sb, field.Description!);
+        }
+
+        sb.Append(",\"items\":");
+
+        if (field.NestedType is not null)
+        {
+            IFormModelUntyped? element = depth < MaxRecursionDepth ? model.GetArrayElementDescriptor(field.Name) : null;
+            if (element is null)
+            {
+                sb.Append("{\"type\":\"object\"}");
+            }
+            else
+            {
+                AppendObjectSchema(sb, element, depth + 1, null);
+            }
+        }
+        else
+        {
+            FormFieldKind elementKind = field.ArrayElementKind ?? FormFieldKind.Text;
+            sb.Append("{\"type\":");
+            AppendString(sb, JsonType(elementKind));
+            if (elementKind == FormFieldKind.Date)
+            {
+                sb.Append(",\"format\":\"date\"");
+            }
+
+            if (elementKind == FormFieldKind.Enum && field.Choices is { Count: > 0 })
+            {
+                sb.Append(",\"enum\":[");
+                for (int i = 0; i < field.Choices.Count; i++)
+                {
+                    if (i > 0)
+                    {
+                        sb.Append(',');
+                    }
+
+                    AppendString(sb, field.Choices[i]);
+                }
+
+                sb.Append(']');
+            }
+
+            sb.Append('}');
+        }
+
+        sb.Append('}');
+    }
+
     private static string JsonType(FormFieldKind kind) => kind switch
     {
         FormFieldKind.Integer => "integer",
         FormFieldKind.Number => "number",
         FormFieldKind.Bool => "boolean",
+        FormFieldKind.Object => "object",
+        FormFieldKind.Array => "array",
         _ => "string",
     };
 

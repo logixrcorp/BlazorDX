@@ -25,7 +25,17 @@ internal sealed record FormFieldDef(
     bool Sensitive,           // hidden from the AI tool surface (schema + ApplyArguments)
     string? DependsOn,        // PropertyName of the controlling field; null = always active
     string? DependsOnValue,
-    string DependsOnOperator); // FormFieldDependsOnOperator member name
+    string DependsOnOperator, // FormFieldDependsOnOperator member name
+    // Object: the nested type's FQN. Array-of-nested: the ELEMENT type's FQN. Null
+    // for every scalar field. For an Array field, null in BOTH this and
+    // ArrayElementKind means the element type was neither [DxFormModel]-tagged nor a
+    // recognized scalar -- FormModelDiagnostics reports DX2005 for that state.
+    string? NestedTypeFqn = null,
+    // Array-of-scalar only: the element's own scalar Kind (FormFieldKind member name).
+    string? ArrayElementKind = null,
+    // The FQN of the nested/element type's OWN generated "{Type}FormModel" descriptor
+    // class (e.g. "global::Ns.AddressFormModel") -- set whenever NestedTypeFqn is.
+    string? NestedDescriptorFqn = null);
 
 /// <summary>Everything the form emitter needs about a <c>[DxFormModel]</c> type.</summary>
 internal sealed record FormModelDef(
@@ -51,6 +61,7 @@ internal static class FormModelAnalysis
 {
     private const string FieldAttribute = "BlazorDX.Primitives.Forms.DxFieldAttribute";
     private const string AiHiddenAttribute = "BlazorDX.Primitives.Forms.AiHiddenAttribute";
+    private const string ModelAttribute = "BlazorDX.Primitives.Forms.DxFormModelAttribute";
 
     private const string DaNs = "System.ComponentModel.DataAnnotations.";
     private const string RequiredAttr = DaNs + "RequiredAttribute";
@@ -79,11 +90,22 @@ internal static class FormModelAnalysis
         string? toolDescription = ReadNamedString(modelAttribute, "Description");
         bool validatable = type.AllInterfaces.Any(i => i.ToDisplayString() == ValidatableInterface);
 
-        ImmutableArray<FormFieldDef> fields = ReadFields(type);
+        (ImmutableArray<FormFieldDef> fields0, ImmutableArray<(string PropertyName, Diagnostic Diagnostic)> shapeDiagnostics) = ReadFields(type);
+        ImmutableArray<FormFieldDef> fields = fields0;
 
-        // Validate DependsOn references (DX2001-DX2004) after the full field set is known —
-        // each rule needs to see every field, not just the one being checked.
         ImmutableArray<Diagnostic>.Builder diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
+        HashSet<string> badShape = new();
+        foreach ((string propertyName, Diagnostic diagnostic) in shapeDiagnostics)
+        {
+            // DX2008/DX2009: an Object/array-of-nested field referencing a type that
+            // has no discovered fields, or no accessible parameterless constructor.
+            diagnostics.Add(diagnostic);
+            badShape.Add(propertyName);
+        }
+
+        // Validate DependsOn references (DX2001-DX2004, DX2007) and array-element
+        // shape (DX2005) after the full field set is known — each rule needs to see
+        // every field, not just the one being checked.
         HashSet<string> badDependsOn = new();
         foreach ((FormFieldDef field, DiagnosticDescriptor descriptor) in FormModelDiagnostics.Validate(fields))
         {
@@ -92,7 +114,32 @@ internal static class FormModelAnalysis
                 .FirstOrDefault()
                 ?.Locations.FirstOrDefault() ?? Location.None;
             diagnostics.Add(Diagnostic.Create(descriptor, location, field.PropertyName, field.DependsOn));
-            badDependsOn.Add(field.PropertyName);
+
+            if (descriptor == FormModelDiagnostics.InvalidCollectionElement)
+            {
+                badShape.Add(field.PropertyName);
+            }
+            else
+            {
+                badDependsOn.Add(field.PropertyName);
+            }
+        }
+
+        if (badShape.Count > 0)
+        {
+            // Best-effort: fall a malformed Object/Array field back to a plain Text
+            // field so Emit() never has to special-case an invalid shape — the
+            // diagnostic above is what the author sees, not a cascade of secondary
+            // compiler errors from broken generated code.
+            fields = fields
+                .Select(f => badShape.Contains(f.PropertyName)
+                    ? f with
+                    {
+                        Kind = "Text", NestedTypeFqn = null, ArrayElementKind = null, NestedDescriptorFqn = null,
+                        UnderlyingFqn = "string", IsString = true, Choices = ImmutableArray<string>.Empty,
+                    }
+                    : f)
+                .ToImmutableArray();
         }
 
         if (badDependsOn.Count > 0)
@@ -109,9 +156,11 @@ internal static class FormModelAnalysis
         return (model, diagnostics.ToImmutable());
     }
 
-    private static ImmutableArray<FormFieldDef> ReadFields(INamedTypeSymbol type)
+    private static (ImmutableArray<FormFieldDef> Fields, ImmutableArray<(string PropertyName, Diagnostic Diagnostic)> ShapeDiagnostics) ReadFields(INamedTypeSymbol type)
     {
         ImmutableArray<FormFieldDef>.Builder builder = ImmutableArray.CreateBuilder<FormFieldDef>();
+        ImmutableArray<(string PropertyName, Diagnostic Diagnostic)>.Builder shapeDiagnostics =
+            ImmutableArray.CreateBuilder<(string, Diagnostic)>();
         foreach (ISymbol member in type.GetMembers())
         {
             if (member is not IPropertySymbol property || property.SetMethod is null)
@@ -128,10 +177,80 @@ internal static class FormModelAnalysis
                 continue;
             }
 
+            string label = FieldLabel(field) ?? DisplayName(property) ?? property.Name;
+            string? description = ReadNamedString(field, "Description") ?? DisplayProp(property, "Description");
+            bool required = ReadNamedBool(field, "Required") || Has(property, RequiredAttr);
+            int order = ReadNamedInt(field, "Order") ?? DisplayOrder(property) ?? 0;
+            bool sensitive = ReadNamedBool(field, "Sensitive") || Has(property, AiHiddenAttribute);
+            string? dependsOn = ReadNamedString(field, "DependsOn");
+            string? dependsOnValue = ReadNamedString(field, "DependsOnValue");
+            string dependsOnOperator = ReadNamedEnumMember(field, "DependsOnOperator") ?? "Equals";
+
+            // ---- List<T>: array of nested [DxFormModel] objects, or array of scalars ----
+            // Checked before Underlying()'s Nullable<T> unwrap below: List<T> is a
+            // reference type and never goes through that path.
+            if (TryGetListElementType(property.Type, out ITypeSymbol? elementType))
+            {
+                string elementFqn = elementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                string? nestedFqn = null;
+                string? arrayElementKind = null;
+                ImmutableArray<string> arrayChoices = ImmutableArray<string>.Empty;
+
+                string? nestedDescriptorFqn = null;
+                if (HasAttribute(elementType, ModelAttribute))
+                {
+                    nestedFqn = elementFqn;
+                    nestedDescriptorFqn = DescriptorFqn(elementType);
+                    CheckNestedTargetShape(property, elementType, shapeDiagnostics);
+                }
+                else if (TryScalarKind(elementType, out string scalarKind, out ImmutableArray<string> scalarChoices))
+                {
+                    arrayElementKind = scalarKind;
+                    arrayChoices = scalarChoices;
+                }
+                // else: element is neither [DxFormModel]-tagged nor a recognized scalar.
+                // Both nestedFqn/arrayElementKind stay null -- FormModelDiagnostics
+                // reports DX2005 for that state.
+
+                builder.Add(new FormFieldDef(
+                    property.Name, label, description, "Array", required, order,
+                    null, null, null, null, null,
+                    false, false, elementFqn, arrayChoices, sensitive,
+                    dependsOn, dependsOnValue, dependsOnOperator,
+                    NestedTypeFqn: nestedFqn, ArrayElementKind: arrayElementKind, NestedDescriptorFqn: nestedDescriptorFqn));
+                continue;
+            }
+
+            // ---- Some other collection shape (T[]/IList<T>/etc.) -- always DX2005 ----
+            if (IsOtherCollectionShape(property.Type))
+            {
+                builder.Add(new FormFieldDef(
+                    property.Name, label, description, "Array", required, order,
+                    null, null, null, null, null,
+                    false, false, property.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                    ImmutableArray<string>.Empty, sensitive,
+                    dependsOn, dependsOnValue, dependsOnOperator,
+                    NestedTypeFqn: null, ArrayElementKind: null));
+                continue;
+            }
+
+            // ---- Nested [DxFormModel] object ----
+            if (HasAttribute(property.Type, ModelAttribute))
+            {
+                string nestedFqn = property.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                CheckNestedTargetShape(property, property.Type, shapeDiagnostics);
+                builder.Add(new FormFieldDef(
+                    property.Name, label, description, "Object", required, order,
+                    null, null, null, null, null,
+                    false, false, nestedFqn, ImmutableArray<string>.Empty, sensitive,
+                    dependsOn, dependsOnValue, dependsOnOperator,
+                    NestedTypeFqn: nestedFqn, ArrayElementKind: null, NestedDescriptorFqn: DescriptorFqn(property.Type)));
+                continue;
+            }
+
+            // ---- Scalar (unchanged) ----
             ITypeSymbol underlying = Underlying(property.Type, out bool isNullableValue);
             bool isString = property.Type.SpecialType == SpecialType.System_String;
-
-            string label = FieldLabel(field) ?? DisplayName(property) ?? property.Name;
             bool multiline = ReadNamedBool(field, "Multiline") || IsMultilineDataType(property);
             (double? rangeMin, double? rangeMax) = ReadRange(property);
 
@@ -142,10 +261,10 @@ internal static class FormModelAnalysis
             builder.Add(new FormFieldDef(
                 property.Name,
                 label,
-                ReadNamedString(field, "Description") ?? DisplayProp(property, "Description"),
+                description,
                 Kind(underlying, isString, multiline),
-                ReadNamedBool(field, "Required") || Has(property, RequiredAttr),
-                ReadNamedInt(field, "Order") ?? DisplayOrder(property) ?? 0,
+                required,
+                order,
                 ReadNamedDouble(field, "Min") ?? rangeMin,
                 ReadNamedDouble(field, "Max") ?? rangeMax,
                 ReadNamedInt(field, "MaxLength") is { } ml and > 0 ? ml : ReadMaxLength(property),
@@ -155,14 +274,69 @@ internal static class FormModelAnalysis
                 isNullableValue,
                 underlying.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                 choices,
-                ReadNamedBool(field, "Sensitive") || Has(property, AiHiddenAttribute),
-                ReadNamedString(field, "DependsOn"),
-                ReadNamedString(field, "DependsOnValue"),
-                ReadNamedEnumMember(field, "DependsOnOperator") ?? "Equals"));
+                sensitive,
+                dependsOn,
+                dependsOnValue,
+                dependsOnOperator));
         }
 
         builder.Sort(static (a, b) => a.Order.CompareTo(b.Order));
-        return builder.ToImmutable();
+        return (builder.ToImmutable(), shapeDiagnostics.ToImmutable());
+    }
+
+    // DX2008/DX2009 for an Object/array-of-nested field's referenced type. Both checks
+    // are flat, single-level symbol scans (never recurse into the referenced type's
+    // OWN Object/Array fields), so they stay safe even across a genuine reference
+    // cycle — DX2006's whole-compilation pass is what catches cycles themselves.
+    private static void CheckNestedTargetShape(
+        IPropertySymbol property, ITypeSymbol target,
+        ImmutableArray<(string PropertyName, Diagnostic Diagnostic)>.Builder shapeDiagnostics)
+    {
+        Location location = property.Locations.FirstOrDefault() ?? Location.None;
+
+        if (!HasAnyFormField(target))
+        {
+            shapeDiagnostics.Add((property.Name,
+                Diagnostic.Create(FormModelDiagnostics.ZeroFieldsTarget, location, property.Name, target.Name)));
+        }
+
+        if (!HasAccessibleParameterlessConstructor(target))
+        {
+            shapeDiagnostics.Add((property.Name,
+                Diagnostic.Create(FormModelDiagnostics.NoParameterlessConstructor, location, property.Name, target.Name)));
+        }
+    }
+
+    private static bool HasAnyFormField(ITypeSymbol type)
+    {
+        foreach (ISymbol member in type.GetMembers())
+        {
+            if (member is IPropertySymbol { SetMethod: not null } property
+                && (Find(property, FieldAttribute) is not null || HasDataAnnotations(property)))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool HasAccessibleParameterlessConstructor(ITypeSymbol type)
+    {
+        if (type is not INamedTypeSymbol named)
+        {
+            return false;
+        }
+
+        foreach (IMethodSymbol ctor in named.InstanceConstructors)
+        {
+            if (ctor.Parameters.Length == 0 && ctor.DeclaredAccessibility == Accessibility.Public)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // ---- DataAnnotations readers ----
@@ -307,6 +481,117 @@ internal static class FormModelAnalysis
 
     private static bool IsFloating(ITypeSymbol t) => t.SpecialType
         is SpecialType.System_Single or SpecialType.System_Double or SpecialType.System_Decimal;
+
+    // Recognizes exactly List<T> (not T[]/IList<T>/ICollection<T>/etc. — see
+    // IsOtherCollectionShape) so array fields support the simple "replace the whole
+    // collection" mutation semantics ApplyArguments/rendering rely on.
+    private static bool TryGetListElementType(ITypeSymbol type, out ITypeSymbol elementType)
+    {
+        if (type is INamedTypeSymbol { Name: "List", TypeArguments.Length: 1 } named
+            && named.ContainingNamespace.ToDisplayString() == "System.Collections.Generic")
+        {
+            elementType = named.TypeArguments[0];
+            return true;
+        }
+
+        elementType = null!;
+        return false;
+    }
+
+    // A property typed as some other recognizable collection shape — reported as
+    // DX2005 rather than silently misclassified as a scalar Text field.
+    private static bool IsOtherCollectionShape(ITypeSymbol type)
+    {
+        if (type.SpecialType == SpecialType.System_String)
+        {
+            return false;
+        }
+
+        if (type is IArrayTypeSymbol)
+        {
+            return true;
+        }
+
+        return type is INamedTypeSymbol { IsGenericType: true } named
+            && named.ContainingNamespace.ToDisplayString() == "System.Collections.Generic"
+            && named.Name is "IList" or "ICollection" or "IReadOnlyList" or "IReadOnlyCollection"
+                or "IEnumerable" or "ISet" or "HashSet" or "SortedSet" or "LinkedList" or "Queue" or "Stack";
+    }
+
+    // The FQN of a [DxFormModel] type's own generated descriptor class, matching
+    // FormModelGenerator.Emit's naming convention ("{TypeName}FormModel" in the same
+    // namespace). Computed from the symbol directly rather than string-split from a
+    // FQN, since a nested/array-element type's own generator invocation runs
+    // independently and this reference is resolved only at the compiler's final emit
+    // pass (see the ADR/design notes) -- no dependency on that invocation's output.
+    private static string DescriptorFqn(ITypeSymbol type) =>
+        type.ContainingNamespace.IsGlobalNamespace
+            ? $"global::{type.Name}FormModel"
+            : $"global::{type.ContainingNamespace.ToDisplayString()}.{type.Name}FormModel";
+
+    private static bool HasAttribute(ITypeSymbol type, string fqn)
+    {
+        foreach (AttributeData attribute in type.GetAttributes())
+        {
+            if (attribute.AttributeClass?.ToDisplayString() == fqn)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // Same recognized-scalar categories as Kind()/Underlying(), but strict: returns
+    // false instead of defaulting to "Text" for anything unrecognized, since a List<T>
+    // element with no clear scalar shape and no [DxFormModel] tag is a real error
+    // (DX2005), not something to render as plain text.
+    private static bool TryScalarKind(ITypeSymbol type, out string kind, out ImmutableArray<string> choices)
+    {
+        ITypeSymbol underlying = Underlying(type, out _);
+        choices = ImmutableArray<string>.Empty;
+
+        if (underlying.SpecialType == SpecialType.System_String)
+        {
+            kind = "Text";
+            return true;
+        }
+
+        if (underlying.TypeKind == TypeKind.Enum)
+        {
+            kind = "Enum";
+            choices = underlying.GetMembers().OfType<IFieldSymbol>().Where(f => f.IsConst).Select(f => f.Name).ToImmutableArray();
+            return true;
+        }
+
+        if (underlying.SpecialType == SpecialType.System_Boolean)
+        {
+            kind = "Bool";
+            return true;
+        }
+
+        if (IsInteger(underlying))
+        {
+            kind = "Integer";
+            return true;
+        }
+
+        if (IsFloating(underlying))
+        {
+            kind = "Number";
+            return true;
+        }
+
+        string name = underlying.ToDisplayString();
+        if (name is "System.DateTime" or "System.DateOnly" or "System.DateTimeOffset")
+        {
+            kind = "Date";
+            return true;
+        }
+
+        kind = string.Empty;
+        return false;
+    }
 
     private static ITypeSymbol Underlying(ITypeSymbol type, out bool isNullableValue)
     {

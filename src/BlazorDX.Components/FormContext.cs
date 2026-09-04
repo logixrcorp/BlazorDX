@@ -37,6 +37,29 @@ public sealed class FormContext
     /// <see cref="FormFieldActivity"/>. Always true for an unconditional field.</summary>
     public required Func<FormFieldInfo, bool> IsActive { get; init; }
 
+    // ---- Nested (Object-kind) field access ----
+    // Closures over the owning DxForm<TModel>'s Descriptor/Model, boxed at this
+    // untyped boundary the same way IFormModelUntyped itself is.
+    public required Func<string, object?> GetNested { get; init; }
+    public required Action<string, object> SetNested { get; init; }
+    public required Func<string, IFormModelUntyped?> NestedDescriptorFor { get; init; }
+    public required Func<string, object> NewNestedInstance { get; init; }
+
+    // ---- Array-kind field access ----
+    public required Func<string, IReadOnlyList<string>> GetArrayStrings { get; init; }
+    public required Func<string, IReadOnlyList<string>, Task> SetArrayStringsAsync { get; init; }
+    public required Func<string, IReadOnlyList<object>> GetArrayInstances { get; init; }
+    public required Func<string, IReadOnlyList<object>, Task> SetArrayInstancesAsync { get; init; }
+    public required Func<string, IFormModelUntyped?> ArrayElementDescriptorFor { get; init; }
+    public required Func<string, object> NewArrayElement { get; init; }
+
+    /// <summary>
+    /// Captures a nested <c>DxForm&lt;TNested&gt;</c>'s component reference so the
+    /// owning form can propagate <c>Refresh()</c> into it — keyed by field name and,
+    /// for an array-of-nested row, its index (-1 for a singular Object field).
+    /// </summary>
+    public required Action<string, int, object> CaptureNestedRef { get; init; }
+
     public RenderFragment<FormFieldRenderContext>? FieldTemplate { get; init; }
     public RenderFragment<FormFieldRenderContext>? InputTemplate { get; init; }
     public RenderFragment<FormFieldInfo>? LabelTemplate { get; init; }
@@ -73,6 +96,18 @@ internal static class FormFieldRenderer
 {
     public static void Render(RenderTreeBuilder b, FormContext ctx, FormFieldInfo field)
     {
+        if (field.Kind == FormFieldKind.Object)
+        {
+            RenderNestedObject(b, ctx, field);
+            return;
+        }
+
+        if (field.Kind == FormFieldKind.Array)
+        {
+            RenderArray(b, ctx, field);
+            return;
+        }
+
         string value = ctx.Get(field.Name);
         IReadOnlyList<string> errors = ctx.ErrorsFor(field.Name);
         // Stable id for the error region so the input can point at it via
@@ -148,6 +183,237 @@ internal static class FormFieldRenderer
         }
 
         b.CloseElement();
+    }
+
+    // An Object-kind field: a real DxFormSection wrapping a directly-opened
+    // DxFormBody for the nested instance — DxFormBody is non-generic (works over
+    // IFormModelUntyped/object), so this is an ordinary, ahead-of-time-compilable
+    // component instantiation, never Type.MakeGenericType (incompatible with Native
+    // AOT — this repo publishes and smoke-tests an AOT build in CI). It also renders
+    // no <form> of its own, so there's no nested-<form>-inside-<form> HTML hazard.
+    // A currently-null nested property is materialized (new TNested(), guaranteed
+    // constructible by DX2009) and attached immediately, so the freshly-rendered
+    // sub-form edits the real instance.
+    private static void RenderNestedObject(RenderTreeBuilder b, FormContext ctx, FormFieldInfo field)
+    {
+        IReadOnlyList<string> errors = ctx.ErrorsFor(field.Name);
+
+        object? instance = ctx.GetNested(field.Name);
+        if (instance is null)
+        {
+            instance = ctx.NewNestedInstance(field.Name);
+            ctx.SetNested(field.Name, instance);
+        }
+
+        IFormModelUntyped? descriptor = ctx.NestedDescriptorFor(field.Name);
+
+        b.OpenComponent<DxFormSection>(0);
+        b.AddComponentParameter(1, "Title", field.Label);
+        b.AddComponentParameter(2, "ChildContent", (RenderFragment)(b2 =>
+        {
+            b2.OpenComponent<DxFormBody>(0);
+            b2.AddComponentParameter(1, "Model", instance);
+            b2.AddComponentParameter(2, "Descriptor", descriptor);
+            b2.AddComponentParameter(3, "ShowSubmit", false);
+            b2.AddComponentReferenceCapture(4, r => ctx.CaptureNestedRef(field.Name, -1, r));
+            b2.CloseComponent();
+
+            // The nested sub-form validates and shows its own field-level errors
+            // independently (its own Revalidate/MessagesFor) — this region only ever
+            // carries the OUTER field's own top-level message ("Location is
+            // required."), never a "Location.Street"-prefixed one.
+            if (errors.Count > 0)
+            {
+                b2.OpenElement(10, "div");
+                b2.AddAttribute(11, "role", "alert");
+                b2.AddAttribute(12, "class", "dx-field-error");
+                for (int i = 0; i < errors.Count; i++)
+                {
+                    b2.OpenElement(13, "span");
+                    b2.SetKey(i);
+                    b2.AddContent(14, errors[i]);
+                    b2.CloseElement();
+                }
+
+                b2.CloseElement();
+            }
+        }));
+        b.CloseComponent();
+    }
+
+    // An Array-kind field: a DxFieldList<TItem> — TItem = string for array-of-scalar,
+    // or the nested model type for array-of-nested-object (whose rows are literally
+    // the Object-kind path above, repeated per element — no third rendering mechanism).
+    private static void RenderArray(RenderTreeBuilder b, FormContext ctx, FormFieldInfo field)
+    {
+        IReadOnlyList<string> errors = ctx.ErrorsFor(field.Name);
+
+        b.OpenElement(0, "div");
+        b.AddAttribute(1, "class", errors.Count > 0 ? "dx-field dx-field-invalid" : "dx-field");
+
+        b.OpenElement(2, "span");
+        b.AddAttribute(3, "class", "dx-field-label");
+        b.AddContent(4, field.Label);
+        b.CloseElement();
+
+        if (field.NestedType is not null)
+        {
+            RenderNestedArray(b, ctx, field);
+        }
+        else
+        {
+            RenderScalarArray(b, ctx, field);
+        }
+
+        if (errors.Count > 0)
+        {
+            b.OpenElement(30, "div");
+            b.AddAttribute(31, "role", "alert");
+            b.AddAttribute(32, "class", "dx-field-error");
+            for (int i = 0; i < errors.Count; i++)
+            {
+                b.OpenElement(33, "span");
+                b.SetKey(i);
+                b.AddContent(34, errors[i]);
+                b.CloseElement();
+            }
+
+            b.CloseElement();
+        }
+
+        b.CloseElement();
+    }
+
+    private static void RenderScalarArray(RenderTreeBuilder b, FormContext ctx, FormFieldInfo field)
+    {
+        IReadOnlyList<string> items = ctx.GetArrayStrings(field.Name);
+        FormFieldKind elementKind = field.ArrayElementKind ?? FormFieldKind.Text;
+
+        b.OpenComponent<DxFieldList<string>>(0);
+        b.AddComponentParameter(1, "Items", items);
+        b.AddComponentParameter(2, "ItemsChanged", EventCallback.Factory.Create<IReadOnlyList<string>>(
+            ctx.Receiver, updated => ctx.SetArrayStringsAsync(field.Name, updated)));
+        b.AddComponentParameter(3, "NewItem", (Func<string>)(() => (string)ctx.NewArrayElement(field.Name)));
+        b.AddComponentParameter(4, "ItemTemplate", (RenderFragment<CollectionItemContext<string>>)(itemCtx => inner =>
+        {
+            RenderElementInput(
+                inner, ctx.Receiver, elementKind, itemCtx.Item,
+                EventCallback.Factory.Create<string>(ctx.Receiver, v => itemCtx.SetItemAsync(v)),
+                field.Choices, $"{field.Label} item {itemCtx.Index + 1}");
+        }));
+        b.CloseComponent();
+    }
+
+    private static void RenderNestedArray(RenderTreeBuilder b, FormContext ctx, FormFieldInfo field)
+    {
+        IReadOnlyList<object> items = ctx.GetArrayInstances(field.Name);
+        IFormModelUntyped? elementDescriptor = ctx.ArrayElementDescriptorFor(field.Name);
+
+        b.OpenComponent<DxFieldList<object>>(0);
+        b.AddComponentParameter(1, "Items", items);
+        b.AddComponentParameter(2, "ItemsChanged", EventCallback.Factory.Create<IReadOnlyList<object>>(
+            ctx.Receiver, updated => ctx.SetArrayInstancesAsync(field.Name, updated)));
+        b.AddComponentParameter(3, "NewItem", (Func<object>)(() => ctx.NewArrayElement(field.Name)));
+        b.AddComponentParameter(4, "ItemTemplate", (RenderFragment<CollectionItemContext<object>>)(itemCtx => inner =>
+        {
+            inner.OpenComponent<DxFormBody>(0);
+            inner.AddComponentParameter(1, "Model", itemCtx.Item);
+            inner.AddComponentParameter(2, "Descriptor", elementDescriptor);
+            inner.AddComponentParameter(3, "ShowSubmit", false);
+            inner.AddComponentReferenceCapture(4, r => ctx.CaptureNestedRef(field.Name, itemCtx.Index, r));
+            inner.CloseComponent();
+        }));
+        b.CloseComponent();
+    }
+
+    // A lighter-weight sibling of RenderInput for an array row: an array element has
+    // no Placeholder/MaxLength/Pattern/Min/Max metadata of its own in this v1 pass
+    // (per-item constraint validation is a stated scope cut — see ADR 0019), so this
+    // deliberately doesn't reuse RenderInput/AddCommon's full FormFieldInfo-shaped
+    // logic; it renders just the control appropriate to the element's own Kind.
+    private static void RenderElementInput(
+        RenderTreeBuilder b, object receiver, FormFieldKind kind, string value, EventCallback<string> changed,
+        IReadOnlyList<string>? choices, string ariaLabel)
+    {
+        EventCallback<ChangeEventArgs> onText = EventCallback.Factory.Create<ChangeEventArgs>(
+            receiver, e => changed.InvokeAsync(e.Value as string ?? string.Empty));
+
+        switch (kind)
+        {
+            case FormFieldKind.Multiline:
+                b.OpenElement(0, "textarea");
+                b.AddAttribute(1, "class", "dx-input dx-textarea");
+                b.AddAttribute(2, "rows", "2");
+                b.AddAttribute(3, "aria-label", ariaLabel);
+                b.AddAttribute(4, "value", value);
+                b.AddAttribute(5, "oninput", onText);
+                b.CloseElement();
+                break;
+
+            case FormFieldKind.Bool:
+                b.OpenElement(0, "input");
+                b.AddAttribute(1, "class", "dx-checkbox");
+                b.AddAttribute(2, "type", "checkbox");
+                b.AddAttribute(3, "aria-label", ariaLabel);
+                b.AddAttribute(4, "checked", value is "true" or "True");
+                b.AddAttribute(5, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(
+                    receiver, e => changed.InvokeAsync(e.Value is true ? "true" : "false")));
+                b.CloseElement();
+                break;
+
+            case FormFieldKind.Enum:
+                b.OpenElement(0, "select");
+                b.AddAttribute(1, "class", "dx-input dx-select-native");
+                b.AddAttribute(2, "value", value);
+                b.AddAttribute(3, "onchange", onText);
+                b.AddAttribute(4, "aria-label", ariaLabel);
+                if (choices is not null)
+                {
+                    for (int i = 0; i < choices.Count; i++)
+                    {
+                        b.OpenElement(5, "option");
+                        b.SetKey(choices[i]);
+                        b.AddAttribute(6, "value", choices[i]);
+                        b.AddContent(7, choices[i]);
+                        b.CloseElement();
+                    }
+                }
+
+                b.CloseElement();
+                break;
+
+            case FormFieldKind.Integer:
+            case FormFieldKind.Number:
+                b.OpenElement(0, "input");
+                b.AddAttribute(1, "class", "dx-input");
+                b.AddAttribute(2, "type", "number");
+                b.AddAttribute(3, "step", kind == FormFieldKind.Integer ? "1" : "any");
+                b.AddAttribute(4, "aria-label", ariaLabel);
+                b.AddAttribute(5, "value", value);
+                b.AddAttribute(6, "oninput", onText);
+                b.CloseElement();
+                break;
+
+            case FormFieldKind.Date:
+                b.OpenElement(0, "input");
+                b.AddAttribute(1, "class", "dx-input");
+                b.AddAttribute(2, "type", "date");
+                b.AddAttribute(3, "aria-label", ariaLabel);
+                b.AddAttribute(4, "value", value);
+                b.AddAttribute(5, "oninput", onText);
+                b.CloseElement();
+                break;
+
+            default:
+                b.OpenElement(0, "input");
+                b.AddAttribute(1, "class", "dx-input");
+                b.AddAttribute(2, "type", "text");
+                b.AddAttribute(3, "aria-label", ariaLabel);
+                b.AddAttribute(4, "value", value);
+                b.AddAttribute(5, "oninput", onText);
+                b.CloseElement();
+                break;
+        }
     }
 
     // Marks an input as invalid and points it at its error region. A no-op when valid.
