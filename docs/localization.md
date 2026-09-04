@@ -309,9 +309,35 @@ Four physical usages that a rewrite would have got wrong, kept as worked example
   `transform-origin` needed explicit `[dir="rtl"]` rules — the two places where CSS itself
   cannot express the flip.
 
-**Completion criterion: met.** DX1003 fires on every file in `BlazorDX.Components`, and every
-stylesheet carries `rtl-clean`. Both ratchets existed to be removed, and both are gone —
-`IsInLocalizedType` returns `true`, and the CSS marker is mandatory rather than opt-in.
+**Completion criterion: met for `BlazorDX.Components`.** DX1003 fires on every file there, and
+every stylesheet carries `rtl-clean`. Both ratchets existed to be removed, and both are gone —
+the per-type scoping and the opt-in CSS marker.
+
+### The other packages
+
+Retiring the ratchet surfaced **17 hardcoded strings outside `BlazorDX.Components`**, which no
+scan in this rollout had ever looked at:
+
+| Package | Strings |
+|---|---|
+| `BlazorDX.Integrations.Reporting` | 5 |
+| `BlazorDX.Htmx` | 6 |
+| `BlazorDX.Primitives` | 4 — `"Select a date"`, `"Type to search..."`, `"Type a command..."`, `"Select..."` |
+| `BlazorDX.Integrations.PowerBI` | 2 |
+
+The `BlazorDX.Primitives` four are the "Tier-1 primitive English defaults" this document already
+listed as a separate track. They are also a contradiction with
+[ADR 0001](adr/0001-two-tier-headless.md), which says primitives are unlabeled by design.
+
+**None of these packages references `BlazorDX.Components`**, so `DxStrings` is unreachable from
+all of them and DX1003 would demand a fix that cannot be written — the same trap the
+defaulted-`[Parameter]` rule fell into. The analyzer is therefore scoped to the one assembly
+where its advice holds, and the scoping has its own test.
+
+Widening it is a **packaging decision, not a retrofit**: `DxStrings` would have to move
+somewhere every package can reach — a new shared package (a thirteenth), or new dependencies
+from the integration packages onto an existing one. Either changes the published dependency
+graph, which is not a call to make as a side effect of finishing a string sweep.
 
 What that does and does not promise is worth keeping straight. It means **no hardcoded
 user-facing literal survives at a render call site, and no stylesheet uses a physical

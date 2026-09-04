@@ -13,13 +13,17 @@ namespace BlazorDX.Analyzers;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>The ratchet is closed.</b> This used to inspect only types holding a
+/// <b>The per-type ratchet is closed.</b> This used to inspect only types holding a
 /// <c>DxStrings&lt;T&gt;</c> member, so localizing a component was what switched the rule on for
 /// it. That was scaffolding: with 83 components to convert and <c>TreatWarningsAsErrors</c>
 /// repo-wide, a rule that fired everywhere would have reported the whole backlog at once. The
-/// rollout is finished, so the scoping is retired and the rule applies to every component —
-/// including the brand-new one that localizes nothing, which the old scoping let opt out.
+/// rollout is finished, so it now applies to every type in <c>BlazorDX.Components</c> —
+/// including a brand-new component that localizes nothing, which the old scoping let opt out.
 /// See docs/adr/0021-optional-localization-and-rollout-guardrails.md.
+/// </para>
+/// <para>
+/// It is still scoped to one assembly, for a different and narrower reason — see
+/// <see cref="LocalizableAssembly"/>.
 /// </para>
 /// <para>
 /// What it still cannot see is text that reaches the DOM through a variable — a lookup table, a
@@ -68,6 +72,25 @@ public sealed class HardcodedStringAnalyzer : DiagnosticAnalyzer
         "Tooltip",
         "Prompt");
 
+    /// <summary>
+    /// The only assembly where <c>DxStrings</c> exists, and therefore the only one where this
+    /// rule's suggested fix can be written.
+    /// </summary>
+    /// <remarks>
+    /// Retiring the per-type ratchet surfaced 17 hardcoded strings in four other packages —
+    /// <c>BlazorDX.Primitives</c> (four placeholder defaults), <c>BlazorDX.Htmx</c>,
+    /// <c>BlazorDX.Integrations.PowerBI</c> and <c>BlazorDX.Integrations.Reporting</c>. They are
+    /// real findings, but none of those packages references <c>BlazorDX.Components</c>, so
+    /// <c>DxStrings</c> is unreachable from all of them and the diagnostic would demand a fix
+    /// that cannot be written — the same trap the defaulted-<c>[Parameter]</c> rule fell into.
+    /// <para>
+    /// Making the helper available there is a packaging decision (a new shared package, or new
+    /// dependencies on published packages), not a retrofit, so the rule is scoped to where its
+    /// advice holds. See docs/localization.md for the finding and what it would take to widen.
+    /// </para>
+    /// </remarks>
+    private const string LocalizableAssembly = "BlazorDX.Components";
+
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
         ImmutableArray.Create(DiagnosticDescriptors.HardcodedUserFacingString);
 
@@ -94,7 +117,7 @@ public sealed class HardcodedStringAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        if (!IsInLocalizedType(invocation) || !IsRenderTreeBuilder(context, member.Expression))
+        if (!IsInLocalizedType(context) || !IsRenderTreeBuilder(context, member.Expression))
         {
             return;
         }
@@ -125,7 +148,7 @@ public sealed class HardcodedStringAnalyzer : DiagnosticAnalyzer
         // A defaulted [Parameter] string is the component's own text until a caller overrides it --
         // but only when the parameter names text at all. See UserFacingParameterSuffixes.
         if (property.Initializer is null
-            || !IsInLocalizedType(property)
+            || !IsInLocalizedType(context)
             || !HasParameterAttribute(property)
             || !NamesUserFacingText(property.Identifier.ValueText))
         {
@@ -192,7 +215,8 @@ public sealed class HardcodedStringAnalyzer : DiagnosticAnalyzer
     /// remark is where the history belongs.
     /// </para>
     /// </remarks>
-    private static bool IsInLocalizedType(SyntaxNode node) => true;
+    private static bool IsInLocalizedType(SyntaxNodeAnalysisContext context) =>
+        context.Compilation.AssemblyName == LocalizableAssembly;
 
     private static bool IsRenderTreeBuilder(SyntaxNodeAnalysisContext context, ExpressionSyntax receiver) =>
         context.SemanticModel.GetTypeInfo(receiver, context.CancellationToken).Type?.Name
