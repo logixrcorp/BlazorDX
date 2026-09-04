@@ -65,8 +65,13 @@ public sealed class LocalizedStringConsistencyTests
             // test's own guidance in docs and in component doc comments — otherwise reads as a
             // real call site, and the orphan check then demands a resource entry named "Key".
             string source = StripComments(File.ReadAllText(component));
-            string resourceName = ResourceType.Match(source).Groups[1].Value;
-            string resx = Path.Combine(ComponentsDirectory(), $"{resourceName}.resx");
+            string resourceName = ResourceNameFor(component, source);
+
+            // The .resx sits at the root of the component's OWN project, which is no longer
+            // always BlazorDX.Components: Primitives, Htmx and the two Integrations packages
+            // localize too, each with its own resources.
+            string project = ProjectOf(component);
+            string resx = Path.Combine(project, $"{resourceName}.resx");
 
             if (!File.Exists(resx))
             {
@@ -77,9 +82,11 @@ public sealed class LocalizedStringConsistencyTests
             }
 
             Dictionary<string, string> resources = ReadResources(resx);
-            HashSet<string> used = usedByResource.TryGetValue(resourceName, out HashSet<string>? seen)
+            // Keyed by the resx path, not the bare name: two packages may each define a
+            // resource with the same short name without sharing anything.
+            HashSet<string> used = usedByResource.TryGetValue(resx, out HashSet<string>? seen)
                 ? seen
-                : usedByResource[resourceName] = [];
+                : usedByResource[resx] = [];
 
             foreach (Match site in CallSite.Matches(source))
             {
@@ -106,12 +113,11 @@ public sealed class LocalizedStringConsistencyTests
         }
 
         // Orphans, once every component has been read.
-        foreach ((string resourceName, HashSet<string> used) in usedByResource)
+        foreach ((string resx, HashSet<string> used) in usedByResource)
         {
-            string resx = Path.Combine(ComponentsDirectory(), $"{resourceName}.resx");
             foreach (string orphan in ReadResources(resx).Keys.Where(k => !used.Contains(k)).OrderBy(k => k))
             {
-                problems.Add($"{resourceName}.resx[\"{orphan}\"] is not used by any call site — "
+                problems.Add($"{Path.GetFileName(resx)}[\"{orphan}\"] is not used by any call site — "
                     + "the string moved or was removed, and translators are still maintaining it.");
             }
         }
@@ -192,19 +198,57 @@ public sealed class LocalizedStringConsistencyTests
                 data => data.Element("value")?.Value ?? string.Empty,
                 StringComparer.Ordinal);
 
-    // AllDirectories, not TopDirectoryOnly: components may live in subfolders as the rollout
-    // proceeds, and a silently-skipped component is exactly the drift this test exists to catch.
-    // The .resx files themselves stay at the project root regardless — that placement is the
-    // configuration that works (docs/localization.md).
+    /// <summary>
+    /// The resource a file localizes against — its own <c>DxStrings&lt;T&gt;</c> declaration, or,
+    /// for a partial split out into <c>Type.Part.cs</c>, the declaration in <c>Type.cs</c>.
+    /// </summary>
+    /// <remarks>
+    /// Partials matter here: <c>DxWordEditor.Find.cs</c> and <c>DxSpreadsheetViewer.Editing.cs</c>
+    /// use <c>S[...]</c> but declare no field, because the type declares it once in its main file.
+    /// Scanning only declaring files left their call sites unchecked <i>and</i> reported the keys
+    /// they use as orphaned — a guard failing in both directions at once.
+    /// </remarks>
+    private static string ResourceNameFor(string file, string strippedSource)
+    {
+        Match own = ResourceType.Match(strippedSource);
+        if (own.Success)
+        {
+            return own.Groups[1].Value;
+        }
+
+        string name = Path.GetFileNameWithoutExtension(file);
+        string declaring = Path.Combine(
+            Path.GetDirectoryName(file)!, name[..name.IndexOf('.', StringComparison.Ordinal)] + ".cs");
+
+        return File.Exists(declaring)
+            ? ResourceType.Match(StripComments(File.ReadAllText(declaring))).Groups[1].Value
+            : string.Empty;
+    }
+
+    /// <summary>The <c>src/&lt;project&gt;</c> directory a source file belongs to.</summary>
+    private static string ProjectOf(string file)
+    {
+        string src = Path.Combine(RepositoryRoot(), "src");
+        string relative = Path.GetRelativePath(src, file);
+        return Path.Combine(src, relative.Split(Path.DirectorySeparatorChar)[0]);
+    }
+
+    // Every project under src/, all directories: components live in subfolders (Primitives puts
+    // them under Inputs/ and Overlays/), and a silently-skipped one is exactly the drift this test
+    // exists to catch. Each project's .resx files stay at that project's root — the placement that
+    // makes the default localizer factory work at all (docs/localization.md).
     private static IEnumerable<string> LocalizedComponents() =>
-        Directory.EnumerateFiles(ComponentsDirectory(), "*.cs", SearchOption.AllDirectories)
+        Directory.EnumerateFiles(Path.Combine(RepositoryRoot(), "src"), "*.cs", SearchOption.AllDirectories)
             .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            // The helper itself (src/Shared/DxStrings.cs, linked into every package) defines the
+            // pattern rather than using it; scanning it would look for resources that do not exist.
             .Where(path => Path.GetFileName(path) != "DxStrings.cs")
-            .Where(path => ResourceType.IsMatch(File.ReadAllText(path)));
+            // Either declares the localizer, or uses it — the second covers partial files, which
+            // declare nothing but still hold call sites (see ResourceNameFor).
+            .Where(path => ResourceType.IsMatch(File.ReadAllText(path))
+                || CallSite.IsMatch(StripComments(File.ReadAllText(path))));
 
-    private static string ComponentsDirectory() =>
-        Path.Combine(RepositoryRoot(), "src", "BlazorDX.Components");
 
     private static string RepositoryRoot()
     {

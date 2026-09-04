@@ -27,7 +27,22 @@ public class SelectPrimitive<TValue> : ComponentBase, IAsyncDisposable
 
     [Parameter] public EventCallback<TValue> ValueChanged { get; set; }
 
-    [Parameter] public string Placeholder { get; set; } = "Select...";
+    [Parameter] public string? Placeholder { get; set; }
+
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    // SelectPrimitiveResources, not SelectPrimitive<TValue>: the default factory derives the resource name from the
+    // closed generic type, so localizing against the primitive would look for a different
+    // resource per TValue. See docs/localization.md.
+    private DxStrings<SelectPrimitiveResources>? s;
+
+    private DxStrings<SelectPrimitiveResources> S => s ??= new(Services);
+
+    /// <summary>
+    /// <see cref="Placeholder"/> if the consumer supplied one, otherwise the localized default.
+    /// </summary>
+    protected string ResolvedPlaceholder => Placeholder ?? S["SelectPlaceholder", "Select..."];
+
 
     [Parameter] public string Side { get; set; } = "bottom";
 
@@ -54,7 +69,7 @@ public class SelectPrimitive<TValue> : ComponentBase, IAsyncDisposable
         get
         {
             int index = SelectedIndex();
-            return index >= 0 ? Items[index].Text : Placeholder;
+            return index >= 0 ? Items[index].Text : ResolvedPlaceholder;
         }
     }
 
@@ -236,3 +251,10 @@ public class SelectPrimitive<TValue> : ComponentBase, IAsyncDisposable
         }
     }
 }
+
+/// <summary>
+/// Resource-name anchor for <see cref="SelectPrimitive{TValue}"/>, which is generic: the default localizer
+/// factory derives a resource name from the <i>closed</i> type, so localizing against the
+/// primitive itself would look for a different resource per type argument.
+/// </summary>
+public sealed class SelectPrimitiveResources;

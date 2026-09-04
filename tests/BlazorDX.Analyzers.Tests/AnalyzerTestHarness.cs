@@ -15,15 +15,8 @@ internal static class AnalyzerTestHarness
 {
     private static readonly MetadataReference[] References = LoadFrameworkReferences();
 
-    /// <param name="assemblyName">
-    /// Defaults to <c>BlazorDX.Components</c> because <c>HardcodedStringAnalyzer</c> only reports
-    /// there — <c>DxStrings</c> exists in no other assembly, so the fix DX1003 suggests cannot be
-    /// written elsewhere. Under the old default every DX1003 test would pass by reporting
-    /// nothing, which is exactly the failure mode a scoped analyzer invites. Pass a different
-    /// name to test the scoping itself.
-    /// </param>
     public static async Task<ImmutableArray<Diagnostic>> AnalyzeAsync(
-        string source, DiagnosticAnalyzer analyzer, string assemblyName = "BlazorDX.Components")
+        string source, DiagnosticAnalyzer analyzer, string assemblyName = "AnalyzerTestAssembly")
     {
         SyntaxTree tree = CSharpSyntaxTree.ParseText(source);
         CSharpCompilation compilation = CSharpCompilation.Create(

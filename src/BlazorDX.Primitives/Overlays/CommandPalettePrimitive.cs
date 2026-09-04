@@ -30,7 +30,19 @@ public class CommandPalettePrimitive : ComponentBase, IAsyncDisposable
 
     [Parameter] public EventCallback<bool> OpenChanged { get; set; }
 
-    [Parameter] public string Placeholder { get; set; } = "Type a command...";
+    [Parameter] public string? Placeholder { get; set; }
+
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<CommandPalettePrimitive>? s;
+
+    private DxStrings<CommandPalettePrimitive> S => s ??= new(Services);
+
+    /// <summary>
+    /// <see cref="Placeholder"/> if the consumer supplied one, otherwise the localized default.
+    /// </summary>
+    protected string ResolvedPlaceholder => Placeholder ?? S["CommandPalettePlaceholder", "Type a command..."];
+
 
     [Parameter] public int ExitDurationMs { get; set; } = 150;
 
