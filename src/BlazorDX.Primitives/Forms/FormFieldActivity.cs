@@ -43,4 +43,27 @@ public static class FormFieldActivity
             _ => string.Equals(current, dependsOnValue, StringComparison.OrdinalIgnoreCase),
         };
     }
+
+    /// <summary>
+    /// Untyped overload for infrastructure code that only holds
+    /// <see cref="IFormModelUntyped"/>/<c>object</c> — <c>FormTool</c>'s recursive
+    /// schema builder and argument application, which recurse across nested/array
+    /// descriptors without knowing each one's TModel. Same evaluator, same rules.
+    /// </summary>
+    public static bool IsActive(IFormModelUntyped model, object instance, FormFieldInfo field)
+    {
+        if (field.DependsOn is null)
+        {
+            return true;
+        }
+
+        string current = model.GetString(instance, field.DependsOn);
+        return field.DependsOnOperator switch
+        {
+            FormFieldDependsOnOperator.NotEmpty => !string.IsNullOrWhiteSpace(current),
+            FormFieldDependsOnOperator.NotEquals =>
+                !string.Equals(current, field.DependsOnValue, StringComparison.OrdinalIgnoreCase),
+            _ => string.Equals(current, field.DependsOnValue, StringComparison.OrdinalIgnoreCase),
+        };
+    }
 }

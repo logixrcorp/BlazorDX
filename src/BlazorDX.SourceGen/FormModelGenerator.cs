@@ -39,6 +39,21 @@ public sealed class FormModelGenerator : IIncrementalGenerator
 
             production.AddSource($"{result.Model.TypeName}FormModel.g.cs", Emit(result.Model));
         });
+
+        // DX2006 (nesting/array cycles) needs the whole compilation's set of models,
+        // not one type's field list -- a second, independent output driven by a
+        // .Collect() of the same provider. This doesn't disturb per-type incremental
+        // caching above: that RegisterSourceOutput is still driven by the
+        // uncollected `models` provider.
+        IncrementalValueProvider<ImmutableArray<FormModelDef>> allModels =
+            models.Select(static (r, _) => r.Model).Collect();
+        context.RegisterSourceOutput(allModels, static (production, all) =>
+        {
+            foreach (Diagnostic diagnostic in FormModelCycles.Validate(all))
+            {
+                production.ReportDiagnostic(diagnostic);
+            }
+        });
     }
 
     private static SourceText Emit(FormModelDef model)
@@ -62,6 +77,17 @@ public sealed class FormModelGenerator : IIncrementalGenerator
         EmitGetString(s, model);
         EmitSetString(s, model);
         EmitValidate(s, model);
+        EmitUntypedWrappers(s, model);
+
+        if (model.Fields.Any(f => f.Kind == "Object"))
+        {
+            EmitNestedAccessors(s, model);
+        }
+
+        if (model.Fields.Any(f => f.Kind == "Array"))
+        {
+            EmitArrayAccessors(s, model);
+        }
 
         s.AppendLine("}");
         return SourceText.From(s.ToString(), Encoding.UTF8);
@@ -87,7 +113,8 @@ public sealed class FormModelGenerator : IIncrementalGenerator
                 $"        new {Ns}.FormFieldInfo({Literal(f.PropertyName)}, {Literal(f.Label)}, {Literal(f.Description)}, " +
                 $"{Ns}.FormFieldKind.{f.Kind}, {Bool(f.Required)}, {NDouble(f.Min)}, {NDouble(f.Max)}, " +
                 $"{NInt(f.MaxLength)}, {Literal(f.Pattern)}, {Literal(f.Placeholder)}, {choices}, {Bool(f.Sensitive)}, " +
-                $"{Literal(f.DependsOn)}, {Literal(f.DependsOnValue)}, {Ns}.FormFieldDependsOnOperator.{f.DependsOnOperator}),");
+                $"{Literal(f.DependsOn)}, {Literal(f.DependsOnValue)}, {Ns}.FormFieldDependsOnOperator.{f.DependsOnOperator}, " +
+                $"{NType(f.NestedTypeFqn)}, {NKind(f.ArrayElementKind)}),");
         }
 
         s.AppendLine("    };");
@@ -102,6 +129,14 @@ public sealed class FormModelGenerator : IIncrementalGenerator
         s.AppendLine("    {");
         foreach (FormFieldDef f in model.Fields)
         {
+            // Object/Array fields have no scalar string form -- deliberately excluded
+            // rather than left to fall through the default arm below, since that
+            // arm's placement must not be mistaken for handling them.
+            if (f.Kind is "Object" or "Array")
+            {
+                continue;
+            }
+
             if (f.Kind == "Date")
             {
                 // ISO yyyy-MM-dd so the value binds straight into a native date input.
@@ -130,6 +165,11 @@ public sealed class FormModelGenerator : IIncrementalGenerator
         s.AppendLine("        {");
         foreach (FormFieldDef f in model.Fields)
         {
+            if (f.Kind is "Object" or "Array")
+            {
+                continue;
+            }
+
             s.AppendLine($"            case {Literal(f.PropertyName)}:");
             s.Append(SetBody(f));
             s.AppendLine("                break;");
@@ -174,6 +214,21 @@ public sealed class FormModelGenerator : IIncrementalGenerator
         s.AppendLine($"        var errors = new global::System.Collections.Generic.List<{Ns}.FormValidationError>();");
         foreach (FormFieldDef f in model.Fields)
         {
+            if (f.Kind == "Object")
+            {
+                // DX2007 guarantees an Object field's DependsOn is always null by the
+                // time Emit runs (Build strips a violating field's DependsOn), so no
+                // IsActive wrapper is ever needed here.
+                EmitNestedFieldValidation(s, f);
+                continue;
+            }
+
+            if (f.Kind == "Array")
+            {
+                EmitArrayFieldValidation(s, f);
+                continue;
+            }
+
             if (f.DependsOn is null)
             {
                 EmitFieldChecks(s, f);
@@ -261,6 +316,286 @@ public sealed class FormModelGenerator : IIncrementalGenerator
             }
         }
     }
+
+    // Validates an Object-kind field: required-when-null, else recurse into the
+    // nested descriptor's own Validate and re-prefix each error's field path.
+    private static void EmitNestedFieldValidation(StringBuilder s, FormFieldDef f)
+    {
+        string prop = $"model.{f.PropertyName}";
+        s.AppendLine($"        if ({prop} is null)");
+        s.AppendLine("        {");
+        if (f.Required)
+        {
+            s.AppendLine(
+                $"            errors.Add(new {Ns}.FormValidationError({Literal(f.PropertyName)}, {Literal($"{f.Label} is required.")}));");
+        }
+
+        s.AppendLine("        }");
+        s.AppendLine("        else");
+        s.AppendLine("        {");
+        s.AppendLine($"            foreach (var __e in new {f.NestedDescriptorFqn}().Validate({prop}))");
+        s.AppendLine("            {");
+        s.AppendLine($"                errors.Add(new {Ns}.FormValidationError($\"{f.PropertyName}.{{__e.Field}}\", __e.Message));");
+        s.AppendLine("            }");
+        s.AppendLine("        }");
+    }
+
+    // Validates an Array-kind field. List-level Required ("at least one item") for
+    // both flavors; array-of-nested additionally recurses per-element with an
+    // indexed field path. Array-of-scalar per-item constraint checks are a stated v1
+    // scope cut (see ADR 0019) -- not emitted here.
+    private static void EmitArrayFieldValidation(StringBuilder s, FormFieldDef f)
+    {
+        string prop = $"model.{f.PropertyName}";
+        if (f.Required)
+        {
+            s.AppendLine($"        if ({prop}.Count == 0)");
+            s.AppendLine(
+                $"            errors.Add(new {Ns}.FormValidationError({Literal(f.PropertyName)}, {Literal($"{f.Label} must have at least one item.")}));");
+        }
+
+        if (f.NestedTypeFqn is not null)
+        {
+            s.AppendLine($"        for (int __i = 0; __i < {prop}.Count; __i++)");
+            s.AppendLine("        {");
+            s.AppendLine($"            foreach (var __e in new {f.NestedDescriptorFqn}().Validate({prop}[__i]))");
+            s.AppendLine("            {");
+            s.AppendLine($"                errors.Add(new {Ns}.FormValidationError($\"{f.PropertyName}[{{__i}}].{{__e.Field}}\", __e.Message));");
+            s.AppendLine("            }");
+            s.AppendLine("        }");
+        }
+    }
+
+    // The object-typed IFormModelUntyped members: GetString/SetString/Validate all
+    // have a non-default body on that interface (only the nested/array members do),
+    // so every generated model -- even a scalar-only one -- must implement these
+    // three as thin casts onto its own typed members.
+    private static void EmitUntypedWrappers(StringBuilder s, FormModelDef model)
+    {
+        s.AppendLine($"    public string GetString(object model, string field) => GetString(({model.TypeName})model, field);");
+        s.AppendLine($"    public void SetString(object model, string field, string value) => SetString(({model.TypeName})model, field, value);");
+        s.AppendLine(
+            $"    public global::System.Collections.Generic.IReadOnlyList<{Ns}.FormValidationError> Validate(object model) => Validate(({model.TypeName})model);");
+        s.AppendLine();
+    }
+
+    // GetNestedInstance/SetNestedInstance/GetNestedDescriptor -- only emitted when
+    // the model has >= 1 Object field.
+    private static void EmitNestedAccessors(StringBuilder s, FormModelDef model)
+    {
+        FormFieldDef[] fields = model.Fields.Where(f => f.Kind == "Object").ToArray();
+
+        s.AppendLine("    public object? GetNestedInstance(object model, string field)");
+        s.AppendLine("    {");
+        s.AppendLine($"        var __m = ({model.TypeName})model;");
+        s.AppendLine("        return field switch");
+        s.AppendLine("        {");
+        foreach (FormFieldDef f in fields)
+        {
+            s.AppendLine($"            {Literal(f.PropertyName)} => __m.{f.PropertyName},");
+        }
+
+        s.AppendLine("            _ => null,");
+        s.AppendLine("        };");
+        s.AppendLine("    }");
+        s.AppendLine();
+
+        s.AppendLine("    public void SetNestedInstance(object model, string field, object? instance)");
+        s.AppendLine("    {");
+        s.AppendLine($"        var __m = ({model.TypeName})model;");
+        s.AppendLine("        switch (field)");
+        s.AppendLine("        {");
+        foreach (FormFieldDef f in fields)
+        {
+            s.AppendLine($"            case {Literal(f.PropertyName)}: __m.{f.PropertyName} = ({f.NestedTypeFqn})instance!; break;");
+        }
+
+        s.AppendLine("        }");
+        s.AppendLine("    }");
+        s.AppendLine();
+
+        s.AppendLine($"    public {Ns}.IFormModelUntyped? GetNestedDescriptor(string field) => field switch");
+        s.AppendLine("    {");
+        foreach (FormFieldDef f in fields)
+        {
+            s.AppendLine($"        {Literal(f.PropertyName)} => new {f.NestedDescriptorFqn}(),");
+        }
+
+        s.AppendLine("        _ => null,");
+        s.AppendLine("    };");
+        s.AppendLine();
+
+        s.AppendLine("    public object NewNestedInstance(string field) => field switch");
+        s.AppendLine("    {");
+        foreach (FormFieldDef f in fields)
+        {
+            s.AppendLine($"        {Literal(f.PropertyName)} => new {f.NestedTypeFqn}(),");
+        }
+
+        s.AppendLine("        _ => throw new global::System.NotSupportedException(),");
+        s.AppendLine("    };");
+        s.AppendLine();
+    }
+
+    // GetArrayStrings/SetArrayStrings (array-of-scalar), GetArrayInstances/
+    // SetArrayInstances/GetArrayElementDescriptor (array-of-nested), and
+    // NewArrayElement (both flavors) -- only emitted when the model has >= 1 Array
+    // field. Every accessor uses a plain foreach loop rather than LINQ extension
+    // syntax, since the generated file adds no "using System.Linq;".
+    private static void EmitArrayAccessors(StringBuilder s, FormModelDef model)
+    {
+        FormFieldDef[] arrayFields = model.Fields.Where(f => f.Kind == "Array").ToArray();
+        FormFieldDef[] scalarArrays = arrayFields.Where(f => f.ArrayElementKind is not null).ToArray();
+        FormFieldDef[] nestedArrays = arrayFields.Where(f => f.NestedTypeFqn is not null).ToArray();
+
+        s.AppendLine("    public global::System.Collections.Generic.IReadOnlyList<string> GetArrayStrings(object model, string field)");
+        s.AppendLine("    {");
+        s.AppendLine($"        var __m = ({model.TypeName})model;");
+        s.AppendLine("        switch (field)");
+        s.AppendLine("        {");
+        foreach (FormFieldDef f in scalarArrays)
+        {
+            s.AppendLine($"            case {Literal(f.PropertyName)}:");
+            s.AppendLine("            {");
+            s.AppendLine("                var __result = new global::System.Collections.Generic.List<string>();");
+            s.AppendLine($"                foreach (var __x in __m.{f.PropertyName}) {{ __result.Add({ArrayElementToString(f, "__x")}); }}");
+            s.AppendLine("                return __result;");
+            s.AppendLine("            }");
+        }
+
+        s.AppendLine("        }");
+        s.AppendLine("        return global::System.Array.Empty<string>();");
+        s.AppendLine("    }");
+        s.AppendLine();
+
+        s.AppendLine("    public void SetArrayStrings(object model, string field, global::System.Collections.Generic.IReadOnlyList<string> items)");
+        s.AppendLine("    {");
+        s.AppendLine($"        var __m = ({model.TypeName})model;");
+        s.AppendLine("        switch (field)");
+        s.AppendLine("        {");
+        foreach (FormFieldDef f in scalarArrays)
+        {
+            s.AppendLine($"            case {Literal(f.PropertyName)}:");
+            s.AppendLine("            {");
+            s.AppendLine($"                var __list = new global::System.Collections.Generic.List<{f.UnderlyingFqn}>();");
+            s.AppendLine("                foreach (var __s in items)");
+            s.AppendLine("                {");
+            s.Append(ArrayElementFromString(f));
+            s.AppendLine("                }");
+            s.AppendLine($"                __m.{f.PropertyName} = __list;");
+            s.AppendLine("                break;");
+            s.AppendLine("            }");
+        }
+
+        s.AppendLine("        }");
+        s.AppendLine("    }");
+        s.AppendLine();
+
+        s.AppendLine("    public global::System.Collections.Generic.IReadOnlyList<object> GetArrayInstances(object model, string field)");
+        s.AppendLine("    {");
+        s.AppendLine($"        var __m = ({model.TypeName})model;");
+        s.AppendLine("        switch (field)");
+        s.AppendLine("        {");
+        foreach (FormFieldDef f in nestedArrays)
+        {
+            s.AppendLine($"            case {Literal(f.PropertyName)}:");
+            s.AppendLine("            {");
+            s.AppendLine("                var __result = new global::System.Collections.Generic.List<object>();");
+            s.AppendLine($"                foreach (var __x in __m.{f.PropertyName}) {{ __result.Add(__x!); }}");
+            s.AppendLine("                return __result;");
+            s.AppendLine("            }");
+        }
+
+        s.AppendLine("        }");
+        s.AppendLine("        return global::System.Array.Empty<object>();");
+        s.AppendLine("    }");
+        s.AppendLine();
+
+        s.AppendLine("    public void SetArrayInstances(object model, string field, global::System.Collections.Generic.IReadOnlyList<object> items)");
+        s.AppendLine("    {");
+        s.AppendLine($"        var __m = ({model.TypeName})model;");
+        s.AppendLine("        switch (field)");
+        s.AppendLine("        {");
+        foreach (FormFieldDef f in nestedArrays)
+        {
+            s.AppendLine($"            case {Literal(f.PropertyName)}:");
+            s.AppendLine("            {");
+            s.AppendLine($"                var __list = new global::System.Collections.Generic.List<{f.NestedTypeFqn}>();");
+            s.AppendLine($"                foreach (var __x in items) {{ __list.Add(({f.NestedTypeFqn})__x); }}");
+            s.AppendLine($"                __m.{f.PropertyName} = __list;");
+            s.AppendLine("                break;");
+            s.AppendLine("            }");
+        }
+
+        s.AppendLine("        }");
+        s.AppendLine("    }");
+        s.AppendLine();
+
+        s.AppendLine($"    public {Ns}.IFormModelUntyped? GetArrayElementDescriptor(string field) => field switch");
+        s.AppendLine("    {");
+        foreach (FormFieldDef f in nestedArrays)
+        {
+            s.AppendLine($"        {Literal(f.PropertyName)} => new {f.NestedDescriptorFqn}(),");
+        }
+
+        s.AppendLine("        _ => null,");
+        s.AppendLine("    };");
+        s.AppendLine();
+
+        s.AppendLine("    public object NewArrayElement(string field) => field switch");
+        s.AppendLine("    {");
+        foreach (FormFieldDef f in nestedArrays)
+        {
+            s.AppendLine($"        {Literal(f.PropertyName)} => new {f.NestedTypeFqn}(),");
+        }
+
+        foreach (FormFieldDef f in scalarArrays)
+        {
+            s.AppendLine($"        {Literal(f.PropertyName)} => (object){ScalarDefaultLiteral(f)},");
+        }
+
+        s.AppendLine("        _ => throw new global::System.NotSupportedException(),");
+        s.AppendLine("    };");
+        s.AppendLine();
+    }
+
+    // The per-element invariant-string conversion for an array-of-scalar field,
+    // mirroring EmitGetString's per-field conversion (Date needs explicit
+    // yyyy-MM-dd formatting; everything else round-trips through Convert.ToString).
+    private static string ArrayElementToString(FormFieldDef f, string itemExpr) => f.ArrayElementKind == "Date"
+        ? $"{itemExpr}.ToString(\"yyyy-MM-dd\", global::System.Globalization.CultureInfo.InvariantCulture)"
+        : $"(global::System.Convert.ToString({itemExpr}, global::System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty)";
+
+    // The per-element parse-and-add statement for an array-of-scalar field, mirroring
+    // SetBody's per-field parse logic. A malformed element is silently skipped (not
+    // added) -- "bad input is ignored," the same posture SetBody already has for a
+    // single scalar field.
+    private static string ArrayElementFromString(FormFieldDef f) => f.ArrayElementKind switch
+    {
+        "Bool" => "                    if (global::System.Boolean.TryParse(__s, out var __v)) __list.Add(__v);\n",
+        "Integer" or "Number" =>
+            $"                    if ({f.UnderlyingFqn}.TryParse(__s, global::System.Globalization.NumberStyles.Any, " +
+            "global::System.Globalization.CultureInfo.InvariantCulture, out var __v)) __list.Add(__v);\n",
+        "Date" =>
+            $"                    if ({f.UnderlyingFqn}.TryParse(__s, global::System.Globalization.CultureInfo.InvariantCulture, " +
+            "global::System.Globalization.DateTimeStyles.None, out var __v)) __list.Add(__v);\n",
+        "Enum" => $"                    if (global::System.Enum.TryParse<{f.UnderlyingFqn}>(__s, true, out var __v)) __list.Add(__v);\n",
+        _ => "                    __list.Add(__s);\n",
+    };
+
+    // The blank default an array-of-scalar's "add row" starts from, matching each
+    // Kind's own invariant-string empty form.
+    private static string ScalarDefaultLiteral(FormFieldDef f) => f.ArrayElementKind switch
+    {
+        "Integer" or "Number" => "\"0\"",
+        "Bool" => "\"False\"",
+        "Enum" => f.Choices.IsDefaultOrEmpty ? "\"\"" : Literal(f.Choices[0]),
+        _ => "\"\"",
+    };
+
+    private static string NType(string? nestedTypeFqn) => nestedTypeFqn is null ? "null" : $"typeof({nestedTypeFqn})";
+
+    private static string NKind(string? kind) => kind is null ? "null" : $"{Ns}.FormFieldKind.{kind}";
 
     // ---- literal helpers ----
 
