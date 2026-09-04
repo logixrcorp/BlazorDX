@@ -121,7 +121,7 @@ public sealed class DxKeyboardShortcuts : ComponentBase
         {
             builder.OpenElement(seq++, "div");
             builder.AddAttribute(seq++, "class", "dx-keys-empty");
-            builder.AddContent(seq++, "No shortcuts");
+            builder.AddContent(seq++, S["NoShortcuts", "No shortcuts"]);
             builder.CloseElement();
         }
 
