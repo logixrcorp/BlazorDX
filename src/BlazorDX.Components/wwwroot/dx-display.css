@@ -1,3 +1,5 @@
+/* rtl-clean — converted to logical properties; physical usages that remain carry
+   an rtl-exempt reason. See docs/localization.md. */
 /* Display & misc inputs: Badge, Chip, Avatar, Card, Slider. Token-driven so they
    inherit the theme (see dx-theme.css); literal fallbacks keep them usable without it. */
 
@@ -47,7 +49,7 @@
   place-items: center;
   width: 24px;
   height: 24px;
-  margin-right: -6px;
+  margin-inline-end: -6px;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -115,21 +117,21 @@
 
 /* ---- Button group (segmented) ---- */
 .dx-btn-group { display: inline-flex; align-items: stretch; }
-.dx-btn-group:not(.dx-split-button) > .dx-btn:not(:first-child) { margin-left: -1px; }
+.dx-btn-group:not(.dx-split-button) > .dx-btn:not(:first-child) { margin-inline-start: -1px; }
 .dx-btn-group:not(.dx-split-button) > .dx-btn:not(:first-child):not(:last-child) { border-radius: 0; }
-.dx-btn-group:not(.dx-split-button) > .dx-btn:first-child:not(:last-child) { border-top-right-radius: 0; border-bottom-right-radius: 0; }
-.dx-btn-group:not(.dx-split-button) > .dx-btn:last-child:not(:first-child) { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.dx-btn-group:not(.dx-split-button) > .dx-btn:first-child:not(:last-child) { border-start-end-radius: 0; border-end-end-radius: 0; }
+.dx-btn-group:not(.dx-split-button) > .dx-btn:last-child:not(:first-child) { border-start-start-radius: 0; border-end-start-radius: 0; }
 
 /* ---- Split button (primary + DxMenu caret) ---- */
 .dx-split-button .dx-menu-root,
 .dx-split-button .dx-menu-trigger { display: inline-flex; align-items: stretch; }
-.dx-split-primary { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.dx-split-primary { border-start-end-radius: 0; border-end-end-radius: 0; }
 .dx-split-toggle {
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-  margin-left: -1px;
-  padding-left: 9px;
-  padding-right: 9px;
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+  margin-inline-start: -1px;
+  padding-inline-start: 9px;
+  padding-inline-end: 9px;
 }
 
 /* ---- Toolbar ---- */
@@ -335,7 +337,7 @@
 .dx-range-area { position: relative; width: 200px; height: 24px; }
 .dx-range-track {
   position: absolute;
-  left: 0; right: 0; top: 50%;
+  left: 0; right: 0; top: 50%; /* rtl-exempt: pinned to both edges, symmetric */
   height: 4px;
   transform: translateY(-50%);
   background: var(--dx-border, #cbd5e1);
@@ -353,7 +355,7 @@
    upper thumbs can be grabbed independently. */
 .dx-range-area input[type="range"] {
   position: absolute;
-  left: 0; top: 0;
+  left: 0; top: 0; /* rtl-exempt: fills the box, symmetric */
   width: 100%; height: 100%;
   margin: 0;
   background: transparent;
@@ -552,7 +554,7 @@
 }
 .dx-docview-list {
   flex: 0 0 200px;
-  border-right: 1px solid var(--dx-border, #e2e8f0);
+  border-inline-end: 1px solid var(--dx-border, #e2e8f0);
   background: var(--dx-surface-alt, #f8fafc);
   overflow-y: auto;
   padding: 6px;
@@ -562,7 +564,7 @@
   flex-direction: column;
   gap: 2px;
   width: 100%;
-  text-align: left;
+  text-align: start;
   padding: 8px 10px;
   border: 0;
   border-radius: 7px;
@@ -607,7 +609,7 @@
   color: var(--dx-text, #0f172a);
 }
 .dx-docview-zoom-value { font-size: 12px; min-width: 3em; text-align: center; color: var(--dx-muted, #64748b); }
-.dx-docview-actions { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; }
+.dx-docview-actions { margin-inline-start: auto; display: inline-flex; align-items: center; gap: 6px; }
 .dx-docview-action {
   display: inline-flex; align-items: center; justify-content: center; gap: 4px;
   /* >=24x24 hit target (WCAG 2.5.8); roomy enough for a text label. */

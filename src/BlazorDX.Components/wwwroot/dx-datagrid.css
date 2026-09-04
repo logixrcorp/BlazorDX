@@ -1,3 +1,5 @@
+/* rtl-clean — converted to logical properties; physical usages that remain carry
+   an rtl-exempt reason. See docs/localization.md. */
 /*
   DxDataGrid theme. Everything is driven by CSS custom properties, so consumers
   retheme by overriding these variables in their own scope — no !important, no
@@ -37,7 +39,7 @@
   display: flex;
   align-items: center;
   color: var(--dx-grid-header-fg);
-  border-right: 1px solid var(--dx-grid-border);
+  border-inline-end: 1px solid var(--dx-grid-border);
 }
 
 .dx-grid-th-label {
@@ -48,7 +50,7 @@
   min-width: 0;
   padding: 8px 12px;
   font-weight: 600;
-  text-align: left;
+  text-align: start;
   color: inherit;
   background: transparent;
   border: 0;
@@ -72,7 +74,7 @@
   flex: 0 0 auto;
   align-self: stretch;
   width: 7px;
-  margin-right: -3px;
+  margin-inline-end: -3px;
   cursor: col-resize;
   touch-action: none;
 }
@@ -126,7 +128,7 @@
 }
 .dx-pivot-caption {
   caption-side: top;
-  text-align: left;
+  text-align: start;
   padding: 0 0 8px;
   font-size: 0.85rem;
   color: var(--dx-text-muted, #64748b);
@@ -134,16 +136,16 @@
 .dx-pivot th, .dx-pivot td {
   padding: 6px 12px;
   border: 1px solid var(--dx-border, #e2e8f0);
-  text-align: right;
+  text-align: end;
 }
 .dx-pivot-corner, .dx-pivot-colhead {
-  text-align: left;
+  text-align: start;
   background: var(--dx-surface-alt, #f8fafc);
   font-weight: 600;
 }
-.dx-pivot-colhead { text-align: right; }
+.dx-pivot-colhead { text-align: end; }
 .dx-pivot-rowhead {
-  text-align: left;
+  text-align: start;
   background: var(--dx-surface-alt, #f8fafc);
   font-weight: 600;
 }
@@ -197,7 +199,7 @@
   font-weight: 400;
 }
 .dx-grid-group-summary {
-  margin-left: auto;
+  margin-inline-start: auto;
   display: flex;
   gap: 16px;
   color: #475569;
@@ -290,7 +292,7 @@
   flex: 0 0 auto;
   width: 18px;
   height: 18px;
-  margin-right: 6px;
+  margin-inline-end: 6px;
   display: inline-grid;
   place-items: center;
   padding: 0;
@@ -330,7 +332,7 @@
 }
 .dx-grid-export:hover { background: var(--dx-surface-alt, #f1f5f9); color: var(--dx-accent, #2563eb); }
 .dx-grid-toolbar { align-items: center; }
-.dx-grid-chooser { position: relative; margin-right: auto; }
+.dx-grid-chooser { position: relative; margin-inline-end: auto; }
 .dx-grid-chooser-toggle {
   padding: 6px 12px;
   font: inherit;
@@ -346,7 +348,7 @@
   position: absolute;
   z-index: 1500;
   top: calc(100% + 4px);
-  left: 0;
+  inset-inline-start: 0;
   min-width: 12rem;
   max-height: 16rem;
   overflow-y: auto;
@@ -412,7 +414,7 @@
   position: absolute;
   z-index: 1600;
   top: 100%;
-  right: 0;
+  inset-inline-end: 0;
   min-width: 11rem;
   max-height: 16rem;
   overflow-y: auto;
@@ -420,7 +422,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  text-align: left;
+  text-align: start;
   font-weight: 400;
   background: var(--dx-surface, #ffffff);
   border: 1px solid var(--dx-border, #cbd5e1);
@@ -447,7 +449,7 @@
   border: 0;
   border-top: 1px solid var(--dx-grid-border, #e2e8f0);
   cursor: pointer;
-  text-align: left;
+  text-align: start;
 }
 .dx-grid-valuemenu-clear:disabled { color: var(--dx-text-muted, #94a3b8); cursor: default; }
 
