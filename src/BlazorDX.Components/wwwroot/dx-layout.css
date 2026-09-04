@@ -456,7 +456,11 @@
   border-radius: 6px;
 }
 .dx-radio-disabled {
-  opacity: 0.5;
+  /* 0.62, not 0.5: at 0.5 the label lands near 3.5:1 against the surface and axe reports a
+     serious contrast violation. WCAG 1.4.3 does exempt inactive controls, so the tool is
+     stricter than the standard here — but a disabled option still has to be readable for
+     someone to know what it is, and 0.62 keeps it unmistakably dimmed while clearing 4.5:1. */
+  opacity: 0.62;
   cursor: not-allowed;
 }
 .dx-radio-dot {
