@@ -95,8 +95,15 @@ has reintroduced the hard dependency — fix that instead.
 Once a type holds a `DxStrings<…>` member, the `HardcodedStringAnalyzer` starts flagging
 hardcoded user-facing literals **in that type**: `AddContent`, the user-facing attributes
 (`aria-label`, `aria-description`, `aria-roledescription`, `aria-valuetext`, `alt`,
-`placeholder`, `title`), and defaulted `[Parameter] string` properties. It ignores
-letter-free glyphs (`"✓"`, `"▾"`), format strings, and machine-facing attributes.
+`placeholder`, `title`), and defaulted `[Parameter] string` properties whose name ends in
+`Label`, `Text`, `Title`, `Message`, `Placeholder`, `Description`, `Caption`, `Heading`,
+`Hint`, `Tooltip` or `Prompt`. It ignores letter-free glyphs (`"✓"`, `"▾"`), format
+strings, and machine-facing attributes.
+
+The parameter-name test is deliberate: `[Parameter] public string DismissLabel = "Dismiss"`
+is text a user reads, while `[Parameter] public string Severity = "info"` is a variant token
+that ends up in a CSS class. If you add a text-carrying parameter with a name outside that
+list, add the suffix to `UserFacingParameterSuffixes` rather than working around the rule.
 
 So a half-localized component fails the build. That is the intent: the analyzer's coverage
 is exactly the set of components already converted, and it grows with each batch.

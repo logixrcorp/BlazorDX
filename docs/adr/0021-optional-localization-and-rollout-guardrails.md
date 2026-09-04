@@ -100,9 +100,17 @@ about five new hardcoded strings while this plan was being written.
 `HardcodedStringAnalyzer` (DX1003, Error) flags string literals reaching the user:
 `builder.AddContent(n, "…")`, `builder.AddAttribute(n, "<user-facing attribute>", "…")`
 for `aria-label`, `aria-description`, `aria-roledescription`, `aria-valuetext`, `alt`,
-`placeholder` and `title`, and defaulted `[Parameter] string` properties. It ignores
-literals with no letters (`"✓"`, `"▾"`, `"×"`), format strings, and every
-machine-facing attribute (`class`, `role`, `type`, …).
+`placeholder` and `title`, and defaulted `[Parameter] string` properties **whose name says
+they carry text** (`…Label`, `…Text`, `…Title`, `…Message`, `…Placeholder`, `…Description`,
+`…Caption`, `…Heading`, `…Hint`, `…Tooltip`, `…Prompt`). It ignores literals with no
+letters (`"✓"`, `"▾"`, `"×"`), format strings, and every machine-facing attribute
+(`class`, `role`, `type`, …).
+
+That last qualifier was not in the first draft, and CI caught the omission immediately:
+flagging *every* defaulted parameter reported `DxAlert`'s own
+`[Parameter] public string Severity { get; set; } = "info"` — a variant token that ends up
+in a CSS class, not something a user reads. Matching on the parameter name is the same
+shape as the attribute allow-list: wrong only by omission, never by false alarm.
 
 **The ratchet.** DX1003 fires **only inside types that already hold a `DxStrings<…>`
 member.** `TreatWarningsAsErrors` is repo-wide, so `Warning` severity is not an escape

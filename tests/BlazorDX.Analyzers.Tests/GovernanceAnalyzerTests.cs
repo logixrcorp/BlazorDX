@@ -168,6 +168,24 @@ public sealed class GovernanceAnalyzerTests
     }
 
     [Fact]
+    public async Task DX1003_ignores_a_defaulted_Parameter_that_names_a_variant_not_text()
+    {
+        // The regression this locks in: the rule originally flagged every defaulted [Parameter]
+        // string, so DxAlert's own `Severity = "info"` -- a token that ends up in a CSS class --
+        // broke the build. A variant, a size and a format are all machine-facing; only a parameter
+        // whose name says it carries text ("...Label", "...Text", ...) is the component's own prose.
+        string source = LocalizedComponent("""
+                [Parameter] public string Severity { get; set; } = "info";
+                [Parameter] public string Size { get; set; } = "md";
+                [Parameter] public string DateFormat { get; set; } = "yyyy-MM-dd";
+        """);
+
+        var diagnostics = await AnalyzerTestHarness.AnalyzeAsync(source, new HardcodedStringAnalyzer());
+
+        Assert.Empty(diagnostics.Where(d => d.Id == "DX1003"));
+    }
+
+    [Fact]
     public async Task DX1003_stays_silent_for_text_routed_through_the_localizer()
     {
         string source = LocalizedComponent("""

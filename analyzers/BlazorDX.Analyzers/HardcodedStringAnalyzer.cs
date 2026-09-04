@@ -9,7 +9,8 @@ namespace BlazorDX.Analyzers;
 
 /// <summary>
 /// DX1003: flags hardcoded user-facing text in a component that already localizes — visible
-/// content, the accessible-name attributes, and defaulted <c>[Parameter]</c> strings.
+/// content, the accessible-name attributes, and defaulted <c>[Parameter]</c> strings on
+/// text-carrying parameters.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -46,6 +47,25 @@ public sealed class HardcodedStringAnalyzer : DiagnosticAnalyzer
         "alt",
         "placeholder",
         "title");
+
+    // Suffixes that make a [Parameter] property's default *text* rather than a token. The
+    // distinction is real and this rule originally missed it: DxAlert's
+    // `[Parameter] public string Severity { get; set; } = "info"` is a variant name that ends up
+    // in a CSS class, not something a user reads — flagging it (as the first CI run did) would
+    // have forced a localizer call on a machine-facing value. Matching on the name is the same
+    // shape as UserFacingAttributes above: an allow-list, wrong only by omission.
+    private static readonly ImmutableArray<string> UserFacingParameterSuffixes = ImmutableArray.Create(
+        "Label",
+        "Text",
+        "Title",
+        "Message",
+        "Placeholder",
+        "Description",
+        "Caption",
+        "Heading",
+        "Hint",
+        "Tooltip",
+        "Prompt");
 
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
         ImmutableArray.Create(DiagnosticDescriptors.HardcodedUserFacingString);
@@ -101,8 +121,12 @@ public sealed class HardcodedStringAnalyzer : DiagnosticAnalyzer
     {
         var property = (PropertyDeclarationSyntax)context.Node;
 
-        // A defaulted [Parameter] string is the component's own text until a caller overrides it.
-        if (property.Initializer is null || !IsInLocalizedType(property) || !HasParameterAttribute(property))
+        // A defaulted [Parameter] string is the component's own text until a caller overrides it --
+        // but only when the parameter names text at all. See UserFacingParameterSuffixes.
+        if (property.Initializer is null
+            || !IsInLocalizedType(property)
+            || !HasParameterAttribute(property)
+            || !NamesUserFacingText(property.Identifier.ValueText))
         {
             return;
         }
@@ -114,6 +138,9 @@ public sealed class HardcodedStringAnalyzer : DiagnosticAnalyzer
         property.AttributeLists
             .SelectMany(list => list.Attributes)
             .Any(attribute => attribute.Name.ToString() is ParameterAttributeName or ParameterAttributeName + "Attribute");
+
+    private static bool NamesUserFacingText(string propertyName) =>
+        UserFacingParameterSuffixes.Any(suffix => propertyName.EndsWith(suffix, StringComparison.Ordinal));
 
     private static void ReportIfUserFacingText(SyntaxNodeAnalysisContext context, ExpressionSyntax expression)
     {
