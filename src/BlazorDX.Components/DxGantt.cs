@@ -116,8 +116,13 @@ public sealed class DxGantt : GanttPrimitive
         builder.AddAttribute(28, "style",
             string.Create(CultureInfo.InvariantCulture,
                 $"left:{left:0.#}px;width:{width:0.#}px;{(task.Color is null ? string.Empty : $"background:{task.Color};")}"));
-        builder.AddAttribute(29, "aria-label",
-            $"{task.Name}, {task.Start.ToString("MMM d", CultureInfo.InvariantCulture)} to {task.End.ToString("MMM d", CultureInfo.InvariantCulture)}, {progress * 100:0}% complete");
+        // Spoken text, so the dates follow the current culture. The style attribute above keeps
+        // InvariantCulture deliberately: CSS needs "." as the decimal separator in every locale.
+        builder.AddAttribute(29, "aria-label", S["GanttTaskLabel", "{0}, {1} to {2}, {3:0}% complete",
+            task.Name,
+            task.Start.ToString("MMM d", CultureInfo.CurrentCulture),
+            task.End.ToString("MMM d", CultureInfo.CurrentCulture),
+            progress * 100]);
         builder.AddAttribute(30, "onclick", EventCallback.Factory.Create(this, () => SelectAsync(task)));
 
         if (progress > 0)
