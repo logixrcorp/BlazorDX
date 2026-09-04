@@ -26,6 +26,12 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
 {
     private const int IndentPerLevel = 16;
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxFileManager>? s;
+
+    private DxStrings<DxFileManager> S => s ??= new(Services);
+
     [Inject] private IFileDndInterop Dnd { get; set; } = default!;
 
     [Inject] private IFileHashInterop Hash { get; set; } = default!;
@@ -118,11 +124,11 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
     {
         builder.OpenElement(4, "nav");
         builder.AddAttribute(5, "class", "dx-fm-breadcrumb");
-        builder.AddAttribute(6, "aria-label", "Path");
+        builder.AddAttribute(6, "aria-label", S["Breadcrumb", "Path"]);
 
         builder.OpenElement(7, "span");
         builder.AddAttribute(8, "class", "dx-fm-crumb-home");
-        builder.AddContent(9, "Files");
+        builder.AddContent(9, S["RootName", "Files"]);
         builder.CloseElement();
 
         // "Move here" affordance on the root while an item is marked for moving.
@@ -131,9 +137,9 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
             builder.OpenElement(10, "button");
             builder.AddAttribute(11, "type", "button");
             builder.AddAttribute(12, "class", "dx-fm-move-here");
-            builder.AddAttribute(13, "aria-label", $"Move {MoveCandidate.Name} to Files");
+            builder.AddAttribute(13, "aria-label", S["MoveToRoot", "Move {0} to Files", MoveCandidate.Name]);
             builder.AddAttribute(14, "onclick", EventCallback.Factory.Create(this, () => PlaceMoveCandidateAsync(null)));
-            builder.AddContent(15, "Move here");
+            builder.AddContent(15, S["MoveHere", "Move here"]);
             builder.CloseElement();
         }
 
@@ -180,7 +186,7 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
 
         builder.OpenElement(33, "span");
         builder.AddAttribute(34, "class", "dx-fm-upload-prompt");
-        builder.AddContent(35, "Upload files");
+        builder.AddContent(35, S["UploadFiles", "Upload files"]);
         builder.CloseElement();
 
         builder.CloseElement();   // label
@@ -222,7 +228,7 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
                 builder.OpenElement(47, "button");
                 builder.AddAttribute(48, "type", "button");
                 builder.AddAttribute(49, "class", "dx-fm-twisty");
-                builder.AddAttribute(50, "aria-label", row.Expanded ? "Collapse" : "Expand");
+                builder.AddAttribute(50, "aria-label", row.Expanded ? S["Collapse", "Collapse"] : S["Expand", "Expand"]);
                 builder.AddAttribute(51, "onclick", EventCallback.Factory.Create(this, () => ToggleFolderAsync(folder)));
                 builder.AddContent(52, row.Expanded ? "▾" : "▸");
                 builder.CloseElement();
@@ -249,9 +255,9 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
                 builder.OpenElement(61, "button");
                 builder.AddAttribute(62, "type", "button");
                 builder.AddAttribute(63, "class", "dx-fm-move-here");
-                builder.AddAttribute(64, "aria-label", $"Move {MoveCandidate.Name} into {folder.Name}");
+                builder.AddAttribute(64, "aria-label", S["MoveInto", "Move {0} into {1}", MoveCandidate.Name, folder.Name]);
                 builder.AddAttribute(65, "onclick", EventCallback.Factory.Create(this, () => PlaceMoveCandidateAsync(folder)));
-                builder.AddContent(66, "Move here");
+                builder.AddContent(66, S["MoveHere", "Move here"]);
                 builder.CloseElement();
             }
 
@@ -267,15 +273,15 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
         builder.AddAttribute(68, "id", DropZoneId);
         builder.AddAttribute(69, "class", "dx-fm-contents");
         builder.AddAttribute(70, "role", "table");
-        builder.AddAttribute(71, "aria-label", "Folder contents. Drop files here to upload.");
+        builder.AddAttribute(71, "aria-label", S["ContentsLabel", "Folder contents. Drop files here to upload."]);
 
         builder.OpenElement(72, "div");
         builder.AddAttribute(73, "class", "dx-fm-content-head");
         builder.AddAttribute(721, "role", "row");
-        Header(builder, 74, "Name");
-        Header(builder, 78, "Size");
-        Header(builder, 82, "Modified");
-        Header(builder, 86, "Actions");
+        Header(builder, 74, S["ColumnName", "Name"]);
+        Header(builder, 78, S["ColumnSize", "Size"]);
+        Header(builder, 82, S["ColumnModified", "Modified"]);
+        Header(builder, 86, S["ColumnActions", "Actions"]);
         builder.CloseElement();
 
         IReadOnlyList<FileSystemEntry> contents = Contents();
@@ -290,7 +296,7 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
             builder.AddAttribute(911, "role", "row");
             builder.OpenElement(912, "div");
             builder.AddAttribute(913, "role", "cell");
-            builder.AddContent(92, "This folder is empty. Drop files here or use Upload files.");
+            builder.AddContent(92, S["EmptyFolder", "This folder is empty. Drop files here or use Upload files."]);
             builder.CloseElement();
             builder.CloseElement();
         }
