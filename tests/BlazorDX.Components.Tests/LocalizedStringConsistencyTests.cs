@@ -41,7 +41,11 @@ public sealed class LocalizedStringConsistencyTests
     // and would go unchecked, which is a gap worth knowing about; the rollout's convention is that
     // indirect text (switch arms, lookup helpers) still resolves through a literal pair like this,
     // precisely so this check keeps working. See docs/localization.md.
-    private static readonly Regex CallSite = new(@"S\[\s*""([^""]*)""\s*,\s*""([^""]*)""", RegexOptions.Compiled);
+    // The English half allows backslash escapes: several components quote the offending input in
+    // an error string (`Cannot encode as Code 128: \"{0}\"`). Stopping at the first escaped quote
+    // would compare a truncated fragment against the resource and report drift that isn't there.
+    private static readonly Regex CallSite = new(
+        @"S\[\s*""([^""]*)""\s*,\s*""((?:[^""\\]|\\.)*)""", RegexOptions.Compiled);
 
     [Fact]
     public void Call_site_English_matches_the_invariant_resource_value()
@@ -80,7 +84,10 @@ public sealed class LocalizedStringConsistencyTests
             foreach (Match site in CallSite.Matches(source))
             {
                 string key = site.Groups[1].Value;
-                string english = site.Groups[2].Value;
+
+                // The .resx holds the decoded text, so the C# escapes have to come off before
+                // comparing — otherwise every string containing a quote reports as drift.
+                string english = Unescape(site.Groups[2].Value);
                 used.Add(key);
                 checkedSites++;
 
@@ -117,6 +124,14 @@ public sealed class LocalizedStringConsistencyTests
             "Call-site English and .resx values have drifted:" + Environment.NewLine
             + string.Join(Environment.NewLine, problems.Select(p => "  " + p)));
     }
+
+    /// <summary>
+    /// Decodes the C# escapes a call-site literal can carry, so it can be compared with the
+    /// decoded text in the <c>.resx</c>. Only the escapes these strings actually use.
+    /// </summary>
+    private static string Unescape(string literal) =>
+        literal.Replace("\\\"", "\"", StringComparison.Ordinal)
+               .Replace("\\\\", "\\", StringComparison.Ordinal);
 
     /// <summary>
     /// Blanks out <c>//</c> and <c>/* … */</c> comments, leaving string literals intact — a

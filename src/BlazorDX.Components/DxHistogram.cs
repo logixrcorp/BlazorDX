@@ -49,6 +49,12 @@ public sealed class DxHistogram : ComponentBase
         }
     }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxChartResources>? s;
+
+    private DxStrings<DxChartResources> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "div");
@@ -58,7 +64,7 @@ public sealed class DxHistogram : ComponentBase
         builder.AddAttribute(3, "class", "dx-chart-svg");
         builder.AddAttribute(4, "viewBox", $"0 0 {Width} {Height}");
         builder.AddAttribute(5, "role", "img");
-        builder.AddAttribute(6, "aria-label", $"Histogram with {counts.Length} bins");
+        builder.AddAttribute(6, "aria-label", S["HistogramLabel", "Histogram with {0} bins", counts.Length]);
 
         if (counts.Length > 0)
         {
@@ -70,7 +76,7 @@ public sealed class DxHistogram : ComponentBase
         builder.OpenElement(20, "div");
         builder.AddAttribute(21, "class", "dx-chart-caption");
         builder.AddContent(22,
-            $"{Values.Count:N0} values · {counts.Length} bins · range {Num(min)}–{Num(max)} · {Compute.Backend}");
+            S["HistogramCaption", "{0:N0} values · {1} bins · range {2}–{3} · {4}", Values.Count, counts.Length, Num(min), Num(max), Compute.Backend]);
         builder.CloseElement();
 
         builder.CloseElement();

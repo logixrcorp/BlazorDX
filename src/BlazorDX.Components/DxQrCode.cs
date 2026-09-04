@@ -31,6 +31,11 @@ public sealed class DxQrCode : ComponentBase
     // The standard QR quiet zone is four modules on every side.
     private const int Quiet = 4;
 
+    // Reuses the Services injection this component already had.
+    private DxStrings<DxQrCode>? s;
+
+    private DxStrings<DxQrCode> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         QrSymbol qr;
@@ -56,7 +61,7 @@ public sealed class DxQrCode : ComponentBase
         builder.AddAttribute(4, "width", Inv($"{pixels}"));
         builder.AddAttribute(5, "height", Inv($"{pixels}"));
         builder.AddAttribute(6, "role", "img");
-        builder.AddAttribute(7, "aria-label", $"QR code: {Value}");
+        builder.AddAttribute(7, "aria-label", S["QrCode", "QR code: {0}", Value]);
         builder.AddAttribute(8, "shape-rendering", "crispEdges");
 
         // Light background, including the quiet zone (sized in module units).
@@ -95,7 +100,7 @@ public sealed class DxQrCode : ComponentBase
     {
         builder.OpenElement(30, "span");
         builder.AddAttribute(31, "class", "dx-barcode-error");
-        builder.AddContent(32, $"Cannot encode as QR (1–4): \"{Value}\"");
+        builder.AddContent(32, S["CannotEncodeAsQr", "Cannot encode as QR (1–4): \"{0}\"", Value]);
         builder.CloseElement();
     }
 

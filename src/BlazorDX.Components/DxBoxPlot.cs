@@ -101,6 +101,12 @@ public sealed class DxBoxPlot : ComponentBase
         StateHasChanged();
     }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxChartResources>? s;
+
+    private DxStrings<DxChartResources> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "div");
@@ -110,7 +116,7 @@ public sealed class DxBoxPlot : ComponentBase
         builder.AddAttribute(3, "class", "dx-chart-svg");
         builder.AddAttribute(4, "viewBox", $"0 0 {Width} {Height}");
         builder.AddAttribute(5, "role", "img");
-        builder.AddAttribute(6, "aria-label", $"Box plot with {Groups.Count} groups");
+        builder.AddAttribute(6, "aria-label", S["BoxPlotLabel", "Box plot with {0} groups", Groups.Count]);
 
         const double labelSpace = 22;
         double axisH = Height - labelSpace;
@@ -154,7 +160,7 @@ public sealed class DxBoxPlot : ComponentBase
             builder.AddAttribute(37, "style", $"animation-delay:{i * 30}ms");
             builder.OpenElement(38, "title");
             builder.AddContent(39,
-                $"{group.Label}: median {Num(s.Median)}, Q1 {Num(s.Q1)}, Q3 {Num(s.Q3)}, range {Num(s.Min)}–{Num(s.Max)}");
+                S["BoxPlotPointLabel", "{0}: median {1}, Q1 {2}, Q3 {3}, range {4}–{5}", group.Label, Num(s.Median), Num(s.Q1), Num(s.Q3), Num(s.Min), Num(s.Max)]);
             builder.CloseElement();
             builder.CloseElement();
 

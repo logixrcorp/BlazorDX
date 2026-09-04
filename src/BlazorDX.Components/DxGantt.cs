@@ -26,6 +26,12 @@ public sealed class DxGantt : GanttPrimitive
 
     private int TimelineWidth => DayCount * DayWidth;
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxChartResources>? s;
+
+    private DxStrings<DxChartResources> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "div");
@@ -49,7 +55,7 @@ public sealed class DxGantt : GanttPrimitive
 
         builder.OpenElement(6, "div");
         builder.AddAttribute(7, "class", "dx-gantt-name dx-gantt-corner");
-        builder.AddContent(8, "Task");
+        builder.AddContent(8, S["GanttTaskRole", "Task"]);
         builder.CloseElement();
 
         builder.OpenElement(9, "div");

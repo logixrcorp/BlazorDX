@@ -33,6 +33,12 @@ public sealed class DxWordCloud : ComponentBase
 
     private bool Interactive => OnWordSelected.HasDelegate;
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxChartResources>? s;
+
+    private DxStrings<DxChartResources> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         bool interactive = Interactive;
@@ -46,7 +52,7 @@ public sealed class DxWordCloud : ComponentBase
         builder.AddAttribute(3, "class", "dx-chart-svg");
         builder.AddAttribute(4, "viewBox", $"0 0 {Width} {Height}");
         builder.AddAttribute(5, "role", "img");
-        builder.AddAttribute(6, "aria-label", $"Word cloud with {placements.Count} of {Words.Count} words placed");
+        builder.AddAttribute(6, "aria-label", S["WordCloudLabel", "Word cloud with {0} of {1} words placed", placements.Count, Words.Count]);
 
         for (int i = 0; i < placements.Count; i++)
         {

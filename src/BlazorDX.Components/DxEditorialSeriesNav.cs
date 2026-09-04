@@ -24,6 +24,12 @@ public sealed class DxEditorialSeriesNav : ComponentBase
 
     private bool HasNext => !string.IsNullOrEmpty(NextTitle) && !string.IsNullOrEmpty(NextRoute);
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxEditorialSeriesNav>? s;
+
+    private DxStrings<DxEditorialSeriesNav> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         if (!HasPrevious && !HasNext)
@@ -34,7 +40,7 @@ public sealed class DxEditorialSeriesNav : ComponentBase
         builder.OpenElement(0, "nav");
         string modifier = HasPrevious && HasNext ? "" : " dx-editorial-series-nav--single";
         builder.AddAttribute(1, "class", $"dx-editorial-series-nav{modifier}");
-        builder.AddAttribute(2, "aria-label", "Series navigation");
+        builder.AddAttribute(2, "aria-label", S["SeriesNavigation", "Series navigation"]);
 
         if (HasPrevious)
         {

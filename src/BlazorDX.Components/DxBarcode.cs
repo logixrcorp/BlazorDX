@@ -33,6 +33,11 @@ public sealed class DxBarcode : ComponentBase
     // Quiet zone in modules; Code 128 requires at least 10 on each side.
     private const int QuietModules = 10;
 
+    // Reuses the Services injection this component already had.
+    private DxStrings<DxBarcode>? s;
+
+    private DxStrings<DxBarcode> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         bool[] modules;
@@ -59,7 +64,7 @@ public sealed class DxBarcode : ComponentBase
         builder.AddAttribute(4, "width", Inv($"{width}"));
         builder.AddAttribute(5, "height", Inv($"{height}"));
         builder.AddAttribute(6, "role", "img");
-        builder.AddAttribute(7, "aria-label", $"Code 128 barcode: {Value}");
+        builder.AddAttribute(7, "aria-label", S["CodeBarcode", "Code 128 barcode: {0}", Value]);
 
         builder.OpenElement(8, "rect");
         builder.AddAttribute(9, "x", "0");
@@ -113,7 +118,7 @@ public sealed class DxBarcode : ComponentBase
     {
         builder.OpenElement(40, "span");
         builder.AddAttribute(41, "class", "dx-barcode-error");
-        builder.AddContent(42, $"Cannot encode as Code 128: \"{Value}\"");
+        builder.AddContent(42, S["CannotEncodeAsCode", "Cannot encode as Code 128: \"{0}\"", Value]);
         builder.CloseElement();
     }
 

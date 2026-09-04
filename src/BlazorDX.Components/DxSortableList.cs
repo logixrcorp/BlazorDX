@@ -14,6 +14,12 @@ public sealed class DxSortableList : SortablePrimitive
 {
     [Parameter] public string? Class { get; set; }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxSortableList>? s;
+
+    private DxStrings<DxSortableList> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "div");
@@ -31,7 +37,7 @@ public sealed class DxSortableList : SortablePrimitive
             builder.AddAttribute(5, "role", "listitem");
             builder.AddAttribute(6, "draggable", "true");
             builder.AddAttribute(7, "tabindex", IsActive(index) ? "0" : "-1");
-            builder.AddAttribute(8, "aria-label", $"{Items[index]}. Press Alt plus Arrow keys to reorder.");
+            builder.AddAttribute(8, "aria-label", S["PressAltPlusArrow", "{0}. Press Alt plus Arrow keys to reorder.", Items[index]]);
             builder.AddAttribute(9, "ondragstart", EventCallback.Factory.Create(this, () => OnDragStart(captured)));
             builder.AddAttribute(10, "ondragover", EventCallback.Factory.Create(this, () => { }));
             builder.AddEventPreventDefaultAttribute(11, "ondragover", true);
@@ -57,7 +63,7 @@ public sealed class DxSortableList : SortablePrimitive
             builder.AddAttribute(23, "type", "button");
             builder.AddAttribute(24, "class", "dx-sortable-move");
             builder.AddAttribute(25, "tabindex", "-1");
-            builder.AddAttribute(26, "aria-label", $"Move {Items[index]} up");
+            builder.AddAttribute(26, "aria-label", S["MoveUp", "Move {0} up", Items[index]]);
             builder.AddAttribute(27, "disabled", captured == 0);
             builder.AddAttribute(28, "onclick", EventCallback.Factory.Create(this, () => MoveByAsync(captured, -1)));
             builder.AddContent(29, "▲");
@@ -67,7 +73,7 @@ public sealed class DxSortableList : SortablePrimitive
             builder.AddAttribute(31, "type", "button");
             builder.AddAttribute(32, "class", "dx-sortable-move");
             builder.AddAttribute(33, "tabindex", "-1");
-            builder.AddAttribute(34, "aria-label", $"Move {Items[index]} down");
+            builder.AddAttribute(34, "aria-label", S["MoveDown", "Move {0} down", Items[index]]);
             builder.AddAttribute(35, "disabled", captured == Items.Count - 1);
             builder.AddAttribute(36, "onclick", EventCallback.Factory.Create(this, () => MoveByAsync(captured, 1)));
             builder.AddContent(37, "▼");
