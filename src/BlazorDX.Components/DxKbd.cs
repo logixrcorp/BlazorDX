@@ -18,6 +18,12 @@ public sealed class DxKbd : ComponentBase
     /// <summary>Extra CSS classes appended to the combo wrapper.</summary>
     [Parameter] public string? Class { get; set; }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxKbd>? s;
+
+    private DxStrings<DxKbd> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         string[] tokens = Combo.Split('+', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -27,7 +33,9 @@ public sealed class DxKbd : ComponentBase
         if (tokens.Length > 0)
         {
             builder.AddAttribute(2, "role", "img");
-            builder.AddAttribute(3, "aria-label", string.Join(" plus ", tokens.Select(Spoken)));
+            // The joiner is spoken text, not punctuation: a screen reader reads it aloud between
+            // every pair of keys, so it has to translate along with the key names themselves.
+            builder.AddAttribute(3, "aria-label", string.Join(S["ComboJoiner", " plus "], tokens.Select(Spoken)));
         }
 
         int seq = 4;
@@ -52,18 +60,23 @@ public sealed class DxKbd : ComponentBase
         builder.CloseElement();
     }
 
-    // Short, glanceable label for the key cap.
-    private static string Display(string token) => token.ToLowerInvariant() switch
+    // Short, glanceable label for the key cap. Instance, not static, because the arms now read
+    // through the localizer -- and each arm is a literal S["Key", "English"] pair so the English
+    // stays visible here and LocalizedStringConsistencyTests can still check it against the .resx.
+    //
+    // The purely symbolic arms (⌘ ⌫ ↑ ↓ ← →) are deliberately NOT localized: they carry no
+    // language, and DX1003 ignores letter-free literals for exactly this reason.
+    private string Display(string token) => token.ToLowerInvariant() switch
     {
-        "ctrl" or "control" => "Ctrl",
+        "ctrl" or "control" => S["KeyCapControl", "Ctrl"],
         "cmd" or "command" or "meta" or "win" => "⌘",
-        "alt" or "option" or "opt" => "Alt",
-        "shift" => "Shift",
-        "enter" or "return" => "Enter",
-        "esc" or "escape" => "Esc",
-        "space" or "spacebar" => "Space",
-        "tab" => "Tab",
-        "del" or "delete" => "Del",
+        "alt" or "option" or "opt" => S["KeyCapAlt", "Alt"],
+        "shift" => S["KeyCapShift", "Shift"],
+        "enter" or "return" => S["KeyCapEnter", "Enter"],
+        "esc" or "escape" => S["KeyCapEscape", "Esc"],
+        "space" or "spacebar" => S["KeyCapSpace", "Space"],
+        "tab" => S["KeyCapTab", "Tab"],
+        "del" or "delete" => S["KeyCapDelete", "Del"],
         "backspace" => "⌫",
         "up" or "arrowup" => "↑",
         "down" or "arrowdown" => "↓",
@@ -72,18 +85,20 @@ public sealed class DxKbd : ComponentBase
         _ => token.Length == 1 ? token.ToUpperInvariant() : Capitalize(token),
     };
 
-    // Spoken form for the aria-label, so symbols are announced as words.
-    private static string Spoken(string token) => token.ToLowerInvariant() switch
+    // Spoken form for the aria-label, so symbols are announced as words. Separate keys from
+    // Display's: "Ctrl" and "Control" are the same key in English but need not be in every
+    // language, and a screen reader saying the abbreviation would be a regression.
+    private string Spoken(string token) => token.ToLowerInvariant() switch
     {
-        "ctrl" or "control" => "Control",
-        "cmd" or "command" or "meta" or "win" => "Command",
-        "alt" or "option" or "opt" => "Alt",
-        "shift" => "Shift",
-        "up" or "arrowup" => "Up arrow",
-        "down" or "arrowdown" => "Down arrow",
-        "left" or "arrowleft" => "Left arrow",
-        "right" or "arrowright" => "Right arrow",
-        "backspace" => "Backspace",
+        "ctrl" or "control" => S["SpokenControl", "Control"],
+        "cmd" or "command" or "meta" or "win" => S["SpokenCommand", "Command"],
+        "alt" or "option" or "opt" => S["SpokenAlt", "Alt"],
+        "shift" => S["SpokenShift", "Shift"],
+        "up" or "arrowup" => S["SpokenUpArrow", "Up arrow"],
+        "down" or "arrowdown" => S["SpokenDownArrow", "Down arrow"],
+        "left" or "arrowleft" => S["SpokenLeftArrow", "Left arrow"],
+        "right" or "arrowright" => S["SpokenRightArrow", "Right arrow"],
+        "backspace" => S["SpokenBackspace", "Backspace"],
         _ => token.Length == 1 ? token.ToUpperInvariant() : Capitalize(token),
     };
 

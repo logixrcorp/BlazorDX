@@ -2,6 +2,7 @@ using BlazorDX.Components;
 using BlazorDX.Interop;
 using Bunit;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Localization;
 using Xunit;
 
 namespace BlazorDX.Components.Tests;
@@ -350,5 +351,25 @@ public sealed class DxDocumentViewerTests : TestContext
         // The CSS targets .dx-docview-item:focus-visible; the buttons carry that class.
         Assert.All(v.FindAll(".dx-docview-item"),
             el => Assert.Contains("dx-docview-item", el.GetAttribute("class")));
+    }
+
+    [Fact]
+    public void Empty_state_and_actions_are_routed_through_the_localizer()
+    {
+        Services.AddSingleton<IStringLocalizer<DxDocumentViewer>>(new FakeStringLocalizer<DxDocumentViewer>());
+
+        IRenderedComponent<DxDocumentViewer> viewer = Render();
+
+        Assert.Contains("§§NODOCUMENT§§", viewer.Markup);
+    }
+
+    [Fact]
+    public void Empty_state_falls_back_to_the_invariant_resource()
+    {
+        Services.AddLocalization();
+
+        IRenderedComponent<DxDocumentViewer> viewer = Render();
+
+        Assert.Contains("No document", viewer.Markup);
     }
 }

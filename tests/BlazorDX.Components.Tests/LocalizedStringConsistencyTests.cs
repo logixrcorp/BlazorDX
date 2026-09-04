@@ -38,7 +38,9 @@ public sealed class LocalizedStringConsistencyTests
     private static readonly Regex ResourceType = new(@"private\s+DxStrings<(\w+)>", RegexOptions.Compiled);
 
     // S["Key", "English"...] — literal key and literal English only. A computed key would not match
-    // and would go unchecked, which is a gap worth knowing about; there are none today.
+    // and would go unchecked, which is a gap worth knowing about; the rollout's convention is that
+    // indirect text (switch arms, lookup helpers) still resolves through a literal pair like this,
+    // precisely so this check keeps working. See docs/localization.md.
     private static readonly Regex CallSite = new(@"S\[\s*""([^""]*)""\s*,\s*""([^""]*)""", RegexOptions.Compiled);
 
     [Fact]
@@ -49,7 +51,10 @@ public sealed class LocalizedStringConsistencyTests
 
         foreach (string component in LocalizedComponents())
         {
-            string source = File.ReadAllText(component);
+            // Comments stripped first. Documentation that shows the pattern — including this
+            // test's own guidance in docs and in component doc comments — otherwise reads as a
+            // real call site, and the orphan check then demands a resource entry named "Key".
+            string source = StripComments(File.ReadAllText(component));
             string resourceName = ResourceType.Match(source).Groups[1].Value;
             string resx = Path.Combine(ComponentsDirectory(), $"{resourceName}.resx");
 
@@ -98,6 +103,56 @@ public sealed class LocalizedStringConsistencyTests
         Assert.True(problems.Count == 0,
             "Call-site English and .resx values have drifted:" + Environment.NewLine
             + string.Join(Environment.NewLine, problems.Select(p => "  " + p)));
+    }
+
+    /// <summary>
+    /// Blanks out <c>//</c> and <c>/* … */</c> comments, leaving string literals intact — a
+    /// <c>//</c> inside a string starts no comment, and a quote inside a comment starts no string.
+    /// </summary>
+    /// <remarks>
+    /// Handles regular and verbatim (<c>@"…"</c>) literals. Raw string literals
+    /// (<c>"""…"""</c>) are treated as regular ones, which is safe here only because no component
+    /// puts a comment marker inside one; revisit if that changes.
+    /// </remarks>
+    private static string StripComments(string source)
+    {
+        char[] result = source.ToCharArray();
+        bool inLine = false, inBlock = false, inString = false, inChar = false, verbatim = false;
+
+        for (int i = 0; i < source.Length; i++)
+        {
+            char c = source[i];
+            char next = i + 1 < source.Length ? source[i + 1] : '\0';
+
+            if (inLine)
+            {
+                if (c is '\n') { inLine = false; } else { result[i] = ' '; }
+            }
+            else if (inBlock)
+            {
+                bool closing = c is '*' && next is '/';
+                if (c is not '\n') { result[i] = ' '; }
+                if (closing) { result[i + 1] = ' '; i++; inBlock = false; }
+            }
+            else if (inString)
+            {
+                // In a verbatim string "" is an escaped quote; otherwise a backslash escapes.
+                if (verbatim && c is '"' && next is '"') { i++; }
+                else if (!verbatim && c is '\\') { i++; }
+                else if (c is '"') { inString = false; verbatim = false; }
+            }
+            else if (inChar)
+            {
+                if (c is '\\') { i++; }
+                else if (c is '\'') { inChar = false; }
+            }
+            else if (c is '/' && next is '/') { inLine = true; result[i] = ' '; }
+            else if (c is '/' && next is '*') { inBlock = true; result[i] = ' '; }
+            else if (c is '"') { inString = true; verbatim = i > 0 && source[i - 1] is '@'; }
+            else if (c is '\'') { inChar = true; }
+        }
+
+        return new string(result);
     }
 
     private static Dictionary<string, string> ReadResources(string path) =>

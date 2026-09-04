@@ -1,5 +1,7 @@
 using BlazorDX.Components;
 using Bunit;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Localization;
 using Xunit;
 
 namespace BlazorDX.Components.Tests;
@@ -44,5 +46,33 @@ public sealed class DxKbdTests : TestContext
         IRenderedComponent<DxKbd> kbd = RenderComponent<DxKbd>(p => p.Add(c => c.Combo, ""));
 
         Assert.Empty(kbd.FindAll("kbd"));
+    }
+
+    [Fact]
+    public void Key_names_are_routed_through_the_localizer()
+    {
+        // Sentinel, not the English value: "Ctrl" is also the English fallback, so asserting it
+        // would pass whether or not the switch arm actually calls the localizer. DxKbd is the
+        // rollout's worked example for indirect text -- its user-facing strings live in switch
+        // arms rather than at AddContent/AddAttribute call sites.
+        Services.AddSingleton<IStringLocalizer<DxKbd>>(new FakeStringLocalizer<DxKbd>());
+
+        IRenderedComponent<DxKbd> kbd = RenderComponent<DxKbd>(p => p.Add(c => c.Combo, "Ctrl"));
+
+        Assert.Contains("§§KEYCAPCONTROL§§", kbd.Markup);
+        // The spoken form is a separate key: a screen reader must not be given the abbreviation.
+        Assert.Contains("§§SPOKENCONTROL§§", kbd.Markup);
+    }
+
+    [Fact]
+    public void Key_names_fall_back_to_the_invariant_resource()
+    {
+        // The real factory, so this proves DxKbd.resx's own values round-trip.
+        Services.AddLocalization();
+
+        IRenderedComponent<DxKbd> kbd = RenderComponent<DxKbd>(p => p.Add(c => c.Combo, "Ctrl+Shift"));
+
+        Assert.Equal("Ctrl", kbd.FindAll("kbd.dx-kbd")[0].TextContent);
+        Assert.Equal("Control plus Shift", kbd.Find(".dx-kbd-combo").GetAttribute("aria-label"));
     }
 }

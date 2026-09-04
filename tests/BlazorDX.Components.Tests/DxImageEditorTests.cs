@@ -3,6 +3,7 @@ using BlazorDX.Interop;
 using Bunit;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Localization;
 using Xunit;
 
 namespace BlazorDX.Components.Tests;
@@ -130,5 +131,29 @@ public sealed class DxImageEditorTests : TestContext
         editor.Find("button[aria-label='Download image']").Click();
 
         Assert.Equal("out.png", fake.DownloadFile);
+    }
+
+    [Fact]
+    public void Toolbar_labels_are_routed_through_the_localizer()
+    {
+        // These reach the DOM as arguments to the local Slider/Toggle/Action helpers rather than
+        // as literals at a render call site, so only a sentinel shows they go through DxStrings.
+        Services.AddSingleton<IStringLocalizer<DxImageEditor>>(new FakeStringLocalizer<DxImageEditor>());
+
+        IRenderedComponent<DxImageEditor> editor = RenderEditor();
+
+        Assert.Contains("§§BRIGHTNESS§§", editor.Markup);
+        Assert.Contains("§§ROTATELEFT§§", editor.Markup);
+    }
+
+    [Fact]
+    public void Toolbar_labels_fall_back_to_the_invariant_resource()
+    {
+        Services.AddLocalization();
+
+        IRenderedComponent<DxImageEditor> editor = RenderEditor();
+
+        Assert.Contains("Brightness", editor.Markup);
+        Assert.Contains("Rotate left", editor.Markup);
     }
 }

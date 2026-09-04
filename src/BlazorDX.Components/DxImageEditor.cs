@@ -38,6 +38,12 @@ public sealed class DxImageEditor : ComponentBase, IAsyncDisposable
     /// <summary>Extra CSS classes appended to the editor root.</summary>
     [Parameter] public string? Class { get; set; }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxImageEditor>? s;
+
+    private DxStrings<DxImageEditor> S => s ??= new(Services);
+
     [Inject] private IImageEditorInterop Interop { get; set; } = default!;
 
     private string EditsJson() =>
@@ -124,7 +130,7 @@ public sealed class DxImageEditor : ComponentBase, IAsyncDisposable
         {
             builder.OpenElement(302, "span");
             builder.AddAttribute(303, "class", "dx-imgedit-empty");
-            builder.AddContent(304, "Open an image to start editing");
+            builder.AddContent(304, S["EmptyState", "Open an image to start editing"]);
             builder.CloseElement();
         }
 
@@ -132,7 +138,7 @@ public sealed class DxImageEditor : ComponentBase, IAsyncDisposable
         builder.AddAttribute(306, "id", canvasId);
         builder.AddAttribute(307, "class", "dx-imgedit-canvas");
         builder.AddAttribute(308, "role", "img");
-        builder.AddAttribute(309, "aria-label", "Edited image preview");
+        builder.AddAttribute(309, "aria-label", S["CanvasLabel", "Edited image preview"]);
         if (!loaded)
         {
             builder.AddAttribute(310, "hidden", true);
@@ -157,24 +163,24 @@ public sealed class DxImageEditor : ComponentBase, IAsyncDisposable
         builder.AddComponentParameter(8, "accept", "image/*");
         builder.AddComponentParameter(9, "OnChange", EventCallback.Factory.Create<InputFileChangeEventArgs>(this, LoadAsync));
         builder.CloseComponent();
-        builder.AddContent(10, loaded ? "Replace image" : "Open image");
+        builder.AddContent(10, loaded ? S["ReplaceImage", "Replace image"] : S["OpenImage", "Open image"]);
         builder.CloseElement();
 
-        Slider(builder, 20, "Brightness", brightness, v => brightness = v);
-        Slider(builder, 40, "Contrast", contrast, v => contrast = v);
-        Slider(builder, 60, "Saturation", saturate, v => saturate = v);
+        Slider(builder, 20, S["Brightness", "Brightness"], brightness, v => brightness = v);
+        Slider(builder, 40, S["Contrast", "Contrast"], contrast, v => contrast = v);
+        Slider(builder, 60, S["Saturation", "Saturation"], saturate, v => saturate = v);
 
         builder.OpenElement(80, "div");
         builder.AddAttribute(81, "class", "dx-imgedit-actions");
-        Toggle(builder, 90, "Grayscale", grayscale, () => grayscale, v => grayscale = v);
-        Toggle(builder, 100, "Sepia", sepia, () => sepia, v => sepia = v);
-        Toggle(builder, 110, "Invert", invert, () => invert, v => invert = v);
-        Action(builder, 120, "⟲", "Rotate left", () => { rotate = (rotate + 270) % 360; return RenderAsync(); });
-        Action(builder, 130, "⟳", "Rotate right", () => { rotate = (rotate + 90) % 360; return RenderAsync(); });
-        Action(builder, 140, "⇋", "Flip horizontal", () => { flipH = !flipH; return RenderAsync(); });
-        Action(builder, 150, "⇅", "Flip vertical", () => { flipV = !flipV; return RenderAsync(); });
-        Action(builder, 160, "Reset", "Reset edits", ResetAsync);
-        Action(builder, 170, "⭳ Download", "Download image",
+        Toggle(builder, 90, S["Grayscale", "Grayscale"], grayscale, () => grayscale, v => grayscale = v);
+        Toggle(builder, 100, S["Sepia", "Sepia"], sepia, () => sepia, v => sepia = v);
+        Toggle(builder, 110, S["Invert", "Invert"], invert, () => invert, v => invert = v);
+        Action(builder, 120, "⟲", S["RotateLeft", "Rotate left"], () => { rotate = (rotate + 270) % 360; return RenderAsync(); });
+        Action(builder, 130, "⟳", S["RotateRight", "Rotate right"], () => { rotate = (rotate + 90) % 360; return RenderAsync(); });
+        Action(builder, 140, "⇋", S["FlipHorizontal", "Flip horizontal"], () => { flipH = !flipH; return RenderAsync(); });
+        Action(builder, 150, "⇅", S["FlipVertical", "Flip vertical"], () => { flipV = !flipV; return RenderAsync(); });
+        Action(builder, 160, S["ResetGlyph", "Reset"], S["ResetEdits", "Reset edits"], ResetAsync);
+        Action(builder, 170, S["DownloadGlyph", "⭳ Download"], S["DownloadImage", "Download image"],
             () => Interop.DownloadAsync(canvasId, DownloadName, "image/png").AsTask());
         builder.CloseElement();
 

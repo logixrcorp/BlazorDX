@@ -41,6 +41,51 @@ The English text at the call site is the fallback used when no localizer is regi
 `IStringLocalizer` returns the key itself on a failed lookup, so a typo ships `ColumnsToggle`
 into the UI. `DxStrings` returns the English instead.
 
+### Text that isn't at a render call site
+
+Most BlazorDX text is **not** a literal sitting in `AddContent`/`AddAttribute`. It reaches
+the DOM through a variable, in three shapes:
+
+| Shape | Example |
+|---|---|
+| Lookup table | `static readonly (Command, Value, Glyph, Label)[] Tools` in `DxRichTextEditor` |
+| Switch expression | `DxKbd.Display` / `DxKbd.Spoken` |
+| Local helper argument | `Slider(builder, 20, "Brightness", …)`, `Header(builder, 74, "Name")` |
+
+**The rule: keep the `S["Key", "English"]` pair literal, and put it where the text is
+*chosen* rather than where it is rendered.**
+
+```csharp
+// Switch arms resolve through the localizer; the method becomes an instance method.
+private string Display(string token) => token.ToLowerInvariant() switch
+{
+    "ctrl" or "control" => S["KeyCapControl", "Ctrl"],
+    "cmd" or "command"  => "⌘",   // no letters, no language — deliberately not localized
+    // ...
+};
+
+// Helper arguments are wrapped at the call site, not inside the helper.
+Slider(builder, 20, S["Brightness", "Brightness"], brightness, v => brightness = v);
+Header(builder, 74, S["ColumnName", "Name"]);
+```
+
+This matters for more than tidiness. **DX1003 cannot see any of these** — the literal is not
+at a call site — so the convention is what keeps them covered: because the pair stays
+literal, `LocalizedStringConsistencyTests` validates it against the `.resx` wherever in the
+file it appears. Hide the text behind a computed key (`S[keyVariable, label]`) and it drops
+out of every check at once, and its resource entry then looks orphaned. See
+[ADR 0021](adr/0021-optional-localization-and-rollout-guardrails.md), the amendment under
+Decision 2.
+
+Two consequences worth planning for:
+
+- A `static` helper that returns user-facing text has to become an **instance** method,
+  since `S` is an instance member.
+- Give the display form and the spoken form **separate keys** even when the English
+  collides. `DxKbd` renders "Ctrl" on the key cap and says "Control" to a screen reader; a
+  language that abbreviates differently needs both, and sharing one key would make the
+  screen reader announce the abbreviation.
+
 ### The `.resx` files
 
 Put them at the **project root**, next to the `.cs` file, named for the type:
@@ -161,6 +206,7 @@ file rather than the ones with user-facing text.)
 | `.cs` files in `BlazorDX.Components` | 142 |
 | …with zero user-facing strings (headless / parameter-driven) | 57 |
 | **Components to localize** | **83** (~250–270 unique strings) |
+| …localized so far | 6 — `DxAlert`, `DxDataGrid` (pilots) + batch 1's 4 |
 | …with 1–3 strings each | 60 |
 | …heavy hitters (>10 strings) | 6, holding ~40% of all text |
 | Stylesheets converted | 1 of 25 |
@@ -168,10 +214,15 @@ file rather than the ones with user-facing text.)
 
 ### Batch order
 
-**Strings** — the 6 heavy hitters individually (`DxRichTextEditor` ~30, `DxScheduler` ~25,
-then `DxDocumentViewer` / `DxFileManager` / `DxKbd` / `DxImageEditor` ~18 each) → the 4
-near-identical zoomable charts as one batch → the ~20 remaining charts sharing one
-`DxChartResources.resx` → 11 editorial components → ~28 stragglers alphabetically.
+**Strings** — the 6 heavy hitters individually → the 4 near-identical zoomable charts as one
+batch → the ~20 remaining charts sharing one `DxChartResources.resx` → 11 editorial
+components → ~28 stragglers alphabetically.
+
+Batch 1 landed 4 of the 6 heavy hitters — `DxKbd` (18), `DxImageEditor` (18),
+`DxDocumentViewer` (18), `DxFileManager` (14): **68 strings**. `DxRichTextEditor` (~28, all
+in a lookup table) and `DxScheduler` (~25) are deferred to batch 2; `DxScheduler` is
+entangled with the date-formatting track below (hardcoded weekday abbreviations), so it
+should be done together with that rather than twice.
 
 **CSS** — 12 trivial files (≤4 hits each) → `dx-datagrid` → the four heavy files
 individually → `dx-layout` last, since 7 of its 10 declarations are judgment calls.

@@ -123,6 +123,40 @@ construction.
 has never been localized is unguarded. The rollout's completion criterion is flipping
 DX1003 to fire on every component file in `BlazorDX.Components`, which closes it.
 
+### Amendment (first rollout batch): DX1003 sees less than the paragraph above claims
+
+The first rollout batch contradicted that completion criterion, and the correction belongs
+here rather than in a commit message. DX1003 inspects **literals at render call sites**, and
+that turns out to be where a minority of BlazorDX's user-facing text actually lives. The
+rest reaches the DOM through a variable:
+
+- **Lookup tables** — `DxRichTextEditor` holds all 17 toolbar labels in a
+  `static readonly (Command, Value, Glyph, Label)[]` and renders them in a loop.
+- **Switch expressions** — `DxKbd`'s entire vocabulary (18 strings) is switch arms in
+  `Display`/`Spoken`; the component has *no* user-facing literal at a call site at all, so
+  DX1003 would have reported it fully compliant while every string was hardcoded.
+- **Local helper arguments** — `Slider(builder, 20, "Brightness", …)`,
+  `ZoomButton(builder, 122, "−", "Zoom out", …)`, `Header(builder, 74, "Name")`. This is the
+  most common shape across the styled tier.
+
+Flipping DX1003 to every component would not change this: the literal is not at a call site,
+so there is nothing for the rule to see. Widening it to "any string literal in a localized
+type" is not the fix either — it would flag CSS class names, element names, command
+identifiers and format strings, which are the *majority* of literals in these files.
+
+The answer is a **convention the analyzer cannot enforce but the consistency test can**:
+indirect text still resolves through a literal `S["Key", "English"]` pair, just at the
+lookup instead of at the render site (`DxKbd.Display` is the worked example). Because the
+pair stays literal, `LocalizedStringConsistencyTests` — which does not care *where* in the
+file the pair appears — validates it against the `.resx` exactly as it validates a direct
+call site.
+
+So the honest guarantee is three-part: **the analyzer catches regressions at render call
+sites; the consistency test catches drift anywhere the convention is followed; nothing
+mechanically catches a brand-new hardcoded literal introduced inside a helper method.** That
+last gap is closed by review, and mitigated by every component's strings now being
+enumerated in one `.resx` where an omission is visible.
+
 ## Decision 3 — RTL is verified statically, by the same ratchet
 
 Before this ADR, RTL was verified by exactly one check: `/dialog?dir=rtl` in
