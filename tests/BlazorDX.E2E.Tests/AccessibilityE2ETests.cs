@@ -119,26 +119,39 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
         IPage page = await fx.NewPageAsync();
         await page.GotoAsync($"{fx.BaseUrl}{route}", new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle, Timeout = 60_000 });
 
-        // Wait for the two elements actually being measured, in a *visible* state — not merely for
-        // their parent. Waiting on .dx-select-trigger alone raced Blazor's prerender-then-hydrate
-        // swap: the trigger was in the DOM while its children were momentarily unlaid-out, so
-        // BoundingBoxAsync returned null. That failed on Firefox only, and only intermittently.
-        double value = await CentreXAsync(page, ".dx-select-trigger .dx-select-value");
-        double caret = await CentreXAsync(page, ".dx-select-trigger .dx-select-caret");
-        string direction = await page.EvaluateAsync<string>("() => getComputedStyle(document.documentElement).direction");
+        // /select is @rendermode InteractiveWebAssembly: the server-prerendered markup is thrown
+        // away and re-created when the WASM runtime finishes booting. Waiting for an element and
+        // then measuring it in a second call straddles that swap — the node found by the wait can
+        // be detached by the time it is measured, and BoundingBoxAsync returns null for a detached
+        // node instead of re-resolving. That is what made this Firefox-only and intermittent:
+        // Firefox is the slowest of the three to start WASM.
+        await page.WaitForFunctionAsync("() => !!window.DotNet", null,
+            new PageWaitForFunctionOptions { Timeout = 60_000 });
 
-        return (value, caret, direction);
-    }
-
-    private static async Task<double> CentreXAsync(IPage page, string selector)
-    {
-        ILocator locator = page.Locator(selector).First;
-        await locator.WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Visible, Timeout = 30_000 });
-
+        // So take one atomic in-page measurement, polled until both boxes are laid out. Returning
+        // null keeps WaitForFunctionAsync polling, so there is no window between "found" and
+        // "measured" for a re-render to slip into.
+        //
         // Centres, not edges: the two boxes have different widths, so comparing left edges would
         // report an ordering difference that is really a width difference.
-        LocatorBoundingBoxResult? box = await locator.BoundingBoxAsync();
-        Assert.True(box is not null, $"No bounding box for {selector} — the control did not render.");
-        return box!.X + (box.Width / 2);
+        IJSHandle measurement = await page.WaitForFunctionAsync(
+            """
+            () => {
+                const value = document.querySelector('.dx-select-trigger .dx-select-value');
+                const caret = document.querySelector('.dx-select-trigger .dx-select-caret');
+                if (!value || !caret) return null;
+                const v = value.getBoundingClientRect();
+                const c = caret.getBoundingClientRect();
+                if (v.width === 0 || c.width === 0) return null;
+                return [v.x + (v.width / 2), c.x + (c.width / 2)];
+            }
+            """,
+            null,
+            new PageWaitForFunctionOptions { Timeout = 30_000 });
+
+        double[] centres = await measurement.JsonValueAsync<double[]>();
+        string direction = await page.EvaluateAsync<string>("() => getComputedStyle(document.documentElement).direction");
+
+        return (centres[0], centres[1], direction);
     }
 }
