@@ -118,10 +118,11 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
     {
         IPage page = await fx.NewPageAsync();
         await page.GotoAsync($"{fx.BaseUrl}{route}", new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle, Timeout = 60_000 });
-        await page.WaitForSelectorAsync(".dx-select-trigger", new PageWaitForSelectorOptions { Timeout = 30_000 });
 
-        // Centres, not edges: the two boxes have different widths, so comparing left edges would
-        // report an ordering difference that is really a width difference.
+        // Wait for the two elements actually being measured, in a *visible* state — not merely for
+        // their parent. Waiting on .dx-select-trigger alone raced Blazor's prerender-then-hydrate
+        // swap: the trigger was in the DOM while its children were momentarily unlaid-out, so
+        // BoundingBoxAsync returned null. That failed on Firefox only, and only intermittently.
         double value = await CentreXAsync(page, ".dx-select-trigger .dx-select-value");
         double caret = await CentreXAsync(page, ".dx-select-trigger .dx-select-caret");
         string direction = await page.EvaluateAsync<string>("() => getComputedStyle(document.documentElement).direction");
@@ -131,7 +132,12 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
 
     private static async Task<double> CentreXAsync(IPage page, string selector)
     {
-        LocatorBoundingBoxResult? box = await page.Locator(selector).First.BoundingBoxAsync();
+        ILocator locator = page.Locator(selector).First;
+        await locator.WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Visible, Timeout = 30_000 });
+
+        // Centres, not edges: the two boxes have different widths, so comparing left edges would
+        // report an ordering difference that is really a width difference.
+        LocatorBoundingBoxResult? box = await locator.BoundingBoxAsync();
         Assert.True(box is not null, $"No bounding box for {selector} — the control did not render.");
         return box!.X + (box.Width / 2);
     }
