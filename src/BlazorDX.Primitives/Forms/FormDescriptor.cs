@@ -23,6 +23,12 @@ public enum FormFieldKind
 
     /// <summary>One of a fixed set (<see cref="FormFieldInfo.Choices"/>).</summary>
     Enum,
+
+    /// <summary>A nested <c>[DxFormModel]</c>-tagged object (<see cref="FormFieldInfo.NestedType"/>).</summary>
+    Object,
+
+    /// <summary>A <c>List&lt;T&gt;</c> of scalars (<see cref="FormFieldInfo.ArrayElementKind"/>) or of a nested <c>[DxFormModel]</c>-tagged type (<see cref="FormFieldInfo.NestedType"/>).</summary>
+    Array,
 }
 
 /// <summary>
@@ -67,7 +73,13 @@ public sealed record FormFieldInfo(
     // every unconditional field (the common case) — see docs/adr/0018-conditional-form-fields.md.
     string? DependsOn = null,
     string? DependsOnValue = null,
-    FormFieldDependsOnOperator DependsOnOperator = FormFieldDependsOnOperator.Equals);
+    FormFieldDependsOnOperator DependsOnOperator = FormFieldDependsOnOperator.Equals,
+    // Object: the nested type. Array-of-nested: the ELEMENT type. Null for every
+    // scalar field and for an array-of-scalar field.
+    Type? NestedType = null,
+    // Array-of-scalar only: the element's own scalar Kind. Null otherwise. Choices is
+    // reused (not duplicated) for an array-of-enum's element choices.
+    FormFieldKind? ArrayElementKind = null);
 
 /// <summary>A single validation failure: which field, and why.</summary>
 public sealed record FormValidationError(string Field, string Message);
@@ -78,16 +90,11 @@ public sealed record FormValidationError(string Field, string Message);
 /// form and the AI-tool projection (<see cref="FormTool"/>).
 /// </summary>
 /// <typeparam name="TModel">The annotated model type.</typeparam>
-public interface IFormModel<TModel>
+public interface IFormModel<TModel> : IFormModelUntyped
 {
-    /// <summary>Tool name for AI hosts (snake_case), from <c>[DxFormModel(Name=...)]</c> or the type name.</summary>
-    string ToolName { get; }
-
-    /// <summary>What the form/tool does, for the AI to decide when to call it.</summary>
-    string? ToolDescription { get; }
-
-    /// <summary>The fields, in declared order.</summary>
-    IReadOnlyList<FormFieldInfo> Fields { get; }
+    // ToolName/ToolDescription/Fields are inherited unchanged from IFormModelUntyped
+    // (identical signatures) -- redeclaring them here would just hide the inherited
+    // member (CS0108) for no reason, since nothing about them is TModel-specific.
 
     /// <summary>Reads a field as an invariant string (for binding / serialization).</summary>
     string GetString(TModel model, string field);

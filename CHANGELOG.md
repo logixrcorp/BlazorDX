@@ -94,6 +94,80 @@ All notable changes to BlazorDX are documented here. The format is loosely based
     were verified once manually (a deliberately-bad model failing to compile with the expected
     message) rather than covered by an automated test — a scoped, stated limitation.
 
+- **Forms: array and nested-object fields, via `List<T>` and `[DxFormModel]`-typed properties.**
+  Closes out the "Forms depth" roadmap item in full — array and nested-object fields were
+  deliberately deferred out of ADR 0018 because both need a real redesign of
+  `IFormModel<TModel>`'s scalar-only `GetString`/`SetString` contract. Both landed together, one
+  pass, not phased. Full design record in
+  [ADR 0019](docs/adr/0019-array-and-nested-form-fields.md); the short version:
+  - The redesign is additive: `IFormModel<TModel>` now extends a new non-generic
+    `IFormModelUntyped` (get/set over `object` instead of `TModel`, plus nested/array accessors
+    with default no-op bodies) rather than breaking its existing typed members. A scalar-only
+    model's generated output is unaffected byte-for-byte outside two new thin `object`-overload
+    wrapper methods every model now carries. `IFormModelUntyped` is the one genuinely new idea —
+    it's what lets `DxForm`'s nested rendering and `FormTool`'s schema/argument-application
+    recurse into a nested type's own independently-generated descriptor without being generic
+    over that type; the generated code stays fully typed internally and only boxes at the
+    interface boundary (an ordinary upcast, not reflection).
+  - **No new attributes.** A `[DxField]` property whose own type carries `[DxFormModel]` becomes
+    an Object field; one typed exactly `List<T>` (not `T[]`/`IList<T>`/etc. — the narrow shape
+    supports "replace the whole collection," this pass's chosen mutation semantic) becomes an
+    Array field, `T` either `[DxFormModel]`-tagged (array-of-nested) or a recognized scalar
+    (array-of-scalar).
+  - The generator's cross-type reference (`Outer`'s emitted code referencing `Address`'s own
+    generated `AddressFormModel`) works without any pipeline-ordering dependency between the two
+    types' independent generator invocations: `Outer`'s analysis reads `Address`'s declared-type
+    symbol from the original syntax tree (unaffected by generation order) and emits a reference on
+    faith in the generator's own deterministic naming convention; the C# compiler's final emit
+    pass — which runs only after every generator invocation has contributed its output — is what
+    actually resolves it.
+  - Five new generator diagnostics, `DX2005`/`DX2007`–`DX2009` (per-type, alongside the existing
+    DX2001–2004) plus `DX2006` (a new whole-compilation pass, since cycle detection is the one
+    check that can't be answered from a single type's own field list): an array field's `List<T>`
+    element must be `[DxFormModel]`-tagged or a recognized scalar (else some other collection
+    shape, `T[]`/`IList<T>`/etc., is also caught here); a nesting/array reference cycle between
+    `[DxFormModel]` types is a compile error (`FormTool`'s schema builder recurses over the
+    field-kind graph unconditionally, so an uncaught cycle would recurse forever regardless of
+    data); `DependsOn` can no longer cross a nested/array field boundary in either direction
+    (`FormFieldActivity`'s evaluator has no dotted-path traversal, and this pass doesn't add one);
+    and a referenced nested/array-element type must have at least one discovered field and an
+    accessible public parameterless constructor (needed to materialize `new T()` for a null
+    Object field or a new Array row — never reflection).
+  - Rendering needed a new split, not just composition of existing pieces: `DxForm<TModel>` is
+    now a thin typed wrapper around a new internal, **non-generic** `DxFormBody` (works over
+    `IFormModelUntyped`/`object` — the actual field-rendering/validation engine). An Object field
+    opens `DxFormBody` directly for its nested instance, inside the existing `DxFormSection`. Two
+    real problems drove this, both caught during implementation, not by CI: first, the initial
+    approach opened a nested `DxForm<TNested>` via `Type.MakeGenericType` — which CI's
+    warnings-as-errors build rejected outright (`Type.MakeGenericType` is incompatible with
+    Native AOT, and this repo publishes and smoke-tests an AOT build). Second, that same nested
+    `DxForm` was rendering its own `<form>` element — invalid HTML nested inside the outer
+    `<form>`. `DxFormBody` fixes both at once: it's a compile-time-known, non-generic type (so
+    opening one is an ordinary component instantiation, never `MakeGenericType`), and it renders
+    no wrapping element at all, so a nested `<form>` is structurally impossible, not just
+    avoided. A currently-null nested property is materialized and attached before its sub-form
+    renders, so there's no write-back step — the sub-form edits the real instance by reference
+    identity. The outer form's own submit/`Refresh()` propagates into nested sub-forms by calling
+    `.Refresh()` directly on captured `DxFormBody` references — no marker interface needed, since
+    the concrete type is the same non-generic `DxFormBody` everywhere.
+  - Array fields get a new Tier-1 primitive, `CollectionEditPrimitive<T>` (generic add/remove on
+    top of the existing `ListReorder.Move<T>`/`RovingTabIndex` — reorder/drag/keyboard already
+    proven by `SortablePrimitive`, which stays untouched rather than being force-generalized) and
+    a new Tier-2 `DxFieldList<TItem>`, whose row chrome mirrors `DxSortableList`'s and whose
+    remove button matches `DxChip`'s dismiss convention. Array-of-nested rows are the Object
+    field's own rendering path, repeated per element — no third mechanism.
+  - `FormTool.BuildInputSchema` recurses for `"object"`/`"array"` JSON-Schema types (with a
+    defensive max-depth guard, since DX2006 already guarantees the real graph is acyclic).
+    `ApplyArguments` gains a third pass, order-independent from the existing two (DX2007
+    guarantees Object/Array fields never participate in `DependsOn`): Object fields
+    materialize-then-recurse; Array fields **replace the whole collection on every call** — the
+    simplest correct semantic, since a JSON payload carries no natural per-element identity to
+    merge against.
+  - **Stated v1 scope cuts:** array-of-scalar elements get no per-item constraint validation
+    (only the list-level `Required` check); `List<T>` only, no `[DxField(Nested = true)]` escape
+    hatch for a different collection shape; DX2006 is verified manually, the same documented
+    testability gap ADR 0018 already accepted for DX2001–2004.
+
 ## [0.5.0] — 2026-09-02
 
 ### Removed

@@ -60,3 +60,47 @@
 @media (max-width: 640px) {
   .dx-form-grid { grid-template-columns: 1fr; }
 }
+
+/* ---- Array-field editing (DxFieldList) — row chrome mirrors .dx-sortable-* ---- */
+.dx-fieldlist { display: flex; flex-direction: column; gap: 6px; }
+.dx-fieldlist-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--dx-surface, #ffffff);
+  border: 1px solid var(--dx-border, #e2e8f0);
+  border-radius: 8px;
+  cursor: grab;
+}
+.dx-fieldlist-item:focus-visible {
+  outline: 2px solid var(--dx-accent, #2563eb);
+  outline-offset: 1px;
+}
+.dx-fieldlist-item:active { cursor: grabbing; }
+.dx-fieldlist-handle {
+  color: var(--dx-muted, #94a3b8);
+  font-size: 18px;
+  line-height: 1;
+  padding-top: 6px;
+}
+.dx-fieldlist-content { flex: 1; min-inline-size: 0; }
+.dx-fieldlist-controls { display: inline-flex; gap: 2px; margin-left: auto; padding-top: 2px; }
+.dx-fieldlist-move {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dx-text-muted, #64748b);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+}
+.dx-fieldlist-move:hover { background: var(--dx-surface-alt, #f1f5f9); color: var(--dx-text, #0f172a); }
+.dx-fieldlist-move:disabled { opacity: 0.3; cursor: default; }
+.dx-fieldlist-remove { min-width: 24px; min-height: 24px; }
+.dx-fieldlist-add { align-self: flex-start; margin-top: 2px; }

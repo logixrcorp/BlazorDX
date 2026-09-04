@@ -179,6 +179,53 @@ conditional field's activity against the *now-updated* target and silently skips
 conditionally-inactive one — an AI supplying `Notes` while `Priority` isn't `High` in the same
 call simply has it ignored, the same posture as a `Sensitive` field.
 
+### Array and nested-object fields — recursive schema, one model, still one call
+
+A `[DxField]` property whose own type carries `[DxFormModel]` becomes a nested Object field; one
+typed `List<T>` becomes an Array field, `T` either another `[DxFormModel]` type (array-of-nested)
+or a scalar (array-of-scalar):
+
+```csharp
+[DxFormModel(Name = "office_location")] public sealed class Address { ... }
+[DxFormModel(Name = "attendee_info")]   public sealed class Attendee { ... }
+
+[DxFormModel(Name = "schedule_meeting_with_attendees")]
+public sealed class MeetingWithAttendees
+{
+    [DxField("Location")]           public Address Location { get; set; } = new();
+    [DxField("Attendees")]          public List<Attendee> Attendees { get; set; } = new();
+    [DxField("Tags")]               public List<string> Tags { get; set; } = new();
+}
+```
+
+The generated JSON Schema recurses the same way the type does — no flattening, no separate
+schema-only representation:
+
+```json
+{
+  "properties": {
+    "Location":  { "type": "object", "properties": { "Street": {...}, "City": {...} }, "required": ["Street", "City"] },
+    "Attendees": { "type": "array", "items": { "type": "object", "properties": { "Name": {...}, "Email": {...} } } },
+    "Tags":      { "type": "array", "items": { "type": "string" } }
+  }
+}
+```
+
+**`ApplyArguments` replaces the whole collection on every call.** There's no per-element identity
+in a JSON payload to merge against, so the simplest correct semantic is: whatever `Attendees`
+array the AI supplies *is* the new `Attendees` list, in full — not a diff, not an append. A tool
+call that wants to add one attendee to an existing list of three must supply all four. Nested
+validation errors carry a dotted/indexed path back to the AI — `"Location.Street"`,
+`"Attendees[1].Email"` — so it can tell exactly which element and field failed.
+
+**`DependsOn` cannot cross a nested/array field boundary, in either direction** — a scalar field
+can't gate on an Object/Array field's value, and an Object/Array field can't itself be
+conditional. This is a compile error (`DX2007`), not a silent gap: the conditional-field
+evaluator reads a flat scalar value with no dotted-path traversal, and this pass doesn't add one.
+`Sensitive`/`[AiHidden]` compose normally at every level — a sensitive field nested inside
+`Attendees[i]` is excluded from that element's own schema and refused by that element's own
+`ApplyArguments` pass, exactly as it would be at the top level.
+
 ### Input validation is the boundary
 
 Because arguments flow through the source-generated `Validate` and typed setters, the model's own
