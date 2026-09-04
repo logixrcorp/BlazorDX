@@ -57,7 +57,7 @@ internal sealed class DxFormBody : ComponentBase
 
     [Parameter] public bool ShowSubmit { get; set; } = true;
 
-    [Parameter] public string SubmitText { get; set; } = "Submit";
+    [Parameter] public string? SubmitText { get; set; }
 
     protected override void OnParametersSet()
     {
@@ -177,6 +177,12 @@ internal sealed class DxFormBody : ComponentBase
         }
     }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxFormBody>? s;
+
+    private DxStrings<DxFormBody> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenComponent<CascadingValue<FormContext>>(0);
@@ -220,7 +226,7 @@ internal sealed class DxFormBody : ComponentBase
             builder.OpenElement(12, "button");
             builder.AddAttribute(13, "type", "submit");
             builder.AddAttribute(14, "class", "dx-btn-primary");
-            builder.AddContent(15, SubmitText);
+            builder.AddContent(15, SubmitText ?? S["Submit", "Submit"]);
             builder.CloseElement();
             builder.CloseElement();
         }

@@ -9,9 +9,15 @@ public sealed class DxSpinner : ComponentBase
 {
     [Parameter] public int Size { get; set; } = 22;
 
-    [Parameter] public string Label { get; set; } = "Loading";
+    [Parameter] public string? Label { get; set; }
 
     [Parameter] public string? Class { get; set; }
+
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxSpinner>? s;
+
+    private DxStrings<DxSpinner> S => s ??= new(Services);
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
@@ -20,7 +26,7 @@ public sealed class DxSpinner : ComponentBase
         builder.OpenElement(0, "span");
         builder.AddAttribute(1, "class", $"dx-spinner {Class}".TrimEnd());
         builder.AddAttribute(2, "role", "status");
-        builder.AddAttribute(3, "aria-label", Label);
+        builder.AddAttribute(3, "aria-label", Label ?? S["Loading", "Loading"]);
         builder.AddAttribute(4, "style", $"width:{size}px;height:{size}px;");
         builder.CloseElement();
     }

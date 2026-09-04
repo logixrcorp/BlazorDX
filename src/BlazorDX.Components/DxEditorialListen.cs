@@ -15,7 +15,13 @@ public sealed class DxEditorialListen : ComponentBase
 {
     [Parameter, EditorRequired] public string AudioSrc { get; set; } = "";
 
-    [Parameter] public string Label { get; set; } = "Listen to this article";
+    [Parameter] public string? Label { get; set; }
+
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxEditorialListen>? s;
+
+    private DxStrings<DxEditorialListen> S => s ??= new(Services);
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
@@ -24,7 +30,7 @@ public sealed class DxEditorialListen : ComponentBase
 
         builder.OpenElement(2, "p");
         builder.AddAttribute(3, "class", "dx-editorial-listen-label");
-        builder.AddContent(4, Label);
+        builder.AddContent(4, Label ?? S["ListenLabel", "Listen to this article"]);
         builder.CloseElement();
 
         builder.OpenElement(5, "audio");

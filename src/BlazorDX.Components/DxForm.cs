@@ -60,7 +60,7 @@ public sealed class DxForm<TModel> : ComponentBase
     [Parameter] public bool ShowSubmit { get; set; } = true;
 
     /// <summary>Submit button text.</summary>
-    [Parameter] public string SubmitText { get; set; } = "Submit";
+    [Parameter] public string? SubmitText { get; set; }
 
     /// <summary>Extra CSS classes appended to the form element.</summary>
     [Parameter] public string? Class { get; set; }

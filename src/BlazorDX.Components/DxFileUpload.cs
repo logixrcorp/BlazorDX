@@ -27,7 +27,7 @@ public sealed class DxFileUpload : ComponentBase
     [Parameter] public long MaxSize { get; set; } = 10L * 1024 * 1024;
 
     /// <summary>Prompt shown in the drop zone.</summary>
-    [Parameter] public string PromptText { get; set; } = "Drag files here, or click to browse";
+    [Parameter] public string? PromptText { get; set; }
 
     /// <summary>Raised with the current set of accepted files whenever it changes.</summary>
     [Parameter] public EventCallback<IReadOnlyList<IBrowserFile>> OnFilesSelected { get; set; }
@@ -36,6 +36,12 @@ public sealed class DxFileUpload : ComponentBase
     [Parameter] public string? Class { get; set; }
 
     private readonly List<IBrowserFile> files = new();
+
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxFileUpload>? s;
+
+    private DxStrings<DxFileUpload> S => s ??= new(Services);
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
@@ -64,7 +70,7 @@ public sealed class DxFileUpload : ComponentBase
 
         builder.OpenElement(9, "span");
         builder.AddAttribute(10, "class", "dx-upload-prompt");
-        builder.AddContent(11, PromptText);
+        builder.AddContent(11, PromptText ?? S["DropPrompt", "Drag files here, or click to browse"]);
         builder.CloseElement();
 
         builder.CloseElement();   // label
@@ -93,7 +99,7 @@ public sealed class DxFileUpload : ComponentBase
                 builder.OpenElement(22, "button");
                 builder.AddAttribute(23, "type", "button");
                 builder.AddAttribute(24, "class", "dx-upload-remove");
-                builder.AddAttribute(25, "aria-label", $"Remove {file.Name}");
+                builder.AddAttribute(25, "aria-label", S["Remove", "Remove {0}", file.Name]);
                 builder.AddAttribute(26, "onclick", EventCallback.Factory.Create(this, () => RemoveAsync(captured)));
                 builder.AddContent(27, "×");
                 builder.CloseElement();

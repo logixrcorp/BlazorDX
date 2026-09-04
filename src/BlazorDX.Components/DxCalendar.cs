@@ -22,7 +22,13 @@ public sealed class DxCalendar : CalendarPrimitive
     [Parameter] public RenderFragment<DateOnly>? DayTemplate { get; set; }
 
     /// <summary>Accessible label for the grid (default "Calendar").</summary>
-    [Parameter] public string Label { get; set; } = "Calendar";
+    [Parameter] public string? Label { get; set; }
+
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxCalendar>? s;
+
+    private DxStrings<DxCalendar> S => s ??= new(Services);
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
@@ -81,7 +87,7 @@ public sealed class DxCalendar : CalendarPrimitive
         builder.OpenElement(40, "div");
         builder.AddAttribute(41, "class", "dx-cal-grid");
         builder.AddAttribute(42, "role", "grid");
-        builder.AddAttribute(43, "aria-label", Label);
+        builder.AddAttribute(43, "aria-label", Label ?? S["CalendarLabel", "Calendar"]);
         builder.AddAttribute(44, "tabindex", "0");
         builder.AddAttribute(45, "aria-activedescendant", DayId(FocusedDate));
         builder.AddAttribute(46, "onkeydown",

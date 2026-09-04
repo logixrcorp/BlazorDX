@@ -20,15 +20,21 @@ public sealed class DxBreadcrumbs : ComponentBase
     /// <summary>Separator glyph between items.</summary>
     [Parameter] public string Separator { get; set; } = "/";
 
-    [Parameter] public string AriaLabel { get; set; } = "Breadcrumb";
+    [Parameter] public string? AriaLabel { get; set; }
 
     [Parameter] public string? Class { get; set; }
+
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxBreadcrumbs>? s;
+
+    private DxStrings<DxBreadcrumbs> S => s ??= new(Services);
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "nav");
         builder.AddAttribute(1, "class", $"dx-breadcrumbs {Class}".TrimEnd());
-        builder.AddAttribute(2, "aria-label", AriaLabel);
+        builder.AddAttribute(2, "aria-label", AriaLabel ?? S["BreadcrumbLabel", "Breadcrumb"]);
 
         builder.OpenElement(3, "ol");
         builder.AddAttribute(4, "class", "dx-breadcrumbs-list");

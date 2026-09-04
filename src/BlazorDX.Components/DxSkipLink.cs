@@ -19,17 +19,23 @@ public sealed class DxSkipLink : ComponentBase
     [Parameter] public string TargetId { get; set; } = "main-content";
 
     /// <summary>Link text (default "Skip to main content").</summary>
-    [Parameter] public string Text { get; set; } = "Skip to main content";
+    [Parameter] public string? Text { get; set; }
 
     /// <summary>Extra CSS classes appended to the link.</summary>
     [Parameter] public string? Class { get; set; }
+
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxSkipLink>? s;
+
+    private DxStrings<DxSkipLink> S => s ??= new(Services);
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "a");
         builder.AddAttribute(1, "class", $"dx-skip-link {Class}".TrimEnd());
         builder.AddAttribute(2, "href", $"#{TargetId}");
-        builder.AddContent(3, Text);
+        builder.AddContent(3, Text ?? S["SkipToMainContent", "Skip to main content"]);
         builder.CloseElement();
     }
 }

@@ -157,6 +157,31 @@ mechanically catches a brand-new hardcoded literal introduced inside a helper me
 last gap is closed by review, and mitigated by every component's strings now being
 enumerated in one `.resx` where an omission is visible.
 
+### Second amendment: DX1003's defaulted-parameter rule demands the impossible
+
+The rule flags `[Parameter] public string X { get; set; } = "…";`, and the fourth rollout
+batch found 21 of them. It is a correct thing to flag — that default *is* user-facing English
+— but the fix the rule implies cannot be written:
+
+```csharp
+[Parameter] public string Label { get; set; } = S["Loading", "Loading"];   // does not compile
+```
+
+A property initializer cannot reference an instance member, and `S` resolves through an
+injected `IServiceProvider` that does not exist until activation. So this category needs a
+different shape: the parameter defaults to `null` and the **render site** coalesces
+(`Label ?? S["Loading", "Loading"]`).
+
+That makes `string` into `string?` on 21 public parameters. The cost is that a caller reading
+the property gets `null` rather than English; the benefit, beyond localization, is that
+explicitly passing `null` now yields the default instead of an empty `aria-label` — a control
+with no accessible name, which is the failure a screen-reader user would hit and a sighted
+reviewer would not see.
+
+Recorded here because the analyzer rule and the fix for it live in different places: someone
+reading DX1003's message alone would try the initializer, watch it fail to compile, and have
+no way to know the intended shape.
+
 ## Decision 3 — RTL is verified statically, by the same ratchet
 
 Before this ADR, RTL was verified by exactly one check: `/dialog?dir=rtl` in

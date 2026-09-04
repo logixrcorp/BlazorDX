@@ -15,7 +15,13 @@ public sealed class DxEditorialRelated : ComponentBase
 
     [Parameter, EditorRequired] public IReadOnlyList<RelatedEntry> Entries { get; set; } = [];
 
-    [Parameter] public string Heading { get; set; } = "More from Insights";
+    [Parameter] public string? Heading { get; set; }
+
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxEditorialRelated>? s;
+
+    private DxStrings<DxEditorialRelated> S => s ??= new(Services);
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
@@ -26,11 +32,11 @@ public sealed class DxEditorialRelated : ComponentBase
 
         builder.OpenElement(0, "section");
         builder.AddAttribute(1, "class", "dx-editorial-related");
-        builder.AddAttribute(2, "aria-label", Heading);
+        builder.AddAttribute(2, "aria-label", Heading ?? S["RelatedHeading", "More from Insights"]);
 
         builder.OpenElement(3, "p");
         builder.AddAttribute(4, "class", "dx-editorial-related-heading");
-        builder.AddContent(5, Heading);
+        builder.AddContent(5, Heading ?? S["RelatedHeading", "More from Insights"]);
         builder.CloseElement();
 
         builder.OpenElement(6, "div");

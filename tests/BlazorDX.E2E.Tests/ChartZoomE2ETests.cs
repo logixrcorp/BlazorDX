@@ -54,14 +54,19 @@ public sealed class ChartZoomE2ETests(PlaywrightFixture fx)
 
         (double x, double y, double width, double height) = await ChartBoxAsync(page);
         ILocator chart = page.Locator(".dx-chart-zoomable").First;
-        float centerY = (float)(y + (height / 2));
 
         // Zoom in first — panning at full zoom-out has nowhere to go (both edges already touch).
-        await page.Mouse.MoveAsync((float)(x + (width / 2)), centerY);
+        await page.Mouse.MoveAsync((float)(x + (width / 2)), (float)(y + (height / 2)));
         await page.Mouse.WheelAsync(0, -600);
         await page.WaitForTimeoutAsync(200); // let the render settle
 
         string? beforePan = await chart.GetAttributeAsync("viewBox");
+
+        // Re-measure: zooming reveals the caption and the reset button, which changes the
+        // document's height and can move the chart. Dragging at the pre-zoom coordinates lands
+        // outside the plot, nothing pans, and the wait below times out with nothing to explain it.
+        (x, y, width, height) = await ChartBoxAsync(page);
+        float centerY = (float)(y + (height / 2));
 
         // A real drag: down inside the chart, move across (still within the page — the pan
         // overlay is a full-viewport element so this is a realistic gesture), up.
@@ -107,7 +112,10 @@ public sealed class ChartZoomE2ETests(PlaywrightFixture fx)
             () => {
                 const el = document.querySelector('.dx-chart-zoomable');
                 if (!el) return null;
-                el.scrollIntoView({ block: 'center' });
+                // 'nearest' scrolls only when the element is actually out of view, matching what
+                // ScrollIntoViewIfNeededAsync did. Centring it every time moves the page for no
+                // reason, and a moved page is one more thing that can invalidate a coordinate.
+                el.scrollIntoView({ block: 'nearest' });
                 const r = el.getBoundingClientRect();
                 return r.width > 0 && r.height > 0 ? [r.x, r.y, r.width, r.height] : null;
             }

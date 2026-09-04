@@ -16,17 +16,23 @@ public sealed class DxEditorialTableOfContents : ComponentBase
 
     [Parameter, EditorRequired] public IReadOnlyList<TocEntry> Entries { get; set; } = [];
 
-    [Parameter] public string Heading { get; set; } = "Contents";
+    [Parameter] public string? Heading { get; set; }
+
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxEditorialTableOfContents>? s;
+
+    private DxStrings<DxEditorialTableOfContents> S => s ??= new(Services);
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "nav");
         builder.AddAttribute(1, "class", "dx-editorial-toc");
-        builder.AddAttribute(2, "aria-label", Heading);
+        builder.AddAttribute(2, "aria-label", Heading ?? S["ContentsHeading", "Contents"]);
 
         builder.OpenElement(3, "p");
         builder.AddAttribute(4, "class", "dx-editorial-toc-heading");
-        builder.AddContent(5, Heading);
+        builder.AddContent(5, Heading ?? S["ContentsHeading", "Contents"]);
         builder.CloseElement();
 
         builder.OpenElement(6, "ol");

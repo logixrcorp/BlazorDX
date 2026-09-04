@@ -26,9 +26,15 @@ public sealed class DxDrawer : ComponentBase
     /// <summary>The main content the panel sits beside.</summary>
     [Parameter] public RenderFragment? ChildContent { get; set; }
 
-    [Parameter] public string AriaLabel { get; set; } = "Side panel";
+    [Parameter] public string? AriaLabel { get; set; }
 
     [Parameter] public string? Class { get; set; }
+
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxDrawer>? s;
+
+    private DxStrings<DxDrawer> S => s ??= new(Services);
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
@@ -39,7 +45,7 @@ public sealed class DxDrawer : ComponentBase
         builder.OpenElement(2, "aside");
         builder.AddAttribute(3, "class", "dx-drawer-panel");
         builder.AddAttribute(4, "role", "complementary");
-        builder.AddAttribute(5, "aria-label", AriaLabel);
+        builder.AddAttribute(5, "aria-label", AriaLabel ?? S["DrawerLabel", "Side panel"]);
         builder.AddAttribute(6, "aria-hidden", Open ? "false" : "true");
         builder.OpenElement(7, "div");
         builder.AddAttribute(8, "class", "dx-drawer-panel-inner");
