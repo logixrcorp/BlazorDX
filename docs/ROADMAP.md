@@ -101,14 +101,13 @@ enhancements. None of this should be read as "ready"; it is a beta with work ahe
   than opt-in, so a new stylesheet cannot skip the check by omitting it. The physical usages
   that remain each carry a written reason — a screen-edge API (`DxSheet`'s `Side`), boxes
   pinned to both edges, and the two places CSS has no logical form (`transform` and
-  `transform-origin`, handled with explicit `[dir="rtl"]` rules). **Strings done for the styled tier**: all 83
-  components in `BlazorDX.Components` with user-facing text now route it through a localizer — 267 call sites across
-  52 resource files — and DX1003's ratchet is retired, so a hardcoded label is a build error
+  `transform-origin`, handled with explicit `[dir="rtl"]` rules). **Strings done**: every package now routes user-facing
+  text through a localizer — the styled tier plus `Primitives`, `Documents`, `Htmx` and both
+  `Integrations` packages — 309 call sites across
+  62 resource files — and DX1003's ratchet is retired, so a hardcoded label is a build error
   anywhere, not just in components that already localize. (The "~130 components" figure here
-  previously counted every file; 57 have no user-facing text at all.) *Remaining: 17 strings in four other
-  packages (`Primitives`, `Htmx`, and the two `Integrations`) are unconverted — `DxStrings`
-  is unreachable from them, so widening the rule is a packaging decision rather than a
-  retrofit. And this externalizes the strings, it does not translate them — the `.resx` files hold English, and
+  previously counted every file; 57 have no user-facing text at all.) *Remaining: this externalizes the strings, it
+  does not translate them — the `.resx` files hold English, and
   only two carry a French counterpart. Shipping translations, and a visual RTL pass that a
   static guard cannot do, are the parts left.*
 - **Formal accessibility audit + VPAT** — automated **axe-core checks now run in CI**

@@ -118,6 +118,12 @@ public sealed class DxHtmxDocumentViewer : ComponentBase
         }
     }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxHtmxDocumentViewer>? s;
+
+    private DxStrings<DxHtmxDocumentViewer> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "div");
@@ -167,13 +173,13 @@ public sealed class DxHtmxDocumentViewer : ComponentBase
         // interactive toolbar (this tier is read-only and script-free).
         builder.OpenElement(105, "p");
         builder.AddAttribute(106, "class", "dx-htmxdoc-pdf-fallback");
-        builder.AddContent(107, "Can't see the PDF above? ");
+        builder.AddContent(107, S["PdfFallbackPrompt", "Can't see the PDF above? "]);
         builder.OpenElement(108, "a");
         builder.AddAttribute(109, "class", "dx-htmxdoc-download");
         builder.AddAttribute(110, "href", source);
         builder.AddAttribute(111, "download", Name);
         builder.AddAttribute(112, "rel", "noopener noreferrer");
-        builder.AddContent(113, $"Download {Name}");
+        builder.AddContent(113, S["DownloadNamed", "Download {0}", Name]);
         builder.CloseElement();
         builder.AddContent(114, ".");
         builder.CloseElement();
@@ -214,7 +220,7 @@ public sealed class DxHtmxDocumentViewer : ComponentBase
 
         builder.OpenElement(120, "nav");
         builder.AddAttribute(121, "class", "dx-htmxdoc-tabs");
-        builder.AddAttribute(122, "aria-label", "Worksheets");
+        builder.AddAttribute(122, "aria-label", S["Worksheets", "Worksheets"]);
 
         for (int i = 0; i < sheets.Count; i++)
         {
@@ -243,7 +249,7 @@ public sealed class DxHtmxDocumentViewer : ComponentBase
         builder.OpenElement(140, "div");
         builder.AddAttribute(141, "class", "dx-htmxdoc-panel");
         builder.AddAttribute(142, "role", "region");
-        builder.AddAttribute(143, "aria-label", $"{sheet.Name} worksheet");
+        builder.AddAttribute(143, "aria-label", S["WorksheetNamed", "{0} worksheet", sheet.Name]);
         builder.AddAttribute(144, "tabindex", "-1");
 
         if (sheet.Rows.Count == 0)
@@ -525,17 +531,17 @@ public sealed class DxHtmxDocumentViewer : ComponentBase
 
         builder.OpenElement(300, "nav");
         builder.AddAttribute(301, "class", "dx-htmxdoc-pager");
-        builder.AddAttribute(302, "aria-label", "Pagination");
+        builder.AddAttribute(302, "aria-label", S["Pagination", "Pagination"]);
 
-        BuildPagerLink(builder, 303, sheetIndex, page - 1, page > 0, "← Previous");
+        BuildPagerLink(builder, 303, sheetIndex, page - 1, page > 0, S["PreviousPage", "← Previous"]);
 
         builder.OpenElement(310, "span");
         builder.AddAttribute(311, "class", "dx-htmxdoc-pageinfo");
         builder.AddAttribute(312, "aria-live", "polite");
-        builder.AddContent(313, $"Page {page + 1} of {pageCount} ({status})");
+        builder.AddContent(313, S["PageOf", "Page {0} of {1} ({2})", page + 1, pageCount, status]);
         builder.CloseElement();
 
-        BuildPagerLink(builder, 320, sheetIndex, page + 1, page < pageCount - 1, "Next →");
+        BuildPagerLink(builder, 320, sheetIndex, page + 1, page < pageCount - 1, S["NextPage", "Next →"]);
 
         builder.CloseElement();
     }

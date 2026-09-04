@@ -250,36 +250,4 @@ public sealed class GovernanceAnalyzerTests
 
         Assert.Contains(diagnostics, d => d.Id == "DX1003");
     }
-
-    [Fact]
-    public async Task DX1003_stays_silent_outside_the_assembly_that_has_DxStrings()
-    {
-        // DxStrings lives in BlazorDX.Components and nowhere else, so in BlazorDX.Primitives,
-        // BlazorDX.Htmx or the integration packages this diagnostic would demand a fix that
-        // cannot be written. Reporting there would be the same trap the defaulted-[Parameter]
-        // rule fell into — a correct observation with an impossible remedy.
-        //
-        // Widening it is a packaging decision (where should the helper live so every package can
-        // reach it), not an analyzer change, and until that is made the rule stays where its
-        // advice holds.
-        string source = $$"""
-            {{LocalizationPreamble}}
-
-            namespace Test
-            {
-                using Microsoft.AspNetCore.Components.Rendering;
-
-                public sealed class SomePrimitive
-                {
-                    public void Render(RenderTreeBuilder builder) =>
-                        builder.AddAttribute(1, "placeholder", "Select a date");
-                }
-            }
-            """;
-
-        var diagnostics = await AnalyzerTestHarness.AnalyzeAsync(
-            source, new HardcodedStringAnalyzer(), assemblyName: "BlazorDX.Primitives");
-
-        Assert.Empty(diagnostics.Where(d => d.Id == "DX1003"));
-    }
 }

@@ -201,7 +201,7 @@ public sealed partial class DxSpreadsheetViewer
         builder.AddAttribute(32, "class", "dx-sheet-grid dx-sheet-grid-editable dx-sheet-scroll");
         builder.AddAttribute(33, "role", "grid");
         builder.AddAttribute(34, "aria-multiselectable", "false");
-        builder.AddAttribute(35, "aria-label", $"{sheet.Name} worksheet, editable");
+        builder.AddAttribute(35, "aria-label", S["WorksheetEditable", "{0} worksheet, editable", sheet.Name]);
         builder.AddAttribute(36, "aria-rowcount", EditRowCount.ToString(CultureInfo.InvariantCulture));
         builder.AddAttribute(37, "aria-colcount", (dataColumns + 1).ToString(CultureInfo.InvariantCulture));
         builder.AddAttribute(38, "tabindex", "0"); // scrollable region is keyboard-reachable (WCAG 2.1.1)
@@ -364,7 +364,7 @@ public sealed partial class DxSpreadsheetViewer
         builder.AddAttribute(31, "type", "text");
         builder.AddAttribute(32, "class", "dx-sheet-cell-input");
         builder.AddAttribute(33, "aria-label",
-            $"Cell {CellLabel(rowIndex, column)} content");
+            S["CellContent", "Cell {0} content", CellLabel(rowIndex, column)]);
         builder.AddAttribute(34, "value", editBuffer);
         builder.AddAttribute(35, "oninput",
             EventCallback.Factory.Create<ChangeEventArgs>(this, e => editBuffer = e.Value?.ToString() ?? string.Empty));

@@ -178,6 +178,12 @@ public sealed class DxReportViewer : ComponentBase
         }
     }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxReportViewer>? s;
+
+    private DxStrings<DxReportViewer> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "div");
@@ -278,7 +284,7 @@ public sealed class DxReportViewer : ComponentBase
         builder.OpenElement(62, "button");
         builder.AddAttribute(63, "type", "submit");
         builder.AddAttribute(64, "class", "dx-report-run");
-        builder.AddContent(65, "Run report");
+        builder.AddContent(65, S["RunReport", "Run report"]);
         builder.CloseElement();
         builder.CloseElement(); // actions
 
@@ -291,7 +297,7 @@ public sealed class DxReportViewer : ComponentBase
         builder.AddAttribute(41, "class", "dx-report-fields");
 
         builder.OpenElement(42, "legend");
-        builder.AddContent(43, "Report parameters");
+        builder.AddContent(43, S["ReportParameters", "Report parameters"]);
         builder.CloseElement();
 
         var current = BuildValueLookup();
@@ -424,7 +430,7 @@ public sealed class DxReportViewer : ComponentBase
         builder.OpenElement(90, "div");
         builder.AddAttribute(91, "class", "dx-report-output");
         builder.AddAttribute(92, "role", "region");
-        builder.AddAttribute(93, "aria-label", $"{FrameTitle(Report)} output");
+        builder.AddAttribute(93, "aria-label", S["ReportOutput", "{0} output", FrameTitle(Report)]);
         builder.AddAttribute(94, "aria-live", "polite");
         builder.AddAttribute(95, "tabindex", "-1");
 
@@ -444,7 +450,7 @@ public sealed class DxReportViewer : ComponentBase
         {
             builder.OpenElement(97, "p");
             builder.AddAttribute(98, "class", "dx-report-empty");
-            builder.AddContent(99, "Choose parameters and run the report to see results here.");
+            builder.AddContent(99, S["EmptyOutput", "Choose parameters and run the report to see results here."]);
             builder.CloseElement();
         }
 
@@ -518,7 +524,7 @@ public sealed class DxReportViewer : ComponentBase
 
         builder.OpenElement(seq, "nav");
         builder.AddAttribute(seq + 1, "class", "dx-report-export");
-        builder.AddAttribute(seq + 2, "aria-label", "Export this report");
+        builder.AddAttribute(seq + 2, "aria-label", S["ExportReport", "Export this report"]);
 
         if (pdf is not null)
         {

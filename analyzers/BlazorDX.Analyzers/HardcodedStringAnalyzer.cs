@@ -17,13 +17,9 @@ namespace BlazorDX.Analyzers;
 /// <c>DxStrings&lt;T&gt;</c> member, so localizing a component was what switched the rule on for
 /// it. That was scaffolding: with 83 components to convert and <c>TreatWarningsAsErrors</c>
 /// repo-wide, a rule that fired everywhere would have reported the whole backlog at once. The
-/// rollout is finished, so it now applies to every type in <c>BlazorDX.Components</c> —
+/// rollout is finished, so it now applies to every type in every package —
 /// including a brand-new component that localizes nothing, which the old scoping let opt out.
 /// See docs/adr/0021-optional-localization-and-rollout-guardrails.md.
-/// </para>
-/// <para>
-/// It is still scoped to one assembly, for a different and narrower reason — see
-/// <see cref="LocalizableAssembly"/>.
 /// </para>
 /// <para>
 /// What it still cannot see is text that reaches the DOM through a variable — a lookup table, a
@@ -72,24 +68,6 @@ public sealed class HardcodedStringAnalyzer : DiagnosticAnalyzer
         "Tooltip",
         "Prompt");
 
-    /// <summary>
-    /// The only assembly where <c>DxStrings</c> exists, and therefore the only one where this
-    /// rule's suggested fix can be written.
-    /// </summary>
-    /// <remarks>
-    /// Retiring the per-type ratchet surfaced 17 hardcoded strings in four other packages —
-    /// <c>BlazorDX.Primitives</c> (four placeholder defaults), <c>BlazorDX.Htmx</c>,
-    /// <c>BlazorDX.Integrations.PowerBI</c> and <c>BlazorDX.Integrations.Reporting</c>. They are
-    /// real findings, but none of those packages references <c>BlazorDX.Components</c>, so
-    /// <c>DxStrings</c> is unreachable from all of them and the diagnostic would demand a fix
-    /// that cannot be written — the same trap the defaulted-<c>[Parameter]</c> rule fell into.
-    /// <para>
-    /// Making the helper available there is a packaging decision (a new shared package, or new
-    /// dependencies on published packages), not a retrofit, so the rule is scoped to where its
-    /// advice holds. See docs/localization.md for the finding and what it would take to widen.
-    /// </para>
-    /// </remarks>
-    private const string LocalizableAssembly = "BlazorDX.Components";
 
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
         ImmutableArray.Create(DiagnosticDescriptors.HardcodedUserFacingString);
@@ -194,29 +172,23 @@ public sealed class HardcodedStringAnalyzer : DiagnosticAnalyzer
     private static bool ContainsLetter(string text) => text.Any(char.IsLetter);
 
     /// <summary>
-    /// Always true now — the ratchet is closed.
+    /// Always true. Both scopings this rule once had are gone.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// This used to require the enclosing type to hold a <c>DxStrings&lt;…&gt;</c> member, so the
-    /// rule covered exactly the components already localized and grew with each rollout batch.
-    /// That was scaffolding for a migration: with 83 components to convert and
-    /// <c>TreatWarningsAsErrors</c> repo-wide, a rule that fired everywhere would have broken the
-    /// build on day one.
+    /// It first required the enclosing type to hold a <c>DxStrings&lt;…&gt;</c> member, so the rule
+    /// covered exactly the components already converted and grew with each rollout batch. That was
+    /// scaffolding for a migration under <c>TreatWarningsAsErrors</c>.
     /// </para>
     /// <para>
-    /// The rollout is finished — every component with user-facing text at a render call site now
-    /// routes it through a localizer — so the scoping is retired rather than left in place. It
-    /// was the rule's one hole: a brand-new component could opt out of the check simply by not
-    /// localizing anything, which is precisely the component most likely to need it.
-    /// </para>
-    /// <para>
-    /// Kept as a method rather than deleted at every call site: it names the decision, and this
-    /// remark is where the history belongs.
+    /// It was then scoped to <c>BlazorDX.Components</c>, because <c>DxStrings</c> lived there and
+    /// nowhere else — reporting in <c>BlazorDX.Primitives</c> or an integration package would have
+    /// demanded a fix that could not be written. That is fixed at the source: the helper is now
+    /// shared source compiled into every package that renders text, so the rule's advice holds
+    /// everywhere and the scoping has no reason to exist.
     /// </para>
     /// </remarks>
-    private static bool IsInLocalizedType(SyntaxNodeAnalysisContext context) =>
-        context.Compilation.AssemblyName == LocalizableAssembly;
+    private static bool IsInLocalizedType(SyntaxNodeAnalysisContext context) => true;
 
     private static bool IsRenderTreeBuilder(SyntaxNodeAnalysisContext context, ExpressionSyntax receiver) =>
         context.SemanticModel.GetTypeInfo(receiver, context.CancellationToken).Type?.Name

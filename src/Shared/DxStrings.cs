@@ -2,7 +2,20 @@ using System.Globalization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
 
-namespace BlazorDX.Components;
+namespace BlazorDX;
+
+// Shared source, not a shared package. This file is linked into BlazorDX.Components,
+// .Primitives, .Htmx, .Integrations.PowerBI and .Integrations.Reporting, so each assembly
+// compiles its own internal copy from one definition.
+//
+// A thirteenth published package was the obvious alternative and was rejected:
+// BlazorDX.Integrations.PowerBI deliberately references no BlazorDX project at all, and the
+// other integration packages reference only what they need. Making every package take a
+// dependency to reach a forty-line helper would trade that independence for nothing — the type
+// is internal, so there is no public surface to share in the first place.
+//
+// Namespace BlazorDX rather than BlazorDX.Components, so every consuming namespace resolves it
+// without a using: they are all BlazorDX.*.
 
 /// <summary>
 /// Per-component localized-string lookup where localization is <b>optional</b>: every call site
