@@ -395,6 +395,26 @@
   white-space: nowrap;
 }
 
+/* ---- Rectangular (both-axes) zoom/pan (scatter & bubble — opt-in via Zoomable) ---- */
+
+/* The zoom surface is a transparent full-plot-area rect painted BEFORE the point
+   marks, so it only ever catches pointer events in empty space — a mark's own
+   click/hover handlers still win wherever a dot sits on top of it. */
+.dx-chart-zoom-surface {
+  fill: transparent;
+  cursor: crosshair;
+}
+.dx-chart-zoom-surface:active { cursor: crosshair; }
+
+/* The live brush rectangle drawn while a drag-to-zoom gesture is in progress. */
+.dx-chart-brush {
+  fill: color-mix(in srgb, var(--dx-accent, #2563eb) 12%, transparent);
+  stroke: var(--dx-accent, #2563eb);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  pointer-events: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dx-chart-mark-hovered { filter: none; }
 }

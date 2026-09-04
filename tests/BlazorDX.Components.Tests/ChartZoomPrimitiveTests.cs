@@ -195,4 +195,56 @@ public sealed class ChartZoomPrimitiveTests
         Assert.Equal(0, z.VisibleMin);
         Assert.Equal(100, z.VisibleMax);
     }
+
+    [Fact]
+    public void SetVisible_jumps_directly_to_an_arbitrary_window()
+    {
+        ChartZoomPrimitive z = new();
+        z.SetDomain(0, 100);
+
+        z.SetVisible(20, 60);
+
+        Assert.Equal(20, z.VisibleMin, precision: 6);
+        Assert.Equal(60, z.VisibleMax, precision: 6);
+        Assert.True(z.IsZoomed);
+    }
+
+    [Fact]
+    public void SetVisible_normalizes_a_reversed_range()
+    {
+        ChartZoomPrimitive z = new();
+        z.SetDomain(0, 100);
+
+        z.SetVisible(60, 20); // max < min, e.g. a drag that went right-to-left
+
+        Assert.Equal(20, z.VisibleMin, precision: 6);
+        Assert.Equal(60, z.VisibleMax, precision: 6);
+    }
+
+    [Fact]
+    public void SetVisible_clamps_below_DataMin_and_above_DataMax()
+    {
+        ChartZoomPrimitive z = new();
+        z.SetDomain(0, 100);
+
+        z.SetVisible(-50, 40);
+        Assert.Equal(0, z.VisibleMin, precision: 6);
+        Assert.Equal(40, z.VisibleMax, precision: 6);
+
+        z.SetVisible(60, 150);
+        Assert.Equal(60, z.VisibleMin, precision: 6);
+        Assert.Equal(100, z.VisibleMax, precision: 6);
+    }
+
+    [Fact]
+    public void SetVisible_enforces_the_minimum_span_fraction_for_a_degenerate_box()
+    {
+        ChartZoomPrimitive z = new();
+        z.SetDomain(0, 100);
+
+        z.SetVisible(50, 50); // a click, or a near-zero-width brush
+
+        Assert.True(z.VisibleSpan >= 2.0 - 1e-6); // MinSpanFraction * 100
+        Assert.True(z.VisibleMin <= 50 && z.VisibleMax >= 50);
+    }
 }

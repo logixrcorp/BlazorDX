@@ -52,6 +52,34 @@ All notable changes to BlazorDX are documented here. The format is loosely based
   - `DxGraph`'s `Line`/`Area` kinds needed explicit new `Zoomable`/`OnZoomChanged` plumbing —
     parameters forward via individually-named calls per kind there, not generically.
 
+- **`DxScatterChart`/`DxBubbleChart`: rectangular (both-axes) zoom/pan.** Closes the "Chart
+  interactivity" roadmap item's remaining "other continuous-domain chart kinds" line. Unlike
+  `DxLineChart`/`DxAreaChart` (X-only — Y always covers the full dataset), scatter/bubble are
+  genuinely two-continuous-axis charts, so this crops the viewBox on both axes. Full design record
+  in [ADR 0020](docs/adr/0020-scatter-bubble-2d-zoom-strategy.md); the short version:
+  - Wheel zooms both axes uniformly (center-anchored, same factor per axis); dragging draws a
+    brush rectangle and zooms into it on release (the standard convention for an unordered XY
+    point cloud, versus Line/Area's ordered-series plain-drag-to-pan); Shift+drag pans instead,
+    since drag itself is taken by brush-zoom; double-click resets.
+  - Keyboard forks on whether point selection is wired: `ChartSelectionPrimitive.MoveActive` is
+    modifier-blind and already owns plain arrows/Home/End, so when a chart is both zoomable and
+    interactive, plain arrows keep navigating points exactly as before and zoom/pan requires a
+    modifier (Shift+Arrow pans, Ctrl+Arrow/+/-/Home zooms/resets) — the one deliberate deviation
+    from the Line/Area keyboard scheme, and the highest-value new test coverage this pass adds.
+  - New Tier-1 `ChartRectZoomPrimitive` composes two existing `ChartZoomPrimitive` instances (one
+    per axis) rather than introducing new zoom math; `ChartZoomPrimitive` itself gains one
+    additive method, `SetVisible`, for jumping directly to an arbitrary window (what brush-zoom
+    needs that none of `ZoomAt`/`PanBy`/`Reset` provide).
+  - Both charts gain explicit `width`/`height`/`preserveAspectRatio="none"` SVG attributes
+    (previously viewBox-only) — this pins the intrinsic aspect ratio so a two-axis-cropped
+    viewBox never jitters, and means the rendered height is always derivable from the one
+    existing width measurement, so no interop height measurement was needed.
+  - One new interop method, `IChartZoomInterop.MeasureOffsetAsync` (the element's viewport
+    offset) — brush-zoom, unlike pan, must convert an absolute drag rectangle into data-space,
+    not just a pixel delta. Called once per gesture, never per pointermove.
+  - Bubble radius stays computed from the full, unfiltered point list always — zoom affects only
+    which bubbles are visible and where their centers land, never their size.
+
 - **Forms: conditional fields, via `[DxField(DependsOn = ...)]`.** The roadmap's "Forms depth"
   item — a field can now gate on another field's live value, e.g. an escalation-notes field that
   only applies (and is only required) when a priority field is `High`. Scoped deliberately to

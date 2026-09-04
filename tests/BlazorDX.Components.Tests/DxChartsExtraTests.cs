@@ -1,6 +1,8 @@
 using System.Globalization;
 using BlazorDX.Components;
+using BlazorDX.Interop;
 using Bunit;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace BlazorDX.Components.Tests;
@@ -8,6 +10,15 @@ namespace BlazorDX.Components.Tests;
 /// <summary>Scatter and stacked/grouped bar charts.</summary>
 public sealed class DxChartsExtraTests : TestContext
 {
+    // DxScatterChart injects IChartZoomInterop for its opt-in zoom/pan gestures — the same
+    // dependency DxLineChart/DxAreaChart already take. The real app registers it via the
+    // library's own interop registration; the null implementation reports no measurement,
+    // so no gesture ever starts (and none of these tests exercise one).
+    public DxChartsExtraTests()
+    {
+        Services.AddScoped<IChartZoomInterop, NullChartZoomInterop>();
+    }
+
     [Fact]
     public void Scatter_renders_a_dot_per_point()
     {

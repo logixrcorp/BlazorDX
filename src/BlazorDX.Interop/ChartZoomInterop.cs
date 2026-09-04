@@ -34,8 +34,19 @@ public sealed partial class ChartZoomInterop : IChartZoomInterop
         return MeasureWidth(elementId);
     }
 
+    public async ValueTask<(double Left, double Top)> MeasureOffsetAsync(string elementId)
+    {
+        await EnsureLoadedAsync();
+        double[] offset = MeasureOffset(elementId);
+        return (offset[0], offset[1]);
+    }
+
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [JSImport("measureWidth", ModuleName)]
     private static partial double MeasureWidth(string elementId);
+
+    [return: JSMarshalAs<JSType.Array<JSType.Number>>]
+    [JSImport("measureOffset", ModuleName)]
+    private static partial double[] MeasureOffset(string elementId);
 }

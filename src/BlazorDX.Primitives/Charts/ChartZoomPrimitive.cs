@@ -145,4 +145,54 @@ public sealed class ChartZoomPrimitive
         VisibleMin = DataMin;
         VisibleMax = DataMax;
     }
+
+    /// <summary>
+    /// Directly sets the visible window to [<paramref name="min"/>, <paramref name="max"/>],
+    /// clamped to the domain and to <c>MinSpanFraction</c> — the one operation none of
+    /// <see cref="ZoomAt"/>/<see cref="PanBy"/>/<see cref="Reset"/> provide (they're all relative
+    /// to the current window). Needed by a rectangle-drag-to-zoom gesture, which jumps to an
+    /// arbitrary box rather than adjusting the existing one.
+    /// </summary>
+    public void SetVisible(double min, double max)
+    {
+        if (DataSpan <= 0)
+        {
+            return;
+        }
+
+        if (max < min)
+        {
+            (min, max) = (max, min);
+        }
+
+        // Clip to the domain — deliberately NOT PanBy's shift-to-preserve-span behavior: a
+        // brush that ran past the edge should stop at the edge, not slide the window inward
+        // to keep the (over-large) span it was dragged with.
+        min = Math.Max(DataMin, min);
+        max = Math.Min(DataMax, max);
+
+        // Only if the clipped box is too small does the span get expanded — around its own
+        // midpoint, then pushed back inside the domain if that expansion crossed an edge.
+        double minSpan = MinSpanFraction * DataSpan;
+        if (max - min < minSpan)
+        {
+            double mid = (min + max) / 2;
+            min = mid - (minSpan / 2);
+            max = mid + (minSpan / 2);
+
+            if (min < DataMin)
+            {
+                min = DataMin;
+                max = DataMin + minSpan;
+            }
+            else if (max > DataMax)
+            {
+                max = DataMax;
+                min = DataMax - minSpan;
+            }
+        }
+
+        VisibleMin = min;
+        VisibleMax = max;
+    }
 }

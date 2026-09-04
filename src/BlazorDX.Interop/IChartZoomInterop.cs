@@ -20,4 +20,15 @@ public interface IChartZoomInterop : IAsyncDisposable
     /// unavailable" and degrade gracefully rather than dividing by it directly.
     /// </summary>
     ValueTask<double> MeasureWidthAsync(string elementId);
+
+    /// <summary>
+    /// The element's rendered top-left corner in viewport CSS pixels, or (0, 0) if the element
+    /// can't be found. Pan only ever needs a pixel *delta* (free from any two `ClientX`/`ClientY`
+    /// readings, no absolute position required — that's why drag-pan alone never needed this). A
+    /// rectangular brush-to-zoom gesture is different: it must convert an absolute drag rectangle
+    /// into absolute data-space bounds, which needs to know where the element's origin sits in
+    /// viewport coordinates. Called once per gesture, at pointerdown, alongside
+    /// <see cref="MeasureWidthAsync"/> — never per pointermove.
+    /// </summary>
+    ValueTask<(double Left, double Top)> MeasureOffsetAsync(string elementId);
 }

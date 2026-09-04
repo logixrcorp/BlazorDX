@@ -1,6 +1,8 @@
 using BlazorDX.Components;
+using BlazorDX.Interop;
 using Bunit;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace BlazorDX.Components.Tests;
@@ -12,6 +14,14 @@ namespace BlazorDX.Components.Tests;
 /// </summary>
 public sealed class DxChartEventsTests : TestContext
 {
+    // DxScatterChart/DxBubbleChart inject IChartZoomInterop for their opt-in zoom/pan
+    // gestures — the same dependency DxLineChart/DxAreaChart already take. The null
+    // implementation reports no measurement, so no gesture ever starts here.
+    public DxChartEventsTests()
+    {
+        Services.AddScoped<IChartZoomInterop, NullChartZoomInterop>();
+    }
+
     // ---- DxBarChart: the exemplar (click, keyboard nav, hover, non-interactive gating) ----
 
     private static IReadOnlyList<ChartPoint> Bars() =>
