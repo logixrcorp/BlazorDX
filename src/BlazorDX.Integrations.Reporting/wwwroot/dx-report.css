@@ -1,3 +1,5 @@
+/* rtl-clean — converted to logical properties; physical usages that remain carry
+   an rtl-exempt reason. See docs/localization.md. */
 /*
  * dx-report.css — static-SSR + HTMX SSRS report viewer (DxReportViewer).
  * CSS-variable driven so it inherits the host theme; falls back to accessible
@@ -119,7 +121,7 @@
 .dx-report-html :is(th, td) {
   border: 1px solid var(--dx-border, #e2e8f0);
   padding: 6px 10px;
-  text-align: left;
+  text-align: start;
 }
 
 .dx-report-pdf {

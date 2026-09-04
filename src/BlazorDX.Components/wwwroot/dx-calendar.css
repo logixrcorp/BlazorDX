@@ -1,3 +1,5 @@
+/* rtl-clean — converted to logical properties; physical usages that remain carry
+   an rtl-exempt reason. See docs/localization.md. */
 /* DxCalendar — inline month calendar. Token-driven; all colours fall back to sensible
    defaults so it themes with the rest of BlazorDX (see dx-theme.css). */
 

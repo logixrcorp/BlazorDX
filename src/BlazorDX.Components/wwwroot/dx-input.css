@@ -1,3 +1,5 @@
+/* rtl-clean — converted to logical properties; physical usages that remain carry
+   an rtl-exempt reason. See docs/localization.md. */
 /* BlazorDX text & numeric inputs. Token-driven (see dx-theme.css). */
 
 .dx-field {
@@ -50,11 +52,11 @@
 
 /* ---- Affixed input (password reveal) ---- */
 .dx-input-wrap { position: relative; display: block; }
-.dx-input-affixed { padding-right: 2.6rem; }
+.dx-input-affixed { padding-inline-end: 2.6rem; }
 .dx-input-affix {
   position: absolute;
   top: 50%;
-  right: 6px;
+  inset-inline-end: 6px;
   transform: translateY(-50%);
   display: grid;
   place-items: center;
@@ -79,7 +81,7 @@
 }
 .dx-num-input {
   border-radius: 0;
-  text-align: right;
+  text-align: end;
   position: relative;
   z-index: 1;
 }

@@ -1,3 +1,5 @@
+/* rtl-clean — converted to logical properties; physical usages that remain carry
+   an rtl-exempt reason. See docs/localization.md. */
 /* BlazorDX Markdown preview + editor. Token-driven (see dx-theme.css). */
 
 .dx-markdown {
@@ -14,7 +16,7 @@
 .dx-markdown h3 { font-size: 1.15rem; }
 .dx-markdown p { margin: 0.6em 0; }
 .dx-markdown a { color: var(--dx-accent, #2563eb); }
-.dx-markdown ul, .dx-markdown ol { margin: 0.6em 0; padding-left: 1.4em; }
+.dx-markdown ul, .dx-markdown ol { margin: 0.6em 0; padding-inline-start: 1.4em; }
 .dx-markdown li { margin: 0.2em 0; }
 .dx-markdown code {
   padding: 0.1em 0.35em;
@@ -44,7 +46,7 @@
 }
 .dx-markdown th, .dx-markdown td {
   padding: 8px 12px;
-  text-align: left;
+  text-align: start;
   border: 1px solid var(--dx-border, #e2e8f0);
   vertical-align: top;
 }

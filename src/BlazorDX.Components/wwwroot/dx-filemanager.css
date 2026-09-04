@@ -1,3 +1,5 @@
+/* rtl-clean — converted to logical properties; physical usages that remain carry
+   an rtl-exempt reason. See docs/localization.md. */
 /* BlazorDX file manager. Token-driven (see dx-theme.css). */
 
 .dx-fm {
@@ -41,7 +43,7 @@
 /* ---- Tree pane ---- */
 .dx-fm-tree {
   overflow: auto;
-  border-right: 1px solid var(--dx-border, #e2e8f0);
+  border-inline-end: 1px solid var(--dx-border, #e2e8f0);
   padding: 6px 0;
 }
 .dx-fm-node {
@@ -74,7 +76,7 @@
   min-width: 0;
   padding: 4px 6px;
   font: inherit;
-  text-align: left;
+  text-align: start;
   color: var(--dx-text, #0f172a);
   background: transparent;
   border: 0;
@@ -114,7 +116,7 @@
 }
 .dx-fm-name { display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dx-fm-size, .dx-fm-modified { color: var(--dx-text-muted, #64748b); font-size: 0.85rem; }
-.dx-fm-size { text-align: right; font-variant-numeric: tabular-nums; }
+.dx-fm-size { text-align: end; font-variant-numeric: tabular-nums; }
 .dx-fm-empty { padding: 24px 14px; color: var(--dx-text-muted, #94a3b8); }
 
 /* ---- Toolbar / upload (always-available path) ---- */
@@ -186,7 +188,7 @@
 /* "Move here" placement targets (keyboard/single-pointer move alternative). */
 .dx-fm-move-here {
   min-height: 24px;
-  margin-left: 6px;
+  margin-inline-start: 6px;
   padding: 2px 8px;
   font-size: 0.78rem;
   color: var(--dx-accent, #2563eb);

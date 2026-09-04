@@ -1,3 +1,5 @@
+/* rtl-clean — converted to logical properties; physical usages that remain carry
+   an rtl-exempt reason. See docs/localization.md. */
 /*
  * dx-spreadsheet.css — read-only, virtualized multi-sheet spreadsheet viewer.
  * CSS-variable driven so it inherits the host theme; falls back to accessible
@@ -163,7 +165,7 @@
   flex: 0 0 auto;
   width: 9.5rem;
   padding: 5px 10px;
-  border-right: 1px solid var(--dx-border, #eef2f7);
+  border-inline-end: 1px solid var(--dx-border, #eef2f7);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -178,7 +180,7 @@
 .dx-sheet-rowlabel {
   flex: 0 0 auto;
   width: 3.25rem;
-  text-align: right;
+  text-align: end;
   color: var(--dx-text-muted, #475569);
   background: var(--dx-surface-alt, #f8fafc);
   font-variant-numeric: tabular-nums;
@@ -210,7 +212,7 @@
 
 .dx-sheet-scroll .dx-sheet-rowlabel {
   position: sticky;
-  left: 0;
+  inset-inline-start: 0;
   z-index: 1; /* the row-number gutter stays put during horizontal scroll */
 }
 
@@ -245,7 +247,7 @@
   color: var(--dx-error-text, #7f1d1d);
   background: var(--dx-error-bg, #fef2f2);
   font-weight: 600;
-  border-left: 3px solid var(--dx-error-text, #7f1d1d);
+  border-inline-start: 3px solid var(--dx-error-text, #7f1d1d);
 }
 
 .dx-sheet-cell-input {

@@ -1,3 +1,5 @@
+/* rtl-clean — converted to logical properties; physical usages that remain carry
+   an rtl-exempt reason. See docs/localization.md. */
 /* BlazorDX editorial system — "Architecture of Silence": a magazine-style reading system for
    Insights (articles/blog/whitepapers). Its color palette (--dx-ed-paper/--dx-ed-ink/--dx-ed-rule/
    --dx-ed-accent, defined below on .dx-editorial) is DERIVED from the library's own dx-theme.css
@@ -30,8 +32,8 @@
      hero/figures), so the reading surface runs edge-to-edge under the app's persistent top nav
      rather than sitting as a tinted rectangle inside the page shell's ~1000px cap. */
   width: 100vw;
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
+  margin-inline-start: calc(50% - 50vw);
+  margin-inline-end: calc(50% - 50vw);
   padding-bottom: clamp(48px, 8vw, 96px);
   background: var(--dx-ed-paper);
   color: var(--dx-ed-ink);
@@ -47,7 +49,7 @@
   max-width: 44rem;
   margin: 0 auto;
   padding: clamp(48px, 10vw, 120px) 24px clamp(32px, 6vw, 64px);
-  text-align: left;
+  text-align: start;
 }
 /* Cinematic variant: applied alongside .dx-editorial-hero when a HeroImageSrc is set.
    Breaks out to full viewport width regardless of any ancestor's max-width/padding — the
@@ -56,8 +58,8 @@
 .dx-editorial-hero--photo {
   position: relative;
   width: 100vw;
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
+  margin-inline-start: calc(50% - 50vw);
+  margin-inline-end: calc(50% - 50vw);
   max-width: none;
   min-height: 78vh;
   padding: 0;
@@ -177,8 +179,8 @@
   width: 100vw;
   margin-top: clamp(56px, 9vw, 112px);
   margin-bottom: clamp(56px, 9vw, 112px);
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
+  margin-inline-start: calc(50% - 50vw);
+  margin-inline-end: calc(50% - 50vw);
 }
 .dx-editorial-figure-art {
   width: 100%;
@@ -201,8 +203,8 @@
   line-height: 1.4;
   color: var(--dx-ed-ink-muted);
   max-width: var(--measure);
-  margin-left: auto;
-  margin-right: auto;
+  margin-inline-start: auto;
+  margin-inline-end: auto;
 }
 
 @supports (animation-timeline: view()) {
@@ -252,7 +254,7 @@
 }
 .dx-editorial-spread-spec {
   position: absolute;
-  right: -16px;
+  inset-inline-end: -16px;
   bottom: -28px;
   display: flex;
   flex-direction: column;
@@ -351,14 +353,14 @@
   max-width: 46rem;
   margin: clamp(48px, 8vw, 88px) auto;
   padding: 0 24px;
-  text-align: left;
+  text-align: start;
 }
 /* An oversized ghost quotation mark behind the text — a classic magazine-spread device. */
 .dx-editorial-pullquote::before {
   content: "\201C";
   position: absolute;
   top: -3.6rem;
-  left: 12px;
+  inset-inline-start: 12px;
   font-family: var(--dx-ed-display);
   font-size: 10rem;
   line-height: 1;
@@ -377,15 +379,15 @@
   font-size: clamp(1.6rem, 3.4vw, 2.5rem);
   line-height: 1.3;
   color: var(--dx-ed-ink);
-  border-left: 3px solid var(--dx-ed-accent);
-  padding-left: 28px;
+  border-inline-start: 3px solid var(--dx-ed-accent);
+  padding-inline-start: 28px;
 }
 .dx-editorial-pullquote cite {
   position: relative;
   z-index: 1;
   display: block;
   margin-top: 16px;
-  padding-left: 31px;
+  padding-inline-start: 31px;
   font-style: normal;
   font-family: var(--dx-ed-body);
   font-size: 0.9rem;
@@ -401,7 +403,7 @@
   margin: 2.5rem auto;
   padding: 20px 28px;
   background: var(--dx-ed-paper-alt);
-  border-left: 3px solid var(--dx-ed-accent);
+  border-inline-start: 3px solid var(--dx-ed-accent);
 }
 .dx-editorial-sidebar-title {
   display: flex;
@@ -460,7 +462,7 @@
   margin: 0 auto 3rem;
   font-style: italic;
   color: var(--dx-ed-ink-muted);
-  text-align: left;
+  text-align: start;
 }
 .dx-editorial-scrolly-stage {
   position: relative;
@@ -488,7 +490,7 @@
   content: attr(data-index);
   position: absolute;
   top: -0.32em;
-  right: 0.1em;
+  inset-inline-end: 0.1em;
   font-family: var(--dx-ed-display);
   font-size: clamp(6rem, 16vw, 11rem);
   font-weight: 600;
@@ -696,8 +698,8 @@
   .dx-editorial-spread-spec {
     position: static;
     margin-top: -32px;
-    margin-left: auto;
-    margin-right: 16px;
+    margin-inline-start: auto;
+    margin-inline-end: 16px;
   }
 }
 @media (max-width: 640px) {
@@ -707,8 +709,8 @@
   .dx-editorial-sidebar,
   .dx-editorial-scrolly,
   .dx-editorial-footer {
-    padding-left: 20px;
-    padding-right: 20px;
+    padding-inline-start: 20px;
+    padding-inline-end: 20px;
   }
   .dx-editorial-title { max-width: none; }
   .dx-editorial-scrolly-stage { min-height: 0; padding: 1.75rem 1.25rem; }

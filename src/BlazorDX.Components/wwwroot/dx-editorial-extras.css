@@ -1,3 +1,5 @@
+/* rtl-clean — converted to logical properties; physical usages that remain carry
+   an rtl-exempt reason. See docs/localization.md. */
 /* BlazorDX editorial system — reading-experience and discovery add-ons: drop cap, table of
    contents, reading progress, author bio, tags, related, series nav, inset figure, stat row,
    footnotes, and glossary term. Split out of dx-editorial.css once that file hit the library's
@@ -7,12 +9,12 @@
 
 /* ---- Drop cap: the oldest device in the glossary — a first-letter treatment, pure CSS. ---- */
 .dx-editorial-dropcap::first-letter {
-  float: left;
+  float: inline-start;
   font-family: var(--dx-ed-display);
   font-weight: 600;
   font-size: 4.6rem;
   line-height: 0.8;
-  padding-right: 10px;
+  padding-inline-end: 10px;
   padding-top: 8px;
   color: var(--dx-ed-accent);
 }
@@ -73,14 +75,19 @@
 .dx-editorial-reading-progress {
   position: fixed;
   top: 0;
-  left: 0;
+  left: 0; /* rtl-exempt: full-width bar, symmetric */
   width: 100%;
   height: 3px;
   background: var(--dx-ed-accent, #a23b2e);
-  transform-origin: left;
+  transform-origin: left;   /* see the [dir="rtl"] rule below */
   transform: scaleX(0);
   z-index: 1000;
   pointer-events: none;
+}
+/* `transform-origin` takes no logical keyword, so the bar would still fill left-to-right
+   under RTL without this. */
+[dir="rtl"] .dx-editorial-reading-progress {
+  transform-origin: right;
 }
 @supports (animation-timeline: scroll()) {
   .dx-editorial-reading-progress {
@@ -239,7 +246,7 @@
   background: var(--dx-ed-paper-alt);
 }
 .dx-editorial-series-link--next {
-  text-align: right;
+  text-align: end;
 }
 .dx-editorial-series-eyebrow {
   display: block;
@@ -260,14 +267,14 @@
    classic print technique, native in CSS since 2020. A third image treatment alongside the
    full-bleed DxEditorialFigure and the two-column DxEditorialSpread. ---- */
 .dx-editorial-inset-figure {
-  float: left;
+  float: inline-start;
   width: clamp(160px, 32%, 260px);
   margin: 6px 24px 16px 0;
   shape-outside: margin-box;
   shape-margin: 12px;
 }
 .dx-editorial-inset-figure--right {
-  float: right;
+  float: inline-end;
   margin: 6px 0 16px 24px;
 }
 .dx-editorial-inset-figure img,
@@ -292,7 +299,7 @@
   max-width: 72rem;
   margin: clamp(56px, 9vw, 104px) auto;
   padding: 0 24px;
-  text-align: left;
+  text-align: start;
 }
 .dx-editorial-stat-value {
   font-family: var(--dx-ed-display);
@@ -334,7 +341,7 @@
 }
 .dx-editorial-footnotes ol {
   margin: 0;
-  padding-left: 1.4rem;
+  padding-inline-start: 1.4rem;
   font-size: 0.92rem;
   line-height: 1.6rem;
   color: var(--dx-ed-ink-muted);
@@ -346,7 +353,7 @@
   color: var(--dx-ed-accent);
   text-decoration: underline;
   text-underline-offset: 2px;
-  margin-left: 4px;
+  margin-inline-start: 4px;
 }
 
 /* ---- Glossary term: an inline DxTooltip trigger, dashed underline as the hover affordance. ---- */
@@ -398,7 +405,7 @@
   margin: clamp(48px, 8vw, 88px) auto;
   padding: 28px 28px 32px;
   background: var(--dx-ed-paper-alt);
-  border-left: 3px solid var(--dx-ed-accent);
+  border-inline-start: 3px solid var(--dx-ed-accent);
 }
 .dx-editorial-newsletter-heading {
   font-family: var(--dx-ed-display);
@@ -442,8 +449,8 @@
 /* ---- Responsive ---- */
 @media (max-width: 640px) {
   .dx-editorial-author-bio {
-    padding-left: 20px;
-    padding-right: 20px;
+    padding-inline-start: 20px;
+    padding-inline-end: 20px;
   }
   .dx-editorial-dropcap::first-letter { font-size: 3.4rem; }
   .dx-editorial-inset-figure,

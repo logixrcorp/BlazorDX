@@ -257,8 +257,8 @@ file rather than the ones with user-facing text.)
 | …strings externalized so far | 204, across 26 resource files |
 | …with 1–3 strings each | 60 |
 | …heavy hitters (>10 strings) | 6, holding ~40% of all text |
-| Stylesheets converted | 1 of 25 |
-| RTL declarations remaining | 104 mechanical + 27 judgment calls |
+| Stylesheets converted | **25 of 25 — done** |
+| RTL declarations remaining | 0 (104 mechanical rewrites + 22 judgment calls, applied) |
 
 ### Batch order
 
@@ -284,11 +284,24 @@ component fails the build, since DX1003 arms itself the moment a `DxStrings` fie
 
 **40 of 83 components, 204 strings.** The remaining 43 hold roughly 60–80 between them.
 
-**CSS** — 12 trivial files (≤4 hits each) → `dx-datagrid` → the four heavy files
-individually → `dx-layout` last, since 7 of its 10 declarations are judgment calls.
+**CSS — finished.** All 25 stylesheets carry `rtl-clean`, and
+`RtlLogicalPropertyTests.Every_shipped_stylesheet_is_marked_converted` now makes the marker
+**mandatory**, so a new stylesheet cannot opt out of the check by omitting it. That was the one
+hole an opt-in ratchet always leaves, and closing it is what "done" means here.
 
-**Completion criterion:** DX1003 fires on every file in `BlazorDX.Components`, and every
-stylesheet carries `rtl-clean`. Both ratchets exist to be removed.
+Four physical usages that a rewrite would have got wrong, kept as worked examples of the
+`rtl-exempt` reasoning:
+
+- `DxSheet`'s `Side="left"/"right"` names a **physical screen edge** — flipping it would make
+  `Side="right"` dock left, contradicting the parameter its caller wrote.
+- Boxes pinned to **both** edges (`left: 0; right: 0`) are symmetric; converting them is churn.
+- `transform` has no logical form. `DxSwitch`'s thumb travel and the reading-progress bar's
+  `transform-origin` needed explicit `[dir="rtl"]` rules — the two places where CSS itself
+  cannot express the flip.
+
+**Completion criterion:** DX1003 fires on every file in `BlazorDX.Components` (43 components
+still to localize), and every stylesheet carries `rtl-clean` (**met**). Both ratchets exist to
+be removed; one now is.
 
 ### Separate tracks, each needing a different mechanism
 

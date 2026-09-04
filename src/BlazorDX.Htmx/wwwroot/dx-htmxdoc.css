@@ -1,3 +1,5 @@
+/* rtl-clean — converted to logical properties; physical usages that remain carry
+   an rtl-exempt reason. See docs/localization.md. */
 /*
  * dx-htmxdoc.css — static-SSR + HTMX read-only document viewer.
  * CSS-variable driven so it inherits the host theme; falls back to accessible
@@ -93,7 +95,7 @@
 .dx-htmxdoc-grid td {
   border: 1px solid var(--dx-border, #eef2f7);
   padding: 6px 10px;
-  text-align: left;
+  text-align: start;
   white-space: nowrap;
 }
 
@@ -106,7 +108,7 @@
 }
 
 .dx-htmxdoc-rowlabel {
-  text-align: right;
+  text-align: end;
   color: var(--dx-text-muted, #475569);
   background: var(--dx-surface-alt, #f8fafc);
   font-weight: 400;
@@ -153,7 +155,7 @@
 
 .dx-htmxdoc-list {
   margin: 0 0 1em;
-  padding-left: 1.5rem;
+  padding-inline-start: 1.5rem;
 }
 
 .dx-htmxdoc-list li {
@@ -170,7 +172,7 @@
 .dx-htmxdoc-wordtable td {
   border: 1px solid var(--dx-border, #e2e8f0);
   padding: 0.5rem 0.75rem;
-  text-align: left;
+  text-align: start;
   vertical-align: top;
   white-space: pre-wrap;
 }

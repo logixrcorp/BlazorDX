@@ -1,3 +1,5 @@
+/* rtl-clean — converted to logical properties; physical usages that remain carry
+   an rtl-exempt reason. See docs/localization.md. */
 /* Barcode and QR rendering. The SVG itself carries the geometry; these rules just
    give the symbols a sensible box and a clear error state. Colours are overridable
    via the --dx-barcode-* / --dx-qr-* CSS variables read by the components. */

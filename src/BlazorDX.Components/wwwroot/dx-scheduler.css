@@ -1,3 +1,5 @@
+/* rtl-clean — converted to logical properties; physical usages that remain carry
+   an rtl-exempt reason. See docs/localization.md. */
 /* BlazorDX week scheduler. Token-driven (see dx-theme.css). */
 
 .dx-sched {
@@ -32,12 +34,12 @@
   outline: 2px solid var(--dx-accent, #2563eb);
   outline-offset: 1px;
 }
-.dx-sched-range { margin-left: 6px; font-weight: 600; }
+.dx-sched-range { margin-inline-start: 6px; font-weight: 600; }
 
 /* ---- View switch (Week / Month / Day) ---- */
 .dx-sched-views {
   display: inline-flex;
-  margin-left: auto;
+  margin-inline-start: auto;
   border: 1px solid var(--dx-border, #cbd5e1);
   border-radius: 6px;
   overflow: hidden;
@@ -50,10 +52,10 @@
   color: var(--dx-text, #0f172a);
   background: var(--dx-surface, #ffffff);
   border: 0;
-  border-left: 1px solid var(--dx-border, #cbd5e1);
+  border-inline-start: 1px solid var(--dx-border, #cbd5e1);
   cursor: pointer;
 }
-.dx-sched-view:first-child { border-left: 0; }
+.dx-sched-view:first-child { border-inline-start: 0; }
 .dx-sched-view:hover { background: var(--dx-surface-alt, #f1f5f9); }
 .dx-sched-view-on {
   color: #ffffff;
@@ -82,14 +84,14 @@
   display: grid;
   border-bottom: 1px solid var(--dx-border, #e2e8f0);
 }
-.dx-sched-corner { border-right: 1px solid var(--dx-border, #e2e8f0); }
+.dx-sched-corner { border-inline-end: 1px solid var(--dx-border, #e2e8f0); }
 .dx-sched-dayhead {
   padding: 8px 6px;
   text-align: center;
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--dx-text-muted, #475569);
-  border-right: 1px solid var(--dx-border, #e2e8f0);
+  border-inline-end: 1px solid var(--dx-border, #e2e8f0);
 }
 .dx-sched-today {
   color: var(--dx-accent, #2563eb);
@@ -102,7 +104,7 @@
   overflow-y: auto;
 }
 .dx-sched-axis {
-  border-right: 1px solid var(--dx-border, #e2e8f0);
+  border-inline-end: 1px solid var(--dx-border, #e2e8f0);
 }
 .dx-sched-hour {
   display: flex;
@@ -114,7 +116,7 @@
 }
 .dx-sched-col {
   position: relative;
-  border-right: 1px solid var(--dx-border, #e2e8f0);
+  border-inline-end: 1px solid var(--dx-border, #e2e8f0);
   /* Hour gridlines; row size is set inline via background-size. */
   background-image: repeating-linear-gradient(
     to bottom, var(--dx-border, #e2e8f0) 0 1px, transparent 1px 100%);
@@ -122,21 +124,20 @@
 }
 .dx-sched-event {
   position: absolute;
-  left: 3px;
-  right: 3px;
+  left: 3px; right: 3px; /* rtl-exempt: inset from both edges, symmetric */
   display: flex;
   flex-direction: column;
   gap: 2px;
   padding: 4px 6px;
   overflow: hidden;
   font: inherit;
-  text-align: left;
+  text-align: start;
   /* Neutral body + dark text clears AA for ANY event colour; the colour is the left
      accent stripe, not the text background (no fixed darkening passes for light colours). */
   color: var(--dx-text, #0f172a);
   background: var(--dx-surface, #ffffff);
   border: 1px solid var(--dx-border, #e2e8f0);
-  border-left: 4px solid var(--dx-event-accent, var(--dx-accent, #2563eb));
+  border-inline-start: 4px solid var(--dx-event-accent, var(--dx-accent, #2563eb));
   border-radius: 6px;
   cursor: pointer;
 }
@@ -167,8 +168,7 @@
 /* Provisional selection box drawn while sweeping out a new event (drag-to-create). */
 .dx-sched-create-preview {
   position: absolute;
-  left: 3px;
-  right: 3px;
+  left: 3px; right: 3px; /* rtl-exempt: inset from both edges, symmetric */
   pointer-events: none;
   border: 1px dashed var(--dx-accent, #2563eb);
   border-radius: 6px;
@@ -178,8 +178,7 @@
 /* Active time-slot cell (aria-activedescendant target). */
 .dx-sched-cell-active {
   position: absolute;
-  left: 0;
-  right: 0;
+  left: 0; right: 0; /* rtl-exempt: pinned to both edges, symmetric */
   pointer-events: none;
   outline: 2px solid var(--dx-accent, #2563eb);
   outline-offset: -2px;
@@ -206,7 +205,7 @@
 .dx-sched-month-cell {
   min-height: 96px;
   padding: 4px;
-  border-right: 1px solid var(--dx-border, #e2e8f0);
+  border-inline-end: 1px solid var(--dx-border, #e2e8f0);
   border-bottom: 1px solid var(--dx-border, #e2e8f0);
   overflow: hidden;
 }
@@ -235,11 +234,11 @@
   padding: 2px 5px;
   font: inherit;
   font-size: 0.72rem;
-  text-align: left;
+  text-align: start;
   color: var(--dx-text, #0f172a);
   background: var(--dx-surface, #ffffff);
   border: 1px solid var(--dx-border, #e2e8f0);
-  border-left: 4px solid var(--dx-event-accent, var(--dx-accent, #2563eb));
+  border-inline-start: 4px solid var(--dx-event-accent, var(--dx-accent, #2563eb));
   border-radius: 4px;
   cursor: pointer;
 }
@@ -290,7 +289,7 @@
   display: flex;
   align-items: center;
   padding: 0 12px;
-  border-right: 1px solid var(--dx-border, #e2e8f0);
+  border-inline-end: 1px solid var(--dx-border, #e2e8f0);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -310,7 +309,7 @@
   text-align: center;
   font-size: 0.72rem;
   color: var(--dx-text-muted, #94a3b8);
-  border-right: 1px solid var(--dx-border, #eef2f7);
+  border-inline-end: 1px solid var(--dx-border, #eef2f7);
   padding: 4px 0;
   box-sizing: border-box;
 }
@@ -325,7 +324,7 @@
   overflow: hidden;
   padding: 0 8px;
   font: inherit;
-  text-align: left;
+  text-align: start;
   color: #ffffff;
   background: var(--dx-accent, #2563eb);
   border: 0;
@@ -336,7 +335,7 @@
 .dx-gantt-bar:focus-visible { outline: 2px solid var(--dx-text, #0f172a); outline-offset: 1px; }
 .dx-gantt-progress {
   position: absolute;
-  left: 0;
+  inset-inline-start: 0;
   top: 0;
   bottom: 0;
   background: rgba(255, 255, 255, 0.3);
