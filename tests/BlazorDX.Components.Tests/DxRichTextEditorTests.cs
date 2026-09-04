@@ -3,6 +3,7 @@ using BlazorDX.Interop;
 using BlazorDX.Security;
 using Bunit;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Localization;
 using Xunit;
 
 namespace BlazorDX.Components.Tests;
@@ -89,5 +90,33 @@ public sealed class DxRichTextEditorTests : TestContext
         editor.FindAll(".dx-rte-tool")[0].Click();   // Bold
 
         Assert.True(sanitizeCalls >= 1);
+    }
+
+    [Fact]
+    public void Toolbar_glyphs_and_labels_are_routed_through_the_localizer()
+    {
+        // The whole toolbar used to live in a static table of English strings, which no analyzer
+        // could see. The glyph is localized alongside the label: "B" for Bold is an English
+        // mnemonic, and a German toolbar wants "F" for Fett.
+        Services.AddSingleton<IStringLocalizer<DxRichTextEditor>>(new FakeStringLocalizer<DxRichTextEditor>());
+
+        IRenderedComponent<DxRichTextEditor> editor = RenderComponent<DxRichTextEditor>();
+
+        Assert.Contains("§§TOOLBOLD§§", editor.Markup);
+        Assert.Contains("§§TOOLBOLDGLYPH§§", editor.Markup);
+        Assert.Contains("§§BLOCKSTYLENORMAL§§", editor.Markup);
+    }
+
+    [Fact]
+    public void Toolbar_falls_back_to_the_invariant_resource()
+    {
+        Services.AddLocalization();
+
+        IRenderedComponent<DxRichTextEditor> editor = RenderComponent<DxRichTextEditor>();
+
+        Assert.Contains("Bold", editor.Markup);
+        Assert.Contains("Heading 1", editor.Markup);
+        // Font family names are proper nouns and are deliberately not localized.
+        Assert.Contains("Georgia", editor.Markup);
     }
 }
