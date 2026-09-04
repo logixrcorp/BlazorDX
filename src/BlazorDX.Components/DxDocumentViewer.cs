@@ -454,7 +454,10 @@ public sealed class DxDocumentViewer : ComponentBase
 
     // Safe placeholder shown when a source is missing or fails the scheme allowlist:
     // nothing clickable, no embed/img with an unsafe URL.
-    private static void BuildUnavailable(RenderTreeBuilder builder)
+    //
+    // Instance, not static: it renders user-facing text, and S is an instance member. Any
+    // helper that produces text has to give up `static` when its component is localized.
+    private void BuildUnavailable(RenderTreeBuilder builder)
     {
         builder.OpenElement(260, "div");
         builder.AddAttribute(261, "class", "dx-docview-unavailable");
