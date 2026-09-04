@@ -42,8 +42,7 @@ public sealed class DxErrorBoundary : ErrorBoundaryBase
         }
     }
 
-    [Inject] private IServiceProvider Services { get; set; } = default!;
-
+    // Reuses the Services injection this component already had for the diagnostics sink.
     private DxStrings<DxErrorBoundary>? s;
 
     private DxStrings<DxErrorBoundary> S => s ??= new(Services);

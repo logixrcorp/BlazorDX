@@ -39,9 +39,12 @@ public sealed class DxFieldList<TItem> : CollectionEditPrimitive<TItem>
 
     [Inject] private IServiceProvider Services { get; set; } = default!;
 
-    private DxStrings<DxFieldList>? s;
+    // DxFieldListResources, not DxFieldList<TItem>: the default factory derives the resource name
+    // from the closed generic type, so localizing against the component itself would look for a
+    // different resource per TItem. Same rule as DxDataGridResources — see docs/localization.md.
+    private DxStrings<DxFieldListResources>? s;
 
-    private DxStrings<DxFieldList> S => s ??= new(Services);
+    private DxStrings<DxFieldListResources> S => s ??= new(Services);
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
@@ -143,3 +146,10 @@ public sealed class DxFieldList<TItem> : CollectionEditPrimitive<TItem>
         return ItemsChanged.HasDelegate ? ItemsChanged.InvokeAsync(updated) : Task.CompletedTask;
     }
 }
+
+/// <summary>
+/// Resource-name anchor for <see cref="DxFieldList{TItem}"/>, which is generic: the default
+/// localizer factory derives a resource name from the <i>closed</i> type, so localizing against
+/// the component itself would look for a different resource per <c>TItem</c>.
+/// </summary>
+public sealed class DxFieldListResources;
