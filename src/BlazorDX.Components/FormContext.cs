@@ -5,16 +5,6 @@ using Microsoft.AspNetCore.Components.Web;
 
 namespace BlazorDX.Components;
 
-/// <summary>
-/// Non-generic marker a nested <c>DxForm&lt;TNested&gt;</c> implements so an owning
-/// form can propagate <c>Refresh()</c> into it without knowing <c>TNested</c> at its
-/// own compile time — an ordinary interface dispatch, not reflection or <c>dynamic</c>.
-/// </summary>
-internal interface IRefreshableForm
-{
-    void Refresh();
-}
-
 /// <summary>What a field template receives: the field metadata, its current value, a
 /// callback to change it, and any validation errors against it.</summary>
 public sealed class FormFieldRenderContext
@@ -195,14 +185,15 @@ internal static class FormFieldRenderer
         b.CloseElement();
     }
 
-    // An Object-kind field: a real DxFormSection wrapping a dynamically-opened
-    // DxForm<TNested> (builder.OpenComponent(int, Type) is Blazor's own supported
-    // dynamic-component API — it never inspects TNested's members, so this doesn't
-    // touch ADR 0002's zero-reflection identity, which is about BlazorDX's own
-    // model-binding layer, not Blazor's built-in component-parameter wiring that
-    // every BlazorDX component already relies on). A currently-null nested property
-    // is materialized (new TNested(), guaranteed constructible by DX2009) and
-    // attached immediately, so the freshly-rendered sub-form edits the real instance.
+    // An Object-kind field: a real DxFormSection wrapping a directly-opened
+    // DxFormBody for the nested instance — DxFormBody is non-generic (works over
+    // IFormModelUntyped/object), so this is an ordinary, ahead-of-time-compilable
+    // component instantiation, never Type.MakeGenericType (incompatible with Native
+    // AOT — this repo publishes and smoke-tests an AOT build in CI). It also renders
+    // no <form> of its own, so there's no nested-<form>-inside-<form> HTML hazard.
+    // A currently-null nested property is materialized (new TNested(), guaranteed
+    // constructible by DX2009) and attached immediately, so the freshly-rendered
+    // sub-form edits the real instance.
     private static void RenderNestedObject(RenderTreeBuilder b, FormContext ctx, FormFieldInfo field)
     {
         IReadOnlyList<string> errors = ctx.ErrorsFor(field.Name);
@@ -215,17 +206,15 @@ internal static class FormFieldRenderer
         }
 
         IFormModelUntyped? descriptor = ctx.NestedDescriptorFor(field.Name);
-        Type formType = typeof(DxForm<>).MakeGenericType(instance.GetType());
 
         b.OpenComponent<DxFormSection>(0);
         b.AddComponentParameter(1, "Title", field.Label);
         b.AddComponentParameter(2, "ChildContent", (RenderFragment)(b2 =>
         {
-            b2.OpenComponent(0, formType);
+            b2.OpenComponent<DxFormBody>(0);
             b2.AddComponentParameter(1, "Model", instance);
             b2.AddComponentParameter(2, "Descriptor", descriptor);
             b2.AddComponentParameter(3, "ShowSubmit", false);
-            b2.AddComponentParameter(5, "IsNestedForm", true);
             b2.AddComponentReferenceCapture(4, r => ctx.CaptureNestedRef(field.Name, -1, r));
             b2.CloseComponent();
 
@@ -318,7 +307,6 @@ internal static class FormFieldRenderer
     private static void RenderNestedArray(RenderTreeBuilder b, FormContext ctx, FormFieldInfo field)
     {
         IReadOnlyList<object> items = ctx.GetArrayInstances(field.Name);
-        Type formType = typeof(DxForm<>).MakeGenericType(field.NestedType!);
         IFormModelUntyped? elementDescriptor = ctx.ArrayElementDescriptorFor(field.Name);
 
         b.OpenComponent<DxFieldList<object>>(0);
@@ -328,11 +316,10 @@ internal static class FormFieldRenderer
         b.AddComponentParameter(3, "NewItem", (Func<object>)(() => ctx.NewArrayElement(field.Name)));
         b.AddComponentParameter(4, "ItemTemplate", (RenderFragment<CollectionItemContext<object>>)(itemCtx => inner =>
         {
-            inner.OpenComponent(0, formType);
+            inner.OpenComponent<DxFormBody>(0);
             inner.AddComponentParameter(1, "Model", itemCtx.Item);
             inner.AddComponentParameter(2, "Descriptor", elementDescriptor);
             inner.AddComponentParameter(3, "ShowSubmit", false);
-            inner.AddComponentParameter(5, "IsNestedForm", true);
             inner.AddComponentReferenceCapture(4, r => ctx.CaptureNestedRef(field.Name, itemCtx.Index, r));
             inner.CloseComponent();
         }));

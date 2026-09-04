@@ -156,41 +156,50 @@ needs a genuinely broken (cyclic) fixture to trigger, is verified once manually 
 covered by an automated regression test — the same scoped, stated limitation ADR 0018 accepted
 for DX2001–2004.
 
-### Rendering composes existing pieces — and one real bug this caught
+### Rendering needed a new split — `DxFormBody` — and two real bugs this caught
 
 `FormFieldRenderer.Render` (`FormContext.cs`) gets two early branches, before today's
 label/input/errors layout, so the existing scalar path (including template hooks) is completely
 untouched code:
 
-- **Object** → a dynamically-opened `DxForm<TNested>` (`builder.OpenComponent(int, Type)` —
-  Blazor's own supported dynamic-component API, the same mechanism `DynamicComponent` uses; it
-  never inspects `TNested`'s members, so this is not a violation of ADR 0002's zero-reflection
-  identity, which is specifically about BlazorDX's *own* data-binding layer, not Blazor's
-  built-in component-parameter wiring every BlazorDX component already depends on) wrapped in the
-  existing `DxFormSection`. A currently-null nested property is materialized (`new TNested()`,
-  DX2009-guaranteed constructible) and attached via `SetNestedInstance` *before* the sub-form
-  renders, so there is no write-back step — the sub-form edits the actual attached instance by
-  reference identity.
+- **Object** → the existing `DxFormSection` wrapping a nested sub-form for the instance.
 - **Array** → a new Tier-2 `DxFieldList<TItem>` (`TItem = string` for array-of-scalar, or the
   nested model type for array-of-nested). Array-of-nested rows are the Object-kind path above,
   repeated per element — deliberately not a third rendering mechanism.
 
-**A real bug was caught during implementation, not by CI**: the first pass rendered the nested
-`DxForm<TNested>` through its normal `BuildRenderTree`, which unconditionally wraps content in a
-`<form>` element — nesting a `<form>` inside the outer form's own `<form>`, which is invalid HTML
-and produces unpredictable browser reparenting. Fixed with an internal `[Parameter] internal bool
-IsNestedForm` on `DxForm<TModel>` (Blazor's parameter binder sets `[Parameter]` properties via
-reflection regardless of C# accessibility, so `internal` here is intentional): when true, the
-component renders a `<div class="dx-form dx-form-nested">` instead of `<form>` and skips the
-`onsubmit` wiring entirely — the outer form's own submit is what drives everything. Propagating
-the outer form's `Refresh()`/submit-time revalidation into nested sub-forms (each of which keeps
-its **own independent** `errors` list — this is why a nested field's prefixed error like
-`"Location.Street"` is never looked up via the outer form's `ErrorsFor`, only the outer field's
-own unprefixed top-level message is) needed a small non-generic marker interface,
-`internal interface IRefreshableForm { void Refresh(); }`, implemented by `DxForm<TModel>` — lets
-`DxForm.SubmitAsync`/`Refresh()` call `.Refresh()` on a captured `DxForm<TNested>` reference
-without knowing `TNested`, with zero reflection (rejecting `dynamic`, which *would* be runtime
-reflection).
+**Two real problems were caught during implementation** (the first by CI, the second by review
+before the next push), and together they forced a genuine architectural split, not a patch:
+
+1. The first approach opened the nested sub-form as a dynamically-typed `DxForm<TNested>` via
+   `builder.OpenComponent(int, Type)` with `typeof(DxForm<>).MakeGenericType(...)`. CI's
+   warnings-as-errors build rejected this outright: `Type.MakeGenericType` carries
+   `[RequiresDynamicCode]`, incompatible with Native AOT — and this repo publishes and
+   smoke-tests an actual AOT build in CI (`AOT publish + smoke`). Not a style nitpick; a genuine
+   "would break under `PublishAot`" hazard the analyzer caught honestly.
+2. That same dynamically-opened `DxForm<TNested>` was rendering its own `<form>` element via its
+   normal `BuildRenderTree` — nesting a `<form>` inside the outer form's own `<form>`, invalid
+   HTML that produces unpredictable browser reparenting.
+
+**The fix for both**: `DxForm<TModel>` is now a thin typed wrapper around a new internal,
+**non-generic** component, `DxFormBody` — the actual field-rendering/validation engine, working
+entirely over `IFormModelUntyped`/`object` rather than `TModel` (exactly the surface this ADR's
+core decision exists to provide). `DxForm<TModel>` renders the real `<form>` element and opens one
+`DxFormBody`, boxing `Model` and passing `Descriptor` (already an `IFormModelUntyped`, via
+interface inheritance). A nested Object/Array field's rendering opens `DxFormBody` **directly** —
+`builder.OpenComponent<DxFormBody>(...)`, a compile-time-known, non-generic type, so this is an
+ordinary, ahead-of-time-compilable component instantiation, never `MakeGenericType`. And because
+`DxFormBody` renders no wrapping element of its own (just a `CascadingValue<FormContext>` around
+its fields), a nested `<form>` is structurally impossible now, not merely avoided by a flag.
+
+A currently-null nested property is materialized (`new TNested()`, DX2009-guaranteed
+constructible) and attached via `SetNestedInstance` *before* the sub-form renders, so there is no
+write-back step — the sub-form edits the actual attached instance by reference identity.
+Propagating the outer form's `Refresh()`/submit-time revalidation into nested sub-forms (each of
+which keeps its **own independent** `errors` list — this is why a nested field's prefixed error
+like `"Location.Street"` is never looked up via the outer form's `ErrorsFor`, only the outer
+field's own unprefixed top-level message is) needs no interface or reflection at all: every
+captured nested reference is the same concrete `DxFormBody` type, so `DxForm`/`DxFormBody` just
+call `.Refresh()` on it directly.
 
 **New Tier-1 primitive**, `CollectionEditPrimitive<T>` (`src/BlazorDX.Primitives/Interaction/`) —
 built fresh rather than by extending `SortablePrimitive` (which is hardcoded to
@@ -235,9 +244,10 @@ nested-aware logic.
   (`src/BlazorDX.Primitives/Interaction/`, `src/BlazorDX.Components/`).
 - Five new generator diagnostics (DX2005, DX2007–2009 per-type; DX2006 a new whole-compilation
   pass), alongside ADR 0018's DX2001–2004.
-- A new internal `IsNestedForm` parameter and `IRefreshableForm` marker interface on
-  `DxForm<TModel>` — both internal implementation details of nested rendering, not part of the
-  public component API.
+- A new internal, non-generic `DxFormBody` component — the actual field-rendering/validation
+  engine behind `DxForm<TModel>` (which is now a thin typed wrapper around it) — not part of the
+  public component API, but the vehicle that keeps nested rendering both AOT-safe (no
+  `Type.MakeGenericType`) and free of the nested-`<form>` HTML hazard.
 - **Known limitations, stated together:** array-of-scalar elements get no per-item constraint
   validation, only the list-level `Required` check (a real, separable feature, deferred
   deliberately); `List<T>` only, not `T[]`/`IList<T>`/other collection shapes; no

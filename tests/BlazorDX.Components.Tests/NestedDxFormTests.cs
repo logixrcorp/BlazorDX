@@ -31,10 +31,11 @@ public sealed class NestedDxFormTests : TestContext
 
         Assert.Single(form.FindAll("fieldset.dx-form-section"));
 
-        // A <form> cannot legally nest inside another <form> -- the nested sub-form
-        // must render as a <div>, not a second <form> element.
+        // A nested sub-form is DxFormBody directly (non-generic, no
+        // Type.MakeGenericType -- Native AOT-incompatible), which renders no <form>
+        // of its own -- so there must be exactly one <form> element on the page,
+        // not two nested ones (invalid HTML).
         Assert.Single(form.FindAll("form"));
-        Assert.Single(form.FindAll("div.dx-form-nested"));
 
         // Title (outer) + Street + City (nested) = 3 text inputs total.
         Assert.Equal(3, form.FindAll("input[type=text]").Count);

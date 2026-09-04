@@ -133,17 +133,23 @@ All notable changes to BlazorDX are documented here. The format is loosely based
     and a referenced nested/array-element type must have at least one discovered field and an
     accessible public parameterless constructor (needed to materialize `new T()` for a null
     Object field or a new Array row — never reflection).
-  - Rendering composes existing pieces rather than inventing new ones: an Object field wraps a
-    dynamically-opened `DxForm<TNested>` (`builder.OpenComponent(int, Type)`, Blazor's own
-    supported dynamic-component API) inside the existing `DxFormSection`; a currently-null nested
-    property is materialized and attached before its sub-form renders, so there's no write-back
-    step — the sub-form edits the real instance by reference identity. **Bug caught during
-    implementation, not by CI:** a nested `DxForm` was initially rendering its own `<form>`
-    element — invalid HTML nested inside the outer `<form>`. Fixed with an internal
-    `IsNestedForm` flag that renders a `<div>` instead and skips the `onsubmit` wiring; the
-    outer form's own submit/`Refresh()` propagates in via a new non-generic `IRefreshableForm`
-    marker interface, since a captured `DxForm<TNested>` reference can't be called generically
-    without knowing `TNested`.
+  - Rendering needed a new split, not just composition of existing pieces: `DxForm<TModel>` is
+    now a thin typed wrapper around a new internal, **non-generic** `DxFormBody` (works over
+    `IFormModelUntyped`/`object` — the actual field-rendering/validation engine). An Object field
+    opens `DxFormBody` directly for its nested instance, inside the existing `DxFormSection`. Two
+    real problems drove this, both caught during implementation, not by CI: first, the initial
+    approach opened a nested `DxForm<TNested>` via `Type.MakeGenericType` — which CI's
+    warnings-as-errors build rejected outright (`Type.MakeGenericType` is incompatible with
+    Native AOT, and this repo publishes and smoke-tests an AOT build). Second, that same nested
+    `DxForm` was rendering its own `<form>` element — invalid HTML nested inside the outer
+    `<form>`. `DxFormBody` fixes both at once: it's a compile-time-known, non-generic type (so
+    opening one is an ordinary component instantiation, never `MakeGenericType`), and it renders
+    no wrapping element at all, so a nested `<form>` is structurally impossible, not just
+    avoided. A currently-null nested property is materialized and attached before its sub-form
+    renders, so there's no write-back step — the sub-form edits the real instance by reference
+    identity. The outer form's own submit/`Refresh()` propagates into nested sub-forms by calling
+    `.Refresh()` directly on captured `DxFormBody` references — no marker interface needed, since
+    the concrete type is the same non-generic `DxFormBody` everywhere.
   - Array fields get a new Tier-1 primitive, `CollectionEditPrimitive<T>` (generic add/remove on
     top of the existing `ListReorder.Move<T>`/`RovingTabIndex` — reorder/drag/keyboard already
     proven by `SortablePrimitive`, which stays untouched rather than being force-generalized) and

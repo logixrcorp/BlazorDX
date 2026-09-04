@@ -61,10 +61,6 @@
   .dx-form-grid { grid-template-columns: 1fr; }
 }
 
-/* A nested DxForm<TNested> (Object/array-of-nested fields) renders a <div> here, not
-   a <form> — a <form> cannot legally nest inside the outer <form>. */
-.dx-form-nested { display: flex; flex-direction: column; gap: 14px; }
-
 /* ---- Array-field editing (DxFieldList) — row chrome mirrors .dx-sortable-* ---- */
 .dx-fieldlist { display: flex; flex-direction: column; gap: 6px; }
 .dx-fieldlist-item {
