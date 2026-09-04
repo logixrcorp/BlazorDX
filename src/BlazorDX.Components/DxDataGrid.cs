@@ -18,13 +18,21 @@ namespace BlazorDX.Components;
 /// <typeparam name="TRow">The row type, bound via a generated accessor.</typeparam>
 public sealed class DxDataGrid<TRow> : DataGridPrimitive<TRow>
 {
-    // Not IStringLocalizer<DxDataGrid<TRow>>: the default ResourceManagerStringLocalizerFactory
-    // computes a resource-manifest name from the injected type's *closed* generic identity, which
-    // would vary per TRow instantiation (DxDataGrid<Person> and DxDataGrid<Order> would each look
-    // for a differently-named resource) even though DxDataGrid.resx is one file shared by every
-    // TRow. DxDataGridResources is a non-generic marker type solely so the resource lookup has one
-    // stable name -- the standard workaround for localizing a generic type (see ADR 0016).
-    [Inject] private IStringLocalizer<DxDataGridResources> L { get; set; } = default!;
+    // Localization is optional: with no IStringLocalizer registered, the English text at each
+    // call site renders (see DxStrings<T> and docs/localization.md).
+    //
+    // DxStrings<DxDataGridResources>, not DxStrings<DxDataGrid<TRow>>: the default
+    // ResourceManagerStringLocalizerFactory computes a resource-manifest name from the type's
+    // *closed* generic identity, which would vary per TRow instantiation (DxDataGrid<Person> and
+    // DxDataGrid<Order> would each look for a differently-named resource) even though
+    // DxDataGridResources.resx is one file shared by every TRow. DxDataGridResources is a
+    // non-generic marker type solely so the resource lookup has one stable name -- the standard
+    // workaround for localizing a generic type (see ADR 0016).
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxDataGridResources>? s;
+
+    private DxStrings<DxDataGridResources> S => s ??= new(Services);
 
     /// <summary>Optional extra CSS classes appended to the grid container.</summary>
     [Parameter] public string? Class { get; set; }
@@ -47,7 +55,7 @@ public sealed class DxDataGrid<TRow> : DataGridPrimitive<TRow>
         builder.AddAttribute(144, "class", "dx-grid-chooser-toggle");
         builder.AddAttribute(145, "aria-expanded", chooserOpen ? "true" : "false");
         builder.AddAttribute(146, "onclick", EventCallback.Factory.Create(this, () => chooserOpen = !chooserOpen));
-        builder.AddContent(147, $"{L["ColumnsToggle", VisibleColumnCount, Columns.Count]} ▾");
+        builder.AddContent(147, $"{S["ColumnsToggle", "Columns ({0}/{1})", VisibleColumnCount, Columns.Count]} ▾");
         builder.CloseElement();
 
         if (chooserOpen)
@@ -95,7 +103,7 @@ public sealed class DxDataGrid<TRow> : DataGridPrimitive<TRow>
                 builder.OpenElement(161, "button");
                 builder.AddAttribute(162, "type", "button");
                 builder.AddAttribute(163, "class", "dx-grid-chooser-move");
-                builder.AddAttribute(164, "aria-label", L["MoveColumnLeft", header].Value);
+                builder.AddAttribute(164, "aria-label", S["MoveColumnLeft", "Move {0} left", header]);
                 builder.AddAttribute(165, "disabled", capturedDisplay == 0);
                 builder.AddAttribute(166, "onclick", EventCallback.Factory.Create(this, () => MoveColumn(capturedDisplay, capturedDisplay - 1)));
                 builder.AddContent(167, "◀");
@@ -104,7 +112,7 @@ public sealed class DxDataGrid<TRow> : DataGridPrimitive<TRow>
                 builder.OpenElement(168, "button");
                 builder.AddAttribute(169, "type", "button");
                 builder.AddAttribute(170, "class", "dx-grid-chooser-move");
-                builder.AddAttribute(171, "aria-label", L["MoveColumnRight", header].Value);
+                builder.AddAttribute(171, "aria-label", S["MoveColumnRight", "Move {0} right", header]);
                 builder.AddAttribute(172, "disabled", capturedDisplay == Columns.Count - 1);
                 builder.AddAttribute(173, "onclick", EventCallback.Factory.Create(this, () => MoveColumn(capturedDisplay, capturedDisplay + 1)));
                 builder.AddContent(174, "▶");
@@ -139,7 +147,7 @@ public sealed class DxDataGrid<TRow> : DataGridPrimitive<TRow>
                 builder.AddAttribute(138, "type", "button");
                 builder.AddAttribute(139, "class", "dx-grid-export");
                 builder.AddAttribute(190, "onclick", EventCallback.Factory.Create(this, CopySelectionAsync));
-                builder.AddContent(191, $"⧉ {L["Copy"]}");
+                builder.AddContent(191, $"⧉ {S["Copy", "Copy"]}");
                 builder.CloseElement();
             }
 
@@ -149,7 +157,7 @@ public sealed class DxDataGrid<TRow> : DataGridPrimitive<TRow>
                 builder.AddAttribute(133, "type", "button");
                 builder.AddAttribute(134, "class", "dx-grid-export");
                 builder.AddAttribute(135, "onclick", EventCallback.Factory.Create(this, ExportCsvAsync));
-                builder.AddContent(136, $"⭳ {L["ExportCsv"]}");
+                builder.AddContent(136, $"⭳ {S["ExportCsv", "Export CSV"]}");
                 builder.CloseElement();
             }
 
@@ -159,7 +167,7 @@ public sealed class DxDataGrid<TRow> : DataGridPrimitive<TRow>
                 builder.AddAttribute(193, "type", "button");
                 builder.AddAttribute(194, "class", "dx-grid-export");
                 builder.AddAttribute(195, "onclick", EventCallback.Factory.Create(this, ExportXlsxAsync));
-                builder.AddContent(196, $"⭳ {L["ExportExcel"]}");
+                builder.AddContent(196, $"⭳ {S["ExportExcel", "Export Excel"]}");
                 builder.CloseElement();
             }
 
@@ -169,7 +177,7 @@ public sealed class DxDataGrid<TRow> : DataGridPrimitive<TRow>
                 builder.AddAttribute(198, "type", "button");
                 builder.AddAttribute(199, "class", "dx-grid-export");
                 builder.AddAttribute(200, "onclick", EventCallback.Factory.Create(this, ExportPdfAsync));
-                builder.AddContent(201, $"⭳ {L["ExportPdf"]}");
+                builder.AddContent(201, $"⭳ {S["ExportPdf", "Export PDF"]}");
                 builder.CloseElement();
             }
 
@@ -313,8 +321,8 @@ public sealed class DxDataGrid<TRow> : DataGridPrimitive<TRow>
             builder.OpenElement(69, "input");
             builder.AddAttribute(70, "class", "dx-grid-filter-input");
             builder.AddAttribute(71, "type", "text");
-            builder.AddAttribute(72, "placeholder", L["FilterPlaceholder"].Value);
-            builder.AddAttribute(73, "aria-label", L["FilterColumn", Columns[actual].Header].Value);
+            builder.AddAttribute(72, "placeholder", S["FilterPlaceholder", "Filter…"]);
+            builder.AddAttribute(73, "aria-label", S["FilterColumn", "Filter {0}", Columns[actual].Header]);
             builder.AddAttribute(74, "value", ColumnFilter(actual));
             builder.AddAttribute(75, "oninput",
                 EventCallback.Factory.Create<ChangeEventArgs>(this, e => SetFilter(actual, e.Value as string)));
@@ -408,7 +416,7 @@ public sealed class DxDataGrid<TRow> : DataGridPrimitive<TRow>
             builder.OpenElement(79, "input");
             builder.AddAttribute(80, "type", "checkbox");
             builder.AddAttribute(81, "class", "dx-grid-select");
-            builder.AddAttribute(82, "aria-label", L["SelectAllRows"].Value);
+            builder.AddAttribute(82, "aria-label", S["SelectAllRows", "Select all rows"]);
             builder.AddAttribute(83, "checked", AllVisibleSelected);
             builder.AddAttribute(84, "indeterminate", SomeVisibleSelected);
             builder.AddAttribute(85, "onchange", EventCallback.Factory.Create(this, ToggleSelectAll));
@@ -437,7 +445,7 @@ public sealed class DxDataGrid<TRow> : DataGridPrimitive<TRow>
             builder.AddAttribute(14, "aria-sort", AriaSortFor(actual));
             // Don't make the header draggable mid-resize, or the browser starts a drag.
             builder.AddAttribute(15, "draggable", IsResizing ? "false" : "true");
-            builder.AddAttribute(16, "title", L["DragToReorder"].Value);
+            builder.AddAttribute(16, "title", S["DragToReorder", "Drag, or Ctrl+Arrow, to reorder"]);
             builder.AddAttribute(18, "ondragstart", EventCallback.Factory.Create(this, () => dragColumn = capturedDisplay));
             builder.AddAttribute(19, "ondragover", EventCallback.Factory.Create(this, () => { }));
             builder.AddEventPreventDefaultAttribute(20, "ondragover", true);
@@ -449,7 +457,7 @@ public sealed class DxDataGrid<TRow> : DataGridPrimitive<TRow>
             builder.OpenElement(25, "button");
             builder.AddAttribute(26, "type", "button");
             builder.AddAttribute(27, "class", "dx-grid-th-label");
-            builder.AddAttribute(28, "title", L["SortTitle"].Value);
+            builder.AddAttribute(28, "title", S["SortTitle", "Click to sort; Shift+Click for multi-column sort"]);
             builder.AddAttribute(48, "onclick", EventCallback.Factory.Create<MouseEventArgs>(this, e => SortByAsync(actual, e.ShiftKey)));
             builder.AddContent(29, column.Header);
             builder.AddContent(30, SortIndicatorFor(actual));
@@ -458,7 +466,7 @@ public sealed class DxDataGrid<TRow> : DataGridPrimitive<TRow>
             builder.OpenElement(31, "span");
             builder.AddAttribute(32, "class", "dx-grid-resize");
             builder.AddAttribute(33, "aria-hidden", "true");
-            builder.AddAttribute(34, "title", L["DragToResize"].Value);
+            builder.AddAttribute(34, "title", S["DragToResize", "Drag to resize"]);
             builder.AddAttribute(35, "onpointerdown",
                 EventCallback.Factory.Create<PointerEventArgs>(this, e => StartColumnResize(actual, e.ClientX)));
             builder.AddEventStopPropagationAttribute(36, "onpointerdown", true);
@@ -484,7 +492,7 @@ public sealed class DxDataGrid<TRow> : DataGridPrimitive<TRow>
         builder.OpenElement(160, "button");
         builder.AddAttribute(161, "type", "button");
         builder.AddAttribute(162, "class", active ? "dx-grid-funnel dx-grid-funnel-active" : "dx-grid-funnel");
-        builder.AddAttribute(163, "aria-label", L["FilterColumn", header].Value);
+        builder.AddAttribute(163, "aria-label", S["FilterColumn", "Filter {0}", header]);
         builder.AddAttribute(164, "aria-expanded", openMenuColumn == actual ? "true" : "false");
         builder.AddAttribute(165, "onclick",
             EventCallback.Factory.Create(this, () => openMenuColumn = openMenuColumn == actual ? -1 : actual));
@@ -513,7 +521,7 @@ public sealed class DxDataGrid<TRow> : DataGridPrimitive<TRow>
             builder.AddAttribute(175, "onchange", EventCallback.Factory.Create(this, () => ToggleValueFilter(actual, captured)));
             builder.CloseElement();
 
-            builder.AddContent(176, value.Length == 0 ? L["BlankValue"].Value : value);
+            builder.AddContent(176, value.Length == 0 ? S["BlankValue", "(blank)"] : value);
             builder.CloseElement();
         }
 
@@ -522,7 +530,7 @@ public sealed class DxDataGrid<TRow> : DataGridPrimitive<TRow>
         builder.AddAttribute(179, "class", "dx-grid-valuemenu-clear");
         builder.AddAttribute(180, "disabled", !active);
         builder.AddAttribute(181, "onclick", EventCallback.Factory.Create(this, () => ClearValueFilter(actual)));
-        builder.AddContent(182, L["ClearFilter"].Value);
+        builder.AddContent(182, S["ClearFilter", "Clear filter"]);
         builder.CloseElement();
 
         builder.CloseElement();
@@ -627,7 +635,7 @@ public sealed class DxDataGrid<TRow> : DataGridPrimitive<TRow>
             builder.OpenElement(89, "input");
             builder.AddAttribute(90, "type", "checkbox");
             builder.AddAttribute(91, "class", "dx-grid-select");
-            builder.AddAttribute(92, "aria-label", L["SelectRow"].Value);
+            builder.AddAttribute(92, "aria-label", S["SelectRow", "Select row"]);
             builder.AddAttribute(93, "checked", selected);
             builder.AddAttribute(94, "onchange", EventCallback.Factory.Create(this, () => ToggleRow(capturedRow)));
             builder.CloseElement();
@@ -669,7 +677,7 @@ public sealed class DxDataGrid<TRow> : DataGridPrimitive<TRow>
             if (editable && !editing)
             {
                 builder.AddAttribute(103, "ondblclick", EventCallback.Factory.Create(this, () => BeginEdit(capturedRow, actual)));
-                builder.AddAttribute(104, "title", L["DoubleClickToEdit"].Value);
+                builder.AddAttribute(104, "title", S["DoubleClickToEdit", "Double-click to edit"]);
             }
 
             // The expand twisty lives in the first visible cell when a detail is set.
@@ -679,7 +687,7 @@ public sealed class DxDataGrid<TRow> : DataGridPrimitive<TRow>
                 builder.OpenElement(107, "button");
                 builder.AddAttribute(108, "type", "button");
                 builder.AddAttribute(109, "class", "dx-grid-detail-toggle");
-                builder.AddAttribute(110, "aria-label", (expanded ? L["CollapseDetails"] : L["ExpandDetails"]).Value);
+                builder.AddAttribute(110, "aria-label", expanded ? S["CollapseDetails", "Collapse details"] : S["ExpandDetails", "Expand details"]);
                 builder.AddAttribute(111, "aria-expanded", expanded ? "true" : "false");
                 builder.AddAttribute(112, "onclick", EventCallback.Factory.Create(this, () => ToggleRowExpanded(capturedRow)));
                 builder.AddContent(113, expanded ? "▾" : "▸");
@@ -748,7 +756,7 @@ public sealed class DxDataGrid<TRow> : DataGridPrimitive<TRow>
         builder.AddAttribute(111, "class", "dx-grid-edit-input");
         builder.AddAttribute(112, "type", "text");
         builder.AddAttribute(113, "value", EditDraft);
-        builder.AddAttribute(114, "aria-label", L["EditColumn", Columns[actual].Header].Value);
+        builder.AddAttribute(114, "aria-label", S["EditColumn", "Edit {0}", Columns[actual].Header]);
         builder.AddAttribute(115, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(this, e => SetEditDraft(e.Value as string)));
         builder.AddAttribute(116, "onchange", EventCallback.Factory.Create(this, CommitEditAsync));
         builder.AddAttribute(117, "onkeydown", EventCallback.Factory.Create<KeyboardEventArgs>(this, OnEditKeyDownAsync));
@@ -847,9 +855,9 @@ public sealed class DxDataGrid<TRow> : DataGridPrimitive<TRow>
 }
 
 /// <summary>
-/// Non-generic marker type <see cref="DxDataGrid{TRow}"/> injects <see cref="IStringLocalizer{T}"/>
-/// against, so its resource lookup has one stable name shared across every <c>TRow</c>
-/// instantiation instead of one that varies per closed generic type. See the doc comment on
-/// <see cref="DxDataGrid{TRow}"/>'s own <c>L</c> field.
+/// Non-generic marker type <see cref="DxDataGrid{TRow}"/> localizes against, so its resource
+/// lookup has one stable name shared across every <c>TRow</c> instantiation instead of one that
+/// varies per closed generic type. See the comment on <see cref="DxDataGrid{TRow}"/>'s own
+/// <c>S</c> field.
 /// </summary>
 public sealed class DxDataGridResources;

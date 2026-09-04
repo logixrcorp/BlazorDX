@@ -11,7 +11,6 @@ public sealed class DxFeedbackTests : TestContext
 {
     public DxFeedbackTests()
     {
-        Services.AddLocalization();
     }
 
     [Fact]

@@ -11,6 +11,7 @@ internal static class DiagnosticDescriptors
 {
     private const string ReadabilityCategory = "BlazorDX.Readability";
     private const string SecurityCategory = "BlazorDX.Security";
+    private const string GlobalizationCategory = "BlazorDX.Globalization";
 
     /// <summary>DX1000 — a source file exceeds the 1000-line cap.</summary>
     public static readonly DiagnosticDescriptor FileTooLong = new(
@@ -41,4 +42,16 @@ internal static class DiagnosticDescriptors
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
         description: "Singleton UI state is shared across every connected circuit on Blazor Server, leaking data between users.");
+
+    /// <summary>DX1003 — a hardcoded user-facing string in an already-localized component.</summary>
+    public static readonly DiagnosticDescriptor HardcodedUserFacingString = new(
+        id: "DX1003",
+        title: "User-facing text must go through the component's localizer",
+        messageFormat: "\"{0}\" is user-facing text in a localized component; route it through this component's DxStrings field (S[\"Key\", \"{0}\"])",
+        category: GlobalizationCategory,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "A component that already localizes some of its text should not leave other user-facing "
+            + "text hardcoded, or translations are silently partial. Only components holding a DxStrings<T> "
+            + "field are checked, so localizing a component is what switches this rule on for it.");
 }
