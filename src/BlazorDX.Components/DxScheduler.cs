@@ -31,10 +31,23 @@ public sealed class DxScheduler : SchedulerPrimitive, IAsyncDisposable
 
     [Parameter] public string? Class { get; set; }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxScheduler>? s;
+
+    private DxStrings<DxScheduler> S => s ??= new(Services);
+
     [Inject] private ISchedulerInterop Drag { get; set; } = default!;
 
-    private static readonly string[] WeekdayNames =
-        ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    // Weekday abbreviations come from the culture rather than a table or a .resx: .NET already
+    // carries them for every culture, so asking a translator to re-supply "Mon".."Sun" would
+    // duplicate data the framework owns -- and get it wrong for calendars whose abbreviations
+    // are not three letters. Monday-first, matching the grid's column order.
+    private static IEnumerable<string> WeekdayNames =>
+        Enumerable.Range(0, 7).Select(offset => Abbreviated((DayOfWeek)(((int)DayOfWeek.Monday + offset) % 7)));
+
+    private static string Abbreviated(DayOfWeek day) =>
+        CultureInfo.CurrentCulture.DateTimeFormat.AbbreviatedDayNames[(int)day];
 
     private readonly string gridId = $"dx-sched-{Guid.NewGuid():N}";
 
@@ -82,7 +95,7 @@ public sealed class DxScheduler : SchedulerPrimitive, IAsyncDisposable
         builder.AddAttribute(3, "class", "dx-sched-toolbar");
 
         NavButton(builder, 4, "‹", PreviousLabel, PreviousAsync);
-        NavButton(builder, 10, "Today", "Go to today", TodayAsync);
+        NavButton(builder, 10, S["Today", "Today"], S["GoToToday", "Go to today"], TodayAsync);
         NavButton(builder, 16, "›", NextLabel, NextAsync);
 
         builder.OpenElement(22, "span");
@@ -102,14 +115,14 @@ public sealed class DxScheduler : SchedulerPrimitive, IAsyncDisposable
         builder.OpenElement(30, "div");
         builder.AddAttribute(31, "class", "dx-sched-views");
         builder.AddAttribute(32, "role", "tablist");
-        builder.AddAttribute(33, "aria-label", "Calendar view");
+        builder.AddAttribute(33, "aria-label", S["CalendarView", "Calendar view"]);
         builder.AddAttribute(34, "onkeydown",
             EventCallback.Factory.Create<KeyboardEventArgs>(this, OnViewSwitchKeyDownAsync));
         builder.AddEventPreventDefaultAttribute(35, "onkeydown", true);
 
-        ViewButton(builder, 40, SchedulerView.Week, "Week");
-        ViewButton(builder, 50, SchedulerView.Month, "Month");
-        ViewButton(builder, 60, SchedulerView.Day, "Day");
+        ViewButton(builder, 40, SchedulerView.Week, ViewLabel(SchedulerView.Week));
+        ViewButton(builder, 50, SchedulerView.Month, ViewLabel(SchedulerView.Month));
+        ViewButton(builder, 60, SchedulerView.Day, ViewLabel(SchedulerView.Day));
 
         builder.CloseElement();
     }
@@ -166,7 +179,7 @@ public sealed class DxScheduler : SchedulerPrimitive, IAsyncDisposable
         builder.AddAttribute(71, "class", "dx-sched-sr");
         builder.AddAttribute(72, "role", "status");
         builder.AddAttribute(73, "aria-live", "polite");
-        builder.AddContent(74, $"{View} view, {RangeLabel}");
+        builder.AddContent(74, S["ViewAnnouncement", "{0} view, {1}", ViewLabel(View), RangeLabel]);
         builder.CloseElement();
     }
 
@@ -194,7 +207,7 @@ public sealed class DxScheduler : SchedulerPrimitive, IAsyncDisposable
             builder.OpenElement(85, "div");
             builder.SetKey(day);
             builder.AddAttribute(86, "class", day == today ? "dx-sched-dayhead dx-sched-today" : "dx-sched-dayhead");
-            builder.AddContent(87, $"{day.DayOfWeek.ToString()[..3]} {day.Day}");
+            builder.AddContent(87, $"{Abbreviated(day.DayOfWeek)} {day.Day}");
             builder.CloseElement();
         }
 
@@ -215,7 +228,7 @@ public sealed class DxScheduler : SchedulerPrimitive, IAsyncDisposable
         // aria-activedescendant is valid on it, so axe stays clean while the existing
         // arrow/Home/End/PageUp/PageDown keyboard model is preserved.
         builder.AddAttribute(94, "role", "application");
-        builder.AddAttribute(95, "aria-label", $"{View} schedule");
+        builder.AddAttribute(95, "aria-label", S["GridLabel", "{0} schedule", ViewLabel(View)]);
         builder.AddAttribute(96, "tabindex", "0");
         if (HasActiveCell)
         {
@@ -315,7 +328,7 @@ public sealed class DxScheduler : SchedulerPrimitive, IAsyncDisposable
 
         builder.OpenElement(129, "span");
         builder.AddAttribute(130, "class", "dx-sched-event-time");
-        builder.AddContent(131, ev.Start.ToString("t", CultureInfo.InvariantCulture));
+        builder.AddContent(131, ev.Start.ToString("t", CultureInfo.CurrentCulture));
         builder.CloseElement();
 
         builder.OpenElement(132, "span");
@@ -351,7 +364,9 @@ public sealed class DxScheduler : SchedulerPrimitive, IAsyncDisposable
         builder.AddAttribute(152, "class", "dx-sched-month");
         builder.AddAttribute(153, "style", MonthColumns);
         builder.AddAttribute(154, "role", "grid");
-        builder.AddAttribute(155, "aria-label", "Month schedule");
+        // Shares GridLabel with the week/day grid: this is the month view of the same schedule,
+        // and a translator should not have to render the same sentence twice.
+        builder.AddAttribute(155, "aria-label", S["GridLabel", "{0} schedule", ViewLabel(SchedulerView.Month)]);
         builder.AddAttribute(156, "tabindex", "0");
         builder.AddAttribute(1561, "aria-colcount", "7");
         builder.AddAttribute(1562, "aria-rowcount", MonthWeekCount);
@@ -413,7 +428,7 @@ public sealed class DxScheduler : SchedulerPrimitive, IAsyncDisposable
         builder.AddAttribute(161, "id", CellId(row, col));
         builder.AddAttribute(162, "class", css);
         builder.AddAttribute(163, "role", "gridcell");
-        builder.AddAttribute(164, "aria-label", day.ToString("D", CultureInfo.InvariantCulture));
+        builder.AddAttribute(164, "aria-label", day.ToString("D", CultureInfo.CurrentCulture));
         if (day == today)
         {
             builder.AddAttribute(165, "aria-current", "date");
@@ -456,7 +471,7 @@ public sealed class DxScheduler : SchedulerPrimitive, IAsyncDisposable
 
         builder.OpenElement(180, "span");
         builder.AddAttribute(181, "class", "dx-sched-month-event-label");
-        builder.AddContent(182, $"{ev.Start.ToString("t", CultureInfo.InvariantCulture)} {ev.Title}");
+        builder.AddContent(182, $"{ev.Start.ToString("t", CultureInfo.CurrentCulture)} {ev.Title}");
         builder.CloseElement();
 
         builder.CloseElement();
@@ -544,8 +559,10 @@ public sealed class DxScheduler : SchedulerPrimitive, IAsyncDisposable
 
     private string EventLabel(SchedulerEvent ev)
     {
-        string date = DateOnly.FromDateTime(ev.Start).ToString("D", CultureInfo.InvariantCulture);
-        string time = $"{ev.Start.ToString("t", CultureInfo.InvariantCulture)} to {ev.End.ToString("t", CultureInfo.InvariantCulture)}";
+        string date = DateOnly.FromDateTime(ev.Start).ToString("D", CultureInfo.CurrentCulture);
+        string time = S["TimeRange", "{0} to {1}",
+            ev.Start.ToString("t", CultureInfo.CurrentCulture),
+            ev.End.ToString("t", CultureInfo.CurrentCulture)];
         string cat = ev.Category is { Length: > 0 } c ? $", {c}" : string.Empty;
         return $"{ev.Title}, {date}, {time}{cat}";
     }
@@ -554,22 +571,31 @@ public sealed class DxScheduler : SchedulerPrimitive, IAsyncDisposable
     {
         DateOnly? date = CellDate(ActiveRow, column);
         int? hour = CellHour(ActiveRow);
-        string dateText = date?.ToString("D", CultureInfo.InvariantCulture) ?? string.Empty;
+        string dateText = date?.ToString("D", CultureInfo.CurrentCulture) ?? string.Empty;
         return hour is int h ? $"{dateText}, {h}:00" : dateText;
     }
 
     private string PreviousLabel => View switch
     {
-        SchedulerView.Month => "Previous month",
-        SchedulerView.Day => "Previous day",
-        _ => "Previous week",
+        SchedulerView.Month => S["PreviousMonth", "Previous month"],
+        SchedulerView.Day => S["PreviousDay", "Previous day"],
+        _ => S["PreviousWeek", "Previous week"],
     };
 
     private string NextLabel => View switch
     {
-        SchedulerView.Month => "Next month",
-        SchedulerView.Day => "Next day",
-        _ => "Next week",
+        SchedulerView.Month => S["NextMonth", "Next month"],
+        SchedulerView.Day => S["NextDay", "Next day"],
+        _ => S["NextWeek", "Next week"],
+    };
+
+    // The view name as a word. SchedulerView.ToString() is the English enum member, so it can
+    // never be shown directly -- it is a machine identifier that happens to read as English.
+    private string ViewLabel(SchedulerView view) => view switch
+    {
+        SchedulerView.Month => S["ViewMonth", "Month"],
+        SchedulerView.Day => S["ViewDay", "Day"],
+        _ => S["ViewWeek", "Week"],
     };
 
     private string RangeLabel
@@ -578,12 +604,12 @@ public sealed class DxScheduler : SchedulerPrimitive, IAsyncDisposable
         {
             if (View == SchedulerView.Month)
             {
-                return MonthFirst.ToString("MMMM yyyy", CultureInfo.InvariantCulture);
+                return MonthFirst.ToString("MMMM yyyy", CultureInfo.CurrentCulture);
             }
 
             if (View == SchedulerView.Day)
             {
-                return WeekStart.ToString("dddd, MMM d", CultureInfo.InvariantCulture);
+                return WeekStart.ToString("dddd, MMM d", CultureInfo.CurrentCulture);
             }
 
             DateOnly last = WeekStart.AddDays(Math.Max(0, ViewDayCount - 1));
@@ -591,7 +617,7 @@ public sealed class DxScheduler : SchedulerPrimitive, IAsyncDisposable
             // Include the year on both ends when the range straddles a year boundary
             // (e.g. "Dec 28, 2026 – Jan 3, 2027").
             string format = WeekStart.Year == last.Year ? "MMM d" : "MMM d, yyyy";
-            return $"{WeekStart.ToString(format, CultureInfo.InvariantCulture)} – {last.ToString(format, CultureInfo.InvariantCulture)}";
+            return $"{WeekStart.ToString(format, CultureInfo.CurrentCulture)} – {last.ToString(format, CultureInfo.CurrentCulture)}";
         }
     }
 }

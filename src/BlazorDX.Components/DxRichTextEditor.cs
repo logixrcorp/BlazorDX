@@ -74,30 +74,73 @@ public sealed class DxRichTextEditor : ComponentBase
     /// </summary>
     [Parameter] public EventCallback<ValueCommandArgs> OnValueCommand { get; set; }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxRichTextEditor>? s;
+
+    private DxStrings<DxRichTextEditor> S => s ??= new(Services);
+
     [Inject] private IRichTextInterop Interop { get; set; } = default!;
 
     private HtmlSanitizer ActiveSanitizer => Sanitizer ?? InertSanitizer;
 
-    private static readonly (string Command, string Value, string Glyph, string Label)[] Tools =
+    // Command and value are machine-facing and stay here; the glyph and label are user-facing and
+    // resolve through the localizer in Tool() below. Splitting them keeps this table static (no
+    // per-render allocation on an editor toolbar) while still routing every visible string through
+    // a literal S["Key", "English"] pair — see docs/localization.md on text that isn't at a
+    // render call site.
+    private static readonly (string Command, string Value)[] Tools =
     [
-        ("bold", "", "B", "Bold"),
-        ("italic", "", "I", "Italic"),
-        ("underline", "", "U", "Underline"),
-        ("strikeThrough", "", "S", "Strikethrough"),
-        ("superscript", "", "x²", "Superscript"),
-        ("subscript", "", "x₂", "Subscript"),
-        ("formatBlock", "<h2>", "H", "Heading"),
-        ("insertUnorderedList", "", "•", "Bullet list"),
-        ("insertOrderedList", "", "1.", "Numbered list"),
-        ("justifyLeft", "", "⇤", "Align left"),
-        ("justifyCenter", "", "↔", "Align center"),
-        ("justifyRight", "", "⇥", "Align right"),
-        ("justifyFull", "", "≡", "Justify"),
-        ("outdent", "", "⇤|", "Decrease indent"),
-        ("indent", "", "|⇥", "Increase indent"),
-        ("createLink", "", "🔗", "Insert link"),
-        ("removeFormat", "", "⌫", "Clear formatting"),
+        ("bold", ""),
+        ("italic", ""),
+        ("underline", ""),
+        ("strikeThrough", ""),
+        ("superscript", ""),
+        ("subscript", ""),
+        ("formatBlock", "<h2>"),
+        ("insertUnorderedList", ""),
+        ("insertOrderedList", ""),
+        ("justifyLeft", ""),
+        ("justifyCenter", ""),
+        ("justifyRight", ""),
+        ("justifyFull", ""),
+        ("outdent", ""),
+        ("indent", ""),
+        ("createLink", ""),
+        ("removeFormat", ""),
     ];
+
+    /// <summary>The key-cap glyph and the accessible label for a toolbar command.</summary>
+    /// <remarks>
+    /// The letter glyphs are localized along with their labels: "B" for Bold is an English
+    /// mnemonic, and a German toolbar wants "F" for <i>Fett</i>. The purely symbolic ones
+    /// (• ⇤ ↔ ⇥ ≡ 🔗 ⌫ and the x²/x₂ pair) carry no language and stay literal, the same rule
+    /// DX1003 applies when it ignores letter-free literals.
+    /// </remarks>
+    private (string Glyph, string Label) Tool(string command) => command switch
+    {
+        "bold" => (S["ToolBoldGlyph", "B"], S["ToolBold", "Bold"]),
+        "italic" => (S["ToolItalicGlyph", "I"], S["ToolItalic", "Italic"]),
+        "underline" => (S["ToolUnderlineGlyph", "U"], S["ToolUnderline", "Underline"]),
+        "strikeThrough" => (S["ToolStrikethroughGlyph", "S"], S["ToolStrikethrough", "Strikethrough"]),
+        "superscript" => ("x²", S["ToolSuperscript", "Superscript"]),
+        "subscript" => ("x₂", S["ToolSubscript", "Subscript"]),
+        "formatBlock" => (S["ToolHeadingGlyph", "H"], S["ToolHeading", "Heading"]),
+        "insertUnorderedList" => ("•", S["ToolBulletList", "Bullet list"]),
+        "insertOrderedList" => ("1.", S["ToolNumberedList", "Numbered list"]),
+        "justifyLeft" => ("⇤", S["ToolAlignLeft", "Align left"]),
+        "justifyCenter" => ("↔", S["ToolAlignCenter", "Align center"]),
+        "justifyRight" => ("⇥", S["ToolAlignRight", "Align right"]),
+        "justifyFull" => ("≡", S["ToolJustify", "Justify"]),
+        "outdent" => ("⇤|", S["ToolDecreaseIndent", "Decrease indent"]),
+        "indent" => ("|⇥", S["ToolIncreaseIndent", "Increase indent"]),
+        "createLink" => ("🔗", S["ToolInsertLink", "Insert link"]),
+        "removeFormat" => ("⌫", S["ToolClearFormatting", "Clear formatting"]),
+
+        // Unreachable while Tools is the only caller, but a switch expression needs it and a
+        // silent empty button is a better failure than an exception in a render tree.
+        _ => (string.Empty, command),
+    };
 
     private static readonly string[] FontFamilies =
         ["Arial", "Calibri", "Courier New", "Georgia", "Times New Roman", "Verdana"];
@@ -107,9 +150,18 @@ public sealed class DxRichTextEditor : ComponentBase
 
     private static readonly string[] LineSpacings = ["1.0", "1.15", "1.5", "2.0"];
 
-    // Paragraph styles: display text -> "blockStyle" value (0 = body paragraph, N = heading level).
-    private static readonly (string Text, string Value)[] BlockStyles =
-        [("Normal", "0"), ("Heading 1", "1"), ("Heading 2", "2"), ("Heading 3", "3")];
+    // "blockStyle" values, in display order (0 = body paragraph, N = heading level). The visible
+    // text for each lives in BlockStyleText, for the same reason Tool() exists.
+    private static readonly string[] BlockStyles = ["0", "1", "2", "3"];
+
+    private string BlockStyleText(string value) => value switch
+    {
+        "0" => S["BlockStyleNormal", "Normal"],
+        "1" => S["BlockStyleHeading1", "Heading 1"],
+        "2" => S["BlockStyleHeading2", "Heading 2"],
+        "3" => S["BlockStyleHeading3", "Heading 3"],
+        _ => value,
+    };
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
@@ -119,10 +171,12 @@ public sealed class DxRichTextEditor : ComponentBase
         builder.OpenElement(2, "div");
         builder.AddAttribute(3, "class", "dx-rte-toolbar");
         builder.AddAttribute(4, "role", "toolbar");
-        builder.AddAttribute(5, "aria-label", "Formatting");
+        builder.AddAttribute(5, "aria-label", S["ToolbarLabel", "Formatting"]);
 
-        foreach ((string command, string value, string glyph, string label) in Tools)
+        foreach ((string command, string value) in Tools)
         {
+            (string glyph, string label) = Tool(command);
+
             builder.OpenElement(6, "button");
             builder.SetKey(command);
             builder.AddAttribute(7, "type", "button");
@@ -139,15 +193,15 @@ public sealed class DxRichTextEditor : ComponentBase
 
         // Color pickers (native <input type=color>) — not .dx-rte-tool buttons. The bridge
         // restores the editor selection before applying, so clicking the swatch is safe.
-        BuildColorInput(builder, 20, "foreColor", "Text color", "#000000");
-        BuildColorInput(builder, 30, "hiliteColor", "Highlight color", "#ffff00");
-        BuildColorInput(builder, 120, "cellShading", "Cell shading", "#fff2cc");
+        BuildColorInput(builder, 20, "foreColor", S["TextColor", "Text color"], "#000000");
+        BuildColorInput(builder, 30, "hiliteColor", S["HighlightColor", "Highlight color"], "#ffff00");
+        BuildColorInput(builder, 120, "cellShading", S["CellShading", "Cell shading"], "#fff2cc");
 
         // Paragraph style + font family / size dropdowns (value commands).
         BuildStyleSelect(builder, 40);
-        BuildFontSelect(builder, 60, "fontName", "Font family", "Font", FontFamilies);
-        BuildFontSelect(builder, 80, "fontSize", "Font size", "Size", FontSizes);
-        BuildFontSelect(builder, 100, "lineSpacing", "Line spacing", "Spacing", LineSpacings);
+        BuildFontSelect(builder, 60, "fontName", S["FontFamily", "Font family"], S["FontFamilyShort", "Font"], FontFamilies);
+        BuildFontSelect(builder, 80, "fontSize", S["FontSize", "Font size"], S["FontSizeShort", "Size"], FontSizes);
+        BuildFontSelect(builder, 100, "lineSpacing", S["LineSpacing", "Line spacing"], S["LineSpacingShort", "Spacing"], LineSpacings);
 
         builder.CloseElement();
 
@@ -235,22 +289,22 @@ public sealed class DxRichTextEditor : ComponentBase
     {
         builder.OpenElement(seq, "select");
         builder.AddAttribute(seq + 1, "class", "dx-rte-select");
-        builder.AddAttribute(seq + 2, "aria-label", "Paragraph style");
-        builder.AddAttribute(seq + 3, "title", "Paragraph style");
+        builder.AddAttribute(seq + 2, "aria-label", S["ParagraphStyle", "Paragraph style"]);
+        builder.AddAttribute(seq + 3, "title", S["ParagraphStyle", "Paragraph style"]);
         builder.AddAttribute(seq + 4, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(
             this, e => CommandValueAsync("blockStyle", e.Value?.ToString() ?? string.Empty)));
 
         builder.OpenElement(seq + 5, "option");
         builder.AddAttribute(seq + 6, "value", string.Empty);
-        builder.AddContent(seq + 7, "Style");
+        builder.AddContent(seq + 7, S["ParagraphStyleShort", "Style"]);
         builder.CloseElement();
 
-        foreach ((string text, string value) in BlockStyles)
+        foreach (string value in BlockStyles)
         {
             builder.OpenElement(seq + 8, "option");
             builder.SetKey(value);
             builder.AddAttribute(seq + 9, "value", value);
-            builder.AddContent(seq + 10, text);
+            builder.AddContent(seq + 10, BlockStyleText(value));
             builder.CloseElement();
         }
 

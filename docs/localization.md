@@ -206,7 +206,8 @@ file rather than the ones with user-facing text.)
 | `.cs` files in `BlazorDX.Components` | 142 |
 | …with zero user-facing strings (headless / parameter-driven) | 57 |
 | **Components to localize** | **83** (~250–270 unique strings) |
-| …localized so far | 6 — `DxAlert`, `DxDataGrid` (pilots) + batch 1's 4 |
+| …localized so far | **8** — `DxAlert`, `DxDataGrid` (pilots) + all 6 heavy hitters |
+| …strings externalized so far | 121 |
 | …with 1–3 strings each | 60 |
 | …heavy hitters (>10 strings) | 6, holding ~40% of all text |
 | Stylesheets converted | 1 of 25 |
@@ -219,10 +220,15 @@ batch → the ~20 remaining charts sharing one `DxChartResources.resx` → 11 ed
 components → ~28 stragglers alphabetically.
 
 Batch 1 landed 4 of the 6 heavy hitters — `DxKbd` (18), `DxImageEditor` (18),
-`DxDocumentViewer` (18), `DxFileManager` (14): **68 strings**. `DxRichTextEditor` (~28, all
-in a lookup table) and `DxScheduler` (~25) are deferred to batch 2; `DxScheduler` is
-entangled with the date-formatting track below (hardcoded weekday abbreviations), so it
-should be done together with that rather than twice.
+`DxDocumentViewer` (18), `DxFileManager` (14): **68 strings**.
+
+Batch 2 finished the other two — `DxRichTextEditor` (38) and `DxScheduler` (15): **53
+strings**, plus `DxScheduler`'s date-formatting fix, which was done in the same pass because
+externalizing "Previous month" while every date still rendered through `InvariantCulture`
+would have been half a job.
+
+**All six heavy hitters are done: 8 of 83 components, 121 strings.** The remaining 75
+components hold ~130–150 strings between them, most with one to three each.
 
 **CSS** — 12 trivial files (≤4 hits each) → `dx-datagrid` → the four heavy files
 individually → `dx-layout` last, since 7 of its 10 declarations are judgment calls.
@@ -236,8 +242,26 @@ stylesheet carries `rtl-clean`. Both ratchets exist to be removed.
   localizer is not reachable from where they are emitted.
 - **Tier-1 primitive English defaults** — four primitives carry user-visible English even
   though ADR 0001 says primitives are unlabeled.
-- **Date and number formatting** — `DxScheduler` hardcodes weekday abbreviations, and
-  `DxFileManager` / `DxDatePicker` format user-visible dates with `InvariantCulture`. This
-  is a defect on its own terms, independent of translation.
+- **Date and number formatting** — `DxScheduler` is **done** (batch 2); `DxDatePicker` and
+  any other `InvariantCulture` formatting of user-visible values remain. This is a defect on
+  its own terms, independent of translation: a French user reading "Monday, June 1" and
+  "2:30 PM" is not a missing-translation problem.
+
+  The rule established in batch 2: **culture data comes from .NET, not from a `.resx`.**
+  Weekday and month names, date and time patterns, and number formats are already carried
+  per-culture by the framework, so `CultureInfo.CurrentCulture.DateTimeFormat` is the source
+  — adding seven `Mon`…`Sun` resource strings would duplicate data the framework owns and
+  get it wrong for cultures whose abbreviations are not three letters. Two traps:
+
+  - `SomeEnum.ToString()` and `DayOfWeek.ToString()[..3]` are **English identifiers**. They
+    read as words, which is what makes them easy to render by accident.
+  - `InvariantCulture` is still correct for **machine-facing** strings. `DxScheduler` keeps
+    exactly one: a CSS `style` value, where the decimal separator must be `.` in every
+    locale. Do not sweep those.
+
+  Tests that assert formatted output become machine-dependent the moment a component honours
+  the culture, so use `CultureScope` (`tests/BlazorDX.Components.Tests/CultureScope.cs`):
+  `CultureScope.Invariant()` to pin an assertion, `CultureScope.For("fr-FR")` to prove the
+  culture is actually honoured.
 - **Chart RTL** — `dx-chart.css` scores zero physical properties because chart geometry is
   computed in C# render trees. That means unreviewed, not done.
