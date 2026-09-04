@@ -12,5 +12,8 @@ public sealed class NullChartZoomInterop : IChartZoomInterop
 
     public ValueTask<double> MeasureWidthAsync(string elementId) => ValueTask.FromResult(0.0);
 
+    public ValueTask<(double Left, double Top)> MeasureOffsetAsync(string elementId) =>
+        ValueTask.FromResult((0.0, 0.0));
+
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }

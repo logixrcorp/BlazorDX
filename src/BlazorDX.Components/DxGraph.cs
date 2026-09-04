@@ -150,6 +150,9 @@ public sealed class DxGraph : ComponentBase
     /// <summary>Used by <see cref="GraphKind.Line"/> and <see cref="GraphKind.Area"/>.</summary>
     [Parameter] public EventCallback<ChartZoomChangedEventArgs> OnZoomChanged { get; set; }
 
+    /// <summary>Used by <see cref="GraphKind.Scatter"/> and <see cref="GraphKind.Bubble"/> (rectangular, both-axes zoom — see <see cref="Zoomable"/>).</summary>
+    [Parameter] public EventCallback<ChartZoomChanged2DEventArgs> OnZoomChanged2D { get; set; }
+
     // ---- ChartTreeNode family (2 kinds) ----
 
     [Parameter] public ChartTreeNode? Root { get; set; }
@@ -257,6 +260,8 @@ public sealed class DxGraph : ComponentBase
         builder.AddComponentParameter(4, "Class", Class);
         builder.AddComponentParameter(5, "OnPointSelected", OnPointSelected);
         builder.AddComponentParameter(6, "OnPointHovered", OnPointHovered);
+        builder.AddComponentParameter(7, "Zoomable", Zoomable);
+        builder.AddComponentParameter(8, "OnZoomChanged2D", OnZoomChanged2D);
         builder.CloseComponent();
     }
 
@@ -334,6 +339,8 @@ public sealed class DxGraph : ComponentBase
         builder.AddComponentParameter(4, "Class", Class);
         builder.AddComponentParameter(5, "OnPointSelected", OnPointSelected);
         builder.AddComponentParameter(6, "OnPointHovered", OnPointHovered);
+        builder.AddComponentParameter(7, "Zoomable", Zoomable);
+        builder.AddComponentParameter(8, "OnZoomChanged2D", OnZoomChanged2D);
         builder.CloseComponent();
     }
 

@@ -1,7 +1,9 @@
 using System.Globalization;
 using BlazorDX.Components;
+using BlazorDX.Interop;
 using Bunit;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace BlazorDX.Components.Tests;
@@ -13,6 +15,14 @@ namespace BlazorDX.Components.Tests;
 /// </summary>
 public sealed class DxTier1ChartsTests : TestContext
 {
+    // DxBubbleChart injects IChartZoomInterop for its opt-in zoom/pan gestures — the same
+    // dependency DxLineChart/DxAreaChart already take. The null implementation reports no
+    // measurement, so no gesture ever starts here.
+    public DxTier1ChartsTests()
+    {
+        Services.AddScoped<IChartZoomInterop, NullChartZoomInterop>();
+    }
+
     // ---- Waterfall: running-total math + an absolute "total" bar resets it ----
 
     [Fact]
