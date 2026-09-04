@@ -88,9 +88,19 @@ enhancements. None of this should be read as "ready"; it is a beta with work ahe
   root-level `.resx` mechanism is proven end to end against the real AOT-publish CI gate
   (not assumed), piloted on `DxAlert` and `DxDataGrid`, with a working RTL CSS pilot
   (`dx-overlay.css` converted to logical properties) and a `?dir=rtl` demo toggle — see
-  [ADR 0016](adr/0016-localization-rtl-strategy.md). *Remaining: roll the proven pattern
-  out across the other ~130 components — still the single largest item on this list, and
-  a hard requirement for many enterprise and international buyers.*
+  [ADR 0016](adr/0016-localization-rtl-strategy.md). **Foundation done**: localization is
+  now **opt-in for consumers** (`AddLocalization()` is no longer required to render a
+  BlazorDX component — the pilot's `[Inject] IStringLocalizer<T>` would have made it
+  mandatory library-wide), a broken resource lookup falls back to English instead of
+  showing the raw key, and two ratchets keep the rollout from regressing: analyzer DX1003
+  bans hardcoded user-facing strings in any component already localized, and
+  `RtlLogicalPropertyTests` bans physical directional CSS in any stylesheet marked
+  converted — see [ADR 0021](adr/0021-optional-localization-and-rollout-guardrails.md) and
+  the runbook at [docs/localization.md](localization.md). *Remaining: the rollout itself —
+  **83 components** carrying ~250–270 strings (the "~130" here previously counted every
+  file; 57 have no user-facing text at all) and 24 stylesheets, ~131 declarations. Still
+  the single largest item on this list, and a hard requirement for many enterprise and
+  international buyers.*
 - **Formal accessibility audit + VPAT** — automated **axe-core checks now run in CI**
   (`AccessibilityE2ETests`, across Chromium/Firefox/WebKit) over the showcase and the
   TicketDesk demo app, with zero serious/critical violations; wiring this up already caught

@@ -2,6 +2,14 @@
   Overlay theme (Dialog and future Sheet/Popover). CSS-variable driven so consumers
   retheme without overriding selectors. The .dx-dialog wrapper is produced by the
   PresenceBoundary; -enter / -leave classes drive the entrance and exit transitions.
+
+  rtl-clean
+
+  ^ That marker opts this file into RtlLogicalPropertyTests, which fails the build if a
+  physical directional property (margin-left, text-align: right, a bare left:/right:, ...)
+  appears without an `rtl-exempt:` justification on the same line. Add it to a stylesheet
+  once its conversion to logical properties is done; the end state is every stylesheet
+  carrying it. See docs/localization.md.
 */
 .dx-dialog {
   --dx-overlay-backdrop: rgba(15, 23, 42, 0.55);
@@ -294,10 +302,10 @@
    Side="right" dock to the visual left under dir="rtl", contradicting the parameter's own
    name. RTL support here means the sheet's *content* reads correctly, not that the sheet
    silently swaps sides. */
-.dx-sheet-panel-right { top: 0; right: 0; bottom: 0; width: min(90vw, 22rem); }
-.dx-sheet-panel-left { top: 0; left: 0; bottom: 0; width: min(90vw, 22rem); }
-.dx-sheet-panel-top { top: 0; left: 0; right: 0; height: min(90vh, 18rem); }
-.dx-sheet-panel-bottom { bottom: 0; left: 0; right: 0; height: min(90vh, 18rem); }
+.dx-sheet-panel-right { top: 0; right: 0; bottom: 0; width: min(90vw, 22rem); } /* rtl-exempt: Side="right" is a physical screen edge */
+.dx-sheet-panel-left { top: 0; left: 0; bottom: 0; width: min(90vw, 22rem); } /* rtl-exempt: Side="left" is a physical screen edge */
+.dx-sheet-panel-top { top: 0; left: 0; right: 0; height: min(90vh, 18rem); } /* rtl-exempt: pinned to both edges, symmetric */
+.dx-sheet-panel-bottom { bottom: 0; left: 0; right: 0; height: min(90vh, 18rem); } /* rtl-exempt: pinned to both edges, symmetric */
 
 .dx-sheet-enter .dx-sheet-backdrop { animation: dx-backdrop-in 160ms ease-out; }
 .dx-sheet-leave .dx-sheet-backdrop { animation: dx-backdrop-out 160ms ease-in forwards; }
@@ -312,10 +320,13 @@
 .dx-sheet-top .dx-sheet-panel { --dx-from: -100%; }
 .dx-sheet-bottom .dx-sheet-panel { --dx-from: 100%; }
 
-@keyframes dx-slide-x-in { from { transform: translateX(var(--dx-from)); } to { transform: translateX(0); } }
+/* The slide direction has to match which physical edge the sheet is docked to (above), or a
+   right-docked sheet would slide in from the wrong side. Direction comes from --dx-from, set
+   per side, so these keyframes stay physical by construction. */
+@keyframes dx-slide-x-in { from { transform: translateX(var(--dx-from)); } to { transform: translateX(0); } } /* rtl-exempt: matches the physical dock edge */
 @keyframes dx-slide-y-in { from { transform: translateY(var(--dx-from)); } to { transform: translateY(0); } }
-@keyframes dx-slide-right-out { from { transform: translateX(0); } to { transform: translateX(100%); } }
-@keyframes dx-slide-left-out { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+@keyframes dx-slide-right-out { from { transform: translateX(0); } to { transform: translateX(100%); } } /* rtl-exempt: matches the physical dock edge */
+@keyframes dx-slide-left-out { from { transform: translateX(0); } to { transform: translateX(-100%); } } /* rtl-exempt: matches the physical dock edge */
 
 @media (prefers-reduced-motion: reduce) {
   .dx-sheet-enter .dx-sheet-panel, .dx-sheet-leave .dx-sheet-panel,
