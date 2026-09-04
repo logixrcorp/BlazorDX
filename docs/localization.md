@@ -197,8 +197,11 @@ is text a user reads, while `[Parameter] public string Severity = "info"` is a v
 that ends up in a CSS class. If you add a text-carrying parameter with a name outside that
 list, add the suffix to `UserFacingParameterSuffixes` rather than working around the rule.
 
-So a half-localized component fails the build. That is the intent: the analyzer's coverage
-is exactly the set of components already converted, and it grows with each batch.
+**DX1003 now fires on every component**, not only ones that already localize. While the rollout
+was running it was scoped to types holding a `DxStrings<…>` member, so the unconverted backlog
+could not break the build; with the rollout finished that scoping is retired, and a hardcoded
+label is an error wherever it appears — including in a brand-new component, which the old
+scoping let opt out simply by localizing nothing.
 
 ---
 
@@ -252,9 +255,9 @@ file rather than the ones with user-facing text.)
 |---|---|
 | `.cs` files in `BlazorDX.Components` | 142 |
 | …with zero user-facing strings (headless / parameter-driven) | 57 |
-| **Components to localize** | **83** (~250–270 unique strings) |
-| …localized so far | **40** — 2 pilots + 6 heavy hitters + 15 charts + 17 more |
-| …strings externalized so far | 204, across 26 resource files |
+| **Components to localize** | **83 — done** (~250–270 unique strings) |
+| …localized | **all of them** — 75 components hold a localizer |
+| …strings externalized | 267 call sites, across 52 resource files |
 | …with 1–3 strings each | 60 |
 | …heavy hitters (>10 strings) | 6, holding ~40% of all text |
 | Stylesheets converted | **25 of 25 — done** |
@@ -282,7 +285,14 @@ Batch 4 closed the defaulted-`[Parameter]` category — 21 parameters across 18 
 every other string in those same files so none was left half-localized (a half-localized
 component fails the build, since DX1003 arms itself the moment a `DxStrings` field appears).
 
-**40 of 83 components, 204 strings.** The remaining 43 hold roughly 60–80 between them.
+Batch 5 finished the tail — 35 components, **63 strings**. The visualization components
+(`DxBoxPlot`, `DxHeatmap`, `DxHistogram`, `DxSunburst`, `DxTreemap`, `DxWordCloud`,
+`DxChordDiagram`, `DxParallelCoordinates`, `DxGantt`) joined `DxChartResources` rather than
+taking nine more resource files.
+
+**The string rollout is done: 83 of 83 components, 267 call sites, 52 resource files, and zero
+hardcoded user-facing literals left at a render call site.** `IsInLocalizedType` is retired, so
+DX1003 applies everywhere — both ratchets are now closed.
 
 **CSS — finished.** All 25 stylesheets carry `rtl-clean`, and
 `RtlLogicalPropertyTests.Every_shipped_stylesheet_is_marked_converted` now makes the marker
@@ -299,9 +309,43 @@ Four physical usages that a rewrite would have got wrong, kept as worked example
   `transform-origin` needed explicit `[dir="rtl"]` rules — the two places where CSS itself
   cannot express the flip.
 
-**Completion criterion:** DX1003 fires on every file in `BlazorDX.Components` (43 components
-still to localize), and every stylesheet carries `rtl-clean` (**met**). Both ratchets exist to
-be removed; one now is.
+**Completion criterion: met for `BlazorDX.Components`.** DX1003 fires on every file there, and
+every stylesheet carries `rtl-clean`. Both ratchets existed to be removed, and both are gone —
+the per-type scoping and the opt-in CSS marker.
+
+### The other packages
+
+Retiring the ratchet surfaced **17 hardcoded strings outside `BlazorDX.Components`**, which no
+scan in this rollout had ever looked at:
+
+| Package | Strings |
+|---|---|
+| `BlazorDX.Integrations.Reporting` | 5 |
+| `BlazorDX.Htmx` | 6 |
+| `BlazorDX.Primitives` | 4 — `"Select a date"`, `"Type to search..."`, `"Type a command..."`, `"Select..."` |
+| `BlazorDX.Integrations.PowerBI` | 2 |
+
+The `BlazorDX.Primitives` four are the "Tier-1 primitive English defaults" this document already
+listed as a separate track. They are also a contradiction with
+[ADR 0001](adr/0001-two-tier-headless.md), which says primitives are unlabeled by design.
+
+**None of these packages references `BlazorDX.Components`**, so `DxStrings` is unreachable from
+all of them and DX1003 would demand a fix that cannot be written — the same trap the
+defaulted-`[Parameter]` rule fell into. The analyzer is therefore scoped to the one assembly
+where its advice holds, and the scoping has its own test.
+
+Widening it is a **packaging decision, not a retrofit**: `DxStrings` would have to move
+somewhere every package can reach — a new shared package (a thirteenth), or new dependencies
+from the integration packages onto an existing one. Either changes the published dependency
+graph, which is not a call to make as a side effect of finishing a string sweep.
+
+What that does and does not promise is worth keeping straight. It means **no hardcoded
+user-facing literal survives at a render call site, and no stylesheet uses a physical
+directional property without a written reason** — both mechanically enforced, on every future
+change. It does not mean the library is translated: the `.resx` files hold English, and
+`DxAlert` / `DxDataGridResources` are the only ones with a French counterpart. Externalizing
+the strings is what makes translation possible; supplying translations is separate work, and
+so is the visual RTL pass a static guard cannot do.
 
 ### Separate tracks, each needing a different mechanism
 

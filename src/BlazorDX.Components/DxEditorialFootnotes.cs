@@ -13,6 +13,12 @@ public sealed class DxEditorialFootnotes : ComponentBase
 
     [Parameter, EditorRequired] public IReadOnlyList<FootnoteEntry> Entries { get; set; } = [];
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxEditorialFootnotes>? s;
+
+    private DxStrings<DxEditorialFootnotes> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         if (Entries.Count == 0)
@@ -22,7 +28,7 @@ public sealed class DxEditorialFootnotes : ComponentBase
 
         builder.OpenElement(0, "section");
         builder.AddAttribute(1, "class", "dx-editorial-footnotes");
-        builder.AddAttribute(2, "aria-label", "Footnotes");
+        builder.AddAttribute(2, "aria-label", S["Footnotes", "Footnotes"]);
 
         builder.OpenElement(3, "ol");
 
@@ -39,7 +45,7 @@ public sealed class DxEditorialFootnotes : ComponentBase
             builder.OpenElement(8, "a");
             builder.AddAttribute(9, "href", $"#fnref-{entry.Number}");
             builder.AddAttribute(10, "class", "dx-editorial-footnote-back");
-            builder.AddAttribute(11, "aria-label", $"Back to reference {entry.Number}");
+            builder.AddAttribute(11, "aria-label", S["BackReference", "Back to reference {0}", entry.Number]);
             builder.AddContent(12, "↩");
             builder.CloseElement();
 

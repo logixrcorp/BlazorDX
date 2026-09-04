@@ -17,6 +17,15 @@ public sealed class DxPivotGrid<TRow> : PivotGridPrimitive<TRow>
 {
     [Parameter] public string? Class { get; set; }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    // DxPivotGridResources, not DxPivotGrid<TRow>: the default factory derives the resource name from the closed
+    // generic type, so localizing against the component would look for a different
+    // resource per TRow. See docs/localization.md.
+    private DxStrings<DxPivotGridResources>? s;
+
+    private DxStrings<DxPivotGridResources> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "table");
@@ -24,7 +33,7 @@ public sealed class DxPivotGrid<TRow> : PivotGridPrimitive<TRow>
 
         builder.OpenElement(2, "caption");
         builder.AddAttribute(3, "class", "dx-pivot-caption");
-        builder.AddContent(4, $"{Aggregate} of {ValueFieldHeader} · {Backend}");
+        builder.AddContent(4, S["PivotCaption", "{0} of {1} · {2}", Aggregate, ValueFieldHeader, Backend]);
         builder.CloseElement();
 
         BuildHead(builder);
@@ -58,7 +67,7 @@ public sealed class DxPivotGrid<TRow> : PivotGridPrimitive<TRow>
         builder.OpenElement(15, "th");
         builder.AddAttribute(16, "class", "dx-pivot-colhead dx-pivot-total");
         builder.AddAttribute(17, "scope", "col");
-        builder.AddContent(18, "Total");
+        builder.AddContent(18, S["Total", "Total"]);
         builder.CloseElement();
 
         builder.CloseElement();
@@ -108,7 +117,7 @@ public sealed class DxPivotGrid<TRow> : PivotGridPrimitive<TRow>
         builder.OpenElement(33, "th");
         builder.AddAttribute(34, "class", "dx-pivot-rowhead dx-pivot-total");
         builder.AddAttribute(35, "scope", "row");
-        builder.AddContent(36, "Total");
+        builder.AddContent(36, S["Total", "Total"]);
         builder.CloseElement();
 
         foreach (string colKey in ColumnKeys)
@@ -141,3 +150,10 @@ public sealed class DxPivotGrid<TRow> : PivotGridPrimitive<TRow>
             : value.ToString("0.##", CultureInfo.InvariantCulture);
     }
 }
+
+/// <summary>
+/// Resource-name anchor for <see cref="DxPivotGrid{TRow}"/>, which is generic: the default localizer
+/// factory derives a resource name from the <i>closed</i> type, so localizing against the
+/// component itself would look for a different resource per type argument.
+/// </summary>
+public sealed class DxPivotGridResources;

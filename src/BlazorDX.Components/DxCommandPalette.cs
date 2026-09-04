@@ -16,6 +16,12 @@ public sealed class DxCommandPalette : CommandPalettePrimitive
 {
     [Parameter] public string? Class { get; set; }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxCommandPalette>? s;
+
+    private DxStrings<DxCommandPalette> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenComponent<PresenceBoundary>(0);
@@ -37,7 +43,7 @@ public sealed class DxCommandPalette : CommandPalettePrimitive
         builder.AddAttribute(4, "class", $"dx-cmdk-panel {Class}".TrimEnd());
         builder.AddAttribute(5, "role", "dialog");
         builder.AddAttribute(6, "aria-modal", "true");
-        builder.AddAttribute(7, "aria-label", "Command palette");
+        builder.AddAttribute(7, "aria-label", S["CommandPalette", "Command palette"]);
 
         builder.OpenElement(8, "input");
         builder.AddAttribute(9, "class", "dx-cmdk-input");
@@ -65,7 +71,7 @@ public sealed class DxCommandPalette : CommandPalettePrimitive
         {
             builder.OpenElement(23, "div");
             builder.AddAttribute(24, "class", "dx-cmdk-empty");
-            builder.AddContent(25, "No commands");
+            builder.AddContent(25, S["NoCommands", "No commands"]);
             builder.CloseElement();
         }
 

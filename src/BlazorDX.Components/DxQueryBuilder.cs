@@ -34,6 +34,12 @@ public sealed class DxQueryBuilder : ComponentBase
 
     private string DefaultField => Fields.Count > 0 ? Fields[0].Name : string.Empty;
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxQueryBuilder>? s;
+
+    private DxStrings<DxQueryBuilder> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "div");
@@ -73,7 +79,7 @@ public sealed class DxQueryBuilder : ComponentBase
             builder.OpenElement(16, "button");
             builder.AddAttribute(17, "type", "button");
             builder.AddAttribute(18, "class", "dx-qb-remove");
-            builder.AddAttribute(19, "aria-label", "Remove");
+            builder.AddAttribute(19, "aria-label", S["Remove", "Remove"]);
             builder.AddAttribute(20, "onclick", EventCallback.Factory.Create(this, () => Remove(group, child)));
             builder.AddContent(21, "✕");
             builder.CloseElement();
@@ -98,7 +104,7 @@ public sealed class DxQueryBuilder : ComponentBase
         // Field select.
         builder.OpenElement(34, "select");
         builder.AddAttribute(35, "class", "dx-qb-field");
-        builder.AddAttribute(36, "aria-label", "Field");
+        builder.AddAttribute(36, "aria-label", S["Field", "Field"]);
         builder.AddAttribute(37, "value", condition.Field);
         builder.AddAttribute(38, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this,
             e => { condition.Field = e.Value as string ?? string.Empty; Changed(); }));
@@ -116,7 +122,7 @@ public sealed class DxQueryBuilder : ComponentBase
         // Operator select.
         builder.OpenElement(42, "select");
         builder.AddAttribute(43, "class", "dx-qb-op");
-        builder.AddAttribute(44, "aria-label", "Operator");
+        builder.AddAttribute(44, "aria-label", S["Operator", "Operator"]);
         builder.AddAttribute(45, "value", condition.Operator.ToString());
         builder.AddAttribute(46, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this,
             e => { condition.Operator = Enum.Parse<QueryOperator>(e.Value as string ?? "Contains"); Changed(); }));
@@ -135,7 +141,7 @@ public sealed class DxQueryBuilder : ComponentBase
         builder.OpenElement(50, "input");
         builder.AddAttribute(51, "class", "dx-qb-value");
         builder.AddAttribute(52, "type", "text");
-        builder.AddAttribute(53, "aria-label", "Value");
+        builder.AddAttribute(53, "aria-label", S["Value", "Value"]);
         builder.AddAttribute(54, "value", condition.Value);
         builder.AddAttribute(55, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(this,
             e => { condition.Value = e.Value as string ?? string.Empty; Changed(); }));

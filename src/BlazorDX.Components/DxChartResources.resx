@@ -33,20 +33,47 @@
   <data name="BarChartLabel" xml:space="preserve">
     <value>Bar chart with {0} categories</value>
   </data>
+  <data name="BoxPlotLabel" xml:space="preserve">
+    <value>Box plot with {0} groups</value>
+  </data>
+  <data name="BoxPlotPointLabel" xml:space="preserve">
+    <value>{0}: median {1}, Q1 {2}, Q3 {3}, range {4}–{5}</value>
+  </data>
   <data name="BulletChartLabel" xml:space="preserve">
     <value>Bullet chart with {0} KPIs</value>
   </data>
   <data name="CandlestickChartLabel" xml:space="preserve">
     <value>Candlestick chart with {0} candles</value>
   </data>
+  <data name="ChordDiagramLabel" xml:space="preserve">
+    <value>Chord diagram with {0} nodes and {1} flows</value>
+  </data>
   <data name="FunnelChartLabel" xml:space="preserve">
     <value>Funnel chart with {0} stages</value>
+  </data>
+  <data name="GanttTaskLabel" xml:space="preserve">
+    <value>{0}, {1} to {2}, {3:0}% complete</value>
+  </data>
+  <data name="GanttTaskRole" xml:space="preserve">
+    <value>Task</value>
   </data>
   <data name="GroupedBarChartLabel" xml:space="preserve">
     <value>Grouped bar chart, {0} series across {1} categories</value>
   </data>
+  <data name="HeatmapLabel" xml:space="preserve">
+    <value>Heatmap with {0} rows and {1} columns</value>
+  </data>
+  <data name="HistogramCaption" xml:space="preserve">
+    <value>{0:N0} values · {1} bins · range {2}–{3} · {4}</value>
+  </data>
+  <data name="HistogramLabel" xml:space="preserve">
+    <value>Histogram with {0} bins</value>
+  </data>
   <data name="NetworkGraphLabel" xml:space="preserve">
     <value>Network graph with {0} nodes and {1} edges</value>
+  </data>
+  <data name="ParallelCoordinatesLabel" xml:space="preserve">
+    <value>Parallel coordinates chart of {0} rows over {1} axes</value>
   </data>
   <data name="PieChartLabel" xml:space="preserve">
     <value>Pie chart with {0} slices</value>
@@ -69,8 +96,17 @@
   <data name="StackedBarChartLabel" xml:space="preserve">
     <value>Stacked bar chart, {0} series across {1} categories</value>
   </data>
+  <data name="SunburstLabel" xml:space="preserve">
+    <value>Sunburst chart with {0} segments</value>
+  </data>
+  <data name="TreemapLabel" xml:space="preserve">
+    <value>Treemap with {0} cells</value>
+  </data>
   <data name="WaterfallChartLabel" xml:space="preserve">
     <value>Waterfall chart with {0} bars</value>
+  </data>
+  <data name="WordCloudLabel" xml:space="preserve">
+    <value>Word cloud with {0} of {1} words placed</value>
   </data>
   <data name="ZoomStatus" xml:space="preserve">
     <value>Zoomed to {0}–{1} of {2}–{3}</value>

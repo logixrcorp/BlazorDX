@@ -37,6 +37,12 @@ public sealed class DxSplitButton : ComponentBase
     // DxMenu's Open is a controlled parameter, so the split button owns the state.
     private bool menuOpen;
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxSplitButton>? s;
+
+    private DxStrings<DxSplitButton> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "div");
@@ -67,7 +73,7 @@ public sealed class DxSplitButton : ComponentBase
     {
         builder.OpenElement(0, "span");
         builder.AddAttribute(1, "class", $"dx-btn dx-btn-{Variant} dx-split-toggle");
-        builder.AddAttribute(2, "aria-label", "More actions");
+        builder.AddAttribute(2, "aria-label", S["MoreActions", "More actions"]);
         builder.AddContent(3, "▾");
         builder.CloseElement();
     }

@@ -12,15 +12,21 @@ public sealed class DxEditorialDissipation : ComponentBase
 {
     [Parameter] public int DotCount { get; set; } = 24;
 
-    [Parameter] public string AriaLabel { get; set; } =
-        "An illustration of ephemeral content fading away once its session ends.";
+    [Parameter] public string? AriaLabel { get; set; }
+
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxEditorialDissipation>? s;
+
+    private DxStrings<DxEditorialDissipation> S => s ??= new(Services);
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "div");
         builder.AddAttribute(1, "class", "dx-editorial-dissipation");
         builder.AddAttribute(2, "role", "img");
-        builder.AddAttribute(3, "aria-label", AriaLabel);
+        builder.AddAttribute(3, "aria-label", AriaLabel ?? S["DissipationLabel",
+            "An illustration of ephemeral content fading away once its session ends."]);
 
         for (int i = 0; i < DotCount; i++)
         {

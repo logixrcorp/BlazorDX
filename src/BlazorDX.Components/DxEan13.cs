@@ -34,6 +34,11 @@ public sealed class DxEan13 : ComponentBase
     // Quiet zone (light margin) in modules on each side — required for scanning.
     private const int QuietModules = 10;
 
+    // Reuses the Services injection this component already had.
+    private DxStrings<DxEan13>? s;
+
+    private DxStrings<DxEan13> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         bool[] modules;
@@ -62,7 +67,7 @@ public sealed class DxEan13 : ComponentBase
         builder.AddAttribute(4, "width", Inv($"{width}"));
         builder.AddAttribute(5, "height", Inv($"{height}"));
         builder.AddAttribute(6, "role", "img");
-        builder.AddAttribute(7, "aria-label", $"EAN-13 barcode {digits}");
+        builder.AddAttribute(7, "aria-label", S["EanBarcode", "EAN-13 barcode {0}", digits]);
 
         // Light background (the quiet zone plus gaps).
         builder.OpenElement(8, "rect");
@@ -119,7 +124,7 @@ public sealed class DxEan13 : ComponentBase
     {
         builder.OpenElement(40, "span");
         builder.AddAttribute(41, "class", "dx-barcode-error");
-        builder.AddContent(42, $"Invalid EAN-13: \"{Value}\"");
+        builder.AddContent(42, S["InvalidEan", "Invalid EAN-13: \"{0}\"", Value]);
         builder.CloseElement();
     }
 

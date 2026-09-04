@@ -27,6 +27,12 @@ public sealed class DxStepper : ComponentBase
 
     private bool IsLast => Current >= Steps.Count - 1;
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxStepper>? s;
+
+    private DxStrings<DxStepper> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "div");
@@ -107,7 +113,7 @@ public sealed class DxStepper : ComponentBase
             builder.AddAttribute(26, "onclick", EventCallback.Factory.Create(this, () => GoToAsync(Current - 1)));
         }
 
-        builder.AddContent(27, "Back");
+        builder.AddContent(27, S["Back", "Back"]);
         builder.CloseElement();
 
         builder.OpenElement(28, "button");
@@ -119,7 +125,7 @@ public sealed class DxStepper : ComponentBase
             builder.AddAttribute(32, "onclick", EventCallback.Factory.Create(this, () => GoToAsync(Current + 1)));
         }
 
-        builder.AddContent(33, "Next");
+        builder.AddContent(33, S["Next", "Next"]);
         builder.CloseElement();
 
         builder.CloseElement();
