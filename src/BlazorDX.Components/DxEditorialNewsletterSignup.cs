@@ -15,15 +15,21 @@ namespace BlazorDX.Components;
 /// </summary>
 public sealed class DxEditorialNewsletterSignup : ComponentBase
 {
-    [Parameter] public string Heading { get; set; } = "Get more like this";
+    [Parameter] public string? Heading { get; set; }
 
     [Parameter] public string? Description { get; set; }
 
-    [Parameter] public string ButtonText { get; set; } = "Subscribe";
+    [Parameter] public string? ButtonText { get; set; }
 
     [Parameter, EditorRequired] public EventCallback<string> OnSubscribe { get; set; }
 
     private string? email;
+
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxEditorialNewsletterSignup>? s;
+
+    private DxStrings<DxEditorialNewsletterSignup> S => s ??= new(Services);
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
@@ -32,7 +38,7 @@ public sealed class DxEditorialNewsletterSignup : ComponentBase
 
         builder.OpenElement(2, "p");
         builder.AddAttribute(3, "class", "dx-editorial-newsletter-heading");
-        builder.AddContent(4, Heading);
+        builder.AddContent(4, Heading ?? S["NewsletterHeading", "Get more like this"]);
         builder.CloseElement();
 
         if (!string.IsNullOrEmpty(Description))
@@ -59,7 +65,7 @@ public sealed class DxEditorialNewsletterSignup : ComponentBase
         builder.CloseComponent();
 
         builder.OpenComponent<DxButton>(19);
-        builder.AddComponentParameter(20, nameof(DxButton.Text), ButtonText);
+        builder.AddComponentParameter(20, nameof(DxButton.Text), ButtonText ?? S["Subscribe", "Subscribe"]);
         builder.AddComponentParameter(21, nameof(DxButton.Type), "submit");
         builder.CloseComponent();
 

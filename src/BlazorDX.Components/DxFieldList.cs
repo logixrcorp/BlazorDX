@@ -32,10 +32,19 @@ public sealed class DxFieldList<TItem> : CollectionEditPrimitive<TItem>
     [Parameter, EditorRequired] public RenderFragment<CollectionItemContext<TItem>> ItemTemplate { get; set; } = default!;
 
     /// <summary>Text for the "add a row" button.</summary>
-    [Parameter] public string AddLabel { get; set; } = "Add";
+    [Parameter] public string? AddLabel { get; set; }
 
     /// <summary>Extra CSS classes appended to the list.</summary>
     [Parameter] public string? Class { get; set; }
+
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    // DxFieldListResources, not DxFieldList<TItem>: the default factory derives the resource name
+    // from the closed generic type, so localizing against the component itself would look for a
+    // different resource per TItem. Same rule as DxDataGridResources — see docs/localization.md.
+    private DxStrings<DxFieldListResources>? s;
+
+    private DxStrings<DxFieldListResources> S => s ??= new(Services);
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
@@ -88,7 +97,7 @@ public sealed class DxFieldList<TItem> : CollectionEditPrimitive<TItem>
             builder.AddAttribute(24, "type", "button");
             builder.AddAttribute(25, "class", "dx-fieldlist-move");
             builder.AddAttribute(26, "tabindex", "-1");
-            builder.AddAttribute(27, "aria-label", "Move item up");
+            builder.AddAttribute(27, "aria-label", S["MoveItemUp", "Move item up"]);
             builder.AddAttribute(28, "disabled", captured == 0);
             builder.AddAttribute(29, "onclick", EventCallback.Factory.Create(this, () => MoveByAsync(captured, -1)));
             builder.AddContent(30, "▲");
@@ -98,7 +107,7 @@ public sealed class DxFieldList<TItem> : CollectionEditPrimitive<TItem>
             builder.AddAttribute(32, "type", "button");
             builder.AddAttribute(33, "class", "dx-fieldlist-move");
             builder.AddAttribute(34, "tabindex", "-1");
-            builder.AddAttribute(35, "aria-label", "Move item down");
+            builder.AddAttribute(35, "aria-label", S["MoveItemDown", "Move item down"]);
             builder.AddAttribute(36, "disabled", captured == Items.Count - 1);
             builder.AddAttribute(37, "onclick", EventCallback.Factory.Create(this, () => MoveByAsync(captured, 1)));
             builder.AddContent(38, "▼");
@@ -107,7 +116,7 @@ public sealed class DxFieldList<TItem> : CollectionEditPrimitive<TItem>
             builder.OpenElement(39, "button");
             builder.AddAttribute(40, "type", "button");
             builder.AddAttribute(41, "class", "dx-chip-remove dx-fieldlist-remove");
-            builder.AddAttribute(42, "aria-label", "Remove item");
+            builder.AddAttribute(42, "aria-label", S["RemoveItem", "Remove item"]);
             builder.AddAttribute(43, "onclick", EventCallback.Factory.Create(this, () => RemoveAtAsync(captured)));
             builder.AddContent(44, "×");
             builder.CloseElement();
@@ -120,7 +129,7 @@ public sealed class DxFieldList<TItem> : CollectionEditPrimitive<TItem>
         builder.AddAttribute(51, "type", "button");
         builder.AddAttribute(52, "class", "dx-fieldlist-add dx-btn-secondary");
         builder.AddAttribute(53, "onclick", EventCallback.Factory.Create(this, AddAsync));
-        builder.AddContent(54, AddLabel);
+        builder.AddContent(54, AddLabel ?? S["Add", "Add"]);
         builder.CloseElement();
 
         builder.CloseElement();
@@ -137,3 +146,10 @@ public sealed class DxFieldList<TItem> : CollectionEditPrimitive<TItem>
         return ItemsChanged.HasDelegate ? ItemsChanged.InvokeAsync(updated) : Task.CompletedTask;
     }
 }
+
+/// <summary>
+/// Resource-name anchor for <see cref="DxFieldList{TItem}"/>, which is generic: the default
+/// localizer factory derives a resource name from the <i>closed</i> type, so localizing against
+/// the component itself would look for a different resource per <c>TItem</c>.
+/// </summary>
+public sealed class DxFieldListResources;

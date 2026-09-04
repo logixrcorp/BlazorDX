@@ -86,6 +86,38 @@ Two consequences worth planning for:
   language that abbreviates differently needs both, and sharing one key would make the
   screen reader announce the abbreviation.
 
+### Defaulted `[Parameter]` text
+
+A `[Parameter]` with an English default cannot use the ordinary pattern at all:
+
+```csharp
+[Parameter] public string Label { get; set; } = S["Loading", "Loading"];   // does NOT compile
+```
+
+A property initializer cannot call an instance member, and `S` is reached through the injected
+`IServiceProvider`, which does not exist until the component is activated. So the parameter
+defaults to `null` and the **render site** coalesces:
+
+```csharp
+[Parameter] public string? Label { get; set; }
+// ...
+builder.AddAttribute(3, "aria-label", Label ?? S["Loading", "Loading"]);
+```
+
+`string` becomes `string?`. That is a real change to the public surface, and worth being
+deliberate about:
+
+- A caller who **sets** the parameter sees no change.
+- A caller who **reads** it now gets `null` instead of the English default. Component parameters
+  are rarely read from outside, but this is the compatibility cost.
+- A caller who explicitly passes `null` used to get an empty string rendered; now they get the
+  localized default. That is a behaviour change, and the better behaviour — an empty
+  `aria-label` is a control with no accessible name.
+
+**Coalesce once.** When a component only forwards the parameter to another component that owns
+the fallback, forward the `null` — `DxForm` passes `SubmitText` straight to `DxFormBody`, and
+coalescing in both would localize twice and defeat a caller who deliberately passed nothing.
+
 ### The `.resx` files
 
 Put them at the **project root**, next to the `.cs` file, named for the type:
@@ -221,8 +253,8 @@ file rather than the ones with user-facing text.)
 | `.cs` files in `BlazorDX.Components` | 142 |
 | …with zero user-facing strings (headless / parameter-driven) | 57 |
 | **Components to localize** | **83** (~250–270 unique strings) |
-| …localized so far | **23** — 2 pilots + 6 heavy hitters + 15 charts |
-| …strings externalized so far | 143, across 9 resource files |
+| …localized so far | **40** — 2 pilots + 6 heavy hitters + 15 charts + 17 more |
+| …strings externalized so far | 204, across 26 resource files |
 | …with 1–3 strings each | 60 |
 | …heavy hitters (>10 strings) | 6, holding ~40% of all text |
 | Stylesheets converted | 1 of 25 |
@@ -246,7 +278,11 @@ Batch 3 took the whole chart family in one pass — 15 components, **22 strings*
 single shared `DxChartResources.resx`. `DxGraph`, `DxLinearGauge` and `DxRadialGauge` turned out
 to carry no user-facing text at all and were left alone.
 
-**23 of 83 components, 143 strings.** The remaining 60 hold roughly 110–130 between them.
+Batch 4 closed the defaulted-`[Parameter]` category — 21 parameters across 18 components, plus
+every other string in those same files so none was left half-localized (a half-localized
+component fails the build, since DX1003 arms itself the moment a `DxStrings` field appears).
+
+**40 of 83 components, 204 strings.** The remaining 43 hold roughly 60–80 between them.
 
 **CSS** — 12 trivial files (≤4 hits each) → `dx-datagrid` → the four heavy files
 individually → `dx-layout` last, since 7 of its 10 declarations are judgment calls.

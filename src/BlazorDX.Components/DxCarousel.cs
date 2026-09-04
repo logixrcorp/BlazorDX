@@ -1,4 +1,3 @@
-using System.Globalization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
 using Microsoft.AspNetCore.Components.Web;
@@ -19,7 +18,7 @@ public sealed class DxCarousel : ComponentBase
 
     [Parameter] public EventCallback<int> IndexChanged { get; set; }
 
-    [Parameter] public string AriaLabel { get; set; } = "Carousel";
+    [Parameter] public string? AriaLabel { get; set; }
 
     [Parameter] public bool ShowDots { get; set; } = true;
 
@@ -39,13 +38,19 @@ public sealed class DxCarousel : ComponentBase
         }
     }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxCarousel>? s;
+
+    private DxStrings<DxCarousel> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "div");
         builder.AddAttribute(1, "class", $"dx-carousel {Class}".TrimEnd());
         builder.AddAttribute(2, "role", "group");
-        builder.AddAttribute(3, "aria-roledescription", "carousel");
-        builder.AddAttribute(4, "aria-label", AriaLabel);
+        builder.AddAttribute(3, "aria-roledescription", S["Carousel", "carousel"]);
+        builder.AddAttribute(4, "aria-label", AriaLabel ?? S["CarouselLabel", "Carousel"]);
         builder.AddAttribute(5, "tabindex", "0");
         builder.AddAttribute(6, "onkeydown", EventCallback.Factory.Create<KeyboardEventArgs>(this, OnKeyDownAsync));
 
@@ -60,8 +65,8 @@ public sealed class DxCarousel : ComponentBase
             builder.SetKey(i);
             builder.AddAttribute(23, "class", i == Index ? "dx-carousel-slide dx-carousel-active" : "dx-carousel-slide");
             builder.AddAttribute(24, "role", "group");
-            builder.AddAttribute(25, "aria-roledescription", "slide");
-            builder.AddAttribute(26, "aria-label", $"{i + 1} of {Count}");
+            builder.AddAttribute(25, "aria-roledescription", S["Slide", "slide"]);
+            builder.AddAttribute(26, "aria-label", S["SlidePosition", "{0} of {1}", i + 1, Count]);
             builder.AddAttribute(27, "aria-hidden", i == Index ? "false" : "true");
             builder.AddContent(28, Slides[i]);
             builder.CloseElement();
@@ -85,7 +90,10 @@ public sealed class DxCarousel : ComponentBase
                 builder.AddAttribute(55, "class", i == Index ? "dx-carousel-dot dx-carousel-dot-active" : "dx-carousel-dot");
                 builder.AddAttribute(56, "role", "tab");
                 builder.AddAttribute(57, "aria-selected", i == Index ? "true" : "false");
-                builder.AddAttribute(58, "aria-label", string.Create(CultureInfo.InvariantCulture, $"Go to slide {captured + 1}"));
+                // Was string.Create(InvariantCulture, ...): a spoken label, so it needs the
+                // current culture for the number as well as a translation for the sentence.
+                // DX1003 could not see this one — the argument was a method call, not a literal.
+                builder.AddAttribute(58, "aria-label", S["GoToSlide", "Go to slide {0}", captured + 1]);
                 builder.AddAttribute(59, "onclick", EventCallback.Factory.Create(this, () => GoAsync(captured)));
                 builder.CloseElement();
             }

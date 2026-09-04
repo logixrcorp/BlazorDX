@@ -22,9 +22,9 @@ public sealed class DxTransferList : ComponentBase
 
     [Parameter] public EventCallback<IReadOnlyCollection<string>> ValueChanged { get; set; }
 
-    [Parameter] public string AvailableLabel { get; set; } = "Available";
+    [Parameter] public string? AvailableLabel { get; set; }
 
-    [Parameter] public string SelectedLabel { get; set; } = "Selected";
+    [Parameter] public string? SelectedLabel { get; set; }
 
     private bool InTarget(string item) => Value.Contains(item);
 
@@ -34,17 +34,23 @@ public sealed class DxTransferList : ComponentBase
     private IReadOnlyList<ListOption<string>> TargetOptions =>
         Items.Where(InTarget).Select(item => new ListOption<string>(item, item)).ToList();
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxTransferList>? s;
+
+    private DxStrings<DxTransferList> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "div");
         builder.AddAttribute(1, "class", "dx-transfer");
 
-        BuildPane(builder, 2, AvailableLabel, SourceOptions, sourceChecked,
+        BuildPane(builder, 2, AvailableLabel ?? S["Available", "Available"], SourceOptions, sourceChecked,
             EventCallback.Factory.Create<IReadOnlyCollection<string>>(this, values => sourceChecked = values));
 
         BuildButtons(builder);
 
-        BuildPane(builder, 3, SelectedLabel, TargetOptions, targetChecked,
+        BuildPane(builder, 3, SelectedLabel ?? S["Selected", "Selected"], TargetOptions, targetChecked,
             EventCallback.Factory.Create<IReadOnlyCollection<string>>(this, values => targetChecked = values));
 
         builder.CloseElement();

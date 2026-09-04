@@ -28,9 +28,15 @@ public sealed class DxChat : ComponentBase
     /// <summary>Render assistant message content as Markdown (default true).</summary>
     [Parameter] public bool RenderMarkdown { get; set; } = true;
 
-    [Parameter] public string Placeholder { get; set; } = "Send a message…  (Ctrl+Enter)";
+    [Parameter] public string? Placeholder { get; set; }
 
     [Parameter] public string? Class { get; set; }
+
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxChat>? s;
+
+    private DxStrings<DxChat> S => s ??= new(Services);
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
@@ -92,13 +98,14 @@ public sealed class DxChat : ComponentBase
         builder.CloseElement();
     }
 
-    private static void BuildTyping(RenderTreeBuilder builder)
+    // Instance, not static: it renders user-facing text, and S is an instance member.
+    private void BuildTyping(RenderTreeBuilder builder)
     {
         builder.OpenElement(16, "div");
         builder.AddAttribute(17, "class", "dx-chat-msg dx-chat-assistant");
         builder.OpenElement(18, "div");
         builder.AddAttribute(19, "class", "dx-chat-bubble dx-chat-typing");
-        builder.AddAttribute(20, "aria-label", "Assistant is typing");
+        builder.AddAttribute(20, "aria-label", S["AssistantTyping", "Assistant is typing"]);
         for (int i = 0; i < 3; i++)
         {
             builder.OpenElement(21, "span");
@@ -119,8 +126,8 @@ public sealed class DxChat : ComponentBase
         builder.OpenElement(25, "textarea");
         builder.AddAttribute(26, "class", "dx-chat-input");
         builder.AddAttribute(27, "rows", 1);
-        builder.AddAttribute(28, "placeholder", Placeholder);
-        builder.AddAttribute(29, "aria-label", "Message");
+        builder.AddAttribute(28, "placeholder", Placeholder ?? S["ComposerPlaceholder", "Send a message…  (Ctrl+Enter)"]);
+        builder.AddAttribute(29, "aria-label", S["Message", "Message"]);
         builder.AddAttribute(30, "value", draft);
         builder.AddAttribute(31, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(this, e => draft = e.Value as string ?? string.Empty));
         builder.AddAttribute(32, "onkeydown", EventCallback.Factory.Create<KeyboardEventArgs>(this, OnKeyDownAsync));
@@ -129,10 +136,10 @@ public sealed class DxChat : ComponentBase
         builder.OpenElement(33, "button");
         builder.AddAttribute(34, "type", "button");
         builder.AddAttribute(35, "class", "dx-chat-send");
-        builder.AddAttribute(36, "aria-label", "Send");
+        builder.AddAttribute(36, "aria-label", S["Send", "Send"]);
         builder.AddAttribute(37, "disabled", Busy || string.IsNullOrWhiteSpace(draft));
         builder.AddAttribute(38, "onclick", EventCallback.Factory.Create(this, SendAsync));
-        builder.AddContent(39, "Send");
+        builder.AddContent(39, S["Send", "Send"]);
         builder.CloseElement();
 
         builder.CloseElement();
