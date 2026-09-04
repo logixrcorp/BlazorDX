@@ -140,11 +140,14 @@ public sealed class NestedDxFormTests : TestContext
         form.FindAll(".dx-fieldlist-add")[0].Click();   // add an Attendee row
         Assert.Single(model.Attendees);
 
-        var attendeesList = form.FindAll(".dx-fieldlist")[0];
-        var rowInputs = attendeesList.QuerySelectorAll("input[type=text]");
+        var rowInputs = form.FindAll(".dx-fieldlist")[0].QuerySelectorAll("input[type=text]");
         Assert.Equal(2, rowInputs.Length);   // Name, Email
-
         rowInputs[0].Input("Ada");
+
+        // Re-query after the Input above triggers a re-render -- the previously-found
+        // rowInputs[1] reference is now stale (bUnit's own UnknownEventHandlerIdException
+        // guidance: re-find elements after any event that causes a re-render).
+        rowInputs = form.FindAll(".dx-fieldlist")[0].QuerySelectorAll("input[type=text]");
         rowInputs[1].Input("ada@x.co");
 
         Assert.Equal("Ada", model.Attendees[0].Name);
