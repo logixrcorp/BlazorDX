@@ -56,6 +56,12 @@ public sealed class DxNetworkGraph : ComponentBase
         layout = ForceDirectedLayout.Compute(Nodes.Count, edgeInputs, Width, Height, Iterations);
     }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxChartResources>? s;
+
+    private DxStrings<DxChartResources> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         bool interactive = Interactive;
@@ -68,7 +74,7 @@ public sealed class DxNetworkGraph : ComponentBase
         builder.AddAttribute(3, "class", "dx-chart-svg");
         builder.AddAttribute(4, "viewBox", $"0 0 {Width} {Height}");
         builder.AddAttribute(5, "role", interactive ? "application" : "img");
-        builder.AddAttribute(6, "aria-label", $"Network graph with {Nodes.Count} nodes and {Edges.Count} edges");
+        builder.AddAttribute(6, "aria-label", S["NetworkGraphLabel", "Network graph with {0} nodes and {1} edges", Nodes.Count, Edges.Count]);
 
         for (int i = 0; i < Edges.Count; i++)
         {

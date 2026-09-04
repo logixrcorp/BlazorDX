@@ -39,6 +39,12 @@ public sealed class DxBulletChart : ComponentBase
 
     protected override void OnParametersSet() => selection.ClampTo(Points.Count);
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxChartResources>? s;
+
+    private DxStrings<DxChartResources> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         bool interactive = Interactive;
@@ -50,7 +56,7 @@ public sealed class DxBulletChart : ComponentBase
         builder.AddAttribute(3, "class", "dx-chart-svg");
         builder.AddAttribute(4, "viewBox", $"0 0 {Width} {Height}");
         builder.AddAttribute(5, "role", interactive ? "application" : "img");
-        builder.AddAttribute(6, "aria-label", $"Bullet chart with {Points.Count} KPIs");
+        builder.AddAttribute(6, "aria-label", S["BulletChartLabel", "Bullet chart with {0} KPIs", Points.Count]);
 
         if (interactive)
         {

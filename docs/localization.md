@@ -115,6 +115,21 @@ private DxStrings<DxDataGridResources> S => s ??= new(Services);
 
 The `.resx` is then `DxDataGridResources.resx`.
 
+### Sharing one resource file across a family
+
+A marker type can also be shared deliberately. All 15 charts localize against
+`DxChartResources`, because fifteen `.resx` files averaging two entries would give a translator
+fifteen files to open for one recurring sentence pattern.
+
+Keep keys **component-specific** even in a shared file — `PieChartLabel`, not `Label`. Share a
+key only when the English is genuinely identical (the four zoomable charts share `ResetZoom`
+and `PointsCaption` verbatim). A key shared by two components means one component's translation
+silently becomes the other's.
+
+`LocalizedStringConsistencyTests` aggregates usage per *resource file*, so the orphan check
+works across a shared one; it would otherwise report each chart's keys as unused by every other
+chart.
+
 ### The two tests
 
 Every localized component gets both, because each catches what the other cannot:
@@ -206,8 +221,8 @@ file rather than the ones with user-facing text.)
 | `.cs` files in `BlazorDX.Components` | 142 |
 | …with zero user-facing strings (headless / parameter-driven) | 57 |
 | **Components to localize** | **83** (~250–270 unique strings) |
-| …localized so far | **8** — `DxAlert`, `DxDataGrid` (pilots) + all 6 heavy hitters |
-| …strings externalized so far | 121 |
+| …localized so far | **23** — 2 pilots + 6 heavy hitters + 15 charts |
+| …strings externalized so far | 143, across 9 resource files |
 | …with 1–3 strings each | 60 |
 | …heavy hitters (>10 strings) | 6, holding ~40% of all text |
 | Stylesheets converted | 1 of 25 |
@@ -227,8 +242,11 @@ strings**, plus `DxScheduler`'s date-formatting fix, which was done in the same 
 externalizing "Previous month" while every date still rendered through `InvariantCulture`
 would have been half a job.
 
-**All six heavy hitters are done: 8 of 83 components, 121 strings.** The remaining 75
-components hold ~130–150 strings between them, most with one to three each.
+Batch 3 took the whole chart family in one pass — 15 components, **22 strings**, all against a
+single shared `DxChartResources.resx`. `DxGraph`, `DxLinearGauge` and `DxRadialGauge` turned out
+to carry no user-facing text at all and were left alone.
+
+**23 of 83 components, 143 strings.** The remaining 60 hold roughly 110–130 between them.
 
 **CSS** — 12 trivial files (≤4 hits each) → `dx-datagrid` → the four heavy files
 individually → `dx-layout` last, since 7 of its 10 declarations are judgment calls.

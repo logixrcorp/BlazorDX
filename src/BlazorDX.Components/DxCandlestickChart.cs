@@ -51,6 +51,12 @@ public sealed class DxCandlestickChart : ComponentBase
 
     protected override void OnParametersSet() => selection.ClampTo(Points.Count);
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxChartResources>? s;
+
+    private DxStrings<DxChartResources> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         bool interactive = Interactive;
@@ -82,7 +88,7 @@ public sealed class DxCandlestickChart : ComponentBase
         builder.AddAttribute(2, "class", $"dx-chart-svg dx-candlestick {Class}".TrimEnd());
         builder.AddAttribute(3, "viewBox", Inv($"0 0 {Width} {Height}"));
         builder.AddAttribute(4, "role", interactive ? "application" : "img");
-        builder.AddAttribute(5, "aria-label", $"Candlestick chart with {n} candles");
+        builder.AddAttribute(5, "aria-label", S["CandlestickChartLabel", "Candlestick chart with {0} candles", n]);
 
         if (interactive)
         {

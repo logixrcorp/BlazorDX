@@ -49,6 +49,12 @@ public sealed class LocalizedStringConsistencyTests
         List<string> problems = [];
         int checkedSites = 0;
 
+        // Usage is collected per *resource file*, not per component, because a resource file can
+        // be shared: every chart localizes against DxChartResources so that ~18 components with
+        // two strings each do not become ~18 .resx files. Checking orphans per component would
+        // then report each chart's keys as unused by all the others.
+        Dictionary<string, HashSet<string>> usedByResource = [];
+
         foreach (string component in LocalizedComponents())
         {
             // Comments stripped first. Documentation that shows the pattern — including this
@@ -67,7 +73,9 @@ public sealed class LocalizedStringConsistencyTests
             }
 
             Dictionary<string, string> resources = ReadResources(resx);
-            HashSet<string> used = [];
+            HashSet<string> used = usedByResource.TryGetValue(resourceName, out HashSet<string>? seen)
+                ? seen
+                : usedByResource[resourceName] = [];
 
             foreach (Match site in CallSite.Matches(source))
             {
@@ -88,8 +96,13 @@ public sealed class LocalizedStringConsistencyTests
                         + $"in {Path.GetFileName(component)} falls back to \"{english}\".");
                 }
             }
+        }
 
-            foreach (string orphan in resources.Keys.Where(k => !used.Contains(k)).OrderBy(k => k))
+        // Orphans, once every component has been read.
+        foreach ((string resourceName, HashSet<string> used) in usedByResource)
+        {
+            string resx = Path.Combine(ComponentsDirectory(), $"{resourceName}.resx");
+            foreach (string orphan in ReadResources(resx).Keys.Where(k => !used.Contains(k)).OrderBy(k => k))
             {
                 problems.Add($"{resourceName}.resx[\"{orphan}\"] is not used by any call site — "
                     + "the string moved or was removed, and translators are still maintaining it.");
