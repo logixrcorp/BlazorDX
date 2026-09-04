@@ -81,6 +81,12 @@ public sealed class DxDocumentViewer : ComponentBase
     /// <summary>Shows the Open-in-new-tab control in the toolbar (PDF/image). On by default.</summary>
     [Parameter] public bool ShowOpenInNewTab { get; set; } = true;
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxDocumentViewer>? s;
+
+    private DxStrings<DxDocumentViewer> S => s ??= new(Services);
+
     [Inject] private IDocumentViewerInterop Interop { get; set; } = default!;
 
     private int current;
@@ -123,7 +129,7 @@ public sealed class DxDocumentViewer : ComponentBase
         {
             builder.OpenElement(102, "div");
             builder.AddAttribute(103, "class", "dx-docview-empty");
-            builder.AddContent(104, "No document");
+            builder.AddContent(104, S["NoDocument", "No document"]);
             builder.CloseElement();
         }
         else
@@ -144,7 +150,7 @@ public sealed class DxDocumentViewer : ComponentBase
     {
         builder.OpenElement(10, "nav");
         builder.AddAttribute(11, "class", "dx-docview-list");
-        builder.AddAttribute(12, "aria-label", "Documents");
+        builder.AddAttribute(12, "aria-label", S["DocumentList", "Documents"]);
 
         for (int i = 0; i < Documents.Count; i++)
         {
@@ -192,13 +198,13 @@ public sealed class DxDocumentViewer : ComponentBase
         {
             builder.OpenElement(120, "div");
             builder.AddAttribute(121, "class", "dx-docview-zoom");
-            ZoomButton(builder, 122, "−", "Zoom out", () => zoom = Math.Max(25, zoom - 25));
+            ZoomButton(builder, 122, "−", S["ZoomOut", "Zoom out"], () => zoom = Math.Max(25, zoom - 25));
             builder.OpenElement(128, "span");
             builder.AddAttribute(129, "class", "dx-docview-zoom-value");
             builder.AddContent(130, $"{zoom}%");
             builder.CloseElement();
-            ZoomButton(builder, 131, "+", "Zoom in", () => zoom = Math.Min(400, zoom + 25));
-            ZoomButton(builder, 137, "Reset", "Reset zoom", () => zoom = 100);
+            ZoomButton(builder, 131, "+", S["ZoomIn", "Zoom in"], () => zoom = Math.Min(400, zoom + 25));
+            ZoomButton(builder, 137, S["ZoomResetGlyph", "Reset"], S["ZoomReset", "Reset zoom"], () => zoom = 100);
             builder.CloseElement();
         }
 
@@ -211,7 +217,7 @@ public sealed class DxDocumentViewer : ComponentBase
             builder.OpenElement(140, "div");
             builder.AddAttribute(141, "class", "dx-docview-actions");
             builder.AddAttribute(142, "role", "group");
-            builder.AddAttribute(143, "aria-label", "Document actions");
+            builder.AddAttribute(143, "aria-label", S["DocumentActions", "Document actions"]);
 
             // Source-bound links (download, open) are only emitted for a safe source;
             // a rejected/empty source never becomes a clickable href.
@@ -222,8 +228,11 @@ public sealed class DxDocumentViewer : ComponentBase
                 builder.AddAttribute(147, "href", doc.Source);
                 builder.AddAttribute(148, "download", doc.Name);
                 builder.AddAttribute(149, "rel", "noopener noreferrer");
-                builder.AddAttribute(150, "aria-label", $"Download {doc.Name}");
-                builder.AddContent(151, "⭳ Download");
+                builder.AddAttribute(150, "aria-label", S["DownloadNamed", "Download {0}", doc.Name]);
+                // The glyph is inside the localized value rather than prefixed around it: a
+                // translator may need to move it, since an RTL layout wants the affordance on the
+                // other side of the word. Same for the Print and Open buttons below.
+                builder.AddContent(151, S["DownloadButton", "⭳ Download"]);
                 builder.CloseElement();
             }
 
@@ -233,10 +242,10 @@ public sealed class DxDocumentViewer : ComponentBase
                 builder.OpenElement(155, "button");
                 builder.AddAttribute(156, "type", "button");
                 builder.AddAttribute(157, "class", "dx-docview-action");
-                builder.AddAttribute(158, "aria-label", $"Print {doc.Name}");
+                builder.AddAttribute(158, "aria-label", S["PrintNamed", "Print {0}", doc.Name]);
                 builder.AddAttribute(159, "onclick",
                     EventCallback.Factory.Create(this, () => PrintAsync(doc.Kind)));
-                builder.AddContent(160, "⎙ Print");
+                builder.AddContent(160, S["PrintButton", "⎙ Print"]);
                 builder.CloseElement();
             }
 
@@ -248,8 +257,8 @@ public sealed class DxDocumentViewer : ComponentBase
                 builder.AddAttribute(167, "href", doc.Source);
                 builder.AddAttribute(168, "target", "_blank");
                 builder.AddAttribute(169, "rel", "noopener noreferrer");
-                builder.AddAttribute(170, "aria-label", $"Open {doc.Name} in a new tab");
-                builder.AddContent(171, "↗ Open");
+                builder.AddAttribute(170, "aria-label", S["OpenNamed", "Open {0} in a new tab", doc.Name]);
+                builder.AddContent(171, S["OpenButton", "↗ Open"]);
                 builder.CloseElement();
             }
 
@@ -394,11 +403,11 @@ public sealed class DxDocumentViewer : ComponentBase
                     // browsers without an inline PDF plugin can still get the file.
                     builder.OpenElement(226, "p");
                     builder.AddAttribute(227, "class", "dx-docview-pdf-fallback");
-                    builder.AddContent(228, "Can't see the PDF above? ");
+                    builder.AddContent(228, S["PdfFallbackPrompt", "Can't see the PDF above? "]);
                     builder.OpenElement(229, "a");
                     builder.AddAttribute(230, "href", doc.Source);
                     builder.AddAttribute(231, "download", doc.Name);
-                    builder.AddContent(232, "Download the PDF");
+                    builder.AddContent(232, S["DownloadThePdf", "Download the PDF"]);
                     builder.CloseElement();
                     builder.AddContent(233, ".");
                     builder.CloseElement();
@@ -427,13 +436,13 @@ public sealed class DxDocumentViewer : ComponentBase
             default:
                 builder.OpenElement(250, "div");
                 builder.AddAttribute(251, "class", "dx-docview-unsupported");
-                builder.AddContent(252, "Preview not available for this file type. ");
+                builder.AddContent(252, S["NoPreview", "Preview not available for this file type. "]);
                 if (IsSafeSource(doc.Source))
                 {
                     builder.OpenElement(253, "a");
                     builder.AddAttribute(254, "href", doc.Source);
                     builder.AddAttribute(255, "download", doc.Name);
-                    builder.AddContent(256, "Download");
+                    builder.AddContent(256, S["Download", "Download"]);
                     builder.CloseElement();
                 }
                 builder.CloseElement();
@@ -449,7 +458,7 @@ public sealed class DxDocumentViewer : ComponentBase
     {
         builder.OpenElement(260, "div");
         builder.AddAttribute(261, "class", "dx-docview-unavailable");
-        builder.AddContent(262, "Document source unavailable");
+        builder.AddContent(262, S["SourceUnavailable", "Document source unavailable"]);
         builder.CloseElement();
     }
 }

@@ -5,6 +5,7 @@ using Bunit;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Localization;
 using Xunit;
 
 namespace BlazorDX.Components.Tests;
@@ -542,5 +543,27 @@ public sealed class DxFileManagerTests : TestContext
         fm.FindComponent<InputFile>().UploadFiles(InputFileContent.CreateFromText("x", "note.txt"));
 
         Assert.False(raised);   // VerifyIntegrity defaults off
+    }
+
+    [Fact]
+    public void Breadcrumb_and_column_headers_are_routed_through_the_localizer()
+    {
+        Services.AddSingleton<IStringLocalizer<DxFileManager>>(new FakeStringLocalizer<DxFileManager>());
+
+        IRenderedComponent<DxFileManager> fm = Render();
+
+        Assert.Contains("§§ROOTNAME§§", fm.Markup);
+        Assert.Contains("§§COLUMNMODIFIED§§", fm.Markup);
+    }
+
+    [Fact]
+    public void Breadcrumb_and_column_headers_fall_back_to_the_invariant_resource()
+    {
+        Services.AddLocalization();
+
+        IRenderedComponent<DxFileManager> fm = Render();
+
+        Assert.Contains("Files", fm.Markup);
+        Assert.Contains("Modified", fm.Markup);
     }
 }
