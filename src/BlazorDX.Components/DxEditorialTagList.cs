@@ -15,11 +15,17 @@ public sealed class DxEditorialTagList : ComponentBase
 
     [Parameter, EditorRequired] public IReadOnlyList<Tag> Tags { get; set; } = [];
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxEditorialTagList>? s;
+
+    private DxStrings<DxEditorialTagList> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "ul");
         builder.AddAttribute(1, "class", "dx-editorial-tags");
-        builder.AddAttribute(2, "aria-label", "Topics");
+        builder.AddAttribute(2, "aria-label", S["Topics", "Topics"]);
 
         for (int i = 0; i < Tags.Count; i++)
         {

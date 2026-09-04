@@ -15,6 +15,12 @@ public sealed class DxToastHost : ComponentBase, IDisposable
 
     private void OnToastsChanged() => _ = InvokeAsync(StateHasChanged);
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxToastHost>? s;
+
+    private DxStrings<DxToastHost> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "div");
@@ -42,7 +48,7 @@ public sealed class DxToastHost : ComponentBase, IDisposable
             builder.OpenElement(12, "button");
             builder.AddAttribute(13, "type", "button");
             builder.AddAttribute(14, "class", "dx-toast-close");
-            builder.AddAttribute(15, "aria-label", "Dismiss");
+            builder.AddAttribute(15, "aria-label", S["Dismiss", "Dismiss"]);
             builder.AddAttribute(16, "onclick", EventCallback.Factory.Create(this, () => Toasts.Remove(capturedId)));
             builder.AddContent(17, "✕");
             builder.CloseElement();

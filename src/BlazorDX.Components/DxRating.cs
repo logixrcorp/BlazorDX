@@ -27,6 +27,12 @@ public sealed class DxRating : ComponentBase
     // What to paint: the hover preview if any, otherwise the committed value.
     private int Display => hoverValue > 0 ? hoverValue : Value;
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxRating>? s;
+
+    private DxStrings<DxRating> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "div");
@@ -35,7 +41,7 @@ public sealed class DxRating : ComponentBase
         builder.AddAttribute(3, "aria-valuemin", 0);
         builder.AddAttribute(4, "aria-valuemax", Max);
         builder.AddAttribute(5, "aria-valuenow", Value);
-        builder.AddAttribute(6, "aria-label", $"Rating: {Value} of {Max}");
+        builder.AddAttribute(6, "aria-label", S["Rating", "Rating: {0} of {1}", Value, Max]);
         builder.AddAttribute(7, "aria-readonly", ReadOnly ? "true" : "false");
         if (!ReadOnly)
         {

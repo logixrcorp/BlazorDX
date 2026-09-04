@@ -31,6 +31,12 @@ public sealed class DxParallelCoordinates : ComponentBase
 
     private bool Interactive => OnRowSelected.HasDelegate;
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxChartResources>? s;
+
+    private DxStrings<DxChartResources> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         bool interactive = Interactive;
@@ -43,7 +49,7 @@ public sealed class DxParallelCoordinates : ComponentBase
         builder.AddAttribute(3, "class", "dx-chart-svg");
         builder.AddAttribute(4, "viewBox", $"0 0 {Width} {Height}");
         builder.AddAttribute(5, "role", "img");
-        builder.AddAttribute(6, "aria-label", $"Parallel coordinates chart of {Rows.Count} rows over {n} axes");
+        builder.AddAttribute(6, "aria-label", S["ParallelCoordinatesLabel", "Parallel coordinates chart of {0} rows over {1} axes", Rows.Count, n]);
 
         if (n < 2 || Rows.Count == 0)
         {

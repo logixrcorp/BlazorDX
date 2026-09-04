@@ -35,6 +35,12 @@ public sealed class DxEditorialLayout : ComponentBase
 
     private bool HasHeroImage => !string.IsNullOrEmpty(HeroImageSrc);
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxEditorialLayout>? s;
+
+    private DxStrings<DxEditorialLayout> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "article");
@@ -101,7 +107,7 @@ public sealed class DxEditorialLayout : ComponentBase
             builder.CloseElement();
 
             builder.OpenElement(32, "span");
-            builder.AddContent(33, $"{minutes} min read");
+            builder.AddContent(33, S["ReadingTime", "{0} min read", minutes]);
             builder.CloseElement();
         }
 

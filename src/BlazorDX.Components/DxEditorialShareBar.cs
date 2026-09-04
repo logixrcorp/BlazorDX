@@ -20,6 +20,12 @@ public sealed class DxEditorialShareBar : ComponentBase
     /// <summary>Whether to include the "share by email" link.</summary>
     [Parameter] public bool ShowEmail { get; set; } = true;
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxEditorialShareBar>? s;
+
+    private DxStrings<DxEditorialShareBar> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         string encodedUrl = WebUtility.UrlEncode(Url);
@@ -27,7 +33,7 @@ public sealed class DxEditorialShareBar : ComponentBase
 
         builder.OpenElement(0, "nav");
         builder.AddAttribute(1, "class", "dx-editorial-share");
-        builder.AddAttribute(2, "aria-label", "Share this article");
+        builder.AddAttribute(2, "aria-label", S["ShareArticle", "Share this article"]);
 
         RenderLink(builder, 3, "Share on X", $"https://twitter.com/intent/tweet?url={encodedUrl}&text={encodedTitle}");
         RenderLink(builder, 10, "Share on LinkedIn", $"https://www.linkedin.com/sharing/share-offsite/?url={encodedUrl}");

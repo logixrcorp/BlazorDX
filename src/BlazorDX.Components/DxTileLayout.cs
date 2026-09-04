@@ -18,6 +18,12 @@ public sealed class DxTileLayout : TileLayoutPrimitive
 
     [Parameter] public string? Class { get; set; }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxTileLayout>? s;
+
+    private DxStrings<DxTileLayout> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "div");
@@ -53,8 +59,8 @@ public sealed class DxTileLayout : TileLayoutPrimitive
         builder.AddAttribute(12, "class", "dx-tile-header");
         builder.AddAttribute(13, "draggable", "true");
         builder.AddAttribute(14, "tabindex", IsActive(position) ? "0" : "-1");
-        builder.AddAttribute(15, "title", "Drag, or Alt+Arrow, to reorder");
-        builder.AddAttribute(16, "aria-label", $"{tile.Title} — drag or Alt+Arrow to reorder");
+        builder.AddAttribute(15, "title", S["DragAltArrowReorder", "Drag, or Alt+Arrow, to reorder"]);
+        builder.AddAttribute(16, "aria-label", S["TileReorderHint", "{0} — drag or Alt+Arrow to reorder", tile.Title]);
         builder.AddAttribute(17, "ondragstart", EventCallback.Factory.Create(this, () => OnDragStart(captured)));
         builder.AddAttribute(18, "onkeydown",
             EventCallback.Factory.Create<KeyboardEventArgs>(this, e => OnKeyDownAsync(e, captured)));
@@ -81,7 +87,7 @@ public sealed class DxTileLayout : TileLayoutPrimitive
         builder.AddAttribute(33, "type", "button");
         builder.AddAttribute(34, "class", "dx-tile-move");
         builder.AddAttribute(35, "tabindex", "-1");
-        builder.AddAttribute(36, "aria-label", $"Move {tile.Title} earlier");
+        builder.AddAttribute(36, "aria-label", S["MoveEarlier", "Move {0} earlier", tile.Title]);
         builder.AddAttribute(37, "disabled", captured == 0);
         builder.AddAttribute(38, "onclick", EventCallback.Factory.Create(this, () => MoveByAsync(captured, -1)));
         builder.AddContent(39, "◀");
@@ -91,7 +97,7 @@ public sealed class DxTileLayout : TileLayoutPrimitive
         builder.AddAttribute(41, "type", "button");
         builder.AddAttribute(42, "class", "dx-tile-move");
         builder.AddAttribute(43, "tabindex", "-1");
-        builder.AddAttribute(44, "aria-label", $"Move {tile.Title} later");
+        builder.AddAttribute(44, "aria-label", S["MoveLater", "Move {0} later", tile.Title]);
         builder.AddAttribute(45, "disabled", captured == TileCount - 1);
         builder.AddAttribute(46, "onclick", EventCallback.Factory.Create(this, () => MoveByAsync(captured, 1)));
         builder.AddContent(47, "▶");

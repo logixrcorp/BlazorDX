@@ -74,6 +74,12 @@ public sealed class DxSunburst : ComponentBase
         }
     }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxChartResources>? s;
+
+    private DxStrings<DxChartResources> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         bool interactive = Interactive;
@@ -92,7 +98,7 @@ public sealed class DxSunburst : ComponentBase
         builder.AddAttribute(3, "class", "dx-chart-svg");
         builder.AddAttribute(4, "viewBox", $"0 0 {Size} {Size}");
         builder.AddAttribute(5, "role", interactive ? "application" : "img");
-        builder.AddAttribute(6, "aria-label", $"Sunburst chart with {arcs.Count} segments");
+        builder.AddAttribute(6, "aria-label", S["SunburstLabel", "Sunburst chart with {0} segments", arcs.Count]);
 
         builder.OpenElement(7, "circle");
         builder.AddAttribute(8, "class", "dx-sunburst-hub");

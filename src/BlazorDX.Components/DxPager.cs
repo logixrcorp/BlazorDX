@@ -24,6 +24,12 @@ public sealed class DxPager : ComponentBase
     /// <summary>The number of pages (at least one).</summary>
     public int PageCount => Math.Max(1, (int)Math.Ceiling((double)TotalItems / Math.Max(1, PageSize)));
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxPager>? s;
+
+    private DxStrings<DxPager> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         int current = Math.Clamp(Page, 1, PageCount);
@@ -31,7 +37,7 @@ public sealed class DxPager : ComponentBase
         builder.OpenElement(0, "nav");
         builder.AddAttribute(1, "class", $"dx-pager {Class}".TrimEnd());
         builder.AddAttribute(2, "role", "navigation");
-        builder.AddAttribute(3, "aria-label", "Pagination");
+        builder.AddAttribute(3, "aria-label", S["Pagination", "Pagination"]);
 
         Edge(builder, 4, "First page", "«", 1, current > 1);
         Edge(builder, 5, "Previous page", "‹", current - 1, current > 1);

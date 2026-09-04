@@ -56,12 +56,18 @@ public sealed class DxVirtualKeyboard : ComponentBase
         return shift && digit >= 0 ? Symbols[digit] : key;
     }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxVirtualKeyboard>? s;
+
+    private DxStrings<DxVirtualKeyboard> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "div");
         builder.AddAttribute(1, "class", $"dx-vkeyboard {Class}".TrimEnd());
         builder.AddAttribute(2, "role", "group");
-        builder.AddAttribute(3, "aria-label", "On-screen keyboard");
+        builder.AddAttribute(3, "aria-label", S["ScreenKeyboard", "On-screen keyboard"]);
 
         int seq = 4;
         foreach (string row in Rows)
@@ -90,23 +96,23 @@ public sealed class DxVirtualKeyboard : ComponentBase
         builder.AddAttribute(seq++, "type", "button");
         builder.AddAttribute(seq++, "class", shift ? "dx-vkey dx-vkey-mod dx-vkey-active" : "dx-vkey dx-vkey-mod");
         builder.AddAttribute(seq++, "aria-pressed", shift ? "true" : "false");
-        builder.AddAttribute(seq++, "aria-label", "Shift");
+        builder.AddAttribute(seq++, "aria-label", S["Shift", "Shift"]);
         builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, ToggleShift));
-        builder.AddContent(seq++, "⇧ Shift");
+        builder.AddContent(seq++, S["ShiftKeyCap", "⇧ Shift"]);
         builder.CloseElement();
 
         builder.OpenElement(seq++, "button");
         builder.AddAttribute(seq++, "type", "button");
         builder.AddAttribute(seq++, "class", "dx-vkey dx-vkey-space");
-        builder.AddAttribute(seq++, "aria-label", "Space");
+        builder.AddAttribute(seq++, "aria-label", S["Space", "Space"]);
         builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => AppendAsync(' ')));
-        builder.AddContent(seq++, "Space");
+        builder.AddContent(seq++, S["Space", "Space"]);
         builder.CloseElement();
 
         builder.OpenElement(seq++, "button");
         builder.AddAttribute(seq++, "type", "button");
         builder.AddAttribute(seq++, "class", "dx-vkey dx-vkey-mod");
-        builder.AddAttribute(seq++, "aria-label", "Backspace");
+        builder.AddAttribute(seq++, "aria-label", S["Backspace", "Backspace"]);
         builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, BackspaceAsync));
         builder.AddContent(seq++, "⌫");
         builder.CloseElement();
@@ -114,9 +120,9 @@ public sealed class DxVirtualKeyboard : ComponentBase
         builder.OpenElement(seq++, "button");
         builder.AddAttribute(seq++, "type", "button");
         builder.AddAttribute(seq++, "class", "dx-vkey dx-vkey-mod");
-        builder.AddAttribute(seq++, "aria-label", "Enter");
+        builder.AddAttribute(seq++, "aria-label", S["Enter", "Enter"]);
         builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => OnEnter.InvokeAsync()));
-        builder.AddContent(seq++, "↵ Enter");
+        builder.AddContent(seq++, S["EnterKeyCap", "↵ Enter"]);
         builder.CloseElement();
 
         builder.CloseElement();   // control row

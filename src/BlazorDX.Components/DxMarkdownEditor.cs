@@ -19,6 +19,12 @@ public sealed class DxMarkdownEditor : ComponentBase
 
     [Parameter] public string? Class { get; set; }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxMarkdownEditor>? s;
+
+    private DxStrings<DxMarkdownEditor> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "div");
@@ -28,7 +34,7 @@ public sealed class DxMarkdownEditor : ComponentBase
         builder.AddAttribute(3, "class", "dx-md-source");
         builder.AddAttribute(4, "rows", Rows);
         builder.AddAttribute(5, "spellcheck", "false");
-        builder.AddAttribute(6, "aria-label", "Markdown source");
+        builder.AddAttribute(6, "aria-label", S["MarkdownSource", "Markdown source"]);
         builder.AddAttribute(7, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(this, OnInputAsync));
         builder.AddContent(8, Value);
         builder.CloseElement();

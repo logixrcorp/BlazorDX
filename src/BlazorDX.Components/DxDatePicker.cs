@@ -17,6 +17,12 @@ public sealed class DxDatePicker : DatePickerPrimitive
 {
     [Parameter] public string? Class { get; set; }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxDatePicker>? s;
+
+    private DxStrings<DxDatePicker> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "div");
@@ -40,7 +46,7 @@ public sealed class DxDatePicker : DatePickerPrimitive
         builder.OpenElement(14, "span");
         builder.AddAttribute(15, "class", "dx-date-icon");
         builder.AddAttribute(16, "aria-hidden", "true");
-        builder.AddContent(17, "\U0001F4C5");
+        builder.AddContent(17, S["UFC", "\U0001F4C5"]);
         builder.CloseElement();
 
         builder.CloseElement();
@@ -77,7 +83,7 @@ public sealed class DxDatePicker : DatePickerPrimitive
         builder.OpenElement(6, "button");
         builder.AddAttribute(7, "type", "button");
         builder.AddAttribute(8, "class", "dx-date-nav");
-        builder.AddAttribute(9, "aria-label", "Previous month");
+        builder.AddAttribute(9, "aria-label", S["PreviousMonth", "Previous month"]);
         builder.AddAttribute(10, "onclick", EventCallback.Factory.Create(this, PreviousMonth));
         builder.AddContent(11, "‹");
         builder.CloseElement();
@@ -91,7 +97,7 @@ public sealed class DxDatePicker : DatePickerPrimitive
         builder.OpenElement(16, "button");
         builder.AddAttribute(17, "type", "button");
         builder.AddAttribute(18, "class", "dx-date-nav");
-        builder.AddAttribute(19, "aria-label", "Next month");
+        builder.AddAttribute(19, "aria-label", S["NextMonth", "Next month"]);
         builder.AddAttribute(20, "onclick", EventCallback.Factory.Create(this, NextMonth));
         builder.AddContent(21, "›");
         builder.CloseElement();

@@ -27,6 +27,12 @@ public sealed class DxChip : ComponentBase
     /// <summary>Extra CSS classes appended to the chip.</summary>
     [Parameter] public string? Class { get; set; }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxChip>? s;
+
+    private DxStrings<DxChip> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "span");
@@ -42,7 +48,7 @@ public sealed class DxChip : ComponentBase
             builder.OpenElement(5, "button");
             builder.AddAttribute(6, "type", "button");
             builder.AddAttribute(7, "class", "dx-chip-remove");
-            builder.AddAttribute(8, "aria-label", "Remove");
+            builder.AddAttribute(8, "aria-label", S["Remove", "Remove"]);
             builder.AddAttribute(9, "onclick", EventCallback.Factory.Create(this, () => OnDismiss.InvokeAsync()));
             builder.AddContent(10, "×");
             builder.CloseElement();

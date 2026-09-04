@@ -56,6 +56,12 @@ public sealed class DxHeatmap : ComponentBase
         return list;
     }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxChartResources>? s;
+
+    private DxStrings<DxChartResources> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         bool interactive = Interactive;
@@ -69,7 +75,7 @@ public sealed class DxHeatmap : ComponentBase
         builder.AddAttribute(3, "class", "dx-chart-svg");
         builder.AddAttribute(4, "viewBox", $"0 0 {Width} {Height}");
         builder.AddAttribute(5, "role", interactive ? "application" : "img");
-        builder.AddAttribute(6, "aria-label", $"Heatmap with {rows.Count} rows and {cols.Count} columns");
+        builder.AddAttribute(6, "aria-label", S["HeatmapLabel", "Heatmap with {0} rows and {1} columns", rows.Count, cols.Count]);
 
         if (interactive)
         {

@@ -223,10 +223,14 @@ public sealed class GovernanceAnalyzerTests
     }
 
     [Fact]
-    public async Task DX1003_stays_silent_for_a_component_that_does_not_localize_yet()
+    public async Task DX1003_fires_even_when_the_component_localizes_nothing_else()
     {
-        // The ratchet: the not-yet-localized backlog must not break the build. Localizing a
-        // component is what switches the rule on for it.
+        // This asserted the opposite until the rollout finished. While components were being
+        // converted the rule fired only inside types that already held a DxStrings field, so the
+        // unconverted backlog could not break the build. That scoping was the rule's one hole: a
+        // brand-new component opted out of the check simply by not localizing anything — which is
+        // exactly the component most likely to need it. Every component is converted now, so the
+        // scoping is retired and a hardcoded label is an error wherever it appears.
         string source = $$"""
             {{LocalizationPreamble}}
 
@@ -234,7 +238,7 @@ public sealed class GovernanceAnalyzerTests
             {
                 using Microsoft.AspNetCore.Components.Rendering;
 
-                public sealed class DxNotYetLocalized
+                public sealed class DxBrandNew
                 {
                     public void Render(RenderTreeBuilder builder) =>
                         builder.AddAttribute(1, "aria-label", "Dismiss");
@@ -243,6 +247,38 @@ public sealed class GovernanceAnalyzerTests
             """;
 
         var diagnostics = await AnalyzerTestHarness.AnalyzeAsync(source, new HardcodedStringAnalyzer());
+
+        Assert.Contains(diagnostics, d => d.Id == "DX1003");
+    }
+
+    [Fact]
+    public async Task DX1003_stays_silent_outside_the_assembly_that_has_DxStrings()
+    {
+        // DxStrings lives in BlazorDX.Components and nowhere else, so in BlazorDX.Primitives,
+        // BlazorDX.Htmx or the integration packages this diagnostic would demand a fix that
+        // cannot be written. Reporting there would be the same trap the defaulted-[Parameter]
+        // rule fell into — a correct observation with an impossible remedy.
+        //
+        // Widening it is a packaging decision (where should the helper live so every package can
+        // reach it), not an analyzer change, and until that is made the rule stays where its
+        // advice holds.
+        string source = $$"""
+            {{LocalizationPreamble}}
+
+            namespace Test
+            {
+                using Microsoft.AspNetCore.Components.Rendering;
+
+                public sealed class SomePrimitive
+                {
+                    public void Render(RenderTreeBuilder builder) =>
+                        builder.AddAttribute(1, "placeholder", "Select a date");
+                }
+            }
+            """;
+
+        var diagnostics = await AnalyzerTestHarness.AnalyzeAsync(
+            source, new HardcodedStringAnalyzer(), assemblyName: "BlazorDX.Primitives");
 
         Assert.Empty(diagnostics.Where(d => d.Id == "DX1003"));
     }

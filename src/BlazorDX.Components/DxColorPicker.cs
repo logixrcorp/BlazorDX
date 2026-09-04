@@ -32,6 +32,12 @@ public sealed class DxColorPicker : ComponentBase
     /// <summary>Extra CSS classes appended to the wrapper.</summary>
     [Parameter] public string? Class { get; set; }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxColorPicker>? s;
+
+    private DxStrings<DxColorPicker> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "span");
@@ -70,7 +76,7 @@ public sealed class DxColorPicker : ComponentBase
                 builder.AddAttribute(15, "type", "button");
                 builder.AddAttribute(16, "class", "dx-colorpicker-swatch");
                 builder.AddAttribute(17, "style", $"background:{preset}");
-                builder.AddAttribute(18, "aria-label", $"Use {preset}");
+                builder.AddAttribute(18, "aria-label", S["Use", "Use {0}", preset]);
                 builder.AddAttribute(19, "disabled", Disabled);
                 builder.AddAttribute(20, "onclick", EventCallback.Factory.Create(this, () => SetAsync(captured)));
                 builder.CloseElement();

@@ -8,22 +8,28 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace BlazorDX.Analyzers;
 
 /// <summary>
-/// DX1003: flags hardcoded user-facing text in a component that already localizes — visible
-/// content, the accessible-name attributes, and defaulted <c>[Parameter]</c> strings on
-/// text-carrying parameters.
+/// DX1003: flags hardcoded user-facing text in a component — visible content, the accessible-name
+/// attributes, and defaulted <c>[Parameter]</c> strings on text-carrying parameters.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>The ratchet.</b> This only inspects types that hold a <c>DxStrings&lt;T&gt;</c> member, so
-/// localizing a component is what switches the rule on for it. Firing on every component instead
-/// would report the entire not-yet-localized backlog at once — and since the repo builds with
-/// <c>TreatWarningsAsErrors</c>, even a Warning severity would break the build. Scoping it this
-/// way means each rollout batch extends coverage automatically and the rule is silent until then.
+/// <b>The per-type ratchet is closed.</b> This used to inspect only types holding a
+/// <c>DxStrings&lt;T&gt;</c> member, so localizing a component was what switched the rule on for
+/// it. That was scaffolding: with 83 components to convert and <c>TreatWarningsAsErrors</c>
+/// repo-wide, a rule that fired everywhere would have reported the whole backlog at once. The
+/// rollout is finished, so it now applies to every type in <c>BlazorDX.Components</c> —
+/// including a brand-new component that localizes nothing, which the old scoping let opt out.
+/// See docs/adr/0021-optional-localization-and-rollout-guardrails.md.
 /// </para>
 /// <para>
-/// Known hole, deliberate: a brand-new component with no localizer at all is unguarded. Closing it
-/// is the rollout's completion criterion — once every component is localized, this check can widen
-/// to all of them. See docs/adr/0021-optional-localization-and-rollout-guardrails.md.
+/// It is still scoped to one assembly, for a different and narrower reason — see
+/// <see cref="LocalizableAssembly"/>.
+/// </para>
+/// <para>
+/// What it still cannot see is text that reaches the DOM through a variable — a lookup table, a
+/// switch arm, an argument to a local helper. That is the majority of this library's user-facing
+/// text, and it is covered by convention plus <c>LocalizedStringConsistencyTests</c> rather than
+/// by this rule; see the ADR's first amendment.
 /// </para>
 /// <para>
 /// Glyph-only literals ("✓", "▾", "×", " *") are never flagged: they carry no language. The test
@@ -33,7 +39,6 @@ namespace BlazorDX.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class HardcodedStringAnalyzer : DiagnosticAnalyzer
 {
-    private const string LocalizerTypeName = "DxStrings";
     private const string RenderTreeBuilderTypeName = "RenderTreeBuilder";
     private const string ParameterAttributeName = "Parameter";
 
@@ -67,6 +72,25 @@ public sealed class HardcodedStringAnalyzer : DiagnosticAnalyzer
         "Tooltip",
         "Prompt");
 
+    /// <summary>
+    /// The only assembly where <c>DxStrings</c> exists, and therefore the only one where this
+    /// rule's suggested fix can be written.
+    /// </summary>
+    /// <remarks>
+    /// Retiring the per-type ratchet surfaced 17 hardcoded strings in four other packages —
+    /// <c>BlazorDX.Primitives</c> (four placeholder defaults), <c>BlazorDX.Htmx</c>,
+    /// <c>BlazorDX.Integrations.PowerBI</c> and <c>BlazorDX.Integrations.Reporting</c>. They are
+    /// real findings, but none of those packages references <c>BlazorDX.Components</c>, so
+    /// <c>DxStrings</c> is unreachable from all of them and the diagnostic would demand a fix
+    /// that cannot be written — the same trap the defaulted-<c>[Parameter]</c> rule fell into.
+    /// <para>
+    /// Making the helper available there is a packaging decision (a new shared package, or new
+    /// dependencies on published packages), not a retrofit, so the rule is scoped to where its
+    /// advice holds. See docs/localization.md for the finding and what it would take to widen.
+    /// </para>
+    /// </remarks>
+    private const string LocalizableAssembly = "BlazorDX.Components";
+
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
         ImmutableArray.Create(DiagnosticDescriptors.HardcodedUserFacingString);
 
@@ -93,7 +117,7 @@ public sealed class HardcodedStringAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        if (!IsInLocalizedType(invocation) || !IsRenderTreeBuilder(context, member.Expression))
+        if (!IsInLocalizedType(context) || !IsRenderTreeBuilder(context, member.Expression))
         {
             return;
         }
@@ -124,7 +148,7 @@ public sealed class HardcodedStringAnalyzer : DiagnosticAnalyzer
         // A defaulted [Parameter] string is the component's own text until a caller overrides it --
         // but only when the parameter names text at all. See UserFacingParameterSuffixes.
         if (property.Initializer is null
-            || !IsInLocalizedType(property)
+            || !IsInLocalizedType(context)
             || !HasParameterAttribute(property)
             || !NamesUserFacingText(property.Identifier.ValueText))
         {
@@ -169,28 +193,30 @@ public sealed class HardcodedStringAnalyzer : DiagnosticAnalyzer
 
     private static bool ContainsLetter(string text) => text.Any(char.IsLetter);
 
-    // Syntactic on purpose: the check is "does this type localize at all", and a member typed
-    // DxStrings<...> answers that without needing the symbol resolved.
-    private static bool IsInLocalizedType(SyntaxNode node)
-    {
-        TypeDeclarationSyntax? type = node.FirstAncestorOrSelf<TypeDeclarationSyntax>();
-        if (type is null)
-        {
-            return false;
-        }
-
-        return type.Members.Any(member => member switch
-        {
-            FieldDeclarationSyntax field => MentionsLocalizer(field.Declaration.Type),
-            PropertyDeclarationSyntax property => MentionsLocalizer(property.Type),
-            _ => false,
-        });
-    }
-
-    private static bool MentionsLocalizer(TypeSyntax type) =>
-        type.DescendantNodesAndSelf()
-            .OfType<GenericNameSyntax>()
-            .Any(generic => generic.Identifier.ValueText == LocalizerTypeName);
+    /// <summary>
+    /// Always true now — the ratchet is closed.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This used to require the enclosing type to hold a <c>DxStrings&lt;…&gt;</c> member, so the
+    /// rule covered exactly the components already localized and grew with each rollout batch.
+    /// That was scaffolding for a migration: with 83 components to convert and
+    /// <c>TreatWarningsAsErrors</c> repo-wide, a rule that fired everywhere would have broken the
+    /// build on day one.
+    /// </para>
+    /// <para>
+    /// The rollout is finished — every component with user-facing text at a render call site now
+    /// routes it through a localizer — so the scoping is retired rather than left in place. It
+    /// was the rule's one hole: a brand-new component could opt out of the check simply by not
+    /// localizing anything, which is precisely the component most likely to need it.
+    /// </para>
+    /// <para>
+    /// Kept as a method rather than deleted at every call site: it names the decision, and this
+    /// remark is where the history belongs.
+    /// </para>
+    /// </remarks>
+    private static bool IsInLocalizedType(SyntaxNodeAnalysisContext context) =>
+        context.Compilation.AssemblyName == LocalizableAssembly;
 
     private static bool IsRenderTreeBuilder(SyntaxNodeAnalysisContext context, ExpressionSyntax receiver) =>
         context.SemanticModel.GetTypeInfo(receiver, context.CancellationToken).Type?.Name

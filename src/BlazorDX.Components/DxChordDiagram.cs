@@ -29,6 +29,12 @@ public sealed class DxChordDiagram : ComponentBase
 
     private bool Interactive => OnNodeSelected.HasDelegate;
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxChartResources>? s;
+
+    private DxStrings<DxChartResources> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         bool interactive = Interactive;
@@ -47,7 +53,7 @@ public sealed class DxChordDiagram : ComponentBase
         builder.AddAttribute(3, "class", "dx-chart-svg");
         builder.AddAttribute(4, "viewBox", $"0 0 {Size} {Size}");
         builder.AddAttribute(5, "role", "img");
-        builder.AddAttribute(6, "aria-label", $"Chord diagram with {Nodes.Count} nodes and {Links.Count} flows");
+        builder.AddAttribute(6, "aria-label", S["ChordDiagramLabel", "Chord diagram with {0} nodes and {1} flows", Nodes.Count, Links.Count]);
 
         for (int i = 0; i < ribbons.Count; i++)
         {

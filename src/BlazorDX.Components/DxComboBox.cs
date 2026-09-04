@@ -18,6 +18,15 @@ public sealed class DxComboBox<TValue> : ComboBoxPrimitive<TValue>
 {
     [Parameter] public string? Class { get; set; }
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    // DxComboBoxResources, not DxComboBox<TValue>: the default factory derives the resource name from the closed
+    // generic type, so localizing against the component would look for a different
+    // resource per TValue. See docs/localization.md.
+    private DxStrings<DxComboBoxResources>? s;
+
+    private DxStrings<DxComboBoxResources> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "div");
@@ -65,7 +74,7 @@ public sealed class DxComboBox<TValue> : ComboBoxPrimitive<TValue>
         {
             builder.OpenElement(4, "div");
             builder.AddAttribute(5, "class", "dx-combo-empty");
-            builder.AddContent(6, "No matches");
+            builder.AddContent(6, S["NoMatches", "No matches"]);
             builder.CloseElement();
         }
 
@@ -107,3 +116,10 @@ public sealed class DxComboBox<TValue> : ComboBoxPrimitive<TValue>
         builder.CloseElement();
     }
 }
+
+/// <summary>
+/// Resource-name anchor for <see cref="DxComboBox{TValue}"/>, which is generic: the default localizer
+/// factory derives a resource name from the <i>closed</i> type, so localizing against the
+/// component itself would look for a different resource per type argument.
+/// </summary>
+public sealed class DxComboBoxResources;
