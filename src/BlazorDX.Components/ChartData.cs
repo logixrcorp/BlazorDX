@@ -66,6 +66,21 @@ public readonly record struct ChartLegendToggledEventArgs(string Key, bool Visib
 public readonly record struct ChartZoomChangedEventArgs(double VisibleMin, double VisibleMax, bool IsZoomed);
 
 /// <summary>
+/// The visible domain changed on a zoomable rectangular (both-axes) chart (scatter, bubble — see
+/// <see cref="BlazorDX.Primitives.Charts.ChartRectZoomPrimitive"/>), from a wheel, brush-drag,
+/// shift-drag-pan, or keyboard zoom/pan gesture, or a reset. Unlike
+/// <see cref="ChartZoomChangedEventArgs"/> (line/area, X only), both axes can change independently
+/// — see docs/adr/0020-scatter-bubble-2d-zoom-strategy.md.
+/// </summary>
+/// <param name="XVisibleMin">The visible X window's lower bound, in data units.</param>
+/// <param name="XVisibleMax">The visible X window's upper bound.</param>
+/// <param name="YVisibleMin">The visible Y window's lower bound, in data units.</param>
+/// <param name="YVisibleMax">The visible Y window's upper bound.</param>
+/// <param name="IsZoomed">Whether either axis is currently narrower than its full data domain.</param>
+public readonly record struct ChartZoomChanged2DEventArgs(
+    double XVisibleMin, double XVisibleMax, double YVisibleMin, double YVisibleMax, bool IsZoomed);
+
+/// <summary>
 /// Which <see cref="ChartPoint"/> field a <see cref="ChartValueAttribute"/>-tagged property maps
 /// onto. <see cref="Category"/>/<see cref="Series"/>/<see cref="Color"/> accept a property of any
 /// type (stringified via <c>Convert.ToString</c>, so an <c>int</c> or <c>enum</c> category works

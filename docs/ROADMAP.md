@@ -107,12 +107,14 @@ enhancements. None of this should be read as "ready"; it is a beta with work ahe
   endpoint are done; next are HTTP+SSE/sessions for server-initiated streaming, the DataGrid as
   a read tool over `IGridDataSource`, and the wider MCP surface (resources / prompts). See
   [docs/ai-integration.md](ai-integration.md).
-- **Chart interactivity** — point selection, hover, and legend toggling have shipped (title-tag
-  tooltips only, not a rich hover card). Zoom/pan has also shipped, for `DxLineChart` and
-  `DxAreaChart` (opt-in via `Zoomable` — wheel to zoom, drag to pan, keyboard alternative): see
-  [ADR 0017](adr/0017-chart-zoom-pan-strategy.md). Other continuous-domain chart kinds (scatter,
-  etc.) remain future work — this pass was deliberately scoped to the two kinds
-  `ChartSelectionPrimitive` always named as the intended target.
+- **Chart interactivity** — shipped in full. Point selection, hover, and legend toggling
+  (title-tag tooltips only, not a rich hover card). Zoom/pan for `DxLineChart`/`DxAreaChart`
+  (X-only, opt-in via `Zoomable`): see [ADR 0017](adr/0017-chart-zoom-pan-strategy.md).
+  Rectangular (both-axes) zoom/pan for `DxScatterChart`/`DxBubbleChart` — wheel to zoom
+  uniformly, drag to brush-zoom into a region, Shift+drag to pan, keyboard alternative: see
+  [ADR 0020](adr/0020-scatter-bubble-2d-zoom-strategy.md). Every chart kind
+  `ChartSelectionPrimitive`/`ChartZoomPrimitive`'s own doc comments ever named as an intended
+  target now has the interactivity they described.
 - **Forms depth** — shipped in full. Conditional fields (a field gating on another
   field's live value, governing visibility/requiredness/the AI-MCP schema together —
   [ADR 0018](adr/0018-conditional-form-fields.md)), and array + nested-object fields
