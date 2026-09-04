@@ -172,23 +172,27 @@ public sealed class HardcodedStringAnalyzer : DiagnosticAnalyzer
     private static bool ContainsLetter(string text) => text.Any(char.IsLetter);
 
     /// <summary>
-    /// Always true. Both scopings this rule once had are gone.
+    /// Every assembly that ships UI — which is all of them except the test projects.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// It first required the enclosing type to hold a <c>DxStrings&lt;…&gt;</c> member, so the rule
-    /// covered exactly the components already converted and grew with each rollout batch. That was
-    /// scaffolding for a migration under <c>TreatWarningsAsErrors</c>.
+    /// Two earlier scopings are gone. The rule first required the enclosing type to hold a
+    /// <c>DxStrings&lt;…&gt;</c> member, so it covered exactly the components already converted and
+    /// grew with each rollout batch — scaffolding for a migration under
+    /// <c>TreatWarningsAsErrors</c>. It was then scoped to <c>BlazorDX.Components</c>, because
+    /// <c>DxStrings</c> lived there and nowhere else, so reporting elsewhere would have demanded a
+    /// fix that could not be written. The helper is now shared source compiled into every package
+    /// that renders text, and both scopings are retired.
     /// </para>
     /// <para>
-    /// It was then scoped to <c>BlazorDX.Components</c>, because <c>DxStrings</c> lived there and
-    /// nowhere else — reporting in <c>BlazorDX.Primitives</c> or an integration package would have
-    /// demanded a fix that could not be written. That is fixed at the source: the helper is now
-    /// shared source compiled into every package that renders text, so the rule's advice holds
-    /// everywhere and the scoping has no reason to exist.
+    /// Test projects stay excluded, and that is a statement about what the rule is for rather than
+    /// a convenience. DX1003 governs text a user reads in the product. A test that builds a render
+    /// tree out of <c>"Alpha body"</c> and <c>"Trigger text"</c> is writing fixture data; asking it
+    /// to route those through a localizer would be asking it to translate its own inputs.
     /// </para>
     /// </remarks>
-    private static bool IsInLocalizedType(SyntaxNodeAnalysisContext context) => true;
+    private static bool IsInLocalizedType(SyntaxNodeAnalysisContext context) =>
+        context.Compilation.AssemblyName?.EndsWith(".Tests", StringComparison.Ordinal) != true;
 
     private static bool IsRenderTreeBuilder(SyntaxNodeAnalysisContext context, ExpressionSyntax receiver) =>
         context.SemanticModel.GetTypeInfo(receiver, context.CancellationToken).Type?.Name

@@ -250,4 +250,32 @@ public sealed class GovernanceAnalyzerTests
 
         Assert.Contains(diagnostics, d => d.Id == "DX1003");
     }
+
+    [Fact]
+    public async Task DX1003_stays_silent_in_a_test_project()
+    {
+        // The rule governs text a user reads in the product. A test building a render tree out of
+        // fixture strings is writing its own inputs -- routing those through a localizer would
+        // mean translating test data. Widening the rule beyond BlazorDX.Components turned every
+        // such fixture into a build error until this exclusion existed.
+        string source = $$"""
+            {{LocalizationPreamble}}
+
+            namespace Test
+            {
+                using Microsoft.AspNetCore.Components.Rendering;
+
+                public sealed class SomeComponentTests
+                {
+                    public void Render(RenderTreeBuilder builder) =>
+                        builder.AddContent(1, "Alpha body");
+                }
+            }
+            """;
+
+        var diagnostics = await AnalyzerTestHarness.AnalyzeAsync(
+            source, new HardcodedStringAnalyzer(), assemblyName: "BlazorDX.Components.Tests");
+
+        Assert.Empty(diagnostics.Where(d => d.Id == "DX1003"));
+    }
 }
