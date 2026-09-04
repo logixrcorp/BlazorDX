@@ -5,6 +5,8 @@ using BlazorDX.Primitives.Scheduling;
 using Bunit;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
+using System.Globalization;
+using Microsoft.Extensions.Localization;
 using Xunit;
 
 namespace BlazorDX.Components.Tests;
@@ -496,6 +498,11 @@ public sealed class DxSchedulerTests : TestContext
     public void Week_range_label_includes_years_across_a_year_boundary()
     {
         // Week starting Mon Dec 28 2026 runs into Jan 3 2027.
+        // Pinned: the range label now formats through CurrentCulture (it used to be hardcoded
+        // to InvariantCulture, which is why a French user saw English dates), so the exact text
+        // asserted below depends on the machine's culture unless the test fixes it.
+        using CultureScope _ = CultureScope.Invariant();
+
         IRenderedComponent<DxScheduler> sched = RenderComponent<DxScheduler>(parameters => parameters
             .Add(s => s.WeekStart, new DateOnly(2026, 12, 28))
             .Add(s => s.View, SchedulerView.Week));
@@ -736,5 +743,51 @@ public sealed class DxSchedulerTests : TestContext
         await probe.InvokeAsync(() => probe.Instance.CreateAsync(0, 10, 10));
 
         Assert.False(raised);
+    }
+
+    [Fact]
+    public void Weekday_headers_and_range_label_follow_the_current_culture()
+    {
+        // The point of the date-formatting half of this change. Before it, the weekday row was a
+        // hardcoded ["Mon".."Sun"] table (and the week view truncated the English DayOfWeek enum
+        // name to three characters), while every date formatted through InvariantCulture -- so a
+        // French user read "Mon" and "June 2026" no matter what.
+        //
+        // Nothing is translated here: .NET already carries this data per culture, so the fix was
+        // to ask the framework rather than to add 7 more resource strings.
+        using CultureScope _ = CultureScope.For("fr-FR");
+
+        IRenderedComponent<DxScheduler> sched = RenderComponent<DxScheduler>(parameters => parameters
+            .Add(s => s.WeekStart, new DateOnly(2026, 6, 1))
+            .Add(s => s.View, SchedulerView.Month));
+
+        string firstHeader = sched.FindAll(".dx-sched-month-head .dx-sched-dayhead")[0].TextContent;
+        Assert.StartsWith("lun", firstHeader, StringComparison.OrdinalIgnoreCase);
+
+        Assert.Contains("juin", sched.Find(".dx-sched-range").TextContent, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void View_labels_are_routed_through_the_localizer()
+    {
+        // SchedulerView.ToString() is the English enum member; it reads as a word but is a machine
+        // identifier, and it used to be rendered straight into the tab and the live region.
+        Services.AddSingleton<IStringLocalizer<DxScheduler>>(new FakeStringLocalizer<DxScheduler>());
+
+        IRenderedComponent<DxScheduler> sched = Render();
+
+        Assert.Contains("§§VIEWWEEK§§", sched.Markup);
+        Assert.Contains("§§TODAY§§", sched.Markup);
+    }
+
+    [Fact]
+    public void View_labels_fall_back_to_the_invariant_resource()
+    {
+        Services.AddLocalization();
+
+        IRenderedComponent<DxScheduler> sched = Render();
+
+        Assert.Contains("Week", sched.Markup);
+        Assert.Contains("Today", sched.Markup);
     }
 }
