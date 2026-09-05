@@ -85,10 +85,15 @@ public sealed class FrenchRenderingTests : TestContext
     [Fact]
     public void An_unsupported_culture_falls_back_to_English_rather_than_a_key()
     {
-        // The chain that matters when a language is not shipped: de-DE has no satellite assembly,
+        // The chain that matters when a language is not shipped: ja-JP has no satellite assembly,
         // so resolution walks to the invariant resource. Rendering the key ("Loading") would look
         // almost right here, which is why the assertion is on the English word and not on absence.
-        using CultureScope _ = CultureScope.For("de-DE");
+        //
+        // This said de-DE until German shipped, at which point it started asserting that a
+        // translated language renders in English — and passed anyway, because "Loading" is what
+        // the missing satellite would also have produced. Any culture named here has to be one
+        // the library genuinely does not translate.
+        using CultureScope _ = CultureScope.For("ja-JP");
 
         IRenderedComponent<DxSpinner> spinner = RenderComponent<DxSpinner>();
 

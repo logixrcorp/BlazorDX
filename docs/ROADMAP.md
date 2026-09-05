@@ -106,13 +106,15 @@ enhancements. None of this should be read as "ready"; it is a beta with work ahe
   `Integrations` packages — 309 call sites across
   62 resource files — and DX1003's ratchet is retired, so a hardcoded label is a build error
   anywhere, not just in components that already localize. (The "~130 components" figure here
-  previously counted every file; 57 have no user-facing text at all.) **Shipped in English and French**: 65
-  resource files, 65 French counterparts, 291 strings, with tests holding the two in step on
+  previously counted every file; 57 have no user-facing text at all.) **Shipped in English, French and
+  German**: 65 resource files per language, 291 strings each, with tests holding them in step on
   the things a translation must not change — a missing key (falls back to English silently), a
-  dropped placeholder (still fluent, says nothing), and load-bearing edge whitespace — plus a
-  rendering test that the satellite assemblies are actually built and found, which a file check
-  cannot tell you. *Remaining: further languages, and a visual RTL pass a static guard cannot
-  do.*
+  dropped placeholder (still fluent, says nothing), and load-bearing edge whitespace. The test
+  infers the shipped languages from the files rather than listing them, so adding one file
+  demands the rest. Each language also has a rendering test, because satellite assemblies are
+  packaged per language and fail independently — a file check cannot tell you one was never
+  built. *Remaining: further languages, native-speaker review of the two that ship, and a visual
+  RTL pass a static guard cannot do.*
 - **Formal accessibility audit + VPAT** — automated **axe-core checks run in CI**
   (`AccessibilityE2ETests`, across Chromium/Firefox/WebKit) over **every route in the
   showcase and the TicketDesk demo app**, with zero serious/critical violations.
