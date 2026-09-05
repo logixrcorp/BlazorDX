@@ -76,6 +76,34 @@ public sealed class AiSecurityTests
         Assert.Equal(string.Empty, target.ApiKey);
     }
 
+    [Fact]
+    public async Task A_form_derived_prompt_leaks_no_sensitive_field()
+    {
+        // The tests above cover the tool surface. A prompt is a third surface built from the same
+        // descriptor, and one that helpfully listed "SSN" among the fields to collect would
+        // reintroduce exactly the leak the schema was careful to avoid — while looking like a
+        // convenience feature.
+        FormAiPrompt<ProfileUpdate> prompt = new(Profile);
+
+        Assert.Equal(["Name"], prompt.Arguments.Select(a => a.Name));
+
+        // Concatenated, not an interpolated raw string: this JSON ends in "}} , which a $$"""
+        // literal reads as an interpolation hole rather than as content.
+        string res = await new McpToolServer().Add(prompt).HandleAsync(
+            "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"prompts/get\",\"params\":{\"name\":\""
+            + prompt.Name + "\"}}");
+
+        using JsonDocument doc = JsonDocument.Parse(res);
+        string text = doc.RootElement.GetProperty("result").GetProperty("messages")[0]
+            .GetProperty("content").GetProperty("text").GetString()!;
+
+        // Asserted on the label a human sees, not the property name: the prompt prints labels, so
+        // checking for "Ssn" alone would pass while the text said "SSN".
+        Assert.DoesNotContain("SSN", text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("API key", text, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Display name", text, StringComparison.Ordinal);
+    }
+
     // ---- Authorization ----
 
     [Fact]
