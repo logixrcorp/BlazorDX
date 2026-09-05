@@ -396,7 +396,8 @@ body {
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: #64748b;
+    /* 11px uppercase at #64748b is a serious contrast failure on the sidebar's tinted panel. */
+    color: #475569;
     font-weight: 700;
     margin: 12px 0 4px;
 }

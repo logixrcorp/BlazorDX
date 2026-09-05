@@ -84,8 +84,17 @@
   display: inline-block;
 }
 
+/* The trigger is a real <button> now, so it needs the usual reset: a button brings its own
+   font, padding, border and background, none of which the previous <span> had. Consumers style
+   it through the class exactly as before. */
 .dx-popover-trigger {
   display: inline-flex;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
 }
 
 .dx-popover-panel {
@@ -125,7 +134,15 @@
 
 /* ---- Menu ---- */
 .dx-menu-root { display: inline-block; }
-.dx-menu-trigger { display: inline-flex; }
+.dx-menu-trigger {
+  display: inline-flex;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
 
 .dx-menu-panel {
   /* position:fixed + coords set by the positioning bridge. */
@@ -184,7 +201,9 @@
   outline: 2px solid var(--dx-accent, #2563eb);
   outline-offset: 1px;
 }
-.dx-select-placeholder { color: #94a3b8; }
+/* #94a3b8 is about 2.6:1 on the input surface -- a serious contrast violation.
+   Placeholder text is still text a user has to read. */
+.dx-select-placeholder { color: var(--dx-text-muted, #475569); }
 .dx-select-caret { color: #475569; font-size: 12px; }
 
 .dx-select-panel {
@@ -419,7 +438,9 @@
   outline: 2px solid var(--dx-accent, #2563eb);
   outline-offset: 1px;
 }
-.dx-date-placeholder { color: #94a3b8; }
+/* #94a3b8 is about 2.6:1 on the input surface -- a serious contrast violation.
+   Placeholder text is still text a user has to read. */
+.dx-date-placeholder { color: var(--dx-text-muted, #475569); }
 
 .dx-date-panel {
   z-index: 1000;

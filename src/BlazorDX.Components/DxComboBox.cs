@@ -50,7 +50,10 @@ public sealed class DxComboBox<TValue> : ComboBoxPrimitive<TValue>
 
         builder.AddAttribute(10, "placeholder", ResolvedPlaceholder);
         builder.AddAttribute(11, "value", Filter);
-        if (ActiveOptionId.Length > 0)
+        // Same reasoning as aria-controls above: the options only exist while the panel is open,
+        // so a closed combo pointed aria-activedescendant at an element that is not in the
+        // document. Both had to be guarded — fixing only aria-controls left the rule reporting.
+        if (IsOpen && ActiveOptionId.Length > 0)
         {
             builder.AddAttribute(12, "aria-activedescendant", ActiveOptionId);
         }
