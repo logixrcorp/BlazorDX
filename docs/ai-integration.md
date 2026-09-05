@@ -78,18 +78,34 @@ string response = await server.HandleAsync(jsonRpcRequest, cancellationToken);
 | Transport | How | Status |
 |---|---|---|
 | **stdio** | `McpStdioHost.RunAsync(server, Console.In, Console.Out, ct)` — newline-delimited JSON-RPC. How local assistants (e.g. Claude Desktop) connect. | ✅ Built — see [`samples/BlazorDX.McpServer`](../samples/BlazorDX.McpServer) |
-| **HTTP** | A web agent POSTs a JSON-RPC message and gets the JSON-RPC response — the request/response subset of MCP Streamable HTTP. Enough for request/response tools. | ✅ Built — `/mcp` in the demo |
-| **HTTP + SSE / sessions** | Server-initiated streaming (progress, sampling) over Server-Sent Events with session ids. | Planned |
+| **HTTP + SSE / sessions** | `McpHttpHost` — `POST` for request/response, `GET` for a Server-Sent Events stream of server-initiated messages, `DELETE` to end a session. | ✅ Built — `/mcp` in the demo |
 
 A complete, runnable stdio server lives in [`samples/BlazorDX.McpServer`](../samples/BlazorDX.McpServer/README.md),
-with the exact Claude Desktop config. The HTTP transport is ~10 lines of standard ASP.NET Core,
-since the server is transport-agnostic — the host owns the transport:
+with the exact Claude Desktop config.
+
+### Why the HTTP transport is not an ASP.NET type
+
+`BlazorDX.Primitives` is browser-WASM safe: it references the Blazor component *packages*, not the
+ASP.NET Core framework. Binding the MCP transport to `HttpContext` would cost the whole library
+that guarantee for one feature. So `McpHttpHost` speaks in strings and status codes, and the host
+writes a short endpoint that moves bytes across.
+
+That trade pays twice. The transport rules — which status code an expired session gets, whether a
+notification may be answered, what `GET` returns when a server cannot stream — are **decided in a
+plain class and unit-tested without a web server**, which matters in a repo where the browser
+tests are the slowest thing in CI.
 
 ```csharp
-app.MapPost("/mcp", async (HttpContext http) =>
+McpSessionStore sessions = new();   // singleton; stdio needs none, its connection is the session
+
+app.MapMethods("/mcp", ["POST", "GET", "DELETE"], async (HttpContext http) =>
 {
-    using StreamReader reader = new(http.Request.Body);
-    string body = await reader.ReadToEndAsync(http.RequestAborted);
+    string? body = null;
+    if (HttpMethods.IsPost(http.Request.Method))
+    {
+        using StreamReader reader = new(http.Request.Body);
+        body = await reader.ReadToEndAsync(http.RequestAborted);
+    }
 
     McpToolServer mcp = new McpToolServer
     {
@@ -97,10 +113,71 @@ app.MapPost("/mcp", async (HttpContext http) =>
         Diagnostics = http.RequestServices.GetService<IDxDiagnostics>(),
     }.Add(/* your tools */);
 
-    string response = await mcp.HandleAsync(body, http.RequestAborted);
-    return Results.Content(response, "application/json");
+    McpHttpResponse result = await new McpHttpHost(mcp, sessions).HandleAsync(
+        new McpHttpRequest(http.Request.Method, body, http.Request.Headers["Mcp-Session-Id"]),
+        http.RequestAborted);
+
+    http.Response.StatusCode = result.StatusCode;
+    if (result.SessionId is not null)
+    {
+        http.Response.Headers["Mcp-Session-Id"] = result.SessionId;
+    }
+
+    if (result.Stream is not null)
+    {
+        http.Response.ContentType = result.ContentType!;
+        http.Response.Headers.CacheControl = "no-cache";
+        await http.Response.Body.FlushAsync(http.RequestAborted);
+
+        await foreach (string message in result.Stream.ReadAllAsync(http.RequestAborted))
+        {
+            await http.Response.WriteAsync(McpSse.Frame(message), http.RequestAborted);
+            await http.Response.Body.FlushAsync(http.RequestAborted);
+        }
+
+        return Results.Empty;
+    }
+
+    return result.Body is null
+        ? Results.Empty
+        : Results.Content(result.Body, result.ContentType, null, result.StatusCode);
 }).RequireAuthorization();   // HTTPS + auth in production
 ```
+
+### Sessions, and what they're for
+
+Sessions exist for the **server-to-client** direction. A tool call is a request the client already
+has an open response for; a progress update or a "the tool list changed" notice has no such
+response to ride on, so the client opens a long-lived `GET` that streams the session's queue.
+
+- `initialize` mints the session id and returns it as `Mcp-Session-Id`; every later request must
+  carry it.
+- An unknown id gets **404, not 401** — the caller is not unauthorized, its session is gone (swept,
+  deleted, or the server restarted). 404's meaning here is "initialize again", which is what the
+  client should do; 401 would send it to fetch credentials it already has.
+- The id comes from `RandomNumberGenerator`, not `Guid`. It is the only thing separating one
+  caller's session from another's, so it is a credential and has to be unguessable, not merely
+  unique.
+- Each session's outbound queue is **bounded and lossy on purpose**. A client that opens a session
+  and never drains it would otherwise grow the server's memory without limit, and a disconnected
+  client is the case that actually happens. `TryPost` returns `false` rather than blocking or
+  growing, and `Broadcast` returns how many sessions *accepted* the message rather than how many
+  exist — a broadcast that quietly reached fewer clients than it claims is worse than one that
+  says so.
+- Call `Sweep(idleTimeout)` on a timer. A client can vanish without a `DELETE`, so without a sweep
+  the store only grows.
+
+Server-initiated notifications are opt-in:
+
+```csharp
+McpToolServer mcp = new() { NotifiesToolListChanged = true };   // a promise
+sessions.Broadcast(McpToolServer.ToolListChangedNotification);  // that you then keep
+```
+
+`NotifiesToolListChanged` is off by default and should stay off unless something actually
+broadcasts. Advertising the capability without delivering is worse than not advertising it: the
+client stops re-listing, waits for a notice that never comes, and works from a stale tool list
+forever with no error anywhere to explain why.
 
 ## Reading: the grid as a tool
 
@@ -293,7 +370,6 @@ malicious tool calls — and the errors are returned to the AI so it can self-co
 
 ## What's next
 
-The secured core, the stdio and HTTP transports, and both directions of the tool surface — writing
-through a form, reading through a grid — are in place. Planned: HTTP+SSE with sessions for
-server-initiated streaming, and the broader MCP surface (resources, prompts). See
-[ROADMAP.md](ROADMAP.md).
+The secured core, both transports (stdio and HTTP+SSE with sessions), and both directions of the
+tool surface — writing through a form, reading through a grid — are in place. Planned: the broader
+MCP surface (resources, prompts). See [ROADMAP.md](ROADMAP.md).
