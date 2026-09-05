@@ -20,7 +20,22 @@ var server = new McpToolServer { ServerName = "BlazorDX MCP sample" }
             + "Consult this before answering questions about what is in stock or running low.",
         new StockRowGridAccessor(),
         new StockDataSource(),
-        maxRows: 25));
+        maxRows: 25))
+
+    // A prompt is the third surface on the same declaration, and the only one the *user* drives:
+    // it shows up as a slash-command, states the task, lists the real field rules, and names the
+    // tool that submits. Without it someone has to know schedule_meeting exists and describe its
+    // fields themselves.
+    .Add(new FormAiPrompt<MeetingRequest>(new MeetingRequestFormModel()))
+
+    // A resource is read, not called — attached by the user rather than chosen by the model.
+    // Built here from the same data the grid tool queries, so the two cannot disagree.
+    .Add(new TextAiResource(
+        "stock://low",
+        "Low stock report",
+        "Every SKU at or below its reorder point, newest count first.",
+        StockDataSource.LowStockReportAsync,
+        "text/markdown"));
 
 // Stop cleanly on Ctrl+C.
 using var cts = new CancellationTokenSource();

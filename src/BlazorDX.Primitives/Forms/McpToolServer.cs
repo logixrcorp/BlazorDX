@@ -15,6 +15,8 @@ namespace BlazorDX.Primitives.Forms;
 public sealed class McpToolServer
 {
     private readonly Dictionary<string, IAiTool> tools = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, IAiResource> resources = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, IAiPrompt> prompts = new(StringComparer.Ordinal);
 
     /// <summary>Server name advertised during <c>initialize</c>.</summary>
     public string ServerName { get; init; } = "BlazorDX";
@@ -51,12 +53,40 @@ public sealed class McpToolServer
     public static string ToolListChangedNotification =>
         "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/tools/list_changed\"}";
 
+    /// <summary>
+    /// Optional gate for resources and prompts. Separate from <see cref="Authorizer"/> because
+    /// adding these to <see cref="IAiToolAuthorizer"/> would break every host implementing it, and
+    /// "may you read this" is a different question from "may you run this". When null, all
+    /// registered resources and prompts are allowed.
+    /// </summary>
+    public IAiContentAuthorizer? ContentAuthorizer { get; init; }
+
     /// <summary>Registers a tool (replacing any with the same name). Fluent.</summary>
     public McpToolServer Add(IAiTool tool)
     {
         tools[tool.Name] = tool;
         return this;
     }
+
+    /// <summary>Registers a resource (replacing any with the same URI). Fluent.</summary>
+    public McpToolServer Add(IAiResource resource)
+    {
+        resources[resource.Uri] = resource;
+        return this;
+    }
+
+    /// <summary>Registers a prompt (replacing any with the same name). Fluent.</summary>
+    public McpToolServer Add(IAiPrompt prompt)
+    {
+        prompts[prompt.Name] = prompt;
+        return this;
+    }
+
+    /// <summary>The registered resources, by URI.</summary>
+    public IReadOnlyDictionary<string, IAiResource> Resources => resources;
+
+    /// <summary>The registered prompts, by name.</summary>
+    public IReadOnlyDictionary<string, IAiPrompt> Prompts => prompts;
 
     /// <summary>The registered tools, by name.</summary>
     public IReadOnlyDictionary<string, IAiTool> Tools => tools;
@@ -94,6 +124,10 @@ public sealed class McpToolServer
                 "initialize" => Response(id, InitializeResult(root)),
                 "tools/list" => Response(id, await ToolsListResult(cancellationToken)),
                 "tools/call" => Response(id, await ToolsCallResult(root, cancellationToken)),
+                "resources/list" => Response(id, await ResourcesListResult(cancellationToken)),
+                "resources/read" => await ResourcesReadResponse(id, root, cancellationToken),
+                "prompts/list" => Response(id, await PromptsListResult(cancellationToken)),
+                "prompts/get" => await PromptsGetResponse(id, root, cancellationToken),
                 _ => Error(id, -32601, $"Method not found: {method}"),
             };
         }
@@ -202,10 +236,246 @@ public sealed class McpToolServer
             sb.Append("\"listChanged\":true");
         }
 
-        sb.Append("}},\"serverInfo\":{\"name\":");
+        sb.Append("}");
+
+        // Only advertise what is actually registered. A client that is told this server has
+        // resources will call resources/list; answering an empty list is a wasted round trip on
+        // every single connection, and it makes a genuinely empty surface indistinguishable from
+        // one whose registration was forgotten.
+        if (resources.Count > 0)
+        {
+            sb.Append(",\"resources\":{}");
+        }
+
+        if (prompts.Count > 0)
+        {
+            sb.Append(",\"prompts\":{}");
+        }
+
+        sb.Append("},\"serverInfo\":{\"name\":");
         AppendString(sb, ServerName);
         sb.Append(",\"version\":\"1.0.0\"}}");
         return sb.ToString();
+    }
+
+    private async ValueTask<bool> IsAllowedAsync(IAiResource resource, CancellationToken cancellationToken) =>
+        ContentAuthorizer is null || await ContentAuthorizer.IsAllowedAsync(resource, cancellationToken);
+
+    private async ValueTask<bool> IsAllowedAsync(IAiPrompt prompt, CancellationToken cancellationToken) =>
+        ContentAuthorizer is null || await ContentAuthorizer.IsAllowedAsync(prompt, cancellationToken);
+
+    private async Task<string> ResourcesListResult(CancellationToken cancellationToken)
+    {
+        StringBuilder sb = new();
+        sb.Append("{\"resources\":[");
+        bool first = true;
+        foreach (IAiResource resource in resources.Values)
+        {
+            if (!await IsAllowedAsync(resource, cancellationToken))
+            {
+                continue;   // never advertise a resource the caller may not read
+            }
+
+            if (!first)
+            {
+                sb.Append(',');
+            }
+
+            first = false;
+            sb.Append("{\"uri\":");
+            AppendString(sb, resource.Uri);
+            sb.Append(",\"name\":");
+            AppendString(sb, resource.Name);
+            sb.Append(",\"description\":");
+            AppendString(sb, resource.Description ?? string.Empty);
+            if (resource.MimeType is not null)
+            {
+                sb.Append(",\"mimeType\":");
+                AppendString(sb, resource.MimeType);
+            }
+
+            sb.Append('}');
+        }
+
+        sb.Append("]}");
+        return sb.ToString();
+    }
+
+    private async Task<string> ResourcesReadResponse(string id, JsonElement root, CancellationToken cancellationToken)
+    {
+        string uri = string.Empty;
+        if (root.TryGetProperty("params", out JsonElement p)
+            && p.ValueKind == JsonValueKind.Object
+            && p.TryGetProperty("uri", out JsonElement u)
+            && u.ValueKind == JsonValueKind.String)
+        {
+            uri = u.GetString() ?? string.Empty;
+        }
+
+        // Unknown and unauthorized are answered identically, so the surface never reveals that a
+        // privileged resource exists — the same rule tools already follow.
+        if (!resources.TryGetValue(uri, out IAiResource? resource)
+            || !await IsAllowedAsync(resource, cancellationToken))
+        {
+            Diagnostics.TryReportWarning("BlazorDX.Mcp", $"resources/read denied or unknown: '{uri}'");
+            return Error(id, -32002, $"Resource not found: {uri}");
+        }
+
+        try
+        {
+            AiResourceContent content = await resource.ReadAsync(cancellationToken);
+            Diagnostics.TryReportInfo("BlazorDX.Mcp", $"resources/read '{uri}' -> ok");
+
+            StringBuilder sb = new();
+            sb.Append("{\"contents\":[{\"uri\":");
+            AppendString(sb, uri);
+            sb.Append(",\"mimeType\":");
+            AppendString(sb, content.MimeType);
+
+            if (content.Bytes is { } bytes)
+            {
+                sb.Append(",\"blob\":");
+                AppendString(sb, Convert.ToBase64String(bytes.Span));
+            }
+            else
+            {
+                sb.Append(",\"text\":");
+                AppendString(sb, content.Text ?? string.Empty);
+            }
+
+            sb.Append("}]}");
+            return Response(id, sb.ToString());
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // A reader threw: report it and answer a protocol error rather than crashing the
+            // transport, matching how a failing tool is handled.
+            Diagnostics.TryReportError("BlazorDX.Mcp", $"resources/read '{uri}' threw: {ex.Message}", ex);
+            return Error(id, -32603, $"Resource '{uri}' could not be read.");
+        }
+    }
+
+    private async Task<string> PromptsListResult(CancellationToken cancellationToken)
+    {
+        StringBuilder sb = new();
+        sb.Append("{\"prompts\":[");
+        bool first = true;
+        foreach (IAiPrompt prompt in prompts.Values)
+        {
+            if (!await IsAllowedAsync(prompt, cancellationToken))
+            {
+                continue;
+            }
+
+            if (!first)
+            {
+                sb.Append(',');
+            }
+
+            first = false;
+            sb.Append("{\"name\":");
+            AppendString(sb, prompt.Name);
+            sb.Append(",\"description\":");
+            AppendString(sb, prompt.Description ?? string.Empty);
+            sb.Append(",\"arguments\":[");
+
+            for (int i = 0; i < prompt.Arguments.Count; i++)
+            {
+                if (i > 0)
+                {
+                    sb.Append(',');
+                }
+
+                AiPromptArgument argument = prompt.Arguments[i];
+                sb.Append("{\"name\":");
+                AppendString(sb, argument.Name);
+                sb.Append(",\"description\":");
+                AppendString(sb, argument.Description ?? string.Empty);
+                sb.Append(",\"required\":").Append(argument.Required ? "true" : "false").Append('}');
+            }
+
+            sb.Append("]}");
+        }
+
+        sb.Append("]}");
+        return sb.ToString();
+    }
+
+    private async Task<string> PromptsGetResponse(string id, JsonElement root, CancellationToken cancellationToken)
+    {
+        string name = string.Empty;
+        Dictionary<string, string> arguments = new(StringComparer.Ordinal);
+
+        if (root.TryGetProperty("params", out JsonElement p) && p.ValueKind == JsonValueKind.Object)
+        {
+            if (p.TryGetProperty("name", out JsonElement n) && n.ValueKind == JsonValueKind.String)
+            {
+                name = n.GetString() ?? string.Empty;
+            }
+
+            if (p.TryGetProperty("arguments", out JsonElement a) && a.ValueKind == JsonValueKind.Object)
+            {
+                foreach (JsonProperty argument in a.EnumerateObject())
+                {
+                    // A client may send a number for a numeric-looking argument; take its raw
+                    // text rather than dropping it, as the tool surface does.
+                    arguments[argument.Name] = argument.Value.ValueKind switch
+                    {
+                        JsonValueKind.String => argument.Value.GetString() ?? string.Empty,
+                        JsonValueKind.Number => argument.Value.GetRawText(),
+                        _ => string.Empty,
+                    };
+                }
+            }
+        }
+
+        if (!prompts.TryGetValue(name, out IAiPrompt? prompt)
+            || !await IsAllowedAsync(prompt, cancellationToken))
+        {
+            Diagnostics.TryReportWarning("BlazorDX.Mcp", $"prompts/get denied or unknown: '{name}'");
+            return Error(id, -32602, $"Prompt not found: {name}");
+        }
+
+        try
+        {
+            AiPromptResult result = await prompt.GetAsync(arguments, cancellationToken);
+            Diagnostics.TryReportInfo("BlazorDX.Mcp", $"prompts/get '{name}' -> ok");
+
+            StringBuilder sb = new();
+            sb.Append("{\"description\":");
+            AppendString(sb, result.Description ?? string.Empty);
+            sb.Append(",\"messages\":[");
+
+            for (int i = 0; i < result.Messages.Count; i++)
+            {
+                if (i > 0)
+                {
+                    sb.Append(',');
+                }
+
+                sb.Append("{\"role\":");
+                AppendString(sb, result.Messages[i].Role);
+                sb.Append(",\"content\":{\"type\":\"text\",\"text\":");
+                AppendString(sb, result.Messages[i].Text);
+                sb.Append("}}");
+            }
+
+            sb.Append("]}");
+            return Response(id, sb.ToString());
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.TryReportError("BlazorDX.Mcp", $"prompts/get '{name}' threw: {ex.Message}", ex);
+            return Error(id, -32603, $"Prompt '{name}' could not be expanded.");
+        }
     }
 
     private async Task<string> ToolsListResult(CancellationToken cancellationToken)

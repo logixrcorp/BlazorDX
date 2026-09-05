@@ -141,12 +141,15 @@ enhancements. None of this should be read as "ready"; it is a beta with work ahe
 
 ### Depth & breadth enhancements
 
-- **AI access** — the secured tool core, both transports, and both directions of the tool surface
-  are done: an assistant writes through a `[DxFormModel]` (`FormAiTool`) and reads through a
-  grid's `IGridDataSource` (`GridAiTool`, read-only, columns as a JSON-Schema `enum`, honest
-  `totalCount`), over stdio or over HTTP+SSE with sessions (`McpHttpHost` — `POST`/`GET`/`DELETE`,
-  cryptographically random session ids, bounded outbound queues, idle sweep). Next is the wider
-  MCP surface (resources / prompts). See [docs/ai-integration.md](ai-integration.md).
+- **AI access** — **done**. The secured core; both transports (stdio, and HTTP+SSE with sessions
+  via `McpHttpHost` — `POST`/`GET`/`DELETE`, cryptographically random session ids, bounded
+  outbound queues, idle sweep); tools in both directions (an assistant writes through a
+  `[DxFormModel]` with `FormAiTool`, and reads through a grid's `IGridDataSource` with
+  `GridAiTool` — read-only, columns as a JSON-Schema `enum`, honest `totalCount`); and the rest of
+  the surface, `resources/*` and `prompts/*`, with `FormAiPrompt` making one form declaration a
+  third surface and `IAiContentAuthorizer` gating both. Sampling and roots are **declined, not
+  pending**: they are client responsibilities, and a component library has no business initiating
+  model calls on its host's account. See [docs/ai-integration.md](ai-integration.md).
 - **Chart interactivity** — shipped in full. Point selection, hover, and legend toggling
   (title-tag tooltips only, not a rich hover card). Zoom/pan for `DxLineChart`/`DxAreaChart`
   (X-only, opt-in via `Zoomable`): see [ADR 0017](adr/0017-chart-zoom-pan-strategy.md).
