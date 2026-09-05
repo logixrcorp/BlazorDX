@@ -128,8 +128,8 @@ public sealed class GridAiTool<TRow> : IAiTool
             {
                 foreach (JsonElement item in filterElement.EnumerateArray())
                 {
-                    string column = item.TryGetProperty("column", out JsonElement c) ? c.GetString() ?? string.Empty : string.Empty;
-                    string text = item.TryGetProperty("contains", out JsonElement t) ? t.GetString() ?? string.Empty : string.Empty;
+                    string column = TextOf(item, "column");
+                    string text = TextOf(item, "contains");
 
                     int index = IndexOfColumn(column);
                     if (index < 0)
@@ -146,7 +146,7 @@ public sealed class GridAiTool<TRow> : IAiTool
             {
                 foreach (JsonElement item in sortElement.EnumerateArray())
                 {
-                    string column = item.TryGetProperty("column", out JsonElement c) ? c.GetString() ?? string.Empty : string.Empty;
+                    string column = TextOf(item, "column");
                     bool descending = item.TryGetProperty("descending", out JsonElement d)
                         && d.ValueKind == JsonValueKind.True;
 
@@ -161,12 +161,14 @@ public sealed class GridAiTool<TRow> : IAiTool
             }
 
             if (root.TryGetProperty("skip", out JsonElement skipElement)
+                && skipElement.ValueKind == JsonValueKind.Number
                 && skipElement.TryGetInt32(out int parsedSkip))
             {
                 skip = Math.Max(0, parsedSkip);
             }
 
             if (root.TryGetProperty("take", out JsonElement takeElement)
+                && takeElement.ValueKind == JsonValueKind.Number
                 && takeElement.TryGetInt32(out int parsedTake))
             {
                 // Clamped, not rejected: a model asking for 1000 rows wants as many as it can
@@ -237,6 +239,29 @@ public sealed class GridAiTool<TRow> : IAiTool
 
         sb.Append("]}");
         return sb.ToString();
+    }
+
+    // Reads a property as text without trusting its JSON type. JsonElement.GetString() throws on
+    // anything but a string, and the models calling this tool do send {"column": 3} and
+    // {"contains": 2024} — a wrongly typed argument has to come back as a readable error the
+    // model can retry from, not as an exception surfacing at the transport as a dead call.
+    //
+    // A number is taken at its raw text, because that is what the caller meant; anything else
+    // becomes empty, which for a column name then fails with the "unknown column" error that
+    // lists the real ones.
+    private static string TextOf(JsonElement parent, string name)
+    {
+        if (!parent.TryGetProperty(name, out JsonElement value))
+        {
+            return string.Empty;
+        }
+
+        return value.ValueKind switch
+        {
+            JsonValueKind.String => value.GetString() ?? string.Empty,
+            JsonValueKind.Number => value.GetRawText(),
+            _ => string.Empty,
+        };
     }
 
     private int IndexOfColumn(string header)

@@ -175,6 +175,48 @@ public sealed class GridAiToolTests
     }
 
     [Fact]
+    public async Task A_wrongly_typed_argument_is_an_error_rather_than_an_exception()
+    {
+        // JsonElement.GetString() and TryGetInt32() both throw on a mismatched kind, and the
+        // caller here is a language model, which does send {"column": 3}. Escaping as an
+        // exception would surface at the transport as a dead call rather than something the
+        // model could read and correct, so every read is kind-checked first.
+        AiToolResult result = await NewTool(new RecordingSource()).InvokeAsync(
+            """{"filters":[{"column":3,"contains":"x"}]}""", CancellationToken.None);
+
+        Assert.True(result.IsError);
+        Assert.Contains("Name, Quantity", result.Text);
+    }
+
+    [Fact]
+    public async Task A_string_where_a_number_belongs_falls_back_to_the_default()
+    {
+        RecordingSource source = new();
+
+        // {"take":"5"} used to throw out of TryGetInt32. Ignoring the bad value and answering the
+        // default page is the recoverable behaviour: the reply's totalCount still tells the model
+        // what it did not see, so it can ask again properly.
+        await NewTool(source).InvokeAsync("""{"take":"5","skip":"2"}""", CancellationToken.None);
+
+        Assert.Equal(20, source.Last!.Take);
+        Assert.Equal(0, source.Last.Skip);
+    }
+
+    [Fact]
+    public async Task A_numeric_filter_value_is_matched_as_its_text()
+    {
+        RecordingSource source = new();
+
+        // A model filtering a numeric column naturally sends a number, not a string. Dropping it
+        // would silently widen the query to every row, which is worse than either erroring or
+        // matching — so the raw text is used.
+        await NewTool(source).InvokeAsync(
+            """{"filters":[{"column":"Quantity","contains":20}]}""", CancellationToken.None);
+
+        Assert.Equal("20", Assert.Single(source.Last!.Filters).Text);
+    }
+
+    [Fact]
     public async Task Cell_text_is_escaped_so_the_reply_stays_parseable()
     {
         RecordingSource source = new()
