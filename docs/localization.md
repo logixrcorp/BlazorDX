@@ -246,7 +246,58 @@ Flip the showcase with `?dir=rtl` on any route to check the result by eye.
 
 ---
 
-## 3. What is left
+## 3. Translations
+
+Every string ships in **English and French**: 65 invariant `.resx` files, 65 `.fr.resx`
+counterparts, 291 strings.
+
+`TranslationCompletenessTests` holds the two in step. It checks the three things a translation
+must not change, all of which fail invisibly:
+
+- **A missing key** falls back to English. Nothing looks broken; a French user just gets one
+  English string among the rest.
+- **A dropped placeholder** is worse. "Graphique en secteurs avec {0} parts" without its `{0}`
+  is still fluent French and says nothing — and a screen-reader user hears a chart described
+  with no numbers in it. Format specifiers count too: losing `:N0` loses the thousands
+  separators that make a large count readable.
+- **Edge whitespace**, because several strings are sentence fragments joined to a link in
+  markup. `"Le PDF ne s'affiche pas ? "` needs its trailing space.
+
+It deliberately does *not* require French and English to differ. They legitimately coincide for
+*Message*, *Documents*, *Actions*, *Options*, *Pagination*, *Total*, *Normal*, *Style*,
+*Saturation* and *Document*; a rule demanding a difference would only invite someone to invent
+one.
+
+`FrenchRenderingTests` covers what a file check cannot: that the satellite assemblies are built
+and found. Without it the resources could line up perfectly and still render in English. It
+also pins the fallback chain by rendering under `de-DE` — an unshipped language — and asserting
+the **English** word rather than the absence of French, because a broken lookup returns the
+*key*, and a key like `Loading` looks almost right.
+
+### Conventions
+
+- Placeholders are preserved exactly, specifiers included.
+- Glyphs travel with their word (`⭳ Télécharger`, `← Précédent`) so a language can move the
+  arrow.
+- French spacing: a no-break space before `:` and inside `« »`, so it cannot wrap away from the
+  word it belongs to.
+- Keyboard names follow the French convention — `Maj`, `Échap`, `Suppr`, `Entrée`,
+  `Retour arrière` — and the rich-text mnemonics follow the French word, so Bold's cap is **G**
+  for *Gras*, not **B**.
+- Product and format names are not translated: Power BI, PDF, CSV, Excel, Markdown, QR,
+  EAN-13, Code 128, `.docx`, Sankey.
+
+### Adding another language
+
+Copy the `.fr.resx` files to `.<culture>.resx`, translate the values, and the two tests above
+start covering it — `TranslationCompletenessTests` currently checks French specifically, so
+widen its counterpart lookup at the same time. Nothing else needs to change: the resource
+lookup, the fallback chain and the AOT satellite-assembly path are all culture-agnostic
+already.
+
+---
+
+## 4. What is left
 
 Measured, not estimated. (The roadmap previously said "~130 components"; that counted every
 file rather than the ones with user-facing text.)

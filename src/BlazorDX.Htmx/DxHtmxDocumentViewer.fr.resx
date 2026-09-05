@@ -30,10 +30,28 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="NextMonth" xml:space="preserve">
-    <value>Next month</value>
+  <data name="DownloadNamed" xml:space="preserve">
+    <value>Télécharger {0}</value>
   </data>
-  <data name="PreviousMonth" xml:space="preserve">
-    <value>Previous month</value>
+  <data name="NextPage" xml:space="preserve">
+    <value>Suivant →</value>
+  </data>
+  <data name="PageOf" xml:space="preserve">
+    <value>Page {0} sur {1} ({2})</value>
+  </data>
+  <data name="Pagination" xml:space="preserve">
+    <value>Pagination</value>
+  </data>
+  <data name="PdfFallbackPrompt" xml:space="preserve">
+    <value>Le PDF ne s’affiche pas ? </value>
+  </data>
+  <data name="PreviousPage" xml:space="preserve">
+    <value>← Précédent</value>
+  </data>
+  <data name="WorksheetNamed" xml:space="preserve">
+    <value>Feuille {0}</value>
+  </data>
+  <data name="Worksheets" xml:space="preserve">
+    <value>Feuilles</value>
   </data>
 </root>

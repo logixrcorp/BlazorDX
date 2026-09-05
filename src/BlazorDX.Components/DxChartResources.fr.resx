@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="BarChartLabel" xml:space="preserve">
+    <value>Graphique à barres avec {0} catégories</value>
+  </data>
+  <data name="BoxPlotLabel" xml:space="preserve">
+    <value>Boîte à moustaches avec {0} groupes</value>
+  </data>
+  <data name="BoxPlotPointLabel" xml:space="preserve">
+    <value>{0} : médiane {1}, Q1 {2}, Q3 {3}, étendue {4}–{5}</value>
+  </data>
+  <data name="BulletChartLabel" xml:space="preserve">
+    <value>Graphique à puces avec {0} indicateurs</value>
+  </data>
+  <data name="CandlestickChartLabel" xml:space="preserve">
+    <value>Graphique en chandeliers avec {0} chandeliers</value>
+  </data>
+  <data name="ChordDiagramLabel" xml:space="preserve">
+    <value>Diagramme en accords avec {0} nœuds et {1} flux</value>
+  </data>
+  <data name="FunnelChartLabel" xml:space="preserve">
+    <value>Graphique en entonnoir avec {0} étapes</value>
+  </data>
+  <data name="GanttTaskLabel" xml:space="preserve">
+    <value>{0}, du {1} au {2}, {3:0} % terminé</value>
+  </data>
+  <data name="GanttTaskRole" xml:space="preserve">
+    <value>Tâche</value>
+  </data>
+  <data name="GroupedBarChartLabel" xml:space="preserve">
+    <value>Graphique à barres groupées, {0} séries sur {1} catégories</value>
+  </data>
+  <data name="HeatmapLabel" xml:space="preserve">
+    <value>Carte de chaleur avec {0} lignes et {1} colonnes</value>
+  </data>
+  <data name="HistogramCaption" xml:space="preserve">
+    <value>{0:N0} valeurs · {1} classes · étendue {2}–{3} · {4}</value>
+  </data>
+  <data name="HistogramLabel" xml:space="preserve">
+    <value>Histogramme avec {0} classes</value>
+  </data>
+  <data name="NetworkGraphLabel" xml:space="preserve">
+    <value>Graphe de réseau avec {0} nœuds et {1} liens</value>
+  </data>
+  <data name="ParallelCoordinatesLabel" xml:space="preserve">
+    <value>Graphique en coordonnées parallèles de {0} lignes sur {1} axes</value>
+  </data>
+  <data name="PieChartLabel" xml:space="preserve">
+    <value>Graphique en secteurs avec {0} parts</value>
+  </data>
+  <data name="PointsCaption" xml:space="preserve">
+    <value>{0:N0} points sur {1:N0} · {2}</value>
+  </data>
+  <data name="RadarChartLabel" xml:space="preserve">
+    <value>Graphique radar de {0} séries sur {1} axes</value>
+  </data>
+  <data name="ResetZoom" xml:space="preserve">
+    <value>Réinitialiser le zoom</value>
+  </data>
+  <data name="SankeyChartLabel" xml:space="preserve">
+    <value>Diagramme de Sankey avec {0} nœuds et {1} flux</value>
+  </data>
+  <data name="SparklineLabel" xml:space="preserve">
+    <value>Graphique sparkline de {0} points</value>
+  </data>
+  <data name="StackedBarChartLabel" xml:space="preserve">
+    <value>Graphique à barres empilées, {0} séries sur {1} catégories</value>
+  </data>
+  <data name="SunburstLabel" xml:space="preserve">
+    <value>Graphique en anneaux avec {0} segments</value>
+  </data>
+  <data name="TreemapLabel" xml:space="preserve">
+    <value>Carte proportionnelle avec {0} cellules</value>
+  </data>
+  <data name="WaterfallChartLabel" xml:space="preserve">
+    <value>Graphique en cascade avec {0} barres</value>
+  </data>
+  <data name="WordCloudLabel" xml:space="preserve">
+    <value>Nuage de mots : {0} mots placés sur {1}</value>
+  </data>
+  <data name="ZoomStatus" xml:space="preserve">
+    <value>Zoom sur {0}–{1} de {2}–{3}</value>
+  </data>
+  <data name="ZoomStatusPoint" xml:space="preserve">
+    <value>Zoom sur le point {0}–{1} de {2}–{3}</value>
+  </data>
+  <data name="ZoomStatusXY" xml:space="preserve">
+    <value>Zoom sur X {0}–{1}, Y {2}–{3}</value>
+  </data>
+</root>

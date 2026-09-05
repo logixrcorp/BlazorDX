@@ -30,10 +30,46 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="NextMonth" xml:space="preserve">
-    <value>Next month</value>
+  <data name="Breadcrumb" xml:space="preserve">
+    <value>Chemin</value>
   </data>
-  <data name="PreviousMonth" xml:space="preserve">
-    <value>Previous month</value>
+  <data name="Collapse" xml:space="preserve">
+    <value>Réduire</value>
+  </data>
+  <data name="ColumnActions" xml:space="preserve">
+    <value>Actions</value>
+  </data>
+  <data name="ColumnModified" xml:space="preserve">
+    <value>Modifié le</value>
+  </data>
+  <data name="ColumnName" xml:space="preserve">
+    <value>Nom</value>
+  </data>
+  <data name="ColumnSize" xml:space="preserve">
+    <value>Taille</value>
+  </data>
+  <data name="ContentsLabel" xml:space="preserve">
+    <value>Contenu du dossier. Déposez des fichiers ici pour les téléverser.</value>
+  </data>
+  <data name="EmptyFolder" xml:space="preserve">
+    <value>Ce dossier est vide. Déposez des fichiers ici ou utilisez Téléverser des fichiers.</value>
+  </data>
+  <data name="Expand" xml:space="preserve">
+    <value>Développer</value>
+  </data>
+  <data name="MoveHere" xml:space="preserve">
+    <value>Déplacer ici</value>
+  </data>
+  <data name="MoveInto" xml:space="preserve">
+    <value>Déplacer {0} dans {1}</value>
+  </data>
+  <data name="MoveToRoot" xml:space="preserve">
+    <value>Déplacer {0} vers Fichiers</value>
+  </data>
+  <data name="RootName" xml:space="preserve">
+    <value>Fichiers</value>
+  </data>
+  <data name="UploadFiles" xml:space="preserve">
+    <value>Téléverser des fichiers</value>
   </data>
 </root>

@@ -30,10 +30,25 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="NextMonth" xml:space="preserve">
-    <value>Next month</value>
+  <data name="Backspace" xml:space="preserve">
+    <value>Retour arrière</value>
   </data>
-  <data name="PreviousMonth" xml:space="preserve">
-    <value>Previous month</value>
+  <data name="Enter" xml:space="preserve">
+    <value>Entrée</value>
+  </data>
+  <data name="EnterKeyCap" xml:space="preserve">
+    <value>↵ Entrée</value>
+  </data>
+  <data name="ScreenKeyboard" xml:space="preserve">
+    <value>Clavier virtuel</value>
+  </data>
+  <data name="Shift" xml:space="preserve">
+    <value>Maj</value>
+  </data>
+  <data name="ShiftKeyCap" xml:space="preserve">
+    <value>⇧ Maj</value>
+  </data>
+  <data name="Space" xml:space="preserve">
+    <value>Espace</value>
   </data>
 </root>

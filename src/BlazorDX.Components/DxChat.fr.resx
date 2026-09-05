@@ -30,10 +30,16 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="NextMonth" xml:space="preserve">
-    <value>Next month</value>
+  <data name="AssistantTyping" xml:space="preserve">
+    <value>L’assistant est en train d’écrire</value>
   </data>
-  <data name="PreviousMonth" xml:space="preserve">
-    <value>Previous month</value>
+  <data name="ComposerPlaceholder" xml:space="preserve">
+    <value>Envoyer un message…  (Ctrl+Entrée)</value>
+  </data>
+  <data name="Message" xml:space="preserve">
+    <value>Message</value>
+  </data>
+  <data name="Send" xml:space="preserve">
+    <value>Envoyer</value>
   </data>
 </root>

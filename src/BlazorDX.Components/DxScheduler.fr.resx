@@ -30,10 +30,49 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="CalendarView" xml:space="preserve">
+    <value>Vue du calendrier</value>
+  </data>
+  <data name="GoToToday" xml:space="preserve">
+    <value>Aller à aujourd’hui</value>
+  </data>
+  <data name="GridLabel" xml:space="preserve">
+    <value>Planning {0}</value>
+  </data>
+  <data name="NextDay" xml:space="preserve">
+    <value>Jour suivant</value>
+  </data>
   <data name="NextMonth" xml:space="preserve">
-    <value>Next month</value>
+    <value>Mois suivant</value>
+  </data>
+  <data name="NextWeek" xml:space="preserve">
+    <value>Semaine suivante</value>
+  </data>
+  <data name="PreviousDay" xml:space="preserve">
+    <value>Jour précédent</value>
   </data>
   <data name="PreviousMonth" xml:space="preserve">
-    <value>Previous month</value>
+    <value>Mois précédent</value>
+  </data>
+  <data name="PreviousWeek" xml:space="preserve">
+    <value>Semaine précédente</value>
+  </data>
+  <data name="TimeRange" xml:space="preserve">
+    <value>de {0} à {1}</value>
+  </data>
+  <data name="Today" xml:space="preserve">
+    <value>Aujourd’hui</value>
+  </data>
+  <data name="ViewAnnouncement" xml:space="preserve">
+    <value>Vue {0}, {1}</value>
+  </data>
+  <data name="ViewDay" xml:space="preserve">
+    <value>Jour</value>
+  </data>
+  <data name="ViewMonth" xml:space="preserve">
+    <value>Mois</value>
+  </data>
+  <data name="ViewWeek" xml:space="preserve">
+    <value>Semaine</value>
   </data>
 </root>
