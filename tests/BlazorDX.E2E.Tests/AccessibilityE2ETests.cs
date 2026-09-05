@@ -106,38 +106,48 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
     {
         Skip.IfNot(fx.Ready, fx.SkipReason);
         IPage page = await fx.NewPageAsync();
-        // Load, not NetworkIdle. E2EHelpers already documents the hazard: a page that opens a
-        // persistent connection during its initial render never goes network-idle, so the wait
-        // burns its full 60s timeout on that route. That was survivable at 22 routes and is not
-        // at 58 — the WebKit job ran for 38 minutes and was killed by the runner. Nothing is lost,
-        // because the readiness signal that actually matters is the hydration wait just below.
-        await page.GotoAsync($"{fx.BaseUrl}{route}", new PageGotoOptions { WaitUntil = WaitUntilState.Load, Timeout = 60_000 });
 
-        // Let interactive components hydrate so axe inspects the live DOM, not just the prerender.
+        // Released in the finally: this theory opens one browser context per route, and they used
+        // to survive until the whole run ended. See PlaywrightFixture.CloseAsync.
         try
         {
-            await page.WaitForFunctionAsync("() => !!window.DotNet", null, new PageWaitForFunctionOptions { Timeout = 30_000 });
+            // Load, not NetworkIdle. E2EHelpers already documents the hazard: a page that opens a
+            // persistent connection during its initial render never goes network-idle, so the wait
+            // burns its full 60s timeout on that route. That was survivable at 22 routes and is not
+            // at 58 — the WebKit job ran for 38 minutes and was killed by the runner. Nothing is lost,
+            // because the readiness signal that actually matters is the hydration wait just below.
+            await page.GotoAsync($"{fx.BaseUrl}{route}", new PageGotoOptions { WaitUntil = WaitUntilState.Load, Timeout = 60_000 });
+
+            // Let interactive components hydrate so axe inspects the live DOM, not just the prerender.
+            try
+            {
+                await page.WaitForFunctionAsync("() => !!window.DotNet", null, new PageWaitForFunctionOptions { Timeout = 30_000 });
+            }
+            catch (TimeoutException)
+            {
+                // Static-only routes never define window.DotNet — the prerendered DOM is what we audit.
+            }
+
+            await page.WaitForTimeoutAsync(400);
+
+            AxeResult result = await page.RunAxe();
+
+            AxeResultItem[] serious = result.Violations
+                .Where(v => v.Impact is "serious" or "critical")
+                .ToArray();
+
+            string report = string.Join("\n", serious.Select(v =>
+            {
+                string targets = string.Join(", ", v.Nodes.Take(2).Select(n => n.Target?.ToString()));
+                return $"  [{v.Impact}] {v.Id} — {v.Help} ({v.Nodes.Length} node(s)): {targets}";
+            }));
+
+            Assert.True(serious.Length == 0, $"axe-core found {serious.Length} serious/critical violation(s) on {route}:\n{report}");
         }
-        catch (TimeoutException)
+        finally
         {
-            // Static-only routes never define window.DotNet — the prerendered DOM is what we audit.
+            await PlaywrightFixture.CloseAsync(page);
         }
-
-        await page.WaitForTimeoutAsync(400);
-
-        AxeResult result = await page.RunAxe();
-
-        AxeResultItem[] serious = result.Violations
-            .Where(v => v.Impact is "serious" or "critical")
-            .ToArray();
-
-        string report = string.Join("\n", serious.Select(v =>
-        {
-            string targets = string.Join(", ", v.Nodes.Take(2).Select(n => n.Target?.ToString()));
-            return $"  [{v.Impact}] {v.Id} — {v.Help} ({v.Nodes.Length} node(s)): {targets}";
-        }));
-
-        Assert.True(serious.Length == 0, $"axe-core found {serious.Length} serious/critical violation(s) on {route}:\n{report}");
     }
 
     /// <summary>
@@ -215,6 +225,7 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
         double[] centres = await measurement.JsonValueAsync<double[]>();
         string direction = await page.EvaluateAsync<string>("() => getComputedStyle(document.documentElement).direction");
 
+        await PlaywrightFixture.CloseAsync(page);
         return (centres[0], centres[1], direction);
     }
 }

@@ -55,12 +55,26 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         }
     }
 
-    /// <summary>Opens a fresh, isolated page (its own browser context).</summary>
+    /// <summary>
+    /// Opens a fresh, isolated page (its own browser context). Close it with
+    /// <see cref="CloseAsync"/> when the test is finished with it.
+    /// </summary>
     public async Task<IPage> NewPageAsync()
     {
         IBrowserContext context = await browser!.NewContextAsync();
         return await context.NewPageAsync();
     }
+
+    /// <summary>Disposes the page's whole context, which is what frees the browser's memory.</summary>
+    /// <remarks>
+    /// Every <see cref="NewPageAsync"/> call spins up a separate context and nothing released
+    /// them: they stayed alive until the fixture was torn down at the end of the run. That was
+    /// invisible while the accessibility sweep visited 22 routes. At 58 it was not — the WebKit
+    /// job died repeatedly with "the runner has received a shutdown signal", which is what an
+    /// out-of-memory kill looks like from inside Actions, while Chromium and Firefox (leaner per
+    /// context) finished normally.
+    /// </remarks>
+    public static async Task CloseAsync(IPage page) => await page.Context.CloseAsync();
 
     private async Task<bool> ServerIsReachableAsync()
     {
