@@ -38,6 +38,48 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
     [InlineData("/reports")]             // static-SSR + HTMX SSRS report viewer (embed + parameter form)
     [InlineData("/powerbi")]             // interactive Power BI embed (wrapper container, loading/error)
     [InlineData("/charts")]              // all 25 chart types, incl. interactive selection (Bar/Treemap/Network graph)
+    // ---- The rest of the showcase ----
+    // Added after an audit found 37 of the demo's 59 concrete routes were never swept, which made
+    // the roadmap's "zero serious/critical violations over the showcase" a claim about the listed
+    // routes rather than the showcase. Adding a route is cheap; the point is that the claim is now
+    // checkable against the whole thing, and stays that way as pages are added.
+    [InlineData("/barcodes")]
+    [InlineData("/chat")]
+    [InlineData("/command")]
+    [InlineData("/docs")]
+    [InlineData("/elements")]
+    [InlineData("/errors")]
+    [InlineData("/feedback")]
+    [InlineData("/forms")]
+    [InlineData("/gantt")]
+    [InlineData("/grid")]
+    [InlineData("/hotkeys")]
+    [InlineData("/htmx")]
+    [InlineData("/imageeditor")]
+    [InlineData("/kanban")]
+    [InlineData("/keyboard")]
+    [InlineData("/layout")]
+    [InlineData("/markdown")]
+    [InlineData("/menu")]
+    [InlineData("/overlays")]
+    [InlineData("/paging")]
+    [InlineData("/pickers")]
+    [InlineData("/pivot")]
+    [InlineData("/popover")]
+    [InlineData("/query")]
+    [InlineData("/rating")]
+    [InlineData("/remote")]
+    [InlineData("/richtext")]
+    [InlineData("/select")]
+    [InlineData("/sortable")]
+    [InlineData("/structure")]
+    [InlineData("/support")]
+    [InlineData("/theme")]
+    [InlineData("/tiles")]
+    [InlineData("/transfer")]
+    [InlineData("/tree")]
+    [InlineData("/virtualize")]
+    [InlineData("/wizard")]
     [InlineData("/dialog")]              // Overlays family (dx-overlay.css): Dialog, backed by DxDialog/DialogPrimitive
     [InlineData("/dialog?dir=rtl")]      // same route under dir="rtl" — ADR 0016's RTL pilot (logical-property CSS)
     // The RTL sweep, widened beyond the pilot. axe reports direction-independent failures
