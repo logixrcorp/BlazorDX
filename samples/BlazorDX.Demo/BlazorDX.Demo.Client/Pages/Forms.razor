@@ -41,10 +41,12 @@
     <div class="dx-forms-col">
         <h2>…or an AI calls it</h2>
         <p class="dx-demo-meta">This JSON-Schema tool definition is generated from the same model — paste it into an MCP / function-calling host:</p>
-        <pre class="dx-forms-schema">@toolDefinition</pre>
+        <pre class="dx-forms-schema" tabindex="0" role="region"
+             aria-label="Generated tool definition">@toolDefinition</pre>
 
         <p class="dx-demo-meta">The arguments an assistant would send when it decides to call the tool:</p>
-        <textarea class="dx-input dx-textarea" rows="5" @bind="toolCall" @bind:event="oninput"></textarea>
+        <textarea class="dx-input dx-textarea" rows="5" aria-label="Tool call arguments (JSON)"
+                  @bind="toolCall" @bind:event="oninput"></textarea>
         <p>
             <button class="dx-btn-primary" @onclick="RunToolCall">▶ Send MCP tools/call</button>
         </p>

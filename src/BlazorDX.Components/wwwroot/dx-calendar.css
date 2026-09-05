@@ -62,7 +62,7 @@
   text-align: center;
   font-size: 0.72rem;
   font-weight: 600;
-  color: var(--dx-text-muted, #64748b);
+  color: var(--dx-text-muted, #475569);
 }
 
 .dx-cal-day {

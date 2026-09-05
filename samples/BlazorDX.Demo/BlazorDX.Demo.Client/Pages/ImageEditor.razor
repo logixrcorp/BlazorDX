@@ -34,7 +34,10 @@
           <rect width='360' height='240' fill='url(#g)'/>
           <circle cx='110' cy='110' r='62' fill='#f59e0b'/>
           <circle cx='240' cy='150' r='48' fill='#10b981'/>
-          <rect x='60' y='30' width='240' height='26' rx='13' fill='rgba(255,255,255,0.85)'/>
+          <!-- Opaque, not 85%: translucent over a saturated gradient genuinely cuts the label's
+               contrast, and axe cannot composite SVG layers so it measures the text against the
+               gradient underneath. Both the tool and a reader are better served by a solid plate. -->
+          <rect x='60' y='30' width='240' height='26' rx='13' fill='#ffffff'/>
           <text x='180' y='49' font-family='sans-serif' font-size='18' font-weight='700' fill='#1e293b' text-anchor='middle'>BlazorDX sample</text>
         </svg>
         """);

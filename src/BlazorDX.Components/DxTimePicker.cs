@@ -40,6 +40,12 @@ public sealed class DxTimePicker : ComponentBase
 
     private string Format => StepSeconds % 60 == 0 ? "HH\\:mm" : "HH\\:mm\\:ss";
 
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxTimePicker>? s;
+
+    private DxStrings<DxTimePicker> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "label");
@@ -59,7 +65,10 @@ public sealed class DxTimePicker : ComponentBase
         builder.AddAttribute(8, "value", Value?.ToString(Format, CultureInfo.InvariantCulture) ?? string.Empty);
         builder.AddAttribute(9, "step", StepSeconds.ToString(CultureInfo.InvariantCulture));
         builder.AddAttribute(10, "disabled", Disabled);
-        builder.AddAttribute(11, "aria-label", AriaLabel ?? Label);
+        // Falls through to a localized default rather than to nothing: AriaLabel and Label are both
+        // optional, so the plain <DxTimePicker @bind-Value="..." /> a consumer writes first
+        // produced an input with no accessible name at all (axe label, critical).
+        builder.AddAttribute(11, "aria-label", AriaLabel ?? Label ?? S["TimePickerLabel", "Time"]);
         if (Min is TimeOnly min)
         {
             builder.AddAttribute(12, "min", min.ToString(Format, CultureInfo.InvariantCulture));

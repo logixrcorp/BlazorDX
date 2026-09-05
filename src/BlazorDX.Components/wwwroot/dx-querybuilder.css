@@ -18,7 +18,7 @@
   font: inherit;
   font-weight: 600;
   font-size: 0.8rem;
-  color: var(--dx-text-muted, #64748b);
+  color: var(--dx-text-muted, #475569);
   background: var(--dx-surface, #ffffff);
   border: 1px solid var(--dx-border, #cbd5e1);
   cursor: pointer;

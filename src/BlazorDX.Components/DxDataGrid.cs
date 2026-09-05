@@ -788,8 +788,17 @@ public sealed class DxDataGrid<TRow> : DataGridPrimitive<TRow>
         builder.AddAttribute(41, "class", "dx-grid-group");
         builder.AddAttribute(42, "role", "row");
         builder.AddAttribute(43, "style", $"height:{RowHeight}px;");
-        builder.AddAttribute(44, "aria-expanded", expanded ? "true" : "false");
         builder.AddAttribute(45, "onclick", EventCallback.Factory.Create(this, () => ToggleGroup(captured)));
+
+        // A row must contain cells (axe aria-required-children, critical), and aria-expanded on a
+        // row means something only in a treegrid -- in a grid it is reported as
+        // aria-conditional-attr. One gridcell spanning the row fixes both: it gives the row the
+        // child ARIA requires, and it is a role on which aria-expanded is valid.
+        builder.OpenElement(401, "div");
+        builder.AddAttribute(402, "role", "gridcell");
+        builder.AddAttribute(403, "aria-colspan", VisibleColumnCount);
+        builder.AddAttribute(404, "aria-expanded", expanded ? "true" : "false");
+        builder.AddAttribute(405, "class", "dx-grid-group-cell");
 
         builder.OpenElement(46, "span");
         builder.AddAttribute(47, "class", "dx-grid-group-toggle");
@@ -811,6 +820,7 @@ public sealed class DxDataGrid<TRow> : DataGridPrimitive<TRow>
             BuildGroupSubtotals(builder, groupIndex);
         }
 
+        builder.CloseElement();   // the gridcell wrapping the whole group row
         builder.CloseElement();
     }
 

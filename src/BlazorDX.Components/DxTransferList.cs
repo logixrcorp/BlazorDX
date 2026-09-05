@@ -77,6 +77,10 @@ public sealed class DxTransferList : ComponentBase
         builder.AddComponentParameter(sequence + 7, "Multiple", true);
         builder.AddComponentParameter(sequence + 8, "Values", selected);
         builder.AddComponentParameter(sequence + 9, "ValuesChanged", selectedChanged);
+
+        // The pane already shows this label; naming the listbox with it is what makes the two
+        // panes distinguishable to a screen reader instead of both being "Options".
+        builder.AddComponentParameter(sequence + 10, "AriaLabel", label);
         builder.CloseComponent();
 
         builder.CloseElement();

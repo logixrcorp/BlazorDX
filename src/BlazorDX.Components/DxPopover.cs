@@ -2,6 +2,7 @@ using BlazorDX.Primitives.Motion;
 using BlazorDX.Primitives.Overlays;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace BlazorDX.Components;
 
@@ -21,9 +22,15 @@ public sealed class DxPopover : PopoverPrimitive
         builder.AddAttribute(1, "class", "dx-popover-root");
 
         // Trigger (the positioning anchor); clicking toggles the panel.
-        builder.OpenElement(2, "span");
+        // A real <button>, not a span dressed as one. aria-haspopup and aria-expanded are not
+        // allowed on a generic element (axe aria-allowed-attr, critical), and a span with only an
+        // onclick cannot be reached from a keyboard at all. Giving the span role="button" fixed
+        // both and introduced nested-interactive instead, because consumers put their own button
+        // inside Trigger -- so the component owns the control and Trigger holds label content.
+        builder.OpenElement(2, "button");
         builder.AddAttribute(3, "id", AnchorId);
         builder.AddAttribute(4, "class", "dx-popover-trigger");
+        builder.AddAttribute(41, "type", "button");
         builder.AddAttribute(5, "aria-haspopup", "dialog");
         builder.AddAttribute(6, "aria-expanded", Open ? "true" : "false");
         builder.AddAttribute(7, "onclick", EventCallback.Factory.Create(this, ToggleAsync));

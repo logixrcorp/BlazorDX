@@ -74,10 +74,11 @@ public sealed class DxVirtualize<TItem> : ComponentBase, IAsyncDisposable
             builder.AddAttribute(12, "role", Role);
         }
 
-        if (TabIndex is int tabIndex)
-        {
-            builder.AddAttribute(16, "tabindex", tabIndex);
-        }
+        // Always focusable unless the consumer overrides it. This element sets overflow-y:auto on
+        // a fixed height, so it is always a scroll container — and a scroll container with no tab
+        // stop cannot be scrolled from a keyboard at all (axe scrollable-region-focusable, and
+        // WCAG 2.1.1 underneath it). Leaving it to the caller meant the default was unusable.
+        builder.AddAttribute(16, "tabindex", TabIndex ?? 0);
 
         // Spacer rows preserve scroll geometry. When the container declares an ARIA
         // role, mark them presentational so they never interrupt a row hierarchy.

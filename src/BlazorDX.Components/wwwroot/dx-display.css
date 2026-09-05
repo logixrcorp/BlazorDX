@@ -16,7 +16,10 @@
   background: color-mix(in srgb, var(--dx-text, #0f172a) 8%, transparent);
   color: var(--dx-text, #0f172a);
 }
-.dx-badge-primary { background: color-mix(in srgb, var(--dx-accent, #2563eb) 15%, transparent); color: var(--dx-accent, #2563eb); }
+/* The accent at full strength on a 15% tint of itself is about 4.1:1 — a serious contrast
+   violation. Darkening the text rather than lightening the tint keeps the badge recognisably the
+   accent colour, and keeps working when a consumer rethemes --dx-accent. */
+.dx-badge-primary { background: color-mix(in srgb, var(--dx-accent, #2563eb) 15%, transparent); color: color-mix(in srgb, var(--dx-accent, #2563eb) 72%, #000000); }
 .dx-badge-success { background: #dcfce7; color: #15803d; }
 .dx-badge-warning { background: #fef3c7; color: #b45309; }
 .dx-badge-danger  { background: #fee2e2; color: #b91c1c; }
@@ -171,7 +174,7 @@
   cursor: pointer;
   width: 24px;
   min-height: 24px;
-  color: var(--dx-muted, #64748b);
+  color: var(--dx-muted, #475569);
   font-size: 11px;
   padding: 0;
 }
@@ -217,7 +220,7 @@
 .dx-kanban-count {
   font-size: 12px;
   font-weight: 600;
-  color: var(--dx-muted, #64748b);
+  color: var(--dx-muted, #475569);
   background: var(--dx-surface, #fff);
   border-radius: 999px;
   padding: 1px 8px;
@@ -251,7 +254,7 @@
 
 /* ---- Date range picker ---- */
 .dx-daterange { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.dx-daterange-sep { color: var(--dx-muted, #64748b); }
+.dx-daterange-sep { color: var(--dx-muted, #475569); }
 
 /* ---- File upload ---- */
 .dx-upload { display: flex; flex-direction: column; gap: 10px; }
@@ -264,7 +267,7 @@
   border: 2px dashed var(--dx-border, #cbd5e1);
   border-radius: var(--dx-radius, 10px);
   background: var(--dx-surface-alt, #f8fafc);
-  color: var(--dx-muted, #64748b);
+  color: var(--dx-muted, #475569);
   cursor: pointer;
   transition: border-color 0.12s, background 0.12s;
 }
@@ -296,11 +299,11 @@
   font-size: 13px;
 }
 .dx-upload-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dx-upload-size { color: var(--dx-muted, #64748b); font-variant-numeric: tabular-nums; }
+.dx-upload-size { color: var(--dx-muted, #475569); font-variant-numeric: tabular-nums; }
 .dx-upload-remove {
   border: 0;
   background: transparent;
-  color: var(--dx-muted, #64748b);
+  color: var(--dx-muted, #475569);
   cursor: pointer;
   font-size: 16px;
   line-height: 1;
@@ -506,7 +509,7 @@
   display: inline-flex;
   flex-direction: column;
   font-size: 11px;
-  color: var(--dx-muted, #64748b);
+  color: var(--dx-muted, #475569);
   gap: 2px;
 }
 .dx-imgedit-slider input { accent-color: var(--dx-accent, #2563eb); width: 120px; }
@@ -608,7 +611,7 @@
   background: var(--dx-surface-alt, #f8fafc); border-radius: 6px; cursor: pointer;
   color: var(--dx-text, #0f172a);
 }
-.dx-docview-zoom-value { font-size: 12px; min-width: 3em; text-align: center; color: var(--dx-muted, #64748b); }
+.dx-docview-zoom-value { font-size: 12px; min-width: 3em; text-align: center; color: var(--dx-muted, #475569); }
 .dx-docview-actions { margin-inline-start: auto; display: inline-flex; align-items: center; gap: 6px; }
 .dx-docview-action {
   display: inline-flex; align-items: center; justify-content: center; gap: 4px;
@@ -630,7 +633,7 @@
 @media (prefers-reduced-motion: reduce) {
   .dx-docview-action { transition: none; }
 }
-.dx-docview-pdf-fallback { margin: 10px 0 0; font-size: 13px; color: var(--dx-muted, #64748b); }
+.dx-docview-pdf-fallback { margin: 10px 0 0; font-size: 13px; color: var(--dx-muted, #475569); }
 .dx-docview-pdf-fallback a { color: var(--dx-accent, #2563eb); }
 .dx-docview-body { flex: 1; overflow: auto; padding: 14px; background: var(--dx-surface-alt, #f1f5f9); }
 .dx-docview-img { display: block; margin: 0 auto; border-radius: 4px; box-shadow: 0 1px 6px rgba(15, 23, 42, 0.15); }

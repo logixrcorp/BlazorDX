@@ -21,7 +21,7 @@
   --dx-ed-paper: var(--dx-surface, #ffffff);
   --dx-ed-paper-alt: var(--dx-surface-alt, #f8fafc);
   --dx-ed-ink: var(--dx-text, #0f172a);
-  --dx-ed-ink-muted: var(--dx-text-muted, #64748b);
+  --dx-ed-ink-muted: var(--dx-text-muted, #475569);
   --dx-ed-rule: var(--dx-border, #e2e8f0);
   --dx-ed-accent: var(--dx-accent, #2563eb);
   --dx-ed-display: "Fraunces", Georgia, "Times New Roman", serif;

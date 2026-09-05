@@ -68,6 +68,14 @@ public sealed class DxSplitter : ComponentBase
         builder.AddAttribute(8, "role", "separator");
         builder.AddAttribute(9, "aria-orientation", Horizontal ? "vertical" : "horizontal");
         builder.AddAttribute(10, "tabindex", "0");
+
+        // A separator is a static divider until it takes focus; a FOCUSABLE one is a widget, and
+        // ARIA then requires a value (axe aria-required-attr, critical). Without it a screen reader
+        // announces a draggable divider that never says where it sits. The pixel size is the honest
+        // value: the second pane has no fixed extent, so there is no meaningful maximum and no
+        // percentage to report — which is also why aria-valuemax is deliberately absent.
+        builder.AddAttribute(101, "aria-valuenow", Math.Round(firstSize));
+        builder.AddAttribute(102, "aria-valuemin", Math.Round(MinFirst));
         builder.AddAttribute(11, "onpointerdown", EventCallback.Factory.Create<PointerEventArgs>(this, StartResize));
         builder.AddAttribute(12, "onkeydown", EventCallback.Factory.Create<KeyboardEventArgs>(this, OnKeyDown));
         builder.CloseElement();

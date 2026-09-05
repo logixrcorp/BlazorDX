@@ -56,7 +56,7 @@
 .dx-chat-system .dx-chat-bubble {
   background: transparent;
   border: 1px dashed var(--dx-border, #cbd5e1);
-  color: var(--dx-text-muted, #64748b);
+  color: var(--dx-text-muted, #475569);
   font-size: 0.9rem;
 }
 /* Tighten Markdown spacing inside assistant bubbles. */
