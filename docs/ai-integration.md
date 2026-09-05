@@ -102,6 +102,65 @@ app.MapPost("/mcp", async (HttpContext http) =>
 }).RequireAuthorization();   // HTTPS + auth in production
 ```
 
+## Reading: the grid as a tool
+
+A form is how an assistant *acts*. `GridAiTool<TRow>` is how it *looks something up* — it exposes
+an `IGridDataSource<TRow>` (the same server-side source `DxDataGrid` binds to for paging, sorting
+and filtering) as a read-only tool:
+
+```csharp
+server.Add(new GridAiTool<StockRow>(
+    "query_stock",
+    "Warehouse stock levels. Filter by SKU, product name or warehouse; sort by any column.",
+    new StockRowGridAccessor(),   // source-generated
+    new StockDataSource(),        // the same IGridDataSource the grid binds to
+    maxRows: 25));
+```
+
+The pair is the point. A write-only tool surface makes an assistant guess at its arguments; a
+read-only one leaves it narrating instead of acting. Together they close the loop, and neither is
+a bespoke AI endpoint — both are declarations the UI already uses.
+
+### The columns are the contract
+
+Schema, filtering, sorting and output all come from the generated `IGridRowAccessor<TRow>`, so the
+tool reaches exactly the properties marked `[GridColumn]` and nothing else. A property without the
+attribute appears in neither the grid nor the tool, which means **narrowing what an assistant may
+read is the same edit as narrowing what the grid shows** — not a second permission model kept in
+sync by hand. It also inherits [ADR 0002](adr/0002-zero-reflection-identity.md): there is no
+reflection, so no unlisted property can be reached at runtime.
+
+Because the column set is known at compile time, the schema names the columns as a JSON-Schema
+`enum` rather than asking for a free-text field name. A model cannot invent a column, and a wrong
+guess is a schema violation the host rejects rather than a query that quietly matches nothing. A
+guess that arrives anyway is answered with an error naming the real columns, so the model can
+correct itself instead of retrying blind.
+
+### Honest partial answers
+
+`maxRows` caps what one call can return, and `take` is **clamped rather than rejected** — a model
+asking for 1000 rows wants as many as it can have. What stops it reporting a page as if it were
+the whole answer is that the reply always carries the unclamped `totalCount`:
+
+```json
+{"totalCount":4210,"skip":0,"take":25,"rows":[…]}
+```
+
+Numeric columns are emitted as JSON numbers rather than display text, so a model can total or
+compare a column without re-parsing what it was just handed.
+
+### Always read-only
+
+`IGridDataSource` has no write path and this tool adds none, so `IsReadOnly` is hard-coded rather
+than a constructor flag — it cannot be set wrongly, and it reaches the client as
+`annotations.readOnlyHint` in `tools/list`. A host that wants a writable grid tool has to write
+one deliberately.
+
+The corollary belongs with the security model below: the data source is reached with the
+*server's* permissions, so an `IAiToolAuthorizer` is what stops an assistant reading rows its user
+could not have seen in the grid. A read tool is what makes that gate load-bearing rather than
+merely advisable.
+
 ## Security model
 
 Opening a system to AI is the highest-risk surface, so it inherits BlazorDX's security
@@ -234,6 +293,7 @@ malicious tool calls — and the errors are returned to the AI so it can self-co
 
 ## What's next
 
-The secured core and stdio transport are in place. Planned: the HTTP/SSE transport, exposing the
-DataGrid as a read tool over `IGridDataSource`, and the broader MCP surface (resources, prompts).
-See [ROADMAP.md](ROADMAP.md).
+The secured core, the stdio and HTTP transports, and both directions of the tool surface — writing
+through a form, reading through a grid — are in place. Planned: HTTP+SSE with sessions for
+server-initiated streaming, and the broader MCP surface (resources, prompts). See
+[ROADMAP.md](ROADMAP.md).

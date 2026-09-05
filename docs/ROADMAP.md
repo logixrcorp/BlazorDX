@@ -51,7 +51,8 @@ Raw component count is explicitly **not** the target — see *Out of scope*.
 - **Forms as AI tools**: one source-generated model renders a `DxForm` *and* projects a
   JSON-Schema tool definition served over the **Model Context Protocol** (incl. interop with
   standard `System.ComponentModel.DataAnnotations` models), with a runnable stdio server
-  ([`samples/BlazorDX.McpServer`](../samples/BlazorDX.McpServer)). The tool surface is **secured**:
+  ([`samples/BlazorDX.McpServer`](../samples/BlazorDX.McpServer), which also exposes a grid's
+  `IGridDataSource` as the matching read-only tool). The tool surface is **secured**:
   per-tool authorization, audit via the diagnostics sink, cancellation, and `[AiHidden]` /
   `[DxField(Sensitive)]` redaction of PII. See [docs/ai-integration.md](ai-integration.md).
 - **Packaging & delivery**: twelve NuGet packages (incl. analyzer/source-gen, and the opt-in
@@ -140,9 +141,11 @@ enhancements. None of this should be read as "ready"; it is a beta with work ahe
 
 ### Depth & breadth enhancements
 
-- **AI access** — the secured tool core, the stdio transport, and an HTTP (request/response)
-  endpoint are done; next are HTTP+SSE/sessions for server-initiated streaming, the DataGrid as
-  a read tool over `IGridDataSource`, and the wider MCP surface (resources / prompts). See
+- **AI access** — the secured tool core, the stdio transport, an HTTP (request/response) endpoint,
+  and both directions of the tool surface are done: an assistant writes through a `[DxFormModel]`
+  (`FormAiTool`) and reads through a grid's `IGridDataSource` (`GridAiTool`, read-only, columns as
+  a JSON-Schema `enum`, honest `totalCount`). Next are HTTP+SSE/sessions for server-initiated
+  streaming and the wider MCP surface (resources / prompts). See
   [docs/ai-integration.md](ai-integration.md).
 - **Chart interactivity** — shipped in full. Point selection, hover, and legend toggling
   (title-tag tooltips only, not a rich hover card). Zoom/pan for `DxLineChart`/`DxAreaChart`
