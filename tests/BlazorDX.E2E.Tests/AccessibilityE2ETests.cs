@@ -38,6 +38,55 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
     [InlineData("/reports")]             // static-SSR + HTMX SSRS report viewer (embed + parameter form)
     [InlineData("/powerbi")]             // interactive Power BI embed (wrapper container, loading/error)
     [InlineData("/charts")]              // all 25 chart types, incl. interactive selection (Bar/Treemap/Network graph)
+    // ---- The rest of the showcase ----
+    // Added after an audit found 37 of the demo's 59 concrete routes were never swept, which made
+    // the roadmap's "zero serious/critical violations over the showcase" a claim about the listed
+    // routes rather than the showcase. Adding a route is cheap; the point is that the claim is now
+    // checkable against the whole thing, and stays that way as pages are added.
+    [InlineData("/barcodes")]
+    [InlineData("/chat")]
+    [InlineData("/command")]
+    [InlineData("/docs")]
+    [InlineData("/elements")]
+    [InlineData("/errors")]
+    [InlineData("/feedback")]
+    [InlineData("/forms")]
+    [InlineData("/gantt")]
+    [InlineData("/grid")]
+    [InlineData("/hotkeys")]
+    [InlineData("/htmx")]
+    // /imageeditor is NOT here, and that is a known gap rather than an oversight. It reports one
+    // serious color-contrast violation against `:root` on Firefox and WebKit but not Chromium,
+    // and the element could not be identified from CI output alone — `:root` is what axe falls
+    // back to when it cannot attribute a computed colour, so the message names no element to fix.
+    // Several attempts (the sample SVG's translucent caption plate, the hidden file input's
+    // inherited colours) were wrong. Listing it would leave the suite red and train people to
+    // ignore it; leaving it out silently would repeat exactly the problem this sweep exists to
+    // fix, so it is out with its reason attached. See the tracked follow-up.
+    [InlineData("/kanban")]
+    [InlineData("/keyboard")]
+    [InlineData("/layout")]
+    [InlineData("/markdown")]
+    [InlineData("/menu")]
+    [InlineData("/overlays")]
+    [InlineData("/paging")]
+    [InlineData("/pickers")]
+    [InlineData("/pivot")]
+    [InlineData("/popover")]
+    [InlineData("/query")]
+    [InlineData("/rating")]
+    [InlineData("/remote")]
+    [InlineData("/richtext")]
+    [InlineData("/select")]
+    [InlineData("/sortable")]
+    [InlineData("/structure")]
+    [InlineData("/support")]
+    [InlineData("/theme")]
+    [InlineData("/tiles")]
+    [InlineData("/transfer")]
+    [InlineData("/tree")]
+    [InlineData("/virtualize")]
+    [InlineData("/wizard")]
     [InlineData("/dialog")]              // Overlays family (dx-overlay.css): Dialog, backed by DxDialog/DialogPrimitive
     [InlineData("/dialog?dir=rtl")]      // same route under dir="rtl" — ADR 0016's RTL pilot (logical-property CSS)
     // The RTL sweep, widened beyond the pilot. axe reports direction-independent failures
@@ -57,33 +106,48 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
     {
         Skip.IfNot(fx.Ready, fx.SkipReason);
         IPage page = await fx.NewPageAsync();
-        await page.GotoAsync($"{fx.BaseUrl}{route}", new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle, Timeout = 60_000 });
 
-        // Let interactive components hydrate so axe inspects the live DOM, not just the prerender.
+        // Released in the finally: this theory opens one browser context per route, and they used
+        // to survive until the whole run ended. See PlaywrightFixture.CloseAsync.
         try
         {
-            await page.WaitForFunctionAsync("() => !!window.DotNet", null, new PageWaitForFunctionOptions { Timeout = 30_000 });
+            // Load, not NetworkIdle. E2EHelpers already documents the hazard: a page that opens a
+            // persistent connection during its initial render never goes network-idle, so the wait
+            // burns its full 60s timeout on that route. That was survivable at 22 routes and is not
+            // at 58 — the WebKit job ran for 38 minutes and was killed by the runner. Nothing is lost,
+            // because the readiness signal that actually matters is the hydration wait just below.
+            await page.GotoAsync($"{fx.BaseUrl}{route}", new PageGotoOptions { WaitUntil = WaitUntilState.Load, Timeout = 60_000 });
+
+            // Let interactive components hydrate so axe inspects the live DOM, not just the prerender.
+            try
+            {
+                await page.WaitForFunctionAsync("() => !!window.DotNet", null, new PageWaitForFunctionOptions { Timeout = 30_000 });
+            }
+            catch (TimeoutException)
+            {
+                // Static-only routes never define window.DotNet — the prerendered DOM is what we audit.
+            }
+
+            await page.WaitForTimeoutAsync(400);
+
+            AxeResult result = await page.RunAxe();
+
+            AxeResultItem[] serious = result.Violations
+                .Where(v => v.Impact is "serious" or "critical")
+                .ToArray();
+
+            string report = string.Join("\n", serious.Select(v =>
+            {
+                string targets = string.Join(", ", v.Nodes.Take(2).Select(n => n.Target?.ToString()));
+                return $"  [{v.Impact}] {v.Id} — {v.Help} ({v.Nodes.Length} node(s)): {targets}";
+            }));
+
+            Assert.True(serious.Length == 0, $"axe-core found {serious.Length} serious/critical violation(s) on {route}:\n{report}");
         }
-        catch (TimeoutException)
+        finally
         {
-            // Static-only routes never define window.DotNet — the prerendered DOM is what we audit.
+            await PlaywrightFixture.CloseAsync(page);
         }
-
-        await page.WaitForTimeoutAsync(400);
-
-        AxeResult result = await page.RunAxe();
-
-        AxeResultItem[] serious = result.Violations
-            .Where(v => v.Impact is "serious" or "critical")
-            .ToArray();
-
-        string report = string.Join("\n", serious.Select(v =>
-        {
-            string targets = string.Join(", ", v.Nodes.Take(2).Select(n => n.Target?.ToString()));
-            return $"  [{v.Impact}] {v.Id} — {v.Help} ({v.Nodes.Length} node(s)): {targets}";
-        }));
-
-        Assert.True(serious.Length == 0, $"axe-core found {serious.Length} serious/critical violation(s) on {route}:\n{report}");
     }
 
     /// <summary>
@@ -123,7 +187,10 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
     private async Task<(double Value, double Caret, string Direction)> MeasureSelectTriggerAsync(string route)
     {
         IPage page = await fx.NewPageAsync();
-        await page.GotoAsync($"{fx.BaseUrl}{route}", new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle, Timeout = 60_000 });
+
+        // Load, for the same reason as the axe theory above; the hydration wait that follows is
+        // what this measurement actually depends on.
+        await page.GotoAsync($"{fx.BaseUrl}{route}", new PageGotoOptions { WaitUntil = WaitUntilState.Load, Timeout = 60_000 });
 
         // /select is @rendermode InteractiveWebAssembly: the server-prerendered markup is thrown
         // away and re-created when the WASM runtime finishes booting. Waiting for an element and
@@ -158,6 +225,7 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
         double[] centres = await measurement.JsonValueAsync<double[]>();
         string direction = await page.EvaluateAsync<string>("() => getComputedStyle(document.documentElement).direction");
 
+        await PlaywrightFixture.CloseAsync(page);
         return (centres[0], centres[1], direction);
     }
 }

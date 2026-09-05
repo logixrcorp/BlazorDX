@@ -338,7 +338,11 @@
   inset-inline-start: 0;
   top: 0;
   bottom: 0;
-  background: rgba(255, 255, 255, 0.3);
+  /* Darkens rather than lightens. The bar's label is white, and a 30% white wash over the
+     completed portion lifted the effective background enough to fail contrast against it — the
+     label was least readable exactly where progress had been made. Shading down keeps white
+     legible over both the washed and unwashed parts of any bar colour. */
+  background: rgba(0, 0, 0, 0.22);
   border-radius: 6px 0 0 6px;
 }
 .dx-gantt-bar-label {

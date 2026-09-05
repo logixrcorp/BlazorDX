@@ -52,14 +52,17 @@ public sealed class DxGantt : GanttPrimitive
     {
         builder.OpenElement(4, "div");
         builder.AddAttribute(5, "class", "dx-gantt-row dx-gantt-headrow");
+        builder.AddAttribute(101, "role", "row");
 
         builder.OpenElement(6, "div");
         builder.AddAttribute(7, "class", "dx-gantt-name dx-gantt-corner");
+        builder.AddAttribute(102, "role", "columnheader");
         builder.AddContent(8, S["GanttTaskRole", "Task"]);
         builder.CloseElement();
 
         builder.OpenElement(9, "div");
         builder.AddAttribute(10, "class", "dx-gantt-track");
+        builder.AddAttribute(103, "role", "columnheader");
         builder.AddAttribute(11, "style", $"width:{TimelineWidth}px;");
 
         foreach (DateOnly day in Days)
@@ -84,15 +87,18 @@ public sealed class DxGantt : GanttPrimitive
         builder.OpenElement(16, "div");
         builder.SetKey(index);
         builder.AddAttribute(17, "class", "dx-gantt-row");
+        builder.AddAttribute(104, "role", "row");
         builder.AddAttribute(18, "style", $"height:{RowHeight}px;");
 
         builder.OpenElement(19, "div");
         builder.AddAttribute(20, "class", "dx-gantt-name");
+        builder.AddAttribute(105, "role", "cell");
         builder.AddContent(21, task.Name);
         builder.CloseElement();
 
         builder.OpenElement(22, "div");
         builder.AddAttribute(23, "class", "dx-gantt-track");
+        builder.AddAttribute(106, "role", "cell");
         builder.AddAttribute(24, "style", $"width:{TimelineWidth}px;background-size:{DayWidth}px 100%;");
 
         if (Layout(task) is GanttBar bar)
