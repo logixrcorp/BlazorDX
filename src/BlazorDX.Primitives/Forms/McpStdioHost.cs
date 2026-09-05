@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 namespace BlazorDX.Primitives.Forms;
 
 /// <summary>
@@ -39,28 +37,13 @@ public static class McpStdioHost
 
             string response = await server.HandleAsync(line, cancellationToken);
 
-            // JSON-RPC forbids replying to a notification (a request carrying no "id").
-            if (ExpectsResponse(line))
+            // JSON-RPC forbids replying to a notification (a request carrying no "id"). The rule
+            // lives on McpToolServer so stdio and HTTP cannot drift apart on it.
+            if (McpToolServer.ExpectsResponse(line))
             {
                 await output.WriteLineAsync(response.AsMemory(), cancellationToken);
                 await output.FlushAsync(cancellationToken);
             }
-        }
-    }
-
-    // A message warrants a response unless it is a notification (a JSON object with no "id").
-    // Malformed JSON still warrants the JSON-RPC parse-error response, so it counts as needing one.
-    private static bool ExpectsResponse(string line)
-    {
-        try
-        {
-            using JsonDocument document = JsonDocument.Parse(line);
-            return document.RootElement.ValueKind != JsonValueKind.Object
-                || document.RootElement.TryGetProperty("id", out _);
-        }
-        catch (JsonException)
-        {
-            return true;
         }
     }
 }

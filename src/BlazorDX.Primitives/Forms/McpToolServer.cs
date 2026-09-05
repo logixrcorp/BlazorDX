@@ -32,6 +32,25 @@ public sealed class McpToolServer
     /// </summary>
     public IDxDiagnostics? Diagnostics { get; init; }
 
+    /// <summary>
+    /// Whether <c>initialize</c> advertises <c>tools.listChanged</c> — a promise that the server
+    /// sends <c>notifications/tools/list_changed</c> when its tool set changes.
+    /// </summary>
+    /// <remarks>
+    /// Off by default, and it should stay off unless something actually broadcasts
+    /// <see cref="ToolListChangedNotification"/> over a session store. A client that is told the
+    /// list can change stops re-listing and waits for a notice; if none ever arrives it simply
+    /// works from a stale tool list forever, with no error anywhere to explain why.
+    /// </remarks>
+    public bool NotifiesToolListChanged { get; init; }
+
+    /// <summary>
+    /// The JSON-RPC notification announcing that the tool list changed. Pass it to
+    /// <see cref="McpSessionStore.Broadcast"/> after adding or removing tools.
+    /// </summary>
+    public static string ToolListChangedNotification =>
+        "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/tools/list_changed\"}";
+
     /// <summary>Registers a tool (replacing any with the same name). Fluent.</summary>
     public McpToolServer Add(IAiTool tool)
     {
@@ -53,6 +72,16 @@ public sealed class McpToolServer
             using JsonDocument document = JsonDocument.Parse(requestJson);
             JsonElement root = document.RootElement;
 
+            // A JSON-RPC batch is a valid JSON array, and TryGetProperty on a non-object throws
+            // InvalidOperationException — not JsonException — so without this a batched body
+            // escaped the catch below and took the transport down. Batching was removed from the
+            // protocol in 2025-06-18; refusing it as an Invalid Request is both correct and the
+            // answer a client can act on.
+            if (root.ValueKind != JsonValueKind.Object)
+            {
+                return Error(id, -32600, "Invalid Request: expected a single JSON-RPC object.");
+            }
+
             if (root.TryGetProperty("id", out JsonElement idElement))
             {
                 id = idElement.GetRawText();
@@ -62,7 +91,7 @@ public sealed class McpToolServer
 
             return method switch
             {
-                "initialize" => Response(id, InitializeResult()),
+                "initialize" => Response(id, InitializeResult(root)),
                 "tools/list" => Response(id, await ToolsListResult(cancellationToken)),
                 "tools/call" => Response(id, await ToolsCallResult(root, cancellationToken)),
                 _ => Error(id, -32601, $"Method not found: {method}"),
@@ -74,14 +103,106 @@ public sealed class McpToolServer
         }
     }
 
+    /// <summary>
+    /// Whether a message warrants a reply. JSON-RPC forbids answering a notification (a message
+    /// carrying no <c>id</c>), and every transport has to honour that, so the rule lives here
+    /// rather than being re-derived — and re-derived differently — in each host.
+    /// </summary>
+    /// <remarks>
+    /// Malformed JSON counts as warranting a response: the caller gets the parse error rather
+    /// than silence, which is the difference between a client that reports a bad request and one
+    /// that hangs waiting.
+    /// </remarks>
+    public static bool ExpectsResponse(string message)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(message);
+            return document.RootElement.ValueKind != JsonValueKind.Object
+                || document.RootElement.TryGetProperty("id", out _);
+        }
+        catch (JsonException)
+        {
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// Whether a message is an <c>initialize</c> request — the point at which a session-based
+    /// transport mints a session, since it is the one request that arrives without one.
+    /// </summary>
+    public static bool IsInitialize(string message)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(message);
+            return document.RootElement.ValueKind == JsonValueKind.Object
+                && document.RootElement.TryGetProperty("method", out JsonElement method)
+                && method.ValueKind == JsonValueKind.String
+                && method.ValueEquals("initialize");
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Builds a JSON-RPC error object, so a transport can answer with a protocol-shaped body for
+    /// failures the tool server never sees — an expired session, an unreadable request.
+    /// </summary>
+    /// <param name="id">The request id as raw JSON, or <c>"null"</c> when it could not be read.</param>
+    /// <param name="code">The JSON-RPC error code.</param>
+    /// <param name="message">Human-readable message, returned to the caller.</param>
+    public static string ErrorJson(string id, int code, string message) => Error(id, code, message);
+
     // Whether the (optional) authorizer permits this tool for the current caller.
     private async ValueTask<bool> IsAllowedAsync(IAiTool tool, CancellationToken cancellationToken) =>
         Authorizer is null || await Authorizer.IsAllowedAsync(tool, cancellationToken);
 
-    private string InitializeResult()
+    /// <summary>
+    /// Protocol revisions this server speaks, newest last. <c>2025-03-26</c> is the revision that
+    /// introduced the HTTP + Server-Sent Events transport (<see cref="McpHttpHost"/>).
+    /// </summary>
+    private static readonly string[] SupportedProtocolVersions = ["2024-11-05", "2025-03-26"];
+
+    private string InitializeResult(JsonElement root)
     {
+        // Echo the client's revision when it is one we speak, otherwise name our newest and let
+        // the client decide whether it can proceed. Answering with a fixed version regardless of
+        // what was asked is how a server ends up claiming a revision whose rules it does not
+        // follow — which is what the previous hard-coded string did.
+        string version = SupportedProtocolVersions[^1];
+        if (root.TryGetProperty("params", out JsonElement p)
+            && p.ValueKind == JsonValueKind.Object
+            && p.TryGetProperty("protocolVersion", out JsonElement requested)
+            && requested.ValueKind == JsonValueKind.String)
+        {
+            string? asked = requested.GetString();
+            if (asked is not null && Array.IndexOf(SupportedProtocolVersions, asked) >= 0)
+            {
+                version = asked;
+            }
+        }
+
         StringBuilder sb = new();
-        sb.Append("{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{\"tools\":{}},\"serverInfo\":{\"name\":");
+        sb.Append("{\"protocolVersion\":");
+        AppendString(sb, version);
+
+        // listChanged is a promise to send notifications/tools/list_changed. It is opt-in because
+        // only a host with a session store can deliver one, and advertising a capability the
+        // server cannot honour makes a client wait for a message that never comes.
+        sb.Append(",\"capabilities\":{\"tools\":{");
+        if (NotifiesToolListChanged)
+        {
+            sb.Append("\"listChanged\":true");
+        }
+
+        sb.Append("}},\"serverInfo\":{\"name\":");
         AppendString(sb, ServerName);
         sb.Append(",\"version\":\"1.0.0\"}}");
         return sb.ToString();
