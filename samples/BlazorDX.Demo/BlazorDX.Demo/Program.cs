@@ -218,19 +218,37 @@ app.MapPost("/htmx/echo", (HttpContext http) =>
     return Results.Content(fragment, "text/html");
 }).DisableAntiforgery();
 
-// MCP over HTTP — the JSON request/response subset of the Streamable HTTP transport, which is
-// enough for request/response tools (server-initiated SSE/sessions are a follow-up). A web
-// agent POSTs a JSON-RPC message and gets the JSON-RPC response. The same McpToolServer that
-// runs over stdio (samples/BlazorDX.McpServer) is the engine.
+// MCP over HTTP — the full Streamable HTTP shape: POST for request/response, GET for the
+// Server-Sent Events stream carrying server-initiated messages, DELETE to end a session. The
+// same McpToolServer that runs over stdio (samples/BlazorDX.McpServer) is the engine.
+//
+// McpHttpHost decides every status code and header; this endpoint only moves bytes. That split
+// is deliberate: BlazorDX.Primitives is browser-WASM safe and references the Blazor component
+// packages rather than the ASP.NET Core framework, so the transport rules cannot mention
+// HttpContext. What it costs is the ~30 lines below; what it buys is a transport whose rules are
+// unit-tested without a web server.
 //
 // PRODUCTION: protect this endpoint with `.RequireAuthorization()` and pass an
 // `IAiToolAuthorizer` to the McpToolServer so tools are gated per caller. This demo exposes a
 // single harmless echo tool anonymously, and audits every call to the diagnostics sink.
-app.MapPost("/mcp", async (HttpContext http) =>
-{
-    using StreamReader reader = new(http.Request.Body);
-    string body = await reader.ReadToEndAsync(http.RequestAborted);
+McpSessionStore mcpSessions = new();
 
+app.MapMethods("/mcp", ["POST", "GET", "DELETE"], async (HttpContext http) =>
+{
+    string? body = null;
+    if (HttpMethods.IsPost(http.Request.Method))
+    {
+        using StreamReader reader = new(http.Request.Body);
+        body = await reader.ReadToEndAsync(http.RequestAborted);
+    }
+
+    // Opportunistic expiry. A client can vanish without a DELETE — a closed tab, a crash, a
+    // partition — so something has to reclaim sessions or the store only ever grows. Doing it per
+    // request keeps the sample free of a background service; a real server would use one.
+    mcpSessions.Sweep(TimeSpan.FromMinutes(30));
+
+    // NotifiesToolListChanged stays off: this server's tool set is fixed, so promising
+    // notifications/tools/list_changed would leave a client waiting for a notice never sent.
     McpToolServer mcp = new McpToolServer
     {
         ServerName = "BlazorDX demo",
@@ -240,8 +258,48 @@ app.MapPost("/mcp", async (HttpContext http) =>
         () => new MeetingRequest(),
         (meeting, ct) => Task.FromResult($"Scheduled \"{meeting.Title}\" for {meeting.Attendees} attendee(s).")));
 
-    string response = await mcp.HandleAsync(body, http.RequestAborted);
-    return Results.Content(response, "application/json");
+    McpHttpResponse result = await new McpHttpHost(mcp, mcpSessions).HandleAsync(
+        new McpHttpRequest(http.Request.Method, body, http.Request.Headers["Mcp-Session-Id"]),
+        http.RequestAborted);
+
+    http.Response.StatusCode = result.StatusCode;
+    if (result.SessionId is not null)
+    {
+        http.Response.Headers["Mcp-Session-Id"] = result.SessionId;
+    }
+
+    if (result.Stream is not null)
+    {
+        // A long-lived response. no-cache and an immediate flush matter: a proxy that buffers
+        // this turns "server pushes a message" into "server pushes a message some minutes later",
+        // which looks exactly like the feature not working.
+        http.Response.ContentType = result.ContentType!;
+        http.Response.Headers.CacheControl = "no-cache";
+        await http.Response.Body.FlushAsync(http.RequestAborted);
+
+        try
+        {
+            await foreach (string message in result.Stream.ReadAllAsync(http.RequestAborted))
+            {
+                await http.Response.WriteAsync(McpSse.Frame(message), http.RequestAborted);
+                await http.Response.Body.FlushAsync(http.RequestAborted);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // The client hung up. That is how a listening stream normally ends — letting the
+            // cancellation escape would log every ordinary disconnect as a server error.
+        }
+
+        return Results.Empty;
+    }
+
+    // The status code goes through Results.Content explicitly — it would otherwise write 200 over
+    // the 400/404 already set on the response, turning a protocol error into an apparent success
+    // carrying an error body.
+    return result.Body is null
+        ? Results.Empty
+        : Results.Content(result.Body, result.ContentType, contentEncoding: null, statusCode: result.StatusCode);
 }).DisableAntiforgery();
 
 app.Run();
