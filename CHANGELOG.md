@@ -9,8 +9,61 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-09-05
+
 ### Added
 
+- **Localization and RTL, across the whole library.** The roadmap's largest remaining item before
+  1.0, delivered in batches and recorded in
+  [ADR 0021](docs/adr/0021-optional-localization-and-rollout-guardrails.md). Every user-facing
+  string in **83 components** plus five further packages is now externalized, and **25 stylesheets**
+  were converted from physical to logical properties, so RTL is a direction change rather than a
+  mirrored rewrite.
+  - **Localization is optional, with an English fallback.** `DxStrings<T>` resolves
+    `IStringLocalizer<T>` lazily through `IServiceProvider` and falls back to the English text
+    passed at the call site — also when a key has no resource entry (`ResourceNotFound`), which is
+    what stops a broken lookup rendering a raw key in the UI. Consumers who never call
+    `AddLocalization()` are unaffected; a hard `[Inject]` would have made registration mandatory for
+    the entire library, documented nowhere.
+  - **English lives at the call site as well as in `.resx`.** That duplication is inherent to having
+    a code-level fallback at all, and it buys a reviewer seeing what a string says without opening a
+    resource file.
+  - **DX1003** bans hardcoded user-facing strings in `AddContent`, user-facing attributes
+    (`aria-label`, `title`, `placeholder`, …) and defaulted `[Parameter]` strings. Its rollout
+    ratchet is retired: it now fires on every non-test assembly.
+  - **RTL is guarded statically.** A test scans shipped CSS for physical directional properties;
+    files opt in with a `/* rtl-clean */` header and justify exceptions inline with
+    `/* rtl-exempt: <reason> */` — as `DxSheet`'s deliberately physical `Side="left"/"right"` API
+    does.
+- **French and German translations**, with mechanical parity tests. `TranslationCompletenessTests`
+  infers the shipped cultures from the files themselves and checks key parity, placeholder parity
+  (including format specifiers like `:N0`), and edge whitespace. Each language additionally gets a
+  rendering test, because `.resx` parity would still pass if the satellite assemblies were never
+  built or never found — every string would simply render in English.
+- **`GridAiTool<TRow>`: a grid's data source as a read-only AI tool.** An assistant can filter, sort
+  and page the same `IGridDataSource<TRow>` the grid binds to. Schema, filters and output all come
+  from the generated `IGridRowAccessor<TRow>`, so the tool reaches exactly the `[GridColumn]`
+  properties and nothing else — narrowing what an assistant may read is the same edit as narrowing
+  what the grid shows. Columns are a JSON-Schema `enum` (a model cannot invent one), `take` is
+  clamped rather than rejected, and the reply always carries the unclamped `totalCount` so a page is
+  never mistaken for the whole answer.
+- **MCP over HTTP, with sessions and server-initiated streaming.** `McpHttpHost` adds `POST`
+  (request/response), `GET` (a Server-Sent Events stream carrying server-initiated messages) and
+  `DELETE` (end a session). Session ids come from `RandomNumberGenerator` rather than `Guid` — the
+  id is the only thing separating one caller's session from another's, so it is a credential.
+  Outbound queues are bounded and report what they drop; expiry runs off an injected `TimeProvider`.
+  It speaks in strings and status codes rather than `HttpContext`, because `BlazorDX.Primitives` is
+  browser-WASM safe and cannot take an ASP.NET Core framework dependency — a host writes ~30 lines
+  to move bytes across, and the transport rules become unit-testable without a web server.
+- **MCP resources and prompts.** `resources/list`, `resources/read`, `prompts/list` and
+  `prompts/get`, each advertised in `initialize` only when something is actually registered.
+  `FormAiPrompt<TModel>` makes one `[DxFormModel]` a third surface: a user-invoked template that
+  states the task, lists the fields with the constraints read off the descriptor, and names the tool
+  that submits. `IAiContentAuthorizer` gates resources and prompts, answering a disallowed item
+  exactly as a non-existent one so the surface never reveals that a privileged resource exists.
+  Sensitive fields are omitted from prompts exactly as they are from tool schemas. Sampling and
+  roots are **declined, not deferred** — both are client responsibilities, and a component library
+  has no business initiating model calls on its host's account.
 - **`DxLineChart`/`DxAreaChart`: zoom/pan, opt in via `Zoomable`.** The roadmap's one remaining
   "Chart interactivity" item — point selection, hover, and legend toggling had already shipped
   for the discrete-mark charts, but `ChartSelectionPrimitive`'s own doc comment had always
@@ -195,6 +248,45 @@ All notable changes to BlazorDX are documented here. The format is loosely based
     (only the list-level `Required` check); `List<T>` only, no `[DxField(Nested = true)]` escape
     hatch for a different collection shape; DX2006 is verified manually, the same documented
     testability gap ADR 0018 already accepted for DX2001–2004.
+
+### Changed
+
+- **`DxStrings` is shared source rather than a thirteenth package.** It is `<Compile Include>`-linked
+  from `src/Shared` into `BlazorDX.Components`, `.Primitives`, `.Documents`, `.Htmx`,
+  `.Integrations.PowerBI` and `.Integrations.Reporting`. A published package was rejected because
+  `BlazorDX.Integrations.PowerBI` deliberately references no BlazorDX project, and the type is
+  `internal` in any case.
+- **The MCP server negotiates its protocol revision** instead of answering a hard-coded one, and now
+  speaks `2025-03-26` (the revision defining the HTTP + SSE transport) as well as `2024-11-05`. An
+  unknown client revision is answered with the newest we speak rather than an error.
+- **`tools.listChanged` is opt-in** (`NotifiesToolListChanged`, default off). Advertising it without
+  delivering leaves a client waiting for a notice that never comes while it works from a stale tool
+  list, with nothing anywhere to explain why.
+
+### Fixed
+
+- **The accessibility sweep covered 22 of 59 showcase routes; it now covers 58.** Extending it
+  surfaced **26 axe violations, 25 of which are now fixed** — most were library defects that had
+  shipped to consumers, not demo-page mistakes. The remaining one, a `:root` contrast violation on
+  `/imageeditor`, is excluded with its reason recorded in the test rather than silently skipped.
+- **Playwright leaked a browser context per page.** Every `NewPageAsync` created a context that was
+  never released; at 58 routes this exhausted memory and got the WebKit runner killed — twice
+  misdiagnosed as infrastructure flake before the leak was found.
+- **A JSON-RPC batch took the MCP transport down.** A batch is a valid JSON array, and
+  `TryGetProperty` on a non-object throws `InvalidOperationException` rather than `JsonException`,
+  so it escaped the parse-error handler entirely. Batching left the protocol in `2025-06-18`; it is
+  now refused as an Invalid Request.
+- **Wrongly typed AI tool arguments threw instead of answering.** `GetString()` and `TryGetInt32()`
+  both throw on a mismatched JSON value kind, so `{"column": 3}` or `{"take": "5"}` — both things
+  models actually send — surfaced at the transport as a dead call rather than as an error the model
+  could read and retry from.
+- **`DxScheduler` formatted every user-visible date with `InvariantCulture`** and hardcoded its
+  weekday abbreviations — a latent bug independent of localization, found while auditing its
+  strings, and one its strings could not be localized around.
+
+  Two similar cases found in the same audit are **not** fixed here: `DxFileManager` still renders
+  a modified date as invariant `yyyy-MM-dd`, and `DxDatePicker` builds a day cell's `aria-label`
+  from an invariant long date. Both remain on the date/format track.
 
 ## [0.5.0] — 2026-09-02
 
