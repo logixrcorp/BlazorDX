@@ -34,6 +34,76 @@ public sealed class McpToolServerTests
     }
 
     [Fact]
+    public async Task Initialize_echoes_a_protocol_revision_it_actually_speaks()
+    {
+        string res = await NewServer().HandleAsync(
+            """{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}}""");
+
+        using JsonDocument doc = JsonDocument.Parse(res);
+        Assert.Equal("2024-11-05", doc.RootElement.GetProperty("result").GetProperty("protocolVersion").GetString());
+    }
+
+    [Fact]
+    public async Task An_unknown_client_revision_is_answered_with_our_newest()
+    {
+        // Not an error: naming what we speak lets the client decide whether it can proceed.
+        string res = await NewServer().HandleAsync(
+            """{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"1999-01-01"}}""");
+
+        using JsonDocument doc = JsonDocument.Parse(res);
+        Assert.Equal("2025-03-26", doc.RootElement.GetProperty("result").GetProperty("protocolVersion").GetString());
+    }
+
+    [Fact]
+    public async Task The_tool_list_changed_capability_is_off_unless_something_can_send_it()
+    {
+        string res = await NewServer().HandleAsync("""{"jsonrpc":"2.0","id":1,"method":"initialize"}""");
+        using JsonDocument doc = JsonDocument.Parse(res);
+        JsonElement tools = doc.RootElement.GetProperty("result").GetProperty("capabilities").GetProperty("tools");
+
+        // Advertising it without delivering is worse than not advertising: the client stops
+        // re-listing, waits for a notice that never comes, and works from a stale tool list with
+        // no error anywhere to explain why.
+        Assert.False(tools.TryGetProperty("listChanged", out _));
+
+        McpToolServer promising = new() { ServerName = "x", NotifiesToolListChanged = true };
+        using JsonDocument opted = JsonDocument.Parse(
+            await promising.HandleAsync("""{"jsonrpc":"2.0","id":1,"method":"initialize"}"""));
+        Assert.True(opted.RootElement.GetProperty("result").GetProperty("capabilities")
+            .GetProperty("tools").GetProperty("listChanged").GetBoolean());
+    }
+
+    [Fact]
+    public async Task A_batched_request_is_refused_rather_than_taking_the_transport_down()
+    {
+        // TryGetProperty on a JSON array throws InvalidOperationException, not JsonException, so
+        // a batch body used to escape the parse-error catch entirely. Batching left the protocol
+        // in 2025-06-18; refusing it as an Invalid Request is both correct and actionable.
+        string res = await NewServer().HandleAsync(
+            """[{"jsonrpc":"2.0","id":1,"method":"initialize"}]""");
+
+        using JsonDocument doc = JsonDocument.Parse(res);
+        Assert.Equal(-32600, doc.RootElement.GetProperty("error").GetProperty("code").GetInt32());
+    }
+
+    [Fact]
+    public void Notifications_are_told_apart_from_requests()
+    {
+        // Both hosts route on this, so it is worth asserting directly rather than only through
+        // the transports that consume it.
+        Assert.True(McpToolServer.ExpectsResponse("""{"jsonrpc":"2.0","id":1,"method":"initialize"}"""));
+        Assert.False(McpToolServer.ExpectsResponse("""{"jsonrpc":"2.0","method":"notifications/initialized"}"""));
+
+        // Malformed input still gets the parse error, which is the difference between a client
+        // that reports a bad request and one that hangs waiting.
+        Assert.True(McpToolServer.ExpectsResponse("{not json"));
+
+        Assert.True(McpToolServer.IsInitialize("""{"jsonrpc":"2.0","id":1,"method":"initialize"}"""));
+        Assert.False(McpToolServer.IsInitialize("""{"jsonrpc":"2.0","id":1,"method":"tools/list"}"""));
+        Assert.False(McpToolServer.IsInitialize("{not json"));
+    }
+
+    [Fact]
     public async Task Tools_list_returns_the_generated_schema()
     {
         string res = await NewServer().HandleAsync("""{"jsonrpc":"2.0","id":2,"method":"tools/list"}""");
