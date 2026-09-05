@@ -30,10 +30,34 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="NextMonth" xml:space="preserve">
-    <value>Next month</value>
+  <data name="Document" xml:space="preserve">
+    <value>Document</value>
   </data>
-  <data name="PreviousMonth" xml:space="preserve">
-    <value>Previous month</value>
+  <data name="DownloadDocumentAsDocx" xml:space="preserve">
+    <value>Télécharger le document au format .docx</value>
+  </data>
+  <data name="DownloadDocx" xml:space="preserve">
+    <value>Télécharger .docx</value>
+  </data>
+  <data name="Find" xml:space="preserve">
+    <value>Rechercher</value>
+  </data>
+  <data name="FindReplace" xml:space="preserve">
+    <value>Rechercher et remplacer</value>
+  </data>
+  <data name="FindReplace2" xml:space="preserve">
+    <value>Rechercher et remplacer</value>
+  </data>
+  <data name="MatchCase" xml:space="preserve">
+    <value>Respecter la casse</value>
+  </data>
+  <data name="ReplaceWith" xml:space="preserve">
+    <value>Remplacer par</value>
+  </data>
+  <data name="StatsSaved" xml:space="preserve">
+    <value>Toutes les modifications sont enregistrées · {0:N0} mots · {1:N0} caractères · {2:N0} paragraphes</value>
+  </data>
+  <data name="StatsUnsaved" xml:space="preserve">
+    <value>Modifications non enregistrées · {0:N0} mots · {1:N0} caractères · {2:N0} paragraphes</value>
   </data>
 </root>
