@@ -87,8 +87,11 @@ public sealed class AiSecurityTests
 
         Assert.Equal(["Name"], prompt.Arguments.Select(a => a.Name));
 
+        // Concatenated, not an interpolated raw string: this JSON ends in "}} , which a $$"""
+        // literal reads as an interpolation hole rather than as content.
         string res = await new McpToolServer().Add(prompt).HandleAsync(
-            $$"""{"jsonrpc":"2.0","id":1,"method":"prompts/get","params":{"name":"{{prompt.Name}}"}}""");
+            "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"prompts/get\",\"params\":{\"name\":\""
+            + prompt.Name + "\"}}");
 
         using JsonDocument doc = JsonDocument.Parse(res);
         string text = doc.RootElement.GetProperty("result").GetProperty("messages")[0]

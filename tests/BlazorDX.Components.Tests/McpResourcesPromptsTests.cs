@@ -51,6 +51,14 @@ public sealed class McpResourcesPromptsTests
         return doc.RootElement.Clone();
     }
 
+    // Built by concatenation rather than an interpolated raw string: the JSON ends in "}} , which
+    // a $$""" literal reads as an interpolation hole rather than as content.
+    private static string PromptGet(string name, string? argumentsJson = null) =>
+        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"prompts/get\",\"params\":{\"name\":\""
+        + name + "\""
+        + (argumentsJson is null ? string.Empty : ",\"arguments\":" + argumentsJson)
+        + "}}";
+
     // ---- capabilities ---------------------------------------------------------------------
 
     [Fact]
@@ -161,8 +169,7 @@ public sealed class McpResourcesPromptsTests
         Assert.Equal(prompt.Name, one.GetProperty("name").GetString());
         Assert.Equal(prompt.Arguments.Count, one.GetProperty("arguments").GetArrayLength());
 
-        JsonElement got = await ResultOf(server,
-            $$"""{"jsonrpc":"2.0","id":1,"method":"prompts/get","params":{"name":"{{prompt.Name}}"}}""");
+        JsonElement got = await ResultOf(server, PromptGet(prompt.Name));
         JsonElement message = got.GetProperty("result").GetProperty("messages")[0];
 
         Assert.Equal("user", message.GetProperty("role").GetString());
@@ -178,8 +185,7 @@ public sealed class McpResourcesPromptsTests
     {
         FormAiPrompt<MeetingRequest> prompt = new(new MeetingRequestFormModel());
 
-        JsonElement got = await ResultOf(Bare().Add(prompt),
-            $$"""{"jsonrpc":"2.0","id":1,"method":"prompts/get","params":{"name":"{{prompt.Name}}"}}""");
+        JsonElement got = await ResultOf(Bare().Add(prompt), PromptGet(prompt.Name));
         string text = got.GetProperty("result").GetProperty("messages")[0]
             .GetProperty("content").GetProperty("text").GetString()!;
 
@@ -196,8 +202,7 @@ public sealed class McpResourcesPromptsTests
 
         // A client collecting a number sends a number. Ignoring it would silently lose what the
         // user already typed and make the assistant ask again.
-        JsonElement got = await ResultOf(Bare().Add(prompt),
-            $$"""{"jsonrpc":"2.0","id":1,"method":"prompts/get","params":{"name":"{{prompt.Name}}","arguments":{"Attendees":4}}}""");
+        JsonElement got = await ResultOf(Bare().Add(prompt), PromptGet(prompt.Name, """{"Attendees":4}"""));
 
         string text = got.GetProperty("result").GetProperty("messages")[0]
             .GetProperty("content").GetProperty("text").GetString()!;
