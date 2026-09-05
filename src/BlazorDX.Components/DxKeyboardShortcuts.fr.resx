@@ -30,10 +30,13 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="NextMonth" xml:space="preserve">
-    <value>Next month</value>
+  <data name="Close" xml:space="preserve">
+    <value>Fermer</value>
   </data>
-  <data name="PreviousMonth" xml:space="preserve">
-    <value>Previous month</value>
+  <data name="NoShortcuts" xml:space="preserve">
+    <value>Aucun raccourci</value>
+  </data>
+  <data name="ShortcutsTitle" xml:space="preserve">
+    <value>Raccourcis clavier</value>
   </data>
 </root>

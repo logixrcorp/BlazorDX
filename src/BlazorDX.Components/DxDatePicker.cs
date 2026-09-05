@@ -46,7 +46,10 @@ public sealed class DxDatePicker : DatePickerPrimitive
         builder.OpenElement(14, "span");
         builder.AddAttribute(15, "class", "dx-date-icon");
         builder.AddAttribute(16, "aria-hidden", "true");
-        builder.AddContent(17, S["UFC", "\U0001F4C5"]);
+        // A calendar glyph carries no language, and it is aria-hidden besides. The automated pass
+        // wrapped it by mistake: it tests the source literal for letters, and the escape sequence
+        // "\U0001F4C5" is full of them — which is also where the nonsense key "UFC" came from.
+        builder.AddContent(17, "\U0001F4C5");
         builder.CloseElement();
 
         builder.CloseElement();

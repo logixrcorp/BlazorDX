@@ -30,10 +30,19 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="NextMonth" xml:space="preserve">
-    <value>Next month</value>
+  <data name="EmptyOutput" xml:space="preserve">
+    <value>Choisissez des paramètres et lancez le rapport pour voir les résultats ici.</value>
   </data>
-  <data name="PreviousMonth" xml:space="preserve">
-    <value>Previous month</value>
+  <data name="ExportReport" xml:space="preserve">
+    <value>Exporter ce rapport</value>
+  </data>
+  <data name="ReportOutput" xml:space="preserve">
+    <value>Résultat de {0}</value>
+  </data>
+  <data name="ReportParameters" xml:space="preserve">
+    <value>Paramètres du rapport</value>
+  </data>
+  <data name="RunReport" xml:space="preserve">
+    <value>Lancer le rapport</value>
   </data>
 </root>

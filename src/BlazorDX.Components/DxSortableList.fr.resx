@@ -30,10 +30,13 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="NextMonth" xml:space="preserve">
-    <value>Next month</value>
+  <data name="MoveDown" xml:space="preserve">
+    <value>Descendre {0}</value>
   </data>
-  <data name="PreviousMonth" xml:space="preserve">
-    <value>Previous month</value>
+  <data name="MoveUp" xml:space="preserve">
+    <value>Monter {0}</value>
+  </data>
+  <data name="PressAltPlusArrow" xml:space="preserve">
+    <value>{0}. Appuyez sur Alt plus les touches fléchées pour réorganiser.</value>
   </data>
 </root>

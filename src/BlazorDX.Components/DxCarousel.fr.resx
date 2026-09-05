@@ -30,10 +30,19 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="NextMonth" xml:space="preserve">
-    <value>Next month</value>
+  <data name="Carousel" xml:space="preserve">
+    <value>carrousel</value>
   </data>
-  <data name="PreviousMonth" xml:space="preserve">
-    <value>Previous month</value>
+  <data name="CarouselLabel" xml:space="preserve">
+    <value>Carrousel</value>
+  </data>
+  <data name="GoToSlide" xml:space="preserve">
+    <value>Aller à la diapositive {0}</value>
+  </data>
+  <data name="Slide" xml:space="preserve">
+    <value>diapositive</value>
+  </data>
+  <data name="SlidePosition" xml:space="preserve">
+    <value>{0} sur {1}</value>
   </data>
 </root>
