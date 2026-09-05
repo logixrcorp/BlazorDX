@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="CalendarView" xml:space="preserve">
+    <value>Kalenderansicht</value>
+  </data>
+  <data name="GoToToday" xml:space="preserve">
+    <value>Zu heute wechseln</value>
+  </data>
+  <data name="GridLabel" xml:space="preserve">
+    <value>Terminplan {0}</value>
+  </data>
+  <data name="NextDay" xml:space="preserve">
+    <value>Nächster Tag</value>
+  </data>
+  <data name="NextMonth" xml:space="preserve">
+    <value>Nächster Monat</value>
+  </data>
+  <data name="NextWeek" xml:space="preserve">
+    <value>Nächste Woche</value>
+  </data>
+  <data name="PreviousDay" xml:space="preserve">
+    <value>Vorheriger Tag</value>
+  </data>
+  <data name="PreviousMonth" xml:space="preserve">
+    <value>Vorheriger Monat</value>
+  </data>
+  <data name="PreviousWeek" xml:space="preserve">
+    <value>Vorherige Woche</value>
+  </data>
+  <data name="TimeRange" xml:space="preserve">
+    <value>{0} bis {1}</value>
+  </data>
+  <data name="Today" xml:space="preserve">
+    <value>Heute</value>
+  </data>
+  <data name="ViewAnnouncement" xml:space="preserve">
+    <value>Ansicht {0}, {1}</value>
+  </data>
+  <data name="ViewDay" xml:space="preserve">
+    <value>Tag</value>
+  </data>
+  <data name="ViewMonth" xml:space="preserve">
+    <value>Monat</value>
+  </data>
+  <data name="ViewWeek" xml:space="preserve">
+    <value>Woche</value>
+  </data>
+</root>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ComboJoiner" xml:space="preserve">
+    <value> plus </value>
+  </data>
+  <data name="KeyCapAlt" xml:space="preserve">
+    <value>Alt</value>
+  </data>
+  <data name="KeyCapControl" xml:space="preserve">
+    <value>Strg</value>
+  </data>
+  <data name="KeyCapDelete" xml:space="preserve">
+    <value>Entf</value>
+  </data>
+  <data name="KeyCapEnter" xml:space="preserve">
+    <value>Eingabe</value>
+  </data>
+  <data name="KeyCapEscape" xml:space="preserve">
+    <value>Esc</value>
+  </data>
+  <data name="KeyCapShift" xml:space="preserve">
+    <value>Umschalt</value>
+  </data>
+  <data name="KeyCapSpace" xml:space="preserve">
+    <value>Leer</value>
+  </data>
+  <data name="KeyCapTab" xml:space="preserve">
+    <value>Tab</value>
+  </data>
+  <data name="SpokenAlt" xml:space="preserve">
+    <value>Alt</value>
+  </data>
+  <data name="SpokenBackspace" xml:space="preserve">
+    <value>Rücktaste</value>
+  </data>
+  <data name="SpokenCommand" xml:space="preserve">
+    <value>Befehl</value>
+  </data>
+  <data name="SpokenControl" xml:space="preserve">
+    <value>Steuerung</value>
+  </data>
+  <data name="SpokenDownArrow" xml:space="preserve">
+    <value>Pfeil nach unten</value>
+  </data>
+  <data name="SpokenLeftArrow" xml:space="preserve">
+    <value>Pfeil nach links</value>
+  </data>
+  <data name="SpokenRightArrow" xml:space="preserve">
+    <value>Pfeil nach rechts</value>
+  </data>
+  <data name="SpokenShift" xml:space="preserve">
+    <value>Umschalttaste</value>
+  </data>
+  <data name="SpokenUpArrow" xml:space="preserve">
+    <value>Pfeil nach oben</value>
+  </data>
+</root>

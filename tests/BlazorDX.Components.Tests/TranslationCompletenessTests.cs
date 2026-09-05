@@ -6,8 +6,8 @@ using Xunit;
 namespace BlazorDX.Components.Tests;
 
 /// <summary>
-/// Every invariant <c>.resx</c> has a French counterpart, and the two agree on the things a
-/// translation must not change.
+/// Every invariant <c>.resx</c> is complete in every language the library ships, and each
+/// translation agrees with the English on the things a translation must not change.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -31,9 +31,10 @@ namespace BlazorDX.Components.Tests;
 ///   </item>
 /// </list>
 /// <para>
-/// What this deliberately does not check is whether French and English differ. They legitimately
+/// What this deliberately does not check is whether a translation differs from the English. They legitimately
 /// coincide for <i>Message</i>, <i>Documents</i>, <i>Actions</i>, <i>Options</i>, <i>Pagination</i>,
-/// <i>Total</i>, <i>Normal</i>, <i>Style</i>, <i>Saturation</i> and <i>Document</i>, and a rule
+/// <i>Total</i>, <i>Normal</i>, <i>Style</i>, <i>Saturation</i> and <i>Document</i> in French, and
+/// for <i>Name</i>, <i>Alt</i>, <i>Tab</i>, <i>Operator</i> and <i>Sepia</i> in German. A rule
 /// demanding a difference would only invite someone to invent one.
 /// </para>
 /// </remarks>
@@ -44,42 +45,53 @@ public sealed class TranslationCompletenessTests
     private static readonly Regex Placeholder = new(@"\{\d+(?::[^}]*)?\}", RegexOptions.Compiled);
 
     [Fact]
-    public void Every_resource_has_a_complete_French_counterpart()
+    public void Every_resource_is_complete_in_every_shipped_language()
     {
         List<string> problems = [];
+        string[] cultures = ShippedCultures();
         int compared = 0;
+
+        // Inferred, not hardcoded: the shipped set is whatever culture files exist, and every
+        // invariant resource must then carry all of them. Translating a new string into French
+        // and forgetting German fails here rather than shipping one English string to Germany.
+        Assert.True(cultures.Length > 0, "No culture-qualified .resx files found at all.");
 
         foreach (string invariant in InvariantResources())
         {
-            string french = invariant[..^".resx".Length] + ".fr.resx";
             string name = Path.GetFileName(invariant);
-
-            if (!File.Exists(french))
-            {
-                problems.Add($"{name} has no .fr.resx. Every string the library ships is "
-                    + "translated; a new resource file needs one too (docs/localization.md).");
-                continue;
-            }
-
             Dictionary<string, string> source = Read(invariant);
-            Dictionary<string, string> target = Read(french);
 
-            foreach (string key in source.Keys.Where(k => !target.ContainsKey(k)).OrderBy(k => k))
+            foreach (string culture in cultures)
             {
-                problems.Add($"{name}[\"{key}\"] has no French value, so it renders in English "
-                    + $"to a French user: \"{source[key]}\"");
-            }
+                string translated = $"{invariant[..^".resx".Length]}.{culture}.resx";
 
-            foreach (string key in target.Keys.Where(k => !source.ContainsKey(k)).OrderBy(k => k))
-            {
-                problems.Add($"{name}[\"{key}\"] exists only in French — the English string moved "
-                    + "or was removed, and the translation is now dead weight.");
-            }
+                if (!File.Exists(translated))
+                {
+                    problems.Add($"{name} has no .{culture}.resx. Every string the library ships is "
+                        + $"translated into {string.Join(", ", cultures)}; a new resource file needs "
+                        + "one per language (docs/localization.md).");
+                    continue;
+                }
 
-            foreach (string key in source.Keys.Where(target.ContainsKey).OrderBy(k => k))
-            {
-                compared++;
-                CompareOne(name, key, source[key], target[key], problems);
+                Dictionary<string, string> target = Read(translated);
+
+                foreach (string key in source.Keys.Where(k => !target.ContainsKey(k)).OrderBy(k => k))
+                {
+                    problems.Add($"{name}[\"{key}\"] has no {culture} value, so it renders in English "
+                        + $"to that user: \"{source[key]}\"");
+                }
+
+                foreach (string key in target.Keys.Where(k => !source.ContainsKey(k)).OrderBy(k => k))
+                {
+                    problems.Add($"{name}[\"{key}\"] exists only in {culture} — the English string "
+                        + "moved or was removed, and the translation is now dead weight.");
+                }
+
+                foreach (string key in source.Keys.Where(target.ContainsKey).OrderBy(k => k))
+                {
+                    compared++;
+                    CompareOne($"{name} [{culture}]", key, source[key], target[key], problems);
+                }
             }
         }
 
@@ -87,27 +99,27 @@ public sealed class TranslationCompletenessTests
         Assert.True(compared > 0, "No translated strings found. Have the .resx files moved?");
 
         Assert.True(problems.Count == 0,
-            "French resources do not line up with the invariant ones:" + Environment.NewLine
+            "Translated resources do not line up with the invariant ones:" + Environment.NewLine
             + string.Join(Environment.NewLine, problems.Select(p => "  " + p)));
     }
 
-    private static void CompareOne(string file, string key, string english, string french, List<string> problems)
+    private static void CompareOne(string file, string key, string english, string translated, List<string> problems)
     {
         string[] sourceHoles = [.. Placeholder.Matches(english).Select(m => m.Value).OrderBy(v => v, StringComparer.Ordinal)];
-        string[] targetHoles = [.. Placeholder.Matches(french).Select(m => m.Value).OrderBy(v => v, StringComparer.Ordinal)];
+        string[] targetHoles = [.. Placeholder.Matches(translated).Select(m => m.Value).OrderBy(v => v, StringComparer.Ordinal)];
 
         if (!sourceHoles.SequenceEqual(targetHoles, StringComparer.Ordinal))
         {
             problems.Add($"{file}[\"{key}\"] changes its placeholders, so the translated text loses "
                 + $"or misplaces its values.{Environment.NewLine}      en \"{english}\""
-                + $"{Environment.NewLine}      fr \"{french}\"");
+                + $"{Environment.NewLine}      ->  \"{translated}\"");
         }
 
-        if (StartsWithSpace(english) != StartsWithSpace(french) || EndsWithSpace(english) != EndsWithSpace(french))
+        if (StartsWithSpace(english) != StartsWithSpace(translated) || EndsWithSpace(english) != EndsWithSpace(translated))
         {
             problems.Add($"{file}[\"{key}\"] changes its leading or trailing space. These strings are "
                 + $"joined to adjacent markup, so the space is load-bearing.{Environment.NewLine}"
-                + $"      en \"{english}\"{Environment.NewLine}      fr \"{french}\"");
+                + $"      en \"{english}\"{Environment.NewLine}      ->  \"{translated}\"");
         }
     }
 
@@ -123,6 +135,24 @@ public sealed class TranslationCompletenessTests
                 data => data.Attribute("name")!.Value,
                 data => data.Element("value")?.Value ?? string.Empty,
                 StringComparer.Ordinal);
+
+    /// <summary>
+    /// The languages this library actually ships, read off the files rather than listed here.
+    /// </summary>
+    /// <remarks>
+    /// Keeping the list out of the test is what makes it catch the realistic mistake. A hardcoded
+    /// set has to be edited when a language is added, and whoever forgets to edit it also gets no
+    /// failure; inferring it means adding one <c>.de.resx</c> immediately demands the other 64.
+    /// </remarks>
+    private static string[] ShippedCultures() =>
+        [.. Directory.EnumerateFiles(Path.Combine(RepositoryRoot(), "src"), "*.resx", SearchOption.AllDirectories)
+            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .Select(path => Path.GetFileNameWithoutExtension(path))
+            .Where(name => name.Contains('.', StringComparison.Ordinal))
+            .Select(name => name[(name.LastIndexOf('.') + 1)..])
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(culture => culture, StringComparer.Ordinal)];
 
     private static IEnumerable<string> InvariantResources() =>
         Directory.EnumerateFiles(Path.Combine(RepositoryRoot(), "src"), "*.resx", SearchOption.AllDirectories)

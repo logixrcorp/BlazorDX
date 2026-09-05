@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="BlockStyleHeading1" xml:space="preserve">
+    <value>Überschrift 1</value>
+  </data>
+  <data name="BlockStyleHeading2" xml:space="preserve">
+    <value>Überschrift 2</value>
+  </data>
+  <data name="BlockStyleHeading3" xml:space="preserve">
+    <value>Überschrift 3</value>
+  </data>
+  <data name="BlockStyleNormal" xml:space="preserve">
+    <value>Standard</value>
+  </data>
+  <data name="CellShading" xml:space="preserve">
+    <value>Zellenschattierung</value>
+  </data>
+  <data name="FontFamily" xml:space="preserve">
+    <value>Schriftart</value>
+  </data>
+  <data name="FontFamilyShort" xml:space="preserve">
+    <value>Schrift</value>
+  </data>
+  <data name="FontSize" xml:space="preserve">
+    <value>Schriftgröße</value>
+  </data>
+  <data name="FontSizeShort" xml:space="preserve">
+    <value>Größe</value>
+  </data>
+  <data name="HighlightColor" xml:space="preserve">
+    <value>Hervorhebungsfarbe</value>
+  </data>
+  <data name="LineSpacing" xml:space="preserve">
+    <value>Zeilenabstand</value>
+  </data>
+  <data name="LineSpacingShort" xml:space="preserve">
+    <value>Abstand</value>
+  </data>
+  <data name="ParagraphStyle" xml:space="preserve">
+    <value>Absatzformat</value>
+  </data>
+  <data name="ParagraphStyleShort" xml:space="preserve">
+    <value>Format</value>
+  </data>
+  <data name="TextColor" xml:space="preserve">
+    <value>Textfarbe</value>
+  </data>
+  <data name="ToolAlignCenter" xml:space="preserve">
+    <value>Zentriert</value>
+  </data>
+  <data name="ToolAlignLeft" xml:space="preserve">
+    <value>Linksbündig</value>
+  </data>
+  <data name="ToolAlignRight" xml:space="preserve">
+    <value>Rechtsbündig</value>
+  </data>
+  <data name="ToolBold" xml:space="preserve">
+    <value>Fett</value>
+  </data>
+  <data name="ToolBoldGlyph" xml:space="preserve">
+    <value>F</value>
+  </data>
+  <data name="ToolBulletList" xml:space="preserve">
+    <value>Aufzählung</value>
+  </data>
+  <data name="ToolClearFormatting" xml:space="preserve">
+    <value>Formatierung entfernen</value>
+  </data>
+  <data name="ToolDecreaseIndent" xml:space="preserve">
+    <value>Einzug verkleinern</value>
+  </data>
+  <data name="ToolHeading" xml:space="preserve">
+    <value>Überschrift</value>
+  </data>
+  <data name="ToolHeadingGlyph" xml:space="preserve">
+    <value>Ü</value>
+  </data>
+  <data name="ToolIncreaseIndent" xml:space="preserve">
+    <value>Einzug vergrößern</value>
+  </data>
+  <data name="ToolInsertLink" xml:space="preserve">
+    <value>Link einfügen</value>
+  </data>
+  <data name="ToolItalic" xml:space="preserve">
+    <value>Kursiv</value>
+  </data>
+  <data name="ToolItalicGlyph" xml:space="preserve">
+    <value>K</value>
+  </data>
+  <data name="ToolJustify" xml:space="preserve">
+    <value>Blocksatz</value>
+  </data>
+  <data name="ToolNumberedList" xml:space="preserve">
+    <value>Nummerierung</value>
+  </data>
+  <data name="ToolStrikethrough" xml:space="preserve">
+    <value>Durchgestrichen</value>
+  </data>
+  <data name="ToolStrikethroughGlyph" xml:space="preserve">
+    <value>D</value>
+  </data>
+  <data name="ToolSubscript" xml:space="preserve">
+    <value>Tiefgestellt</value>
+  </data>
+  <data name="ToolSuperscript" xml:space="preserve">
+    <value>Hochgestellt</value>
+  </data>
+  <data name="ToolUnderline" xml:space="preserve">
+    <value>Unterstrichen</value>
+  </data>
+  <data name="ToolUnderlineGlyph" xml:space="preserve">
+    <value>U</value>
+  </data>
+  <data name="ToolbarLabel" xml:space="preserve">
+    <value>Formatierung</value>
+  </data>
+</root>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Brightness" xml:space="preserve">
+    <value>Helligkeit</value>
+  </data>
+  <data name="CanvasLabel" xml:space="preserve">
+    <value>Vorschau des bearbeiteten Bildes</value>
+  </data>
+  <data name="Contrast" xml:space="preserve">
+    <value>Kontrast</value>
+  </data>
+  <data name="DownloadGlyph" xml:space="preserve">
+    <value>⭳ Herunterladen</value>
+  </data>
+  <data name="DownloadImage" xml:space="preserve">
+    <value>Bild herunterladen</value>
+  </data>
+  <data name="EmptyState" xml:space="preserve">
+    <value>Bild öffnen, um zu beginnen</value>
+  </data>
+  <data name="FlipHorizontal" xml:space="preserve">
+    <value>Horizontal spiegeln</value>
+  </data>
+  <data name="FlipVertical" xml:space="preserve">
+    <value>Vertikal spiegeln</value>
+  </data>
+  <data name="Grayscale" xml:space="preserve">
+    <value>Graustufen</value>
+  </data>
+  <data name="Invert" xml:space="preserve">
+    <value>Invertieren</value>
+  </data>
+  <data name="OpenImage" xml:space="preserve">
+    <value>Bild öffnen</value>
+  </data>
+  <data name="ReplaceImage" xml:space="preserve">
+    <value>Bild ersetzen</value>
+  </data>
+  <data name="ResetEdits" xml:space="preserve">
+    <value>Bearbeitungen zurücksetzen</value>
+  </data>
+  <data name="ResetGlyph" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="RotateLeft" xml:space="preserve">
+    <value>Nach links drehen</value>
+  </data>
+  <data name="RotateRight" xml:space="preserve">
+    <value>Nach rechts drehen</value>
+  </data>
+  <data name="Saturation" xml:space="preserve">
+    <value>Sättigung</value>
+  </data>
+  <data name="Sepia" xml:space="preserve">
+    <value>Sepia</value>
+  </data>
+</root>
