@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Document" xml:space="preserve">
+    <value>Dokument</value>
+  </data>
+  <data name="DownloadDocumentAsDocx" xml:space="preserve">
+    <value>Dokument als .docx-Datei herunterladen</value>
+  </data>
+  <data name="DownloadDocx" xml:space="preserve">
+    <value>.docx herunterladen</value>
+  </data>
+  <data name="Find" xml:space="preserve">
+    <value>Suchen</value>
+  </data>
+  <data name="FindReplace" xml:space="preserve">
+    <value>Suchen und Ersetzen</value>
+  </data>
+  <data name="FindReplace2" xml:space="preserve">
+    <value>Suchen und Ersetzen</value>
+  </data>
+  <data name="MatchCase" xml:space="preserve">
+    <value>Groß-/Kleinschreibung beachten</value>
+  </data>
+  <data name="ReplaceWith" xml:space="preserve">
+    <value>Ersetzen durch</value>
+  </data>
+  <data name="StatsSaved" xml:space="preserve">
+    <value>Alle Änderungen gespeichert · {0:N0} Wörter · {1:N0} Zeichen · {2:N0} Absätze</value>
+  </data>
+  <data name="StatsUnsaved" xml:space="preserve">
+    <value>Nicht gespeicherte Änderungen · {0:N0} Wörter · {1:N0} Zeichen · {2:N0} Absätze</value>
+  </data>
+</root>

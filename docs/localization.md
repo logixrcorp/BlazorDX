@@ -248,11 +248,14 @@ Flip the showcase with `?dir=rtl` on any route to check the result by eye.
 
 ## 3. Translations
 
-Every string ships in **English and French**: 65 invariant `.resx` files, 65 `.fr.resx`
-counterparts, 291 strings.
+Every string ships in **English, French and German**: 65 invariant `.resx` files, 65 per
+language, 291 strings each — 582 translations.
 
-`TranslationCompletenessTests` holds the two in step. It checks the three things a translation
-must not change, all of which fail invisibly:
+`TranslationCompletenessTests` holds them in step. **It infers the shipped languages from the
+files rather than listing them**, so adding one `.de.resx` immediately demands the other 64 — a
+hardcoded list has to be edited when a language is added, and whoever forgets to edit it also
+gets no failure. It checks the three things a translation must not change, all of which fail
+invisibly:
 
 - **A missing key** falls back to English. Nothing looks broken; a French user just gets one
   English string among the rest.
@@ -263,37 +266,48 @@ must not change, all of which fail invisibly:
 - **Edge whitespace**, because several strings are sentence fragments joined to a link in
   markup. `"Le PDF ne s'affiche pas ? "` needs its trailing space.
 
-It deliberately does *not* require French and English to differ. They legitimately coincide for
-*Message*, *Documents*, *Actions*, *Options*, *Pagination*, *Total*, *Normal*, *Style*,
-*Saturation* and *Document*; a rule demanding a difference would only invite someone to invent
-one.
+It deliberately does *not* require a translation to differ from the English. They legitimately
+coincide for *Message*, *Documents*, *Actions*, *Options*, *Pagination*, *Total*, *Normal*,
+*Style*, *Saturation* and *Document* in French, and for *Name*, *Alt*, *Tab*, *Operator* and
+*Sepia* in German; a rule demanding a difference would only invite someone to invent one.
 
-`FrenchRenderingTests` covers what a file check cannot: that the satellite assemblies are built
-and found. Without it the resources could line up perfectly and still render in English. It
-also pins the fallback chain by rendering under `de-DE` — an unshipped language — and asserting
-the **English** word rather than the absence of French, because a broken lookup returns the
-*key*, and a key like `Loading` looks almost right.
+`FrenchRenderingTests` and `GermanRenderingTests` cover what a file check cannot: that the
+satellite assemblies are built and found. Without them the resources could line up perfectly and
+still render in English. **Each language needs its own**, because each is packaged separately and
+can fail on its own.
+
+They also pin the fallback chain by rendering under an unshipped language and asserting the
+**English** word rather than the absence of a translation — a broken lookup returns the *key*,
+and a key like `Loading` looks almost right. That test named `de-DE` until German shipped, at
+which point it was asserting that a translated language renders in English, and passing anyway
+because the expected string was the same either way. It now names `ja-JP`, and the culture it
+names has to stay one the library genuinely does not translate.
 
 ### Conventions
 
 - Placeholders are preserved exactly, specifiers included.
 - Glyphs travel with their word (`⭳ Télécharger`, `← Précédent`) so a language can move the
   arrow.
-- French spacing: a no-break space before `:` and inside `« »`, so it cannot wrap away from the
-  word it belongs to.
-- Keyboard names follow the French convention — `Maj`, `Échap`, `Suppr`, `Entrée`,
-  `Retour arrière` — and the rich-text mnemonics follow the French word, so Bold's cap is **G**
-  for *Gras*, not **B**.
+- Keyboard names follow each language's own convention rather than translating the English
+  word: `Maj`/`Échap`/`Suppr`/`Entrée` in French, `Strg`/`Umschalt`/`Entf`/`Eingabe` in German.
+  The rich-text mnemonic caps follow the translated word too — Bold is **G** for *Gras* and
+  **F** for *Fett*, never **B**.
+- Punctuation is per-language: French takes a no-break space before `:` and uses `« »`; German
+  takes neither and uses `„ “`.
 - Product and format names are not translated: Power BI, PDF, CSV, Excel, Markdown, QR,
   EAN-13, Code 128, `.docx`, Sankey.
 
 ### Adding another language
 
-Copy the `.fr.resx` files to `.<culture>.resx`, translate the values, and the two tests above
-start covering it — `TranslationCompletenessTests` currently checks French specifically, so
-widen its counterpart lookup at the same time. Nothing else needs to change: the resource
-lookup, the fallback chain and the AOT satellite-assembly path are all culture-agnostic
-already.
+Copy the `.fr.resx` files to `.<culture>.resx` and translate the values.
+`TranslationCompletenessTests` picks the language up on its own — it reads the shipped set off
+the files — so the moment one file exists, the missing 64 fail the build. Add a rendering test
+for the new language alongside the French and German ones, since each language's satellite
+assembly can fail independently, and check whether the unshipped culture in
+`FrenchRenderingTests` is still unshipped.
+
+Nothing else needs to change: the resource lookup, the fallback chain and the AOT
+satellite-assembly path are all culture-agnostic already.
 
 ---
 
