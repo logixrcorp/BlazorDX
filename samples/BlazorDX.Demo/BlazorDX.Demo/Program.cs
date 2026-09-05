@@ -277,10 +277,18 @@ app.MapMethods("/mcp", ["POST", "GET", "DELETE"], async (HttpContext http) =>
         http.Response.Headers.CacheControl = "no-cache";
         await http.Response.Body.FlushAsync(http.RequestAborted);
 
-        await foreach (string message in result.Stream.ReadAllAsync(http.RequestAborted))
+        try
         {
-            await http.Response.WriteAsync(McpSse.Frame(message), http.RequestAborted);
-            await http.Response.Body.FlushAsync(http.RequestAborted);
+            await foreach (string message in result.Stream.ReadAllAsync(http.RequestAborted))
+            {
+                await http.Response.WriteAsync(McpSse.Frame(message), http.RequestAborted);
+                await http.Response.Body.FlushAsync(http.RequestAborted);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // The client hung up. That is how a listening stream normally ends — letting the
+            // cancellation escape would log every ordinary disconnect as a server error.
         }
 
         return Results.Empty;
