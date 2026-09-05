@@ -3,6 +3,17 @@ name: Package
 # Builds and packs the BlazorDX NuGet packages on a version tag and uploads them
 # as downloadable workflow artifacts.
 #
+# THE TAG IS THE VERSION. `v0.6.0` packs 0.6.0, whatever Directory.Build.props says.
+# Previously the version came only from the props file, so a v0.6.0 tag against a
+# 0.5.0 props packed 0.5.0 — the tag name had no effect at all. Nothing failed; you
+# found out by reading the filenames, or by having nuget.org reject the upload as a
+# duplicate. That cost three release cycles on 2026-09-05, so the version is now
+# taken from the tag and the packages are verified against it before upload.
+#
+# Directory.Build.props still carries the version for local builds and for a manual
+# workflow_dispatch, and the release commit should still bump it — but a release no
+# longer depends on that being right.
+#
 # It deliberately does NOT publish to nuget.org and requires NO secrets / API key:
 # publishing is a manual step by design (download the `nupkg` artifact from this
 # run, or run `Build-Release.ps1` locally, then `dotnet nuget push` yourself).
@@ -40,11 +51,54 @@ jobs:
         run: npm ci
         working-directory: src/BlazorDX.Interop.Ts
 
+      # Passed to BOTH build and pack. Pack runs --no-build, so giving it a version the
+      # build did not use would stamp 0.6.0 on a package containing 0.5.0 assemblies.
+      - name: Resolve the version from the tag
+        id: version
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            version="${GITHUB_REF_NAME#v}"
+            echo "Packing $version (from tag $GITHUB_REF_NAME)"
+            echo "args=-p:Version=$version" >> "$GITHUB_OUTPUT"
+            echo "expected=$version" >> "$GITHUB_OUTPUT"
+          else
+            echo "Manual dispatch: using the version in Directory.Build.props"
+            echo "args=" >> "$GITHUB_OUTPUT"
+            echo "expected=" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build (warnings are errors)
-        run: dotnet build BlazorDX.slnx -c Release
+        run: dotnet build BlazorDX.slnx -c Release ${{ steps.version.outputs.args }}
 
       - name: Pack (libraries only; demo/tests are not packable)
-        run: dotnet pack BlazorDX.slnx -c Release --no-build -o artifacts
+        run: dotnet pack BlazorDX.slnx -c Release --no-build -o artifacts ${{ steps.version.outputs.args }}
+
+      # Reads each .nuspec rather than trusting the filename: the filename comes from the
+      # pack step, but the .nuspec is what nuget.org actually reads, and a half-applied
+      # version shows up as a dependency still pointing at the previous release.
+      - name: Verify every package carries the tag's version
+        if: steps.version.outputs.expected != ''
+        run: |
+          expected='${{ steps.version.outputs.expected }}'
+          failed=0
+          for pkg in artifacts/*.nupkg; do
+            spec=$(unzip -p "$pkg" '*.nuspec')
+            actual=$(printf '%s' "$spec" | sed -n 's:.*<version>\(.*\)</version>.*:\1:p' | head -1)
+            if [ "$actual" != "$expected" ]; then
+              echo "::error::$(basename "$pkg") declares version '$actual', expected '$expected'"
+              failed=1
+            fi
+            for dep in $(printf '%s' "$spec" \
+                | grep -o '<dependency id="BlazorDX[^"]*" version="[^"]*"' \
+                | sed 's:.*version="\([^"]*\)".*:\1:'); do
+              case "$dep" in
+                *"$expected"*) ;;
+                *) echo "::error::$(basename "$pkg") depends on BlazorDX $dep, not $expected"; failed=1 ;;
+              esac
+            done
+          done
+          [ "$failed" = 0 ] && echo "All packages declare $expected."
+          exit $failed
 
       - name: Upload packages as a build artifact (for manual publishing)
         uses: actions/upload-artifact@v7
