@@ -106,7 +106,12 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
     {
         Skip.IfNot(fx.Ready, fx.SkipReason);
         IPage page = await fx.NewPageAsync();
-        await page.GotoAsync($"{fx.BaseUrl}{route}", new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle, Timeout = 60_000 });
+        // Load, not NetworkIdle. E2EHelpers already documents the hazard: a page that opens a
+        // persistent connection during its initial render never goes network-idle, so the wait
+        // burns its full 60s timeout on that route. That was survivable at 22 routes and is not
+        // at 58 — the WebKit job ran for 38 minutes and was killed by the runner. Nothing is lost,
+        // because the readiness signal that actually matters is the hydration wait just below.
+        await page.GotoAsync($"{fx.BaseUrl}{route}", new PageGotoOptions { WaitUntil = WaitUntilState.Load, Timeout = 60_000 });
 
         // Let interactive components hydrate so axe inspects the live DOM, not just the prerender.
         try
@@ -172,7 +177,10 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
     private async Task<(double Value, double Caret, string Direction)> MeasureSelectTriggerAsync(string route)
     {
         IPage page = await fx.NewPageAsync();
-        await page.GotoAsync($"{fx.BaseUrl}{route}", new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle, Timeout = 60_000 });
+
+        // Load, for the same reason as the axe theory above; the hydration wait that follows is
+        // what this measurement actually depends on.
+        await page.GotoAsync($"{fx.BaseUrl}{route}", new PageGotoOptions { WaitUntil = WaitUntilState.Load, Timeout = 60_000 });
 
         // /select is @rendermode InteractiveWebAssembly: the server-prerendered markup is thrown
         // away and re-created when the WASM runtime finishes booting. Waiting for an element and
