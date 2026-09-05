@@ -7,15 +7,24 @@ BlazorDX declarations as AI tools over **stdio**: a `[DxFormModel]` and a `[Grid
 and read.
 
 ```
-                                        ┌─► query_stock       (read)  ← [GridRow] + IGridDataSource
+                                        ┌─► query_stock       tool     ← [GridRow] + IGridDataSource
+                                        ├─► schedule_meeting  tool     ← [DxFormModel]
 assistant ──spawns──► dotnet run ──MCP──┤
-                                        └─► schedule_meeting  (write) ← [DxFormModel]
+                                        ├─► stock://low       resource ← the same IGridDataSource
+                                        └─► schedule_meeting  prompt   ← the same [DxFormModel]
 ```
 
-The pair is deliberate. A tool that only writes makes an assistant guess at its arguments; a tool
-that only reads leaves it narrating instead of acting. Together they are the whole loop: look
+Two tools, one resource, one prompt — and only two declarations behind them.
+
+The tool pair is deliberate. A tool that only writes makes an assistant guess at its arguments; a
+tool that only reads leaves it narrating instead of acting. Together they are the whole loop: look
 something up in the same data source the grid binds to, then act on it through the same validation
 the form enforces.
+
+The resource and the prompt are the other two directions. A **resource** is read, not called —
+attached by the user rather than chosen by the model; here it renders the same stock rows as a
+report. A **prompt** is invoked by the *user* as a slash-command: it states the task, lists the
+form's real field rules, and names the tool that submits.
 
 ## Run it
 
@@ -36,6 +45,11 @@ printf '%s\n%s\n%s\n' \
 
 You'll get the `initialize` result, a `tools/list` containing both tools with their JSON-Schemas,
 and a page of stock rows carrying the full `totalCount` alongside the three returned.
+
+Swap the last line for `resources/list`, `resources/read` (`{"uri":"stock://low"}`), `prompts/list`
+or `prompts/get` to see the other two surfaces. Note that `initialize` advertises `resources` and
+`prompts` capabilities **only** because this server registers some — a server with none says so,
+rather than making every client ask and get an empty list.
 
 ## What the model can and cannot see
 
@@ -86,7 +100,12 @@ var server = new McpToolServer { ServerName = "BlazorDX MCP sample" }
         "Warehouse stock levels. Filter by SKU, product name or warehouse…",
         new StockRowGridAccessor(),             // source-generated accessor
         new StockDataSource(),                  // the same IGridDataSource a grid would bind to
-        maxRows: 25));
+        maxRows: 25))
+    .Add(new FormAiPrompt<MeetingRequest>(new MeetingRequestFormModel()))   // the form, again
+    .Add(new TextAiResource(                                                // the stock, again
+        "stock://low", "Low stock report",
+        "Every SKU at or below its reorder point.",
+        StockDataSource.LowStockReportAsync, "text/markdown"));
 
 await McpStdioHost.RunAsync(server, Console.In, Console.Out, cts.Token);
 ```

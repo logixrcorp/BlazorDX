@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using BlazorDX.Primitives.Grid;
 
 namespace BlazorDX.McpServer;
@@ -44,6 +46,8 @@ public sealed class StockRow
 /// </remarks>
 internal sealed class StockDataSource : IGridDataSource<StockRow>
 {
+    private const int ReorderPoint = 100;
+
     private static readonly StockRow[] All =
     [
         new() { Sku = "AX-1001", Product = "Hex bolt M6", Warehouse = "Leeds", OnHand = 4820, Cost = 0.04m },
@@ -57,6 +61,24 @@ internal sealed class StockDataSource : IGridDataSource<StockRow>
         new() { Sku = "SL-4406", Product = "Slide rail 450mm", Warehouse = "Gdansk", OnHand = 6, Cost = 9.40m },
         new() { Sku = "WS-5000", Product = "Washer M6", Warehouse = "Gdansk", OnHand = 22400, Cost = 0.01m },
     ];
+
+    /// <summary>
+    /// The same rows the grid tool queries, rendered as a document an assistant can be handed
+    /// whole. Built from <see cref="All"/> rather than from a second copy of the data, so the
+    /// report and the tool cannot disagree about what is low.
+    /// </summary>
+    public static Task<string> LowStockReportAsync(CancellationToken cancellationToken)
+    {
+        StringBuilder sb = new();
+        sb.Append("# Low stock\n\n| SKU | Product | Warehouse | On hand |\n|---|---|---|---|\n");
+
+        foreach (StockRow row in All.Where(r => r.OnHand <= ReorderPoint).OrderBy(r => r.OnHand))
+        {
+            sb.Append(CultureInfo.InvariantCulture, $"| {row.Sku} | {row.Product} | {row.Warehouse} | {row.OnHand} |\n");
+        }
+
+        return Task.FromResult(sb.ToString());
+    }
 
     public Task<GridDataPage<StockRow>> GetRowsAsync(GridDataRequest request, CancellationToken cancellationToken)
     {

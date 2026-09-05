@@ -60,8 +60,9 @@ properties the model exposes, never an arbitrary field.
 ## Serving tools over MCP
 
 `McpToolServer` is a transport-agnostic [Model Context Protocol](https://modelcontextprotocol.io)
-server. Register `IAiTool`s and feed it JSON-RPC; it answers `initialize`, `tools/list`, and
-`tools/call`.
+server. Register `IAiTool`s, `IAiResource`s and `IAiPrompt`s and feed it JSON-RPC; it answers
+`initialize`, `tools/list`, `tools/call`, `resources/list`, `resources/read`, `prompts/list` and
+`prompts/get`.
 
 ```csharp
 var server = new McpToolServer { ServerName = "My app" }
@@ -238,6 +239,72 @@ The corollary belongs with the security model below: the data source is reached 
 could not have seen in the grid. A read tool is what makes that gate load-bearing rather than
 merely advisable.
 
+## Resources and prompts — the other two surfaces
+
+A tool is chosen by the *model*. The rest of MCP is about the other two directions, and the
+difference is who decides:
+
+| | Chosen by | Runs anything? | BlazorDX type |
+|---|---|---|---|
+| **Tool** | the model, mid-task | yes | `FormAiTool<T>`, `GridAiTool<T>` |
+| **Resource** | the user, or on request | no — it is fetched | `TextAiResource`, or your `IAiResource` |
+| **Prompt** | the **user**, before the task | no — it expands into the chat | `FormAiPrompt<T>`, `TextAiPrompt` |
+
+Both are registered the same fluent way, and both are advertised in `initialize` **only when
+something is actually registered** — telling a client this server has resources buys a wasted
+`resources/list` on every connection, and makes a genuinely empty surface look identical to one
+whose registration was forgotten.
+
+```csharp
+server
+    .Add(new TextAiResource(
+        "stock://low", "Low stock report",
+        "Every SKU at or below its reorder point.",
+        StockDataSource.LowStockReportAsync, "text/markdown"))
+    .Add(new FormAiPrompt<MeetingRequest>(new MeetingRequestFormModel()));
+```
+
+### Resources
+
+`IAiResource` is a URI, a name, a description and a body. There is no argument schema, because
+there is nothing to parameterise — only something to fetch. `AiResourceContent.FromText` and
+`FromBytes` are the two shapes; binary is base64-encoded on the wire, and exactly one of `text` or
+`blob` is ever sent.
+
+The `Uri` is an **identifier, not a path**. Nothing in BlazorDX dereferences it, so a host that
+maps URIs onto files owns the traversal check — which is why `TextAiResource` takes a delegate
+rather than a directory: the safe shape is a fixed set of URIs you chose.
+
+### Prompts, and why a form makes a good one
+
+`FormAiPrompt<T>` turns the same `[DxFormModel]` descriptor into a user-invokable template — the
+third surface on one declaration. In a client it appears as a slash-command; it states the task,
+lists the fields **with the constraints read off the descriptor**, and names the tool that
+submits. Without it, a user has to know the tool exists and describe its fields themselves.
+
+Reading the constraints off the descriptor rather than restating them in prose is the point: a
+rule changed on the model cannot drift out of sync with what the prompt claims.
+
+Every argument is optional, deliberately. A prompt that demanded each required field up front
+would just be the form again in a worse renderer; whatever the user does not supply, the assistant
+asks for.
+
+**Sensitive fields are omitted**, exactly as they are from the tool schema — see
+[Sensitive-field redaction](#sensitive-field-redaction--what-the-ai-must-never-see) below. A
+prompt that helpfully listed `SSN` among the fields to collect would reintroduce the very leak the
+schema avoids, while looking like a convenience feature. There is a test asserting the negative.
+
+### Authorization applies here too
+
+`IAiContentAuthorizer` gates resources and prompts, and a disallowed item is answered **exactly**
+as a non-existent one — same error code, same message — so the surface never reveals that a
+privileged resource exists. It is separate from `IAiToolAuthorizer` because adding methods to that
+interface would break every host already implementing it, and "may you read this" is a different
+question from "may you run this".
+
+This matters more for resources than for tools: a resource *is* raw data, with no validation layer
+or handler between the caller and the bytes.
+
 ## Security model
 
 Opening a system to AI is the highest-risk surface, so it inherits BlazorDX's security
@@ -370,6 +437,12 @@ malicious tool calls — and the errors are returned to the AI so it can self-co
 
 ## What's next
 
-The secured core, both transports (stdio and HTTP+SSE with sessions), and both directions of the
-tool surface — writing through a form, reading through a grid — are in place. Planned: the broader
-MCP surface (resources, prompts). See [ROADMAP.md](ROADMAP.md).
+The MCP surface is complete for a server of this kind: the secured core, both transports (stdio
+and HTTP+SSE with sessions), tools in both directions (writing through a form, reading through a
+grid), and resources and prompts.
+
+What is deliberately *not* here, because it belongs to the client rather than the server:
+**sampling** (the server asking the client's model for a completion) and **roots** (the client
+telling the server which directories it may work in). Neither has a BlazorDX-shaped answer — a
+component library has no business initiating model calls on its host's account — so they are
+declined rather than pending. See [ROADMAP.md](ROADMAP.md).
