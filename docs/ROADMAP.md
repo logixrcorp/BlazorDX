@@ -120,10 +120,14 @@ enhancements. None of this should be read as "ready"; it is a beta with work ahe
   focusable separator with no value, ARIA references pointing at elements that only exist
   while a panel is open, two components with no way to be named at all, a scroll container no
   keyboard could reach, and secondary text that cleared contrast on white but not on the
-  tinted surfaces it is actually used on. All are fixed. The remaining work is to lift this
-  to a screen-reader audit and an attested **WCAG / VPAT** statement procurement can cite —
-  and to remember that a green axe run is evidence about the routes it visits, which is why
-  the theory now enumerates them all.
+  tinted surfaces it is actually used on. All are fixed, and every route is swept except
+  `/imageeditor`, which reports one serious contrast violation against `:root` on Firefox and
+  WebKit only — `:root` is axe's fallback when it cannot attribute a computed colour, so the
+  report names no element, and it is excluded with that reason recorded next to the list
+  rather than dropped quietly. The remaining work is to lift this to a screen-reader audit and
+  an attested **WCAG / VPAT** statement procurement can cite — and to keep in mind that a
+  green axe run is evidence about the routes it visits, which is why the theory now enumerates
+  them.
 - **Independent senior review** — proof of the differentiating claims; see
   [docs/REVIEW.md](REVIEW.md).
 - **Production track record** — none yet. The deployed showcase is only a demo; the library
