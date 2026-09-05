@@ -504,6 +504,13 @@
   inset: 0;
   opacity: 0;
   cursor: pointer;
+
+  /* Explicit, though the control is invisible. A file input still renders UA-supplied button
+     text, and opacity:0 does not take it out of axe's contrast check on Firefox or WebKit —
+     which reported it against the document root, where the inherited colours happen to fail.
+     Chromium did not, which is why this only showed on two of the three browsers. */
+  color: #0f172a;
+  background: #ffffff;
 }
 .dx-imgedit-slider {
   display: inline-flex;

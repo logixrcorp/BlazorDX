@@ -110,11 +110,20 @@ enhancements. None of this should be read as "ready"; it is a beta with work ahe
   does not translate them — the `.resx` files hold English, and
   only two carry a French counterpart. Shipping translations, and a visual RTL pass that a
   static guard cannot do, are the parts left.*
-- **Formal accessibility audit + VPAT** — automated **axe-core checks now run in CI**
-  (`AccessibilityE2ETests`, across Chromium/Firefox/WebKit) over the showcase and the
-  TicketDesk demo app, with zero serious/critical violations; wiring this up already caught
-  and fixed real form-labeling and contrast gaps. The remaining work is to lift this to a
-  screen-reader audit and an attested **WCAG / VPAT** statement procurement can cite.
+- **Formal accessibility audit + VPAT** — automated **axe-core checks run in CI**
+  (`AccessibilityE2ETests`, across Chromium/Firefox/WebKit) over **every route in the
+  showcase and the TicketDesk demo app**, with zero serious/critical violations.
+  *"Every route" is new, and it mattered:* the sweep previously covered 22 of the demo's 59
+  concrete routes, so this bullet was a claim about the listed routes rather than the
+  showcase. Adding the other 37 surfaced **26 violations across 17 routes**, most of them in
+  the library rather than the demo — ARIA that a role did not permit, a table with no rows, a
+  focusable separator with no value, ARIA references pointing at elements that only exist
+  while a panel is open, two components with no way to be named at all, a scroll container no
+  keyboard could reach, and secondary text that cleared contrast on white but not on the
+  tinted surfaces it is actually used on. All are fixed. The remaining work is to lift this
+  to a screen-reader audit and an attested **WCAG / VPAT** statement procurement can cite —
+  and to remember that a green axe run is evidence about the routes it visits, which is why
+  the theory now enumerates them all.
 - **Independent senior review** — proof of the differentiating claims; see
   [docs/REVIEW.md](REVIEW.md).
 - **Production track record** — none yet. The deployed showcase is only a demo; the library
