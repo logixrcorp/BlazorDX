@@ -39,7 +39,15 @@ public sealed class DxComboBox<TValue> : ComboBoxPrimitive<TValue>
         builder.AddAttribute(6, "role", "combobox");
         builder.AddAttribute(7, "aria-autocomplete", "list");
         builder.AddAttribute(8, "aria-expanded", IsOpen ? "true" : "false");
-        builder.AddAttribute(9, "aria-controls", PanelId);
+        // Only while the panel exists. The listbox renders on open, so emitting this
+        // unconditionally left aria-controls pointing at an id that is not in the document
+        // whenever the combo was closed — axe aria-valid-attr-value, critical, and a screen
+        // reader following the reference finds nothing.
+        if (IsOpen)
+        {
+            builder.AddAttribute(9, "aria-controls", PanelId);
+        }
+
         builder.AddAttribute(10, "placeholder", ResolvedPlaceholder);
         builder.AddAttribute(11, "value", Filter);
         if (ActiveOptionId.Length > 0)

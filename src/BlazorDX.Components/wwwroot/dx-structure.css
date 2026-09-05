@@ -20,7 +20,7 @@
   text-decoration: none;
 }
 .dx-breadcrumb-link:hover { text-decoration: underline; }
-.dx-breadcrumb-current { color: var(--dx-text-muted, #64748b); font-weight: 600; }
+.dx-breadcrumb-current { color: var(--dx-text-muted, #475569); font-weight: 600; }
 .dx-breadcrumb-sep { color: var(--dx-text-muted, #94a3b8); }
 
 /* ---- Divider ---- */
@@ -44,7 +44,7 @@
   text-align: center;
   background: transparent;
   height: auto;
-  color: var(--dx-text-muted, #64748b);
+  color: var(--dx-text-muted, #475569);
   font-size: 0.85rem;
 }
 .dx-divider-labelled::before,
@@ -109,7 +109,7 @@
 .dx-timeline-success { background: #16a34a; }
 .dx-timeline-warning { background: #d97706; }
 .dx-timeline-danger { background: #dc2626; }
-.dx-timeline-time { font-size: 0.78rem; color: var(--dx-text-muted, #64748b); }
+.dx-timeline-time { font-size: 0.78rem; color: var(--dx-text-muted, #475569); }
 .dx-timeline-title { font-weight: 600; color: var(--dx-text, #0f172a); }
 .dx-timeline-desc { color: var(--dx-text-muted, #475569); font-size: 0.9rem; margin-top: 2px; }
 

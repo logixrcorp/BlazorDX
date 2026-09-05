@@ -9,7 +9,7 @@
 .dx-bar-rect:hover { opacity: 0.82; }
 .dx-bar-label {
   font-size: 11px;
-  fill: var(--dx-text-muted, #64748b);
+  fill: var(--dx-text-muted, #475569);
 }
 .dx-bar-value {
   font-size: 11px;
@@ -102,7 +102,7 @@
 }
 .dx-gauge-caption {
   font-size: 0.8rem;
-  fill: var(--dx-text-muted, #64748b);
+  fill: var(--dx-text-muted, #475569);
   dominant-baseline: middle;
 }
 
@@ -156,7 +156,7 @@
 .dx-heatmap-cell:hover { opacity: 0.8; }
 .dx-heatmap-label {
   font-size: 10px;
-  fill: var(--dx-text-muted, #64748b);
+  fill: var(--dx-text-muted, #475569);
 }
 .dx-heatmap-cell-value {
   font-size: 10px;
@@ -209,8 +209,8 @@
 .dx-boxplot-box { fill: var(--dx-surface, #ffffff); stroke-width: 2; }
 .dx-boxplot-median { stroke: var(--dx-text, #0f172a); stroke-width: 2; }
 .dx-boxplot-whisker,
-.dx-boxplot-whisker-cap { stroke: var(--dx-text-muted, #64748b); stroke-width: 1.5; }
-.dx-boxplot-outlier { fill: var(--dx-text-muted, #64748b); fill-opacity: 0.7; }
+.dx-boxplot-whisker-cap { stroke: var(--dx-text-muted, #475569); stroke-width: 1.5; }
+.dx-boxplot-outlier { fill: var(--dx-text-muted, #475569); fill-opacity: 0.7; }
 
 /* ---- Sankey ---- */
 .dx-sankey-node { stroke: var(--dx-surface, #ffffff); stroke-width: 1; }
@@ -235,7 +235,7 @@
 .dx-parallel-axis { stroke: var(--dx-border, #cbd5e1); stroke-width: 1; }
 .dx-parallel-axis-label {
   font-size: 11px;
-  fill: var(--dx-text-muted, #64748b);
+  fill: var(--dx-text-muted, #475569);
 }
 .dx-parallel-line {
   stroke-width: 1.5;

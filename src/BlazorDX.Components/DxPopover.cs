@@ -2,6 +2,7 @@ using BlazorDX.Primitives.Motion;
 using BlazorDX.Primitives.Overlays;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace BlazorDX.Components;
 
@@ -24,9 +25,19 @@ public sealed class DxPopover : PopoverPrimitive
         builder.OpenElement(2, "span");
         builder.AddAttribute(3, "id", AnchorId);
         builder.AddAttribute(4, "class", "dx-popover-trigger");
+
+        // role + tabindex, not a bare span: a generic element allows neither aria-haspopup nor
+        // aria-expanded (axe aria-allowed-attr, critical), and an onclick-only span cannot be
+        // reached or activated from a keyboard at all. A real <button> would be better, but
+        // Trigger is consumer-supplied and may itself contain one.
+        builder.AddAttribute(41, "role", "button");
+        builder.AddAttribute(42, "tabindex", "0");
         builder.AddAttribute(5, "aria-haspopup", "dialog");
         builder.AddAttribute(6, "aria-expanded", Open ? "true" : "false");
         builder.AddAttribute(7, "onclick", EventCallback.Factory.Create(this, ToggleAsync));
+        builder.AddAttribute(43, "onkeydown", EventCallback.Factory.Create<KeyboardEventArgs>(
+            this, args => args.Key is "Enter" or " " ? ToggleAsync() : Task.CompletedTask));
+        builder.AddEventPreventDefaultAttribute(44, "onkeydown", true);
         builder.AddContent(8, Trigger);
         builder.CloseElement();
 

@@ -18,11 +18,24 @@ public sealed class DxProgress : ComponentBase
 
     private double Clamped => Math.Clamp(Value ?? 0, 0, 100);
 
+    /// <summary>
+    /// Accessible name for the progress bar. Defaults to a generic localized label — a
+    /// progressbar with no name tells a screen-reader user a percentage and not what it measures.
+    /// </summary>
+    [Parameter] public string? AriaLabel { get; set; }
+
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private DxStrings<DxProgress>? s;
+
+    private DxStrings<DxProgress> S => s ??= new(Services);
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "div");
         builder.AddAttribute(1, "class", $"dx-progress {Class}".TrimEnd());
         builder.AddAttribute(2, "role", "progressbar");
+        builder.AddAttribute(101, "aria-label", AriaLabel ?? S["ProgressLabel", "Progress"]);
         builder.AddAttribute(3, "aria-valuemin", 0);
         builder.AddAttribute(4, "aria-valuemax", 100);
         if (!Indeterminate)

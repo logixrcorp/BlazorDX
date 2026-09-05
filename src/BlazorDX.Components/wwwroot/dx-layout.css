@@ -141,7 +141,7 @@
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: var(--dx-text-muted, #64748b);
+  color: var(--dx-text-muted, #475569);
   font-size: 11px;
   line-height: 1;
   cursor: pointer;
@@ -316,7 +316,7 @@
   border: 0;
   background: transparent;
   font: inherit;
-  color: #64748b;
+  color: #475569;
   cursor: pointer;
 }
 .dx-stepper-marker {

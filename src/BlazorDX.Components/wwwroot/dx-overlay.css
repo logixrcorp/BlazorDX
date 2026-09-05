@@ -185,7 +185,7 @@
   outline-offset: 1px;
 }
 .dx-select-placeholder { color: #94a3b8; }
-.dx-select-caret { color: #64748b; font-size: 12px; }
+.dx-select-caret { color: #475569; font-size: 12px; }
 
 .dx-select-panel {
   /* position:fixed + coords set by the positioning bridge. */
