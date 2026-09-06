@@ -58,14 +58,13 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
     [InlineData("/grid")]
     [InlineData("/hotkeys")]
     [InlineData("/htmx")]
-    // /imageeditor is NOT here, and that is a known gap rather than an oversight. It reports one
-    // serious color-contrast violation against `:root` on Firefox and WebKit but not Chromium,
-    // and the element could not be identified from CI output alone — `:root` is what axe falls
-    // back to when it cannot attribute a computed colour, so the message names no element to fix.
-    // Several attempts (the sample SVG's translucent caption plate, the hidden file input's
-    // inherited colours) were wrong. Listing it would leave the suite red and train people to
-    // ignore it; leaving it out silently would repeat exactly the problem this sweep exists to
-    // fix, so it is out with its reason attached. See the tracked follow-up.
+    // /imageeditor was excluded for months as the one route with an undiagnosable violation. It
+    // was diagnosable; the report just never printed the field that identified it. Once the
+    // message carried the check text as well as the selector, the answer was immediate and dull:
+    // .dx-imgedit-empty at 2.45:1. Both halves of the old note were also wrong — it was never
+    // `:root`, and it failed on Chromium too. Every earlier attempt had been reasoning from a
+    // symptom the tooling had garbled.
+    [InlineData("/imageeditor")]
     [InlineData("/kanban")]
     [InlineData("/keyboard")]
     [InlineData("/layout")]

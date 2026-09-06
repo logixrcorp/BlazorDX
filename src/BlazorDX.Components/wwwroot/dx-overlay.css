@@ -552,7 +552,7 @@
 .dx-keys-close {
   border: 0;
   background: transparent;
-  color: var(--dx-muted, #94a3b8);
+  color: var(--dx-muted, #475569);
   font-size: 15px;
   line-height: 1;
   cursor: pointer;
@@ -572,4 +572,4 @@
 .dx-keys-row:hover { background: var(--dx-surface-alt, #f8fafc); }
 .dx-keys-label { margin: 0; color: var(--dx-text, #0f172a); }
 .dx-keys-combo { margin: 0; }
-.dx-keys-empty { padding: 16px; color: var(--dx-muted, #94a3b8); text-align: center; }
+.dx-keys-empty { padding: 16px; color: var(--dx-muted, #475569); text-align: center; }
