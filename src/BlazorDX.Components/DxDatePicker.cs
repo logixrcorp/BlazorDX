@@ -163,7 +163,13 @@ public sealed class DxDatePicker : DatePickerPrimitive
             builder.AddAttribute(39, "role", "gridcell");
             builder.AddAttribute(40, "class", css);
             builder.AddAttribute(41, "aria-selected", IsSelected(day) ? "true" : "false");
-            builder.AddAttribute(42, "aria-label", day.ToString("D", CultureInfo.InvariantCulture));
+            // Fmt, not InvariantCulture: this label is the whole of what a screen reader announces
+            // for a day cell, so an invariant long date read out in English under a French UI.
+            // Using the same Fmt the month header and trigger use — rather than CurrentCulture —
+            // is what keeps an explicit Culture="fr-FR" from producing a French header above cells
+            // announced in English. The day number below stays invariant on purpose: it is a bare
+            // integer, and .NET renders Latin digits for it either way.
+            builder.AddAttribute(42, "aria-label", day.ToString("D", Fmt));
             builder.AddAttribute(43, "onclick", EventCallback.Factory.Create(this, () => SelectAsync(captured)));
             builder.AddContent(44, day.Day.ToString(CultureInfo.InvariantCulture));
             builder.CloseElement();

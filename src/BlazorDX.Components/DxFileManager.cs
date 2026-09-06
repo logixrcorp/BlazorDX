@@ -331,7 +331,12 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
             builder.OpenElement(106, "span");
             builder.AddAttribute(107, "class", "dx-fm-cell dx-fm-modified");
             builder.AddAttribute(1071, "role", "cell");
-            builder.AddContent(108, entry.Modified.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+            // The culture alone was not the bug here: "yyyy-MM-dd" is a fixed pattern, so swapping
+            // the culture on it would still render ISO to every user. The short-date pattern is
+            // what follows the reader's culture, which is what every file manager they already use
+            // shows them. Sorting is done on the value, not this string, so nothing depended on
+            // the ISO shape.
+            builder.AddContent(108, entry.Modified.ToString("d", CultureInfo.CurrentCulture));
             builder.CloseElement();
 
             // Per-row "Move" toggle: arms the keyboard/single-pointer move (2.5.7).
