@@ -290,6 +290,29 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ## [0.5.0] — 2026-09-02
 
+> **Note added 2026-09-05: this release raised the minimum .NET SDK for consumers, and the
+> release notes did not say so.**
+>
+> `Microsoft.CodeAnalysis.CSharp` went from **4.8.0 to 5.9.0** in this version, and both
+> `BlazorDX.SourceGen` and `BlazorDX.Analyzers` are built against it. A source generator only
+> runs on a compiler at least as new as the one it references, so **from 0.5.0 onward a consumer
+> needs an SDK whose Roslyn is ≥ 5.9.0.** SDK 10.0.204 carries 5.3.0 and is not enough.
+>
+> **The failure is much worse for consumers than for this repo, and the reason is a setting.**
+> `Directory.Build.props` here sets `TreatWarningsAsErrors`, so CS9057 stops the build and names
+> the cause outright. A consumer without that setting gets CS9057 as a *warning* — the generator
+> is silently skipped and the build fails instead with `CS0246: the type or namespace name
+> '<Model>FormModel' could not be found`, pointing at their own Razor pages. Found that way:
+> HolosThought's upgrade from 0.4.4 produced three such errors and no obvious cause.
+>
+> CI is unaffected because `actions/setup-dotnet` requests `10.0.x` and gets the latest, so this
+> gap only shows on a workstation that has not updated. **It also means this repository cannot be
+> built on such a machine at all** — `dotnet build src/BlazorDX.Components` fails with the same
+> CS9057 against `BlazorDX.Analyzers`.
+>
+> Nothing here is wrong except the omission: consumers should be told a version bump moved their
+> toolchain floor.
+
 ### Removed
 
 - **The Zero-Trust, Ephemeral AI Chat Conduit moved to its own repository, [AIEphemeral](https://github.com/logixrcorp/AIEphemeral).**

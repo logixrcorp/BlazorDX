@@ -51,6 +51,23 @@ public sealed class DxFileManagerTests : TestContext
         });
 
     [Fact]
+    public void The_modified_column_uses_the_reader_s_date_format()
+    {
+        // Not a culture bug but a *format* bug: the column was built from the fixed pattern
+        // "yyyy-MM-dd", so swapping the culture on it would still have shown ISO to every reader.
+        // The short-date pattern is the one that follows their culture — 01/06/2026 in France,
+        // 6/1/2026 in the US, for the same day.
+        using CultureScope _ = CultureScope.For("fr-FR");
+
+        IRenderedComponent<DxFileManager> fm = Render();
+
+        string modified = fm.FindAll(".dx-fm-modified")[0].TextContent;
+
+        Assert.Equal("01/06/2026", modified);
+        Assert.DoesNotContain("2026-06-01", modified, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Tree_shows_only_top_level_folders_until_expanded()
     {
         IRenderedComponent<DxFileManager> fm = Render();
