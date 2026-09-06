@@ -1,0 +1,158 @@
+@page "/audit"
+
+@* Static-SSR: every check is in the server-rendered HTML. This page is a tool FOR screen-reader
+   users, so content that only exists after JavaScript runs would be the exact failure the
+   library's own no-JS checks exist to catch. audit.js adds progress, saving and export on top,
+   and the page is fully readable and answerable without it. *@
+
+<PageTitle>Screen reader audit — BlazorDX</PageTitle>
+
+<section class="dx-audit" data-audit-root>
+
+    <header class="dx-audit-top">
+        <p class="dx-audit-eyebrow">Manual accessibility pass</p>
+        <h1>Screen reader audit</h1>
+        <p class="dx-audit-lede">
+            Every BlazorDX route is checked automatically by axe-core on three browser engines, and
+            passes. This is the half automation cannot do: whether someone using a screen reader can
+            actually operate the components. That pass has never been run.
+        </p>
+    </header>
+
+    <div class="dx-audit-card">
+        <h2>How this works</h2>
+        <p>
+            Open a section's link in a second tab, work through its checks with your screen reader
+            running, and mark what you find. Your answers are saved in this browser as you go, so you
+            can stop and come back. Nothing is sent anywhere.
+        </p>
+        <p class="dx-audit-emphasis">
+            <strong>&ldquo;Issue&rdquo; is the most useful answer here.</strong> This exists to find
+            problems, not to collect ticks — one specific note about something that read wrongly is
+            worth more than a clean sweep.
+        </p>
+    </div>
+
+    <div class="dx-audit-card">
+        <h2>Your setup</h2>
+        <p class="dx-audit-hint">Included in the report, because a finding is only reproducible if
+            we know what produced it.</p>
+        <div class="dx-audit-grid">
+            <p class="dx-audit-field">
+                <label for="audit-who">Your name</label>
+                <input id="audit-who" data-audit-meta="who" autocomplete="name" />
+            </p>
+            <p class="dx-audit-field">
+                <label for="audit-at">Screen reader and version</label>
+                <input id="audit-at" data-audit-meta="at" placeholder="NVDA 2026.1" />
+            </p>
+            <p class="dx-audit-field">
+                <label for="audit-browser">Browser and version</label>
+                <input id="audit-browser" data-audit-meta="browser" placeholder="Firefox 140" />
+            </p>
+            <p class="dx-audit-field">
+                <label for="audit-os">Operating system</label>
+                <input id="audit-os" data-audit-meta="os" placeholder="Windows 11" />
+            </p>
+        </div>
+    </div>
+
+    <div class="dx-audit-card" data-audit-progress hidden>
+        <h2>Progress</h2>
+        <p class="dx-audit-progress-row">
+            <span class="dx-audit-num" data-audit-done>0</span>
+            <span>of @AuditChecklist.TotalChecks checks answered</span>
+        </p>
+        <p class="dx-audit-tallies">
+            <span class="dx-audit-tally dx-audit-pass">Pass: <span data-audit-t-pass>0</span></span>
+            <span class="dx-audit-tally dx-audit-issue">Issue: <span data-audit-t-issue>0</span></span>
+            <span class="dx-audit-tally dx-audit-na">Not applicable: <span data-audit-t-na>0</span></span>
+        </p>
+        <p class="dx-audit-status" role="status" data-audit-save-status></p>
+    </div>
+
+@foreach (AuditArea area in AuditChecklist.Areas)
+{
+    <section class="dx-audit-area" id="@area.Id" aria-labelledby="@($"{area.Id}-h")">
+        <div class="dx-audit-area-head">
+            <h2 id="@($"{area.Id}-h")">@area.Title</h2>
+            @if (area.Route is not null)
+            {
+                <a class="dx-audit-route" href="@area.Route" target="_blank" rel="noopener">
+                    Open <code>@area.Route</code><span class="dx-audit-vh"> in a new tab</span>
+                </a>
+            }
+        </div>
+        <p class="dx-audit-note">@area.Note</p>
+
+        <ol class="dx-audit-checks">
+            @foreach (string check in area.Checks)
+            {
+                int index = Next();
+                string name = $"c{index}";
+                <li>
+                    <fieldset>
+                        <legend><span class="dx-audit-cnum">@index</span> @check</legend>
+                        <span class="dx-audit-opts">
+                            @foreach ((string value, string label) in Options)
+                            {
+                                <span class="dx-audit-opt dx-audit-opt-@value">
+                                    <input type="radio" name="@name" id="@($"{name}-{value}")"
+                                           value="@value" checked="@(value == "todo")" />
+                                    <label for="@($"{name}-{value}")">@label</label>
+                                </span>
+                            }
+                        </span>
+                        <span class="dx-audit-notes">
+                            <label for="@($"{name}-n")">Notes<span class="dx-audit-vh"> for check @index</span></label>
+                            <input type="text" id="@($"{name}-n")" data-audit-note="@name"
+                                   placeholder="What did you hear?" />
+                        </span>
+                    </fieldset>
+                </li>
+            }
+        </ol>
+    </section>
+}
+
+    <section class="dx-audit-card" aria-labelledby="audit-report-h" data-audit-report-card hidden>
+        <h2 id="audit-report-h">Generate the report</h2>
+        <p>Produces Markdown covering your setup, the tallies, and every check you marked, with your
+            notes. Select it and copy, or use the copy button.</p>
+        <p class="dx-audit-actions">
+            <button type="button" data-audit-generate>Generate report</button>
+            <button type="button" class="dx-audit-secondary" data-audit-copy>Copy to clipboard</button>
+            <button type="button" class="dx-audit-secondary" data-audit-reset>Clear my answers</button>
+        </p>
+        <label class="dx-audit-vh" for="audit-report">Generated Markdown report</label>
+        <textarea id="audit-report" data-audit-output readonly
+                  placeholder="The report appears here once you generate it."></textarea>
+        <p class="dx-audit-status" role="status" data-audit-report-status></p>
+    </section>
+
+    <footer class="dx-audit-foot">
+        <p>
+            Checks are transcribed from <code>docs/accessibility-screen-reader-checklist.md</code>.
+            Send the generated report back on the pull request, or open an issue.
+        </p>
+        <p>
+            This page stores your answers in your own browser only, and sends nothing anywhere. The
+            progress and report tools need JavaScript; the checklist itself does not.
+        </p>
+    </footer>
+</section>
+
+@code {
+    private static readonly (string Value, string Label)[] Options =
+    [
+        ("pass", "Pass"),
+        ("issue", "Issue"),
+        ("na", "Not applicable"),
+        ("todo", "Not run"),
+    ];
+
+    // Numbers the checks across every area so a tester and a report can refer to "check 24".
+    private int counter;
+
+    private int Next() => ++counter;
+}

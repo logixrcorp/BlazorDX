@@ -1,0 +1,306 @@
+/* Screen-reader audit page.
+
+   Built on the demo's own theme tokens so it inherits light/dark with the rest of the site.
+   Two rules are load-bearing rather than decorative, because this page is a tool for the people
+   most affected if they are wrong: state is never carried by colour alone (each option has a
+   visible text label and a checked radio), and focus is always visible. */
+
+.dx-audit {
+    max-width: 62rem;
+    margin: 0 auto;
+    padding: 1.5rem 0 4rem;
+}
+
+.dx-audit-vh {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.dx-audit-top {
+    margin-bottom: 1.75rem;
+}
+
+.dx-audit-eyebrow {
+    font-family: var(--dx-font-mono, ui-monospace, monospace);
+    font-size: 0.78rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--dx-color-accent, #2b4c9b);
+    margin: 0 0 0.4rem;
+}
+
+.dx-audit h1 {
+    margin: 0 0 0.6rem;
+    line-height: 1.15;
+}
+
+.dx-audit-lede {
+    margin: 0;
+    max-width: 62ch;
+    color: var(--dx-color-text-muted, #4a4a4a);
+}
+
+.dx-audit-card {
+    background: var(--dx-color-surface, #fff);
+    border: 1px solid var(--dx-color-border, #d8d8d8);
+    border-radius: var(--dx-radius-md, 8px);
+    padding: 1.15rem 1.35rem;
+    margin: 1.4rem 0;
+}
+
+.dx-audit-card h2 {
+    margin: 0 0 0.6rem;
+    font-size: 1.1rem;
+}
+
+.dx-audit-card p {
+    color: var(--dx-color-text-muted, #4a4a4a);
+    max-width: 68ch;
+}
+
+.dx-audit-emphasis strong {
+    color: var(--dx-color-text, #1a1a1a);
+}
+
+.dx-audit-hint {
+    font-size: 0.9rem;
+}
+
+.dx-audit-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+    gap: 0.75rem 1.1rem;
+}
+
+.dx-audit-field {
+    margin: 0;
+}
+
+.dx-audit-field label {
+    display: block;
+    font-size: 0.86rem;
+    color: var(--dx-color-text-muted, #4a4a4a);
+    margin-bottom: 0.25rem;
+}
+
+.dx-audit-field input,
+.dx-audit-notes input {
+    width: 100%;
+    padding: 0.45rem 0.6rem;
+    font: inherit;
+    font-size: 0.92rem;
+    color: var(--dx-color-text, #1a1a1a);
+    background: var(--dx-color-bg, #fff);
+    border: 1px solid var(--dx-color-border-strong, #b4b4b4);
+    border-radius: 6px;
+}
+
+.dx-audit-progress-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.7rem;
+    flex-wrap: wrap;
+    margin: 0;
+}
+
+.dx-audit-num {
+    font-family: var(--dx-font-mono, ui-monospace, monospace);
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.dx-audit-tallies {
+    display: flex;
+    gap: 0.5rem 0.85rem;
+    flex-wrap: wrap;
+    margin: 0.6rem 0 0;
+    font-size: 0.88rem;
+}
+
+.dx-audit-tally {
+    padding: 0.1rem 0.65rem;
+    border-radius: 99px;
+    border: 1px solid var(--dx-color-border, #d8d8d8);
+}
+
+.dx-audit-pass {
+    background: var(--dx-color-success-bg, #e2f2e7);
+    color: var(--dx-color-success, #1b6b3a);
+    border-color: currentColor;
+}
+
+.dx-audit-issue {
+    background: var(--dx-color-danger-bg, #fbe7e4);
+    color: var(--dx-color-danger, #9a2b20);
+    border-color: currentColor;
+}
+
+.dx-audit-status {
+    margin: 0.6rem 0 0;
+    font-size: 0.9rem;
+    color: var(--dx-color-text-muted, #4a4a4a);
+    min-height: 1.4em;
+}
+
+.dx-audit-area {
+    margin: 2.4rem 0;
+}
+
+.dx-audit-area-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.9rem;
+    flex-wrap: wrap;
+    border-bottom: 2px solid var(--dx-color-border-strong, #b4b4b4);
+    padding-bottom: 0.4rem;
+}
+
+.dx-audit-area-head h2 {
+    margin: 0;
+    font-size: 1.3rem;
+}
+
+.dx-audit-route {
+    font-size: 0.92rem;
+    white-space: nowrap;
+}
+
+.dx-audit-note {
+    color: var(--dx-color-text-muted, #4a4a4a);
+    font-size: 0.92rem;
+    margin: 0.6rem 0 0.9rem;
+}
+
+.dx-audit-checks {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.dx-audit-checks > li {
+    margin-bottom: 0.8rem;
+}
+
+.dx-audit-checks fieldset {
+    margin: 0;
+    border: 1px solid var(--dx-color-border, #d8d8d8);
+    border-radius: var(--dx-radius-md, 8px);
+    background: var(--dx-color-surface, #fff);
+    padding: 0.8rem 0.95rem 0.7rem;
+}
+
+.dx-audit-checks legend {
+    padding: 0 0.35rem;
+    font-weight: 700;
+    max-width: 68ch;
+}
+
+.dx-audit-cnum {
+    font-family: var(--dx-font-mono, ui-monospace, monospace);
+    color: var(--dx-color-text-muted, #4a4a4a);
+    font-weight: 400;
+    margin-right: 0.25rem;
+}
+
+.dx-audit-opts {
+    display: flex;
+    gap: 0.45rem 0.55rem;
+    flex-wrap: wrap;
+    margin: 0.6rem 0 0.7rem;
+}
+
+.dx-audit-opt {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.28rem 0.7rem 0.28rem 0.45rem;
+    border-radius: 99px;
+    border: 1px solid var(--dx-color-border-strong, #b4b4b4);
+}
+
+.dx-audit-opt label {
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.dx-audit-opt input {
+    width: 1.1rem;
+    height: 1.1rem;
+    cursor: pointer;
+}
+
+/* Selected state is reinforced, never conveyed, by colour: the radio itself and its text
+   label are what say which option is chosen. */
+.dx-audit-opt-pass:has(input:checked) {
+    background: var(--dx-color-success-bg, #e2f2e7);
+    border-color: var(--dx-color-success, #1b6b3a);
+}
+
+.dx-audit-opt-issue:has(input:checked) {
+    background: var(--dx-color-danger-bg, #fbe7e4);
+    border-color: var(--dx-color-danger, #9a2b20);
+}
+
+.dx-audit-notes label {
+    font-size: 0.82rem;
+    color: var(--dx-color-text-muted, #4a4a4a);
+    display: block;
+    margin-bottom: 0.15rem;
+}
+
+.dx-audit-actions {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.dx-audit-actions button {
+    font: inherit;
+    font-size: 0.93rem;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: 1px solid var(--dx-color-accent, #2b4c9b);
+    background: var(--dx-color-accent, #2b4c9b);
+    color: var(--dx-color-accent-contrast, #fff);
+    cursor: pointer;
+}
+
+.dx-audit-actions .dx-audit-secondary {
+    background: transparent;
+    color: var(--dx-color-accent, #2b4c9b);
+}
+
+.dx-audit textarea {
+    width: 100%;
+    min-height: 14rem;
+    margin-top: 0.7rem;
+    padding: 0.7rem;
+    font-family: var(--dx-font-mono, ui-monospace, monospace);
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: var(--dx-color-text, #1a1a1a);
+    background: var(--dx-color-bg, #fff);
+    border: 1px solid var(--dx-color-border-strong, #b4b4b4);
+    border-radius: 6px;
+}
+
+.dx-audit :is(a, button, input, textarea):focus-visible {
+    outline: 3px solid var(--dx-color-accent, #2b4c9b);
+    outline-offset: 2px;
+}
+
+.dx-audit-foot {
+    margin-top: 3rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--dx-color-border, #d8d8d8);
+    color: var(--dx-color-text-muted, #4a4a4a);
+    font-size: 0.86rem;
+}
