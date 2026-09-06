@@ -66,7 +66,13 @@ public class DatePickerPrimitive : ComponentBase, IAsyncDisposable
 
     protected bool HasValue => Value is not null;
 
-    private CultureInfo Fmt => Culture ?? CultureInfo.CurrentCulture;
+    /// <summary>
+    /// The culture every date string in this component is formatted with. Protected rather than
+    /// private because the styled layer renders the day cells and their labels, and a second copy
+    /// of this expression there is a second thing to keep in step — the failure mode being a
+    /// French month header above day cells a screen reader announces in English.
+    /// </summary>
+    protected CultureInfo Fmt => Culture ?? CultureInfo.CurrentCulture;
 
     protected string DisplayText => Value?.ToString("d", Fmt) ?? ResolvedPlaceholder;
 
