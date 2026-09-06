@@ -9,6 +9,12 @@ green in CI for every route; this checklist is the human verification that remai
 
 Mark each: ✅ pass / ⚠ issue (link) / ⬜ not yet run.
 
+> **Running the pass?** Use the guided version at **[blazordx.com/audit](https://blazordx.com/audit)**
+> rather than this file. It renders these same checks next to a link to the route each one tests,
+> saves answers in your browser as you go, and generates a Markdown report to paste back here or
+> onto the PR. `AuditChecklistDriftTests` fails the build if that page and this list diverge, so
+> the two cannot quietly fall out of step — it caught a missing item the first time it ran.
+
 ## All components (baseline)
 - [ ] First-tab reveals a skip link; landmarks (`nav`/`main`) let the user jump blocks (2.4.1).
 - [ ] Every interactive control announces **name, role, value/state** (4.1.2).

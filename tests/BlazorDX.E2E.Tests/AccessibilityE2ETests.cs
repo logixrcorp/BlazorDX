@@ -43,6 +43,9 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
     // the roadmap's "zero serious/critical violations over the showcase" a claim about the listed
     // routes rather than the showcase. Adding a route is cheap; the point is that the claim is now
     // checkable against the whole thing, and stays that way as pages are added.
+    // The screen-reader audit kit itself. A page that recruits people to the manual pass would be
+    // a poor advertisement for it if it were the one route nobody had swept.
+    [InlineData("/audit")]
     [InlineData("/barcodes")]
     [InlineData("/chat")]
     [InlineData("/command")]
