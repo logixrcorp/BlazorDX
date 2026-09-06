@@ -21,6 +21,29 @@ public sealed class ToastService
     private readonly List<Toast> toasts = new();
     private readonly Dictionary<string, int> durations = new();
     private readonly Dictionary<string, CancellationTokenSource> timers = new();
+    private readonly TimeProvider time;
+
+    /// <summary>Creates a service that dismisses toasts against the system clock.</summary>
+    public ToastService()
+        : this(TimeProvider.System)
+    {
+    }
+
+    /// <summary>
+    /// Creates a service that dismisses toasts against <paramref name="timeProvider"/>.
+    /// </summary>
+    /// <remarks>
+    /// The seam exists for tests. A countdown measured against the wall clock can only be
+    /// asserted by sleeping for longer than it and hoping, which is a test that passes on an idle
+    /// machine and fails on a loaded CI runner — as this suite's did. Nothing in the library
+    /// passes anything but <see cref="TimeProvider.System"/>.
+    /// </remarks>
+    /// <param name="timeProvider">Clock used for the auto-dismiss countdown.</param>
+    public ToastService(TimeProvider timeProvider)
+    {
+        ArgumentNullException.ThrowIfNull(timeProvider);
+        time = timeProvider;
+    }
 
     public IReadOnlyList<Toast> Toasts => toasts;
 
@@ -98,7 +121,7 @@ public sealed class ToastService
     {
         try
         {
-            await Task.Delay(durationMs, token);
+            await Task.Delay(TimeSpan.FromMilliseconds(durationMs), time, token);
         }
         catch (OperationCanceledException)
         {
