@@ -25,9 +25,17 @@ public sealed class DxContextMenuTests : TestContext
         Services.AddScoped<IAnchorInterop, NullAnchorInterop>();
     }
 
-    private IRenderedComponent<DxContextMenu> RenderMenu() =>
+    /// <param name="exitDurationMs">
+    /// Exit-animation hold. A closing test passes 0: <c>PresenceBoundary</c> otherwise keeps the
+    /// node mounted for a real 120ms timer, so the assertion becomes a race between that timer and
+    /// bUnit's retry window — which is what made the Escape test flake under parallel load. Zero
+    /// removes the timer rather than waiting longer for it, and nothing about *closing* is being
+    /// tested by the animation.
+    /// </param>
+    private IRenderedComponent<DxContextMenu> RenderMenu(int exitDurationMs = 120) =>
         RenderComponent<DxContextMenu>(parameters => parameters
             .Add(m => m.Items, Items)
+            .Add(m => m.ExitDurationMs, exitDurationMs)
             .Add(m => m.ChildContent, (RenderFragment)(b => b.AddContent(0, "Region"))));
 
     [Fact]
@@ -66,13 +74,14 @@ public sealed class DxContextMenuTests : TestContext
     [Fact]
     public void Escape_closes_the_menu()
     {
-        IRenderedComponent<DxContextMenu> menu = RenderMenu();
+        IRenderedComponent<DxContextMenu> menu = RenderMenu(exitDurationMs: 0);
         menu.Find(".dx-ctx-region").TriggerEvent(
             "oncontextmenu", new MouseEventArgs { ClientX = 1, ClientY = 1 });
 
         menu.Find("[role=menu]").KeyDown(new KeyboardEventArgs { Key = "Escape" });
 
-        // PresenceBoundary keeps the node mounted for the exit animation, then releases it.
+        // With no exit hold, PresenceBoundary releases the node on the render that follows the
+        // close — so this waits on a render rather than on a 120ms timer it might lose a race to.
         menu.WaitForAssertion(() => Assert.Empty(menu.FindAll("[role=menu]")));
     }
 }

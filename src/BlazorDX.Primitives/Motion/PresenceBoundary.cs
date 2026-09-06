@@ -47,7 +47,14 @@ public sealed class PresenceBoundary : ComponentBase
         stateClass = LeaveClass;
         StateHasChanged();
 
-        await Task.Delay(ExitDurationMs);
+        // A non-positive duration means "no exit animation", so schedule nothing: Task.Delay(0)
+        // still queues a continuation, which leaves a race for anything asserting that the child
+        // is gone. Opting out of the timer entirely is what lets a test turn the animation off and
+        // get a deterministic close.
+        if (ExitDurationMs > 0)
+        {
+            await Task.Delay(ExitDurationMs);
+        }
 
         present = false;
         StateHasChanged();
