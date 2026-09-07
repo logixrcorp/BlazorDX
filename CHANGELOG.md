@@ -24,6 +24,11 @@ All notable changes to BlazorDX are documented here. The format is loosely based
   no busy signal anywhere. Added an opt-in `Announce` parameter — one per loading region, not one
   per skeleton — that renders a visually-hidden `role="status"` text node alongside the shimmer,
   following the same `DxStrings`/localized-default pattern `DxSpinner` already uses. (#69)
+- **`DxFileManager`'s keyboard move path stranded focus once a move was armed.** The folder tree
+  renders before the contents pane in the DOM, so Tab from a row's "Move" button could never
+  reach it — only Shift+Tab all the way back past every row, the toolbar, and the breadcrumb
+  could. A keyboard-only user heard "choose a destination folder" with no forward path to one.
+  Arming a move now sends focus straight to the top of the folder tree. (#73)
 
 ## [0.6.0] — 2026-09-05
 
