@@ -289,7 +289,24 @@ body {
 }
 .dx-step-body { flex: 1 1 auto; min-width: 0; }
 .dx-step-body h3 { margin: 0 0 8px; font-size: 15px; }
-.dx-step-body p { margin: 0 0 8px; color: #475569; font-size: 13.5px; }
+.dx-step-body p { margin: 0 0 8px; color: var(--dx-text-muted, #475569); font-size: 13.5px; }
+
+/* Footer. Moved off an inline style attribute so it can follow the theme, and its links given an
+   explicit colour — unstyled they took the browser default #0000ee, which passes on the light page
+   it was designed against and is 1.89:1 on a dark one. The light values are unchanged. */
+.dx-footer {
+    padding: 24px 16px;
+    margin-top: 48px;
+    border-top: 1px solid var(--dx-border, #e2e8f0);
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    align-items: center;
+    font-size: 14px;
+    color: var(--dx-text-muted, #475569);
+}
+
+.dx-footer a { color: var(--dx-accent, #2563eb); }
 
 /* Code block */
 .dx-code {
