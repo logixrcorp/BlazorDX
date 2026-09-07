@@ -56,9 +56,19 @@ public sealed class ChartZoomE2ETests(PlaywrightFixture fx)
         ILocator chart = page.Locator(".dx-chart-zoomable").First;
 
         // Zoom in first — panning at full zoom-out has nowhere to go (both edges already touch).
+        string? beforeZoom = await chart.GetAttributeAsync("viewBox");
         await page.Mouse.MoveAsync((float)(x + (width / 2)), (float)(y + (height / 2)));
         await page.Mouse.WheelAsync(0, -600);
-        await page.WaitForTimeoutAsync(200); // let the render settle
+
+        // Wait for the zoom to have actually landed rather than sleeping for a guess at how long
+        // it takes. This was a fixed 200ms, and it is where this test flaked on WebKit: on a
+        // loaded runner the render had not finished, so beforePan captured a pre-zoom viewBox and
+        // the re-measure below ran mid-layout. The drag then landed outside the plot, nothing
+        // panned, and the wait at the end timed out with nothing to explain it — the failure the
+        // next comment describes, arriving through the sleep rather than through the coordinates.
+        await page.WaitForFunctionAsync(
+            "([sel, old]) => document.querySelector(sel)?.getAttribute('viewBox') !== old",
+            new object?[] { ".dx-chart-zoomable", beforeZoom });
 
         string? beforePan = await chart.GetAttributeAsync("viewBox");
 

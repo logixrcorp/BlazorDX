@@ -398,7 +398,7 @@
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: var(--dx-muted, #475569);
+  color: var(--dx-text-muted, #475569);
   font-size: 11px;
   line-height: 1;
   cursor: pointer;

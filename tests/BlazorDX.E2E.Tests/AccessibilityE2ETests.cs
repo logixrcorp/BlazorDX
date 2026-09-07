@@ -58,14 +58,13 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
     [InlineData("/grid")]
     [InlineData("/hotkeys")]
     [InlineData("/htmx")]
-    // /imageeditor is NOT here, and that is a known gap rather than an oversight. It reports one
-    // serious color-contrast violation against `:root` on Firefox and WebKit but not Chromium,
-    // and the element could not be identified from CI output alone — `:root` is what axe falls
-    // back to when it cannot attribute a computed colour, so the message names no element to fix.
-    // Several attempts (the sample SVG's translucent caption plate, the hidden file input's
-    // inherited colours) were wrong. Listing it would leave the suite red and train people to
-    // ignore it; leaving it out silently would repeat exactly the problem this sweep exists to
-    // fix, so it is out with its reason attached. See the tracked follow-up.
+    // /imageeditor was excluded for months as the one route with an undiagnosable violation. It
+    // was diagnosable; the report just never printed the field that identified it. Once the
+    // message carried the check text as well as the selector, the answer was immediate and dull:
+    // .dx-imgedit-empty at 2.45:1. Both halves of the old note were also wrong — it was never
+    // `:root`, and it failed on Chromium too. Every earlier attempt had been reasoning from a
+    // symptom the tooling had garbled.
+    [InlineData("/imageeditor")]
     [InlineData("/kanban")]
     [InlineData("/keyboard")]
     [InlineData("/layout")]
@@ -139,10 +138,20 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
                 .Where(v => v.Impact is "serious" or "critical")
                 .ToArray();
 
-            string report = string.Join("\n", serious.Select(v =>
+            // The message carries the diagnosis, not just the selector. This printed only the
+            // target, which is why the /imageeditor contrast failure below has survived three
+            // attempts at it: axe reports `:root` when it cannot attribute a computed colour, so
+            // the selector alone names nothing to fix, while the check message carries the actual
+            // foreground, background and ratio. A CI-only failure is the case where the person
+            // reading the log cannot open the page, so the log has to be enough on its own.
+            string report = string.Join("\n\n", serious.Select(v =>
             {
-                string targets = string.Join(", ", v.Nodes.Take(2).Select(n => n.Target?.ToString()));
-                return $"  [{v.Impact}] {v.Id} — {v.Help} ({v.Nodes.Length} node(s)): {targets}";
+                string nodes = string.Join("\n", v.Nodes.Take(3).Select(n =>
+                    $"      target : {n.Target}\n"
+                    + $"      html   : {Clip(n.Html)}\n"
+                    + $"      why    : {Clip(string.Join(" | ", n.Any.Select(c => c.Message)))}"));
+
+                return $"  [{v.Impact}] {v.Id} — {v.Help} ({v.Nodes.Length} node(s))\n{nodes}";
             }));
 
             Assert.True(serious.Length == 0, $"axe-core found {serious.Length} serious/critical violation(s) on {route}:\n{report}");
@@ -151,6 +160,19 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
         {
             await PlaywrightFixture.CloseAsync(page);
         }
+    }
+
+    // Keeps one violation's detail readable in a CI log without letting a minified stylesheet or
+    // a data: URI bury the next one.
+    private static string Clip(string? text, int max = 300)
+    {
+        string flat = (text ?? string.Empty).Replace('\n', ' ').Replace('\r', ' ').Trim();
+        while (flat.Contains("  ", StringComparison.Ordinal))
+        {
+            flat = flat.Replace("  ", " ", StringComparison.Ordinal);
+        }
+
+        return flat.Length <= max ? flat : flat[..max] + "…";
     }
 
     /// <summary>
