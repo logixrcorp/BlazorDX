@@ -249,7 +249,9 @@ public sealed class DxFileManagerTests : TestContext
 
         // "src" is the only top-level folder in Roots() (README.md is a file and never
         // appears in the tree), so it is node 0 — the top of the tree.
-        string topOfTree = fm.Find(".dx-fm-tree [role='treeitem']").Id;
+        // AngleSharp's Id is nullable in general (not every element has one); this one always
+        // does, since BuildTree stamps it explicitly on every node.
+        string topOfTree = fm.Find(".dx-fm-tree [role='treeitem']").Id!;
         Assert.Equal("src", fm.Find(".dx-fm-node-label").TextContent);
         Assert.Contains(topOfTree, dnd.FocusedIds);
 
