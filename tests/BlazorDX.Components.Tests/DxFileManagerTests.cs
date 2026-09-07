@@ -252,7 +252,9 @@ public sealed class DxFileManagerTests : TestContext
         // AngleSharp's Id is nullable in general (not every element has one); this one always
         // does, since BuildTree stamps it explicitly on every node.
         string topOfTree = fm.Find(".dx-fm-tree [role='treeitem']").Id!;
-        Assert.Equal("src", fm.Find(".dx-fm-node-label").TextContent);
+        // Contains, not Equal: the label's TextContent is "📁src" — BuildTree renders the
+        // folder glyph as its own content node immediately before the name.
+        Assert.Contains("src", fm.Find(".dx-fm-node-label").TextContent);
         Assert.Contains(topOfTree, dnd.FocusedIds);
 
         // Cancelling the same arm (a second press) must not re-trigger it — focus already
