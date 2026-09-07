@@ -10,6 +10,19 @@ body {
     background: #f1f5f9;
 }
 
+/* The demo's own chrome under ?theme=dark. Scoped to the dark attribute rather than switching
+   the rule above onto tokens, deliberately: the light values stay byte-identical, so adding dark
+   coverage cannot shift the contrast of the sixty routes already swept and passing.
+
+   Without this the page would be a hybrid — component tokens dark, body still light — and every
+   dark route would report a pile of violations that are artifacts of the demo chrome rather than
+   anything wrong in the library. A consumer theming a real app would bind body to the tokens
+   instead, which is what dx-theme.css exists for. */
+[data-dx-theme="dark"] body {
+    color: var(--dx-text, #e2e8f0);
+    background: var(--dx-surface-alt, #0f172a);
+}
+
 .dx-nav {
     display: flex;
     align-items: center;
