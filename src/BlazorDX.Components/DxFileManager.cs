@@ -89,6 +89,7 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
     // still visible in the contents view; consumed in OnAfterRenderAsync.
     private FileSystemEntry? focusAfterRender;
     private bool focusStatusAfterRender;
+    private bool focusTreeAfterRender;
     private bool disposed;
 
     private string RowId(int index) => $"{baseId}-row-{index}";
@@ -220,6 +221,11 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
             }
 
             builder.AddAttribute(45, "aria-selected", row.Selected ? "true" : "false");
+            // tabindex="-1" so the node can receive programmatic focus (never reachable via
+            // Tab on its own — the twisty/label buttons inside it already are). This is the
+            // "top of the folder tree" landing target once a move is armed; see
+            // FocusAfterArmAsync. Same fallback-target idiom as the status region's tabindex.
+            builder.AddAttribute(4301, "tabindex", "-1");
             builder.AddAttribute(46, "style",
                 string.Create(CultureInfo.InvariantCulture, $"padding-left:{row.Depth * IndentPerLevel}px;"));
 
@@ -598,12 +604,35 @@ public sealed class DxFileManager : FileManagerPrimitive, IAsyncDisposable
         return Task.CompletedTask;
     }
 
+    // Once a move is armed, remember to send focus to the top of the folder tree on the next
+    // render — the destination picker the user needs next. Deferred to OnAfterRenderAsync for
+    // the same reason as the two hooks above: the "Move here" targets that make the tree the
+    // right place to be aren't in the DOM yet until this render commits.
+    protected override Task FocusAfterArmAsync()
+    {
+        focusTreeAfterRender = true;
+        return Task.CompletedTask;
+    }
+
     private async Task ApplyPendingFocusAsync()
     {
         FileSystemEntry? moved = focusAfterRender;
         bool wantStatus = focusStatusAfterRender;
+        bool wantTree = focusTreeAfterRender;
         focusAfterRender = null;
         focusStatusAfterRender = false;
+        focusTreeAfterRender = false;
+
+        if (wantTree)
+        {
+            // The top of the folder tree is focusable only if the tree is non-empty. An empty
+            // tree can't be a move destination anyway (there is nowhere to place the item), but
+            // focus must still land somewhere rather than silently staying on a button whose
+            // aria-pressed state just changed — the status region, which already announced the
+            // "ready to move" message, is the honest fallback.
+            await Dnd.FocusElementAsync(renderedNodes.Count > 0 ? NodeId(0) : StatusId);
+            return;
+        }
 
         if (moved is not null)
         {
