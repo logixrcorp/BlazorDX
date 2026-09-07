@@ -9,6 +9,14 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ## [Unreleased]
 
+### Fixed
+
+- **The manual screen-reader testing matrix was missing NVDA + Firefox.** Added alongside the
+  existing NVDA + Chrome/Edge pairing — this library leans on `aria-live` regions in several
+  places (`DxToastHost`, grid/scheduler announcements), and NVDA's live-region behavior has
+  documented differences between Firefox and Chromium that a Chromium-only pass would miss.
+  (#70)
+
 ## [0.6.0] — 2026-09-05
 
 ### Added
