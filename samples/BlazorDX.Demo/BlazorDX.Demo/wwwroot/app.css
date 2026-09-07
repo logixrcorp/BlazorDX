@@ -148,7 +148,7 @@ body {
 }
 
 .dx-demo-meta {
-    color: #475569;
+    color: var(--dx-text-muted, #475569);
     font-size: 14px;
 }
 
@@ -254,10 +254,10 @@ body {
     font-size: 13px;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #2563eb;
+    color: var(--dx-accent, #2563eb);
     margin: 0 0 4px;
 }
-.dx-section > .dx-section-sub { color: #475569; margin: 0 0 18px; font-size: 14px; }
+.dx-section > .dx-section-sub { color: var(--dx-text-muted, #475569); margin: 0 0 18px; font-size: 14px; }
 
 /* Pillars */
 .dx-pillars {
@@ -266,14 +266,14 @@ body {
     gap: 16px;
 }
 .dx-pillar {
-    background: #fff;
-    border: 1px solid #e2e8f0;
+    background: var(--dx-surface, #fff);
+    border: 1px solid var(--dx-border, #e2e8f0);
     border-radius: 12px;
     padding: 18px;
 }
 .dx-pillar .dx-pillar-icon { font-size: 22px; }
 .dx-pillar h3 { margin: 10px 0 6px; font-size: 15px; }
-.dx-pillar p { margin: 0; color: #475569; font-size: 13.5px; line-height: 1.5; }
+.dx-pillar p { margin: 0; color: var(--dx-text-muted, #475569); font-size: 13.5px; line-height: 1.5; }
 
 /* Getting started steps */
 .dx-steps { display: flex; flex-direction: column; gap: 18px; }
