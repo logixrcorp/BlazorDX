@@ -4,8 +4,17 @@ The WCAG 2.2 AA gate ([ADR 0012](adr/0012-wcag-conformance-gate.md)) requires a
 **manual screen-reader pass** per component — the half axe-core cannot cover. axe is
 green in CI for every route; this checklist is the human verification that remains.
 
-**Matrix:** NVDA + Chrome/Edge (Windows), JAWS + Chrome (Windows), VoiceOver + Safari
-(macOS/iOS), TalkBack + Chrome (Android). Test with the monitor obscured where noted.
+**Matrix:** NVDA + Chrome/Edge and NVDA + Firefox (Windows), JAWS + Chrome (Windows),
+VoiceOver + Safari (macOS/iOS), TalkBack + Chrome (Android). Test with the monitor
+obscured where noted.
+
+NVDA + Firefox is listed alongside NVDA + Chrome/Edge deliberately, not redundantly: NVDA has
+had stronger `aria-live` region support with Firefox than with Chromium in a number of
+documented cases, and this library leans on live regions in exactly the places that would
+matter — `DxToastHost`, grid/scheduler announcements, the skeleton status regions. A
+Chromium-only pass can miss a live-region regression that Firefox would surface. (JAWS pairs
+with Chrome here, not IE, because IE is retired — that part of the matrix already reflects
+current practice.)
 
 Mark each: ✅ pass / ⚠ issue (link) / ⬜ not yet run.
 
