@@ -34,7 +34,10 @@
 <div style="max-width:24rem; display:flex; flex-direction:column; gap:10px">
     <DxProgress Value="65" />
     <DxProgress />
-    <DxSkeleton Height="1rem" />
+    @* Announce on the first of the pair only: they stand in for one loading region (one
+       paragraph), and a screen reader hearing "Loading" once per line instead of once per
+       region is exactly the redundant-announcement problem Announce exists to avoid. *@
+    <DxSkeleton Height="1rem" Announce="true" />
     <DxSkeleton Width="70%" Height="1rem" />
 </div>
 
