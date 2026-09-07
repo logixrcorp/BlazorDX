@@ -569,6 +569,21 @@
   animation: dx-shimmer 1.3s ease-in-out infinite;
 }
 .dx-skeleton-circle { border-radius: 50%; }
+
+/* Visually-hidden live region for Announce="true" — same clip-rect technique as .dx-cal-sr
+   (no shared sr-only utility in this codebase). */
+.dx-skeleton-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 @keyframes dx-shimmer {
   0% { background-position: 100% 0; }
   100% { background-position: 0 0; }

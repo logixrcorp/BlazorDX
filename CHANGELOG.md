@@ -16,6 +16,14 @@ All notable changes to BlazorDX are documented here. The format is loosely based
   places (`DxToastHost`, grid/scheduler announcements), and NVDA's live-region behavior has
   documented differences between Firefox and Chromium that a Chromium-only pass would miss.
   (#70)
+- **`DxSkeleton` had no accessible busy signal when used standalone.** It renders
+  `aria-hidden="true"` on its shimmer, which is correct — the bars are decorative — but that also
+  means an `aria-busy`/`aria-live` attribute on the same element would never be conveyed, since
+  the hidden subtree drops it regardless. Every real usage of the component (as opposed to
+  `DxDataGrid`'s own internally-built loading row, which already sets `aria-busy` correctly) had
+  no busy signal anywhere. Added an opt-in `Announce` parameter — one per loading region, not one
+  per skeleton — that renders a visually-hidden `role="status"` text node alongside the shimmer,
+  following the same `DxStrings`/localized-default pattern `DxSpinner` already uses. (#69)
 
 ## [0.6.0] — 2026-09-05
 
