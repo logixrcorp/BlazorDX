@@ -205,6 +205,65 @@ public sealed class DxFileManagerTests : TestContext
         Assert.NotEmpty(fm.FindAll(".dx-fm-move-here"));
     }
 
+    // Records every id focus was sent to, so a test can assert *where* focus went without a
+    // real DOM to observe it landing.
+    private sealed class RecordingFileDndInterop : IFileDndInterop
+    {
+        public List<string> FocusedIds { get; } = [];
+
+        public ValueTask EnsureLoadedAsync() => ValueTask.CompletedTask;
+
+        public ValueTask RegisterDraggableAsync(string elementId) => ValueTask.CompletedTask;
+
+        public ValueTask RegisterDropTargetAsync(
+            string elementId,
+            Action<string, string> onMove,
+            Action<IReadOnlyList<DroppedFile>> onFiles) => ValueTask.CompletedTask;
+
+        public ValueTask UnregisterAsync(string elementId) => ValueTask.CompletedTask;
+
+        public ValueTask FocusElementAsync(string elementId)
+        {
+            FocusedIds.Add(elementId);
+            return ValueTask.CompletedTask;
+        }
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    }
+
+    [Fact]
+    public void Arming_a_move_sends_focus_to_the_top_of_the_folder_tree()
+    {
+        // Without this, a keyboard user who just armed a move has no way to reach the
+        // destination picker except Shift+Tab-ing back past every row, the toolbar, and the
+        // breadcrumb — the tree renders before the contents pane, so a plain Tab from the
+        // "Move" button can never reach it.
+        RecordingFileDndInterop dnd = new();
+        Services.AddSingleton<IFileDndInterop>(dnd);
+
+        IRenderedComponent<DxFileManager> fm = Render();
+
+        fm.FindAll(".dx-fm-content-row")
+            .First(r => r.TextContent.Contains("README.md"))
+            .QuerySelector(".dx-fm-action")!.Click();
+
+        // "src" is the only top-level folder in Roots() (README.md is a file and never
+        // appears in the tree), so it is node 0 — the top of the tree.
+        // AngleSharp's Id is nullable in general (not every element has one); this one always
+        // does, since BuildTree stamps it explicitly on every node.
+        string topOfTree = fm.Find(".dx-fm-tree [role='treeitem']").Id!;
+        // Contains, not Equal: the label's TextContent is "📁src" — BuildTree renders the
+        // folder glyph as its own content node immediately before the name.
+        Assert.Contains("src", fm.Find(".dx-fm-node-label").TextContent);
+        Assert.Contains(topOfTree, dnd.FocusedIds);
+
+        // Cancelling the same arm (a second press) must not re-trigger it — focus already
+        // being on the tree from the first press is exactly where a cancelling user still is.
+        int countAfterArm = dnd.FocusedIds.Count;
+        fm.FindAll(".dx-fm-action").First(a => a.GetAttribute("aria-pressed") == "true").Click();
+        Assert.Equal(countAfterArm, dnd.FocusedIds.Count);
+    }
+
     [Fact]
     public void Keyboard_single_pointer_move_relocates_the_item_and_announces_it()
     {

@@ -253,22 +253,34 @@ public class FileManagerPrimitive : ComponentBase
     /// control places it. A second press on the same item cancels. This is the WCAG
     /// 2.5.7 "mark then place" alternative to the drag gesture — no pointer drag, no JS.
     /// </summary>
-    protected Task ToggleMoveCandidateAsync(FileSystemEntry item)
+    protected async Task ToggleMoveCandidateAsync(FileSystemEntry item)
     {
         if (ReferenceEquals(moveCandidate, item))
         {
             moveCandidate = null;
             StatusMessage = $"Move of {item.Name} cancelled.";
-        }
-        else
-        {
-            moveCandidate = item;
-            StatusMessage = $"{item.Name} ready to move. Choose a destination folder, then select Move here.";
+            StateHasChanged();
+            return;
         }
 
+        moveCandidate = item;
+        StatusMessage = $"{item.Name} ready to move. Choose a destination folder, then select Move here.";
         StateHasChanged();
-        return Task.CompletedTask;
+
+        // Send focus to the destination picker (the folder tree) rather than leaving it on
+        // this now-armed button. The tree renders before the contents pane in the DOM, so a
+        // plain Tab from here can never reach it — only Shift+Tab all the way back past every
+        // preceding row, the toolbar, and the breadcrumb would. This is what makes the
+        // keyboard/single-pointer move path actually usable without a mouse (WCAG 2.4.3 / 2.5.7).
+        await FocusAfterArmAsync();
     }
+
+    /// <summary>
+    /// Hook for the styled tier to move keyboard focus to the destination picker once a move is
+    /// armed. The headless primitive renders nothing, so this is a no-op here; the DOM-aware
+    /// subclass overrides it to send focus to the top of the folder tree.
+    /// </summary>
+    protected virtual Task FocusAfterArmAsync() => Task.CompletedTask;
 
     /// <summary>Places the currently-marked item into <paramref name="target"/> (root when null).</summary>
     protected async Task PlaceMoveCandidateAsync(FileSystemEntry? target)
