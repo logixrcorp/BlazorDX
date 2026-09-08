@@ -1,5 +1,6 @@
 using BlazorDX.Interop;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace BlazorDX.Primitives.Grid;
 
@@ -23,6 +24,8 @@ public class TreeGridPrimitive<TRow> : ComponentBase, IAsyncDisposable
     private int firstVisibleIndex;
     private int visibleCount;
     private bool scrollSubscribed;
+    private int activeIndex = -1;
+    private bool suppressKeysRegistered;
 
     /// <summary>The root nodes of the tree.</summary>
     [Parameter, EditorRequired] public IReadOnlyList<TRow> Items { get; set; } = [];
@@ -53,6 +56,24 @@ public class TreeGridPrimitive<TRow> : ComponentBase, IAsyncDisposable
     /// <summary>Total visible (flattened) rows, for aria-rowcount and virtualization.</summary>
     protected int VisibleRowCount => flattened.Count;
 
+    /// <summary>
+    /// The element id of the active (roving-focus) row, for <c>aria-activedescendant</c>.
+    /// Addressed by index into the flattened row list rather than a captured element
+    /// reference, so navigation works even when the active row is scrolled out of the
+    /// rendered window — the same reason <c>DataGridPrimitive</c> addresses its active cell
+    /// by slot rather than by element.
+    /// </summary>
+    protected string ActiveRowId => $"{ContainerId}-active";
+
+    /// <summary>The flattened-row position of the active row, or -1 when the tree is empty.</summary>
+    protected int ActiveIndex => activeIndex;
+
+    /// <summary>Whether a row is currently active (false only when the tree has no rows).</summary>
+    protected bool HasActiveRow => activeIndex >= 0 && activeIndex < flattened.Count;
+
+    /// <summary>Whether the flattened row at <paramref name="index"/> is the active row.</summary>
+    protected bool IsActiveRow(int index) => HasActiveRow && index == activeIndex;
+
     protected double TopPadding => (double)firstVisibleIndex * RowHeight;
 
     protected double BottomPadding => Math.Max(0, (double)(VisibleRowCount - LastVisibleIndex) * RowHeight);
@@ -71,6 +92,7 @@ public class TreeGridPrimitive<TRow> : ComponentBase, IAsyncDisposable
 
         visibleCount = EstimateVisibleCount(ViewportHeight);
         Flatten();
+        ClampActiveIndex();
     }
 
     protected string CellText(TRow row, int columnIndex) => Accessor.GetCellText(row, columnIndex);
@@ -79,12 +101,12 @@ public class TreeGridPrimitive<TRow> : ComponentBase, IAsyncDisposable
 
     protected bool IsExpanded(TRow row) => expanded.Contains(row);
 
-    /// <summary>The flattened rows currently inside the virtualization window.</summary>
-    protected IEnumerable<TreeGridRow<TRow>> VisibleRows()
+    /// <summary>The flattened rows currently inside the virtualization window, paired with each row's absolute index into the full flattened list (needed to compare against <see cref="ActiveIndex"/>).</summary>
+    protected IEnumerable<(int Index, TreeGridRow<TRow> Row)> VisibleRows()
     {
         for (int i = firstVisibleIndex; i < LastVisibleIndex; i++)
         {
-            yield return flattened[i];
+            yield return (i, flattened[i]);
         }
     }
 
@@ -102,26 +124,162 @@ public class TreeGridPrimitive<TRow> : ComponentBase, IAsyncDisposable
         }
 
         Flatten();
+        ClampActiveIndex();
         StateHasChanged();
     }
 
-    /// <summary>Keyboard expand/collapse: Right opens, Left closes (or moves to a leaf's parent state).</summary>
-    protected void OnRowKeyDown(TRow row, string key)
+    /// <summary>Makes the flattened row at <paramref name="index"/> the active row (e.g. on click).</summary>
+    protected void SetActiveRow(int index)
     {
-        if (!HasChildren(row))
+        if (index >= 0 && index < flattened.Count)
+        {
+            activeIndex = index;
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>
+    /// Roving-row keyboard navigation, mirroring the WAI-ARIA tree pattern <c>DxTreeView</c>
+    /// already implements: Up/Down move the active row across the full flattened list (not
+    /// just the rendered window), Right expands a collapsed row or descends into an expanded
+    /// one's first child, Left collapses an expanded row or moves to its parent, Home/End jump
+    /// to the first/last row.
+    /// </summary>
+    protected async Task OnKeyDownAsync(KeyboardEventArgs args)
+    {
+        if (!HasActiveRow)
         {
             return;
         }
 
-        bool isOpen = IsExpanded(row);
-        if (key == "ArrowRight" && !isOpen)
+        TreeGridRow<TRow> row = flattened[activeIndex];
+        switch (args.Key)
         {
-            Toggle(row);
+            case "ArrowDown":
+                if (activeIndex < flattened.Count - 1)
+                {
+                    activeIndex += 1;
+                }
+
+                break;
+            case "ArrowUp":
+                if (activeIndex > 0)
+                {
+                    activeIndex -= 1;
+                }
+
+                break;
+            case "ArrowRight":
+                if (row.HasChildren && !row.Expanded)
+                {
+                    Toggle(row.Row);
+                }
+                else if (row.HasChildren)
+                {
+                    activeIndex += 1;   // depth-first flatten: the first child is always next
+                }
+
+                break;
+            case "ArrowLeft":
+                if (row.HasChildren && row.Expanded)
+                {
+                    Toggle(row.Row);
+                }
+                else if (row.Depth > 0)
+                {
+                    activeIndex = ParentIndex(activeIndex);
+                }
+
+                break;
+            case "Home":
+                activeIndex = 0;
+                break;
+            case "End":
+                activeIndex = flattened.Count - 1;
+                break;
+            default:
+                return;   // not a navigation key
         }
-        else if (key == "ArrowLeft" && isOpen)
+
+        StateHasChanged();
+        await EnsureActiveVisibleAsync();
+    }
+
+    // Re-anchors the active row onto a real row after the visible list reshapes
+    // (expand/collapse, or the host swapping Items/ChildrenSelector).
+    private void ClampActiveIndex()
+    {
+        if (flattened.Count == 0)
         {
-            Toggle(row);
+            activeIndex = -1;
         }
+        else if (activeIndex < 0)
+        {
+            activeIndex = 0;
+        }
+        else if (activeIndex >= flattened.Count)
+        {
+            activeIndex = flattened.Count - 1;
+        }
+    }
+
+    // The flatten is depth-first pre-order, so a node's parent is the nearest preceding
+    // entry at a shallower depth.
+    private int ParentIndex(int childIndex)
+    {
+        int depth = flattened[childIndex].Depth;
+        for (int i = childIndex - 1; i >= 0; i--)
+        {
+            if (flattened[i].Depth < depth)
+            {
+                return i;
+            }
+        }
+
+        return childIndex;
+    }
+
+    // Scrolls the container so the active row sits inside the viewport, mirroring
+    // DataGridPrimitive's EnsureActiveVisibleAsync. The current scroll position is
+    // approximated from the windowing state, so no extra interop round-trip is needed.
+    private async Task EnsureActiveVisibleAsync()
+    {
+        if (activeIndex < 0)
+        {
+            return;
+        }
+
+        int rowsInView = Math.Max(1, ViewportHeight / RowHeight);
+        int topRow = firstVisibleIndex + Overscan;
+        int bottomRow = topRow + rowsInView - 1;
+
+        double? target = null;
+        if (activeIndex < topRow)
+        {
+            target = (double)activeIndex * RowHeight;
+        }
+        else if (activeIndex > bottomRow)
+        {
+            target = (double)(activeIndex - rowsInView + 1) * RowHeight;
+        }
+
+        if (target is double top)
+        {
+            await Dom.ScrollToAsync(ContainerId, Math.Max(0, top));
+        }
+    }
+
+    // Registers the JS keydown guard that suppresses native arrow/page scrolling (so row
+    // navigation stays in control) without blocking text inputs. Browser-only.
+    private async Task EnsureArrowSuppressionAsync()
+    {
+        if (suppressKeysRegistered || !OperatingSystem.IsBrowser())
+        {
+            return;
+        }
+
+        suppressKeysRegistered = true;
+        await Dom.SuppressArrowKeysAsync(ContainerId);
     }
 
     private void ExpandAll(IReadOnlyList<TRow> nodes)
@@ -163,7 +321,14 @@ public class TreeGridPrimitive<TRow> : ComponentBase, IAsyncDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender || scrollSubscribed || !OperatingSystem.IsBrowser())
+        if (!firstRender)
+        {
+            return;
+        }
+
+        await EnsureArrowSuppressionAsync();
+
+        if (scrollSubscribed || !OperatingSystem.IsBrowser())
         {
             return;
         }
