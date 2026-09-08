@@ -21,6 +21,17 @@ All notable changes to BlazorDX are documented here. The format is loosely based
   also now sets `Tag` to the original row automatically, so a chart bound via `[ChartRow]` gets
   the real domain object back with no extra attribute. See the updated `[ChartRow]` demo on
   [`/charts`](samples/BlazorDX.Demo/BlazorDX.Demo.Client/Pages/Charts.razor).
+- **`DxTreeGrid` gained full row navigation, closing a keyboard-parity gap with `DxTreeView`.**
+  Previously its only keyboard behavior was ArrowLeft/ArrowRight expand/collapse on whichever row
+  happened to have native Tab focus — no Up/Down row traversal, no Home/End, and every row was
+  its own Tab stop despite advertising `role="treegrid"`. It now follows the same WAI-ARIA pattern
+  `DxDataGrid`/`DxTreeView` already use: a single roving tab stop on the grid container,
+  `aria-activedescendant` addressing the active row (so navigation still works when that row is
+  scrolled out of the rendered window), ArrowUp/ArrowDown across the full flattened tree,
+  ArrowRight expands-or-descends-to-first-child, ArrowLeft collapses-or-moves-to-parent, and
+  Home/End jump to the first/last row. Clicking a row also makes it the active row. **Behavior
+  change:** rows are no longer independently Tab-reachable — Tab now enters the grid once, and
+  arrow keys move within it, matching `DxTreeView`'s model instead of a flat list of Tab stops.
 
 ### Fixed
 

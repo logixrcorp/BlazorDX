@@ -90,9 +90,19 @@
 }
 
 /* ---- Tree grid ---- */
-.dx-grid-row[tabindex]:focus-visible {
+/* Keyboard row navigation: the treegrid container is the single tab stop (roving
+   aria-activedescendant, like DataGrid's active cell); the active row gets an accent ring. */
+.dx-tree-grid:focus { outline: none; }
+.dx-tree-grid:focus-visible {
   outline: 2px solid var(--dx-grid-accent, #2563eb);
   outline-offset: -2px;
+}
+.dx-grid-row-active {
+  outline: 2px solid var(--dx-grid-accent, #2563eb);
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--dx-grid-accent, #2563eb) 10%, transparent);
+  position: relative;
+  z-index: 1;
 }
 .dx-tree-cell {
   display: inline-flex;
