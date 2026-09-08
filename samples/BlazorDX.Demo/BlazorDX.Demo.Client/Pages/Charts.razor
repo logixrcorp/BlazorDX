@@ -47,8 +47,11 @@
     No manual mapping: annotate a domain type's properties with <code>[ChartValue(ChartField.…)]</code>
     once, and <code>rows.ToChartPoints()</code> — a <c>BlazorDX.SourceGen</c>-generated extension,
     zero reflection — projects it for any chart. See <code>SalesRecord</code> below.
+    <code>ToChartPoints()</code> also sets <code>ChartPoint.Tag</code> to the original row, so a
+    selection handler gets the real <code>SalesRecord</code> back instead of re-correlating
+    <code>Category</code> to find it. Selected: <strong>@selectedSale</strong>.
 </p>
-<DxBarChart Points="salesPoints" Width="720" Height="220" />
+<DxBarChart Points="salesPoints" Width="720" Height="220" OnPointSelected="OnSaleSelected" />
 
 <h2 style="margin-top:32px">Histogram (Rust binning)</h2>
 <p class="dx-demo-meta">
@@ -194,9 +197,15 @@
 
     private string selectedBar = "(none)";
     private string legendStatus = "(none)";
+    private string selectedSale = "(none)";
 
     private void OnBarSelected(ChartPointEventArgs e) =>
         selectedBar = $"{e.Point.Category} = {e.Point.Y:0.##}";
+
+    private void OnSaleSelected(ChartPointEventArgs e) =>
+        selectedSale = e.Point.Tag is SalesRecord sale
+            ? $"{sale.Quarter} ({sale.Region}): {sale.Revenue:0.##}"
+            : "(none)";
 
     private GraphKind graphKind = GraphKind.Bar;
 

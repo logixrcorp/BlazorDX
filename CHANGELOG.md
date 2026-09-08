@@ -9,6 +9,19 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ## [Unreleased]
 
+### Added
+
+- **`ChartPoint`/`BulletPoint` gained a `Tag` field for drill-down to your own data.** Every field
+  on `ChartPoint` before this was for the chart to draw with; nothing carried a reference back to
+  the caller's own domain object, so a selection handler had to re-correlate `Category`/`X`/`Y`
+  back to its source (e.g. `orders.First(o => o.Quarter == args.Point.Category)`) to drill down
+  further. `Tag` is `object?`, defaults to `null`, and no chart reads or draws it — it's returned
+  unchanged in `ChartPointEventArgs`/`BulletPointEventArgs`. Purely additive: every existing call
+  site, positional or named, keeps working unchanged. `[ChartRow]`'s generated `ToChartPoints()`
+  also now sets `Tag` to the original row automatically, so a chart bound via `[ChartRow]` gets
+  the real domain object back with no extra attribute. See the updated `[ChartRow]` demo on
+  [`/charts`](samples/BlazorDX.Demo/BlazorDX.Demo.Client/Pages/Charts.razor).
+
 ### Fixed
 
 - **The manual screen-reader testing matrix was missing NVDA + Firefox.** Added alongside the
