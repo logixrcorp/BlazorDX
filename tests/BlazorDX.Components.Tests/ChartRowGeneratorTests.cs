@@ -94,6 +94,19 @@ public sealed class ChartRowGeneratorTests : TestContext
     }
 
     [Fact]
+    public void ToChartPoints_sets_Tag_to_the_original_row()
+    {
+        SalesRow q1 = new() { Quarter = "Q1", Revenue = 100, Region = "West" };
+        SalesRow q2 = new() { Quarter = "Q2", Revenue = 150, Region = "East" };
+        List<SalesRow> rows = [q1, q2];
+
+        IReadOnlyList<ChartPoint> points = rows.ToChartPoints();
+
+        Assert.Same(q1, points[0].Tag);
+        Assert.Same(q2, points[1].Tag);
+    }
+
+    [Fact]
     public void Generated_points_feed_a_real_chart_component()
     {
         // Proves the generated extension's output is exactly what DxBarChart already consumes -

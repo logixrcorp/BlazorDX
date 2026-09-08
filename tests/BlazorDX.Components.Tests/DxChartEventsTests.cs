@@ -63,6 +63,21 @@ public sealed class DxChartEventsTests : TestContext
     }
 
     [Fact]
+    public void Bar_chart_click_returns_the_points_Tag_unchanged()
+    {
+        object domainRow = new { OrderId = 42 };
+        ChartPointEventArgs? selected = null;
+        IRenderedComponent<DxBarChart> chart = RenderComponent<DxBarChart>(p => p
+            .Add(c => c.Points, new List<ChartPoint> { new(Category: "A", Y: 10, Tag: domainRow) })
+            .Add(c => c.OnPointSelected, e => selected = e));
+
+        chart.FindAll("rect.dx-bar-rect")[0].Click();
+
+        Assert.NotNull(selected);
+        Assert.Same(domainRow, selected!.Value.Point.Tag);
+    }
+
+    [Fact]
     public void Bar_chart_keyboard_arrow_then_enter_selects_the_active_bar()
     {
         ChartPointEventArgs? selected = null;
