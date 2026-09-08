@@ -42,6 +42,12 @@ All notable changes to BlazorDX are documented here. The format is loosely based
   reach it — only Shift+Tab all the way back past every row, the toolbar, and the breadcrumb
   could. A keyboard-only user heard "choose a destination folder" with no forward path to one.
   Arming a move now sends focus straight to the top of the folder tree. (#73)
+- **`DxHotkeys` could hijack a keystroke you were typing.** The global shortcut listener matched
+  purely on key/modifiers, with no check of what actually had focus — so a bound combo (a plain
+  letter is a common command-palette convention) ate that character everywhere a text input,
+  textarea, or contenteditable region had focus, including a `DxDataGrid` cell editor, a
+  `DxComboBox`/`DxCommandPalette` filter, or a `DxChat` message box. Added the same text-entry
+  exemption `grid-dom.ts`'s own arrow-key suppression already uses. (#76)
 - **Escape closed every open overlay at once instead of just the topmost one.** `DxDialog`,
   `DxSheet`, `DxCommandPalette`, and `DxContextMenu` each registered their own independent
   `document`-level Escape listener with no concept of stacking, so a context menu (or combobox
