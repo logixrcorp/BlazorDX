@@ -24,7 +24,7 @@
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.11" />
     <!-- IHttpClientFactory for the SSRS reporting integration: a typed/named
          HttpClient is the supported way to reach the report server. -->
-    <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.11" />
     <!-- IStringLocalizer<T> — the localization spike (ADR 0016). Under evaluation
          against this project's AOT/trim gate before it's adopted repo-wide; see
          docs/adr/0016-localization-rtl-strategy.md for the outcome. -->
