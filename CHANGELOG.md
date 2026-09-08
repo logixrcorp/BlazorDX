@@ -9,6 +9,8 @@ All notable changes to BlazorDX are documented here. The format is loosely based
 
 ## [Unreleased]
 
+## [0.6.1] — 2026-09-08
+
 ### Added
 
 - **`ChartPoint`/`BulletPoint` gained a `Tag` field for drill-down to your own data.** Every field
@@ -34,6 +36,27 @@ All notable changes to BlazorDX are documented here. The format is loosely based
   arrow keys move within it, matching `DxTreeView`'s model instead of a flat list of Tab stops.
 
 ### Fixed
+
+- **0.5.0 and 0.6.0 could not be installed by any consumer on a stable .NET SDK.** `f984197`
+  bumped `Microsoft.CodeAnalysis.CSharp` 4.8.0 → 5.9.0 as a Dependabot semver-major. An analyzer
+  runs only on a compiler at least as new as the one it references, so that pin is a
+  **compatibility floor**, not a dependency to keep current — raising it raised the minimum SDK
+  for everyone consuming BlazorDX. Worse, 5.9.0 is built from `branch="release/insiders"` and its
+  sibling was pinned to a prerelease string, while this repo's `global.json` sets
+  `allowPrerelease: false`: it demanded a prerelease compiler and refused prerelease SDKs, so no
+  stable SDK could satisfy it, and this repo would not build either (7 × CS9057).
+
+  **Nothing used the newer APIs.** Reverted to 4.8.0: solution builds clean, 1,362 tests pass,
+  `BlazorDX.Analyzers.Tests` 12/12.
+
+  **The failure was disguised for consumers, and a setting is why.** This repo sets
+  `TreatWarningsAsErrors`, so CS9057 stops its build and names the cause. A consumer without it
+  gets CS9057 as a *warning* — the generator is silently skipped and the build fails with
+  `CS0246` on missing generated types, pointing at their own files. That is how it was found:
+  HolosThought moving 0.4.4 → 0.6.0 saw three `CS0246`s and no obvious cause. The producer's
+  stricter setting is exactly why the producer never saw what it had shipped.
+
+  `.github/dependabot.yml` now ignores both Roslyn packages, so the next major does not repeat it.
 
 - **The manual screen-reader testing matrix was missing NVDA + Firefox.** Added alongside the
   existing NVDA + Chrome/Edge pairing — this library leans on `aria-live` regions in several
