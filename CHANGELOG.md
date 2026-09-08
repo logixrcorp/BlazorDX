@@ -71,6 +71,13 @@ All notable changes to BlazorDX are documented here. The format is loosely based
   bubble up and *also* advance the carousel, moving the slide out from under whatever the user
   was actually navigating. Moved the listener onto the previous/next buttons only, the same
   sibling-not-ancestor shape `DxTabs`' tablist and `DxSplitter`'s divider already use. (#78)
+- **`DxDataGrid` lost keyboard focus after exiting cell-edit mode.** Committing (Enter) or
+  cancelling (Escape) an edit unmounts the editor `<input>`, taking real DOM focus with it — the
+  browser drops it to `<body>`, and the grid container never reclaimed it. Arrow-key cell
+  navigation, which depends on the container itself holding focus, was dead until the user clicked
+  or Tabbed back in. Added `IGridDomInterop.FocusElementAsync` (focuses an element directly, unlike
+  the existing `FocusFirstAsync`, which would have landed on a header button instead of the grid
+  body) and call it after both Commit and Cancel, when `KeyboardNavigation` is on.
 
 ## [0.6.0] — 2026-09-05
 

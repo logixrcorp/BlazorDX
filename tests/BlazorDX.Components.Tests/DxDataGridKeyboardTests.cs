@@ -116,4 +116,91 @@ public sealed class DxDataGridKeyboardTests : TestContext
         Assert.Empty(grid.FindAll(".dx-grid-cell-active"));
         Assert.False(grid.Find("[role=grid]").HasAttribute("tabindex"));
     }
+
+    // ---- Focus restoration after exiting cell-edit mode ----
+    // The editor <input> is unmounted the instant Commit/Cancel exits edit mode, taking real
+    // DOM focus with it. Without an explicit restore, arrow-key navigation (which depends on
+    // the grid container itself holding focus) would be dead until the user clicked or Tabbed
+    // back in.
+
+    private sealed class RecordingFocusDom : IGridDomInterop
+    {
+        public List<string> FocusedElementIds { get; } = [];
+
+        public ValueTask EnsureLoadedAsync() => ValueTask.CompletedTask;
+        public ValueTask<(double, double, double)> MeasureViewportAsync(string id) =>
+            ValueTask.FromResult<(double, double, double)>((0, 0, 0));
+        public ValueTask<(double, double, double, double)> MeasureViewport2dAsync(string id) =>
+            ValueTask.FromResult<(double, double, double, double)>((0, 0, 0, 0));
+        public ValueTask SubscribeScrollAsync(string id, Action onScroll) => ValueTask.CompletedTask;
+        public ValueTask FocusFirstAsync(string id) => ValueTask.CompletedTask;
+        public ValueTask FocusElementAsync(string id)
+        {
+            FocusedElementIds.Add(id);
+            return ValueTask.CompletedTask;
+        }
+
+        public ValueTask DownloadTextAsync(string f, string m, string c) => ValueTask.CompletedTask;
+        public ValueTask DownloadBytesAsync(string f, string m, byte[] c) => ValueTask.CompletedTask;
+        public ValueTask<bool> WriteClipboardAsync(string text) => ValueTask.FromResult(true);
+        public ValueTask ScrollToAsync(string id, double top) => ValueTask.CompletedTask;
+        public ValueTask SuppressArrowKeysAsync(string id) => ValueTask.CompletedTask;
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    }
+
+    [Fact]
+    public void Committing_an_edit_restores_focus_to_the_grid_container()
+    {
+        RecordingFocusDom dom = new();
+        Services.AddScoped<IGridDomInterop>(_ => dom);
+        IRenderedComponent<DxDataGrid<WidgetRow>> grid = RenderComponent<DxDataGrid<WidgetRow>>(parameters => parameters
+            .Add(g => g.Items, Rows())
+            .Add(g => g.Accessor, new WidgetRowGridAccessor())
+            .Add(g => g.KeyboardNavigation, true)
+            .Add(g => g.Editable, true));
+
+        grid.Find(".dx-grid-cell").DoubleClick();
+        var editor = grid.Find(".dx-grid-edit-input");
+        editor.KeyDown(new KeyboardEventArgs { Key = "Enter" });
+
+        string containerId = grid.Find("[role=grid]").GetAttribute("id")!;
+        Assert.Contains(containerId, dom.FocusedElementIds);
+    }
+
+    [Fact]
+    public void Cancelling_an_edit_restores_focus_to_the_grid_container()
+    {
+        RecordingFocusDom dom = new();
+        Services.AddScoped<IGridDomInterop>(_ => dom);
+        IRenderedComponent<DxDataGrid<WidgetRow>> grid = RenderComponent<DxDataGrid<WidgetRow>>(parameters => parameters
+            .Add(g => g.Items, Rows())
+            .Add(g => g.Accessor, new WidgetRowGridAccessor())
+            .Add(g => g.KeyboardNavigation, true)
+            .Add(g => g.Editable, true));
+
+        grid.Find(".dx-grid-cell").DoubleClick();
+        var editor = grid.Find(".dx-grid-edit-input");
+        editor.KeyDown(new KeyboardEventArgs { Key = "Escape" });
+
+        string containerId = grid.Find("[role=grid]").GetAttribute("id")!;
+        Assert.Contains(containerId, dom.FocusedElementIds);
+    }
+
+    [Fact]
+    public void Exiting_edit_without_keyboard_navigation_does_not_call_FocusElementAsync()
+    {
+        RecordingFocusDom dom = new();
+        Services.AddScoped<IGridDomInterop>(_ => dom);
+        IRenderedComponent<DxDataGrid<WidgetRow>> grid = RenderComponent<DxDataGrid<WidgetRow>>(parameters => parameters
+            .Add(g => g.Items, Rows())
+            .Add(g => g.Accessor, new WidgetRowGridAccessor())
+            .Add(g => g.KeyboardNavigation, false)
+            .Add(g => g.Editable, true));
+
+        grid.Find(".dx-grid-cell").DoubleClick();
+        var editor = grid.Find(".dx-grid-edit-input");
+        editor.KeyDown(new KeyboardEventArgs { Key = "Enter" });
+
+        Assert.Empty(dom.FocusedElementIds);
+    }
 }
