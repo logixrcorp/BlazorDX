@@ -56,6 +56,12 @@ public sealed partial class GridDomInterop : IGridDomInterop
         FocusFirst(elementId);
     }
 
+    public async ValueTask FocusElementAsync(string elementId)
+    {
+        await EnsureLoadedAsync();
+        FocusElement(elementId);
+    }
+
     public async ValueTask DownloadTextAsync(string filename, string mime, string content)
     {
         await EnsureLoadedAsync();
@@ -120,4 +126,7 @@ public sealed partial class GridDomInterop : IGridDomInterop
 
     [JSImport("focusFirst", ModuleName)]
     private static partial void FocusFirst(string elementId);
+
+    [JSImport("focusElement", ModuleName)]
+    private static partial void FocusElement(string elementId);
 }

@@ -232,6 +232,7 @@ public sealed class ObservabilityTests : TestContext
         public ValueTask<(double, double, double, double)> MeasureViewport2dAsync(string id) => ValueTask.FromResult<(double, double, double, double)>((0, 0, 0, 0));
         public ValueTask SubscribeScrollAsync(string id, Action onScroll) => ValueTask.CompletedTask;
         public ValueTask FocusFirstAsync(string id) => ValueTask.CompletedTask;
+        public ValueTask FocusElementAsync(string id) => ValueTask.CompletedTask;
         public ValueTask DownloadTextAsync(string f, string m, string c) => ValueTask.CompletedTask;
         public ValueTask DownloadBytesAsync(string f, string m, byte[] c) => ValueTask.CompletedTask;
         public ValueTask<bool> WriteClipboardAsync(string text) => ValueTask.FromResult(false);   // permission denied

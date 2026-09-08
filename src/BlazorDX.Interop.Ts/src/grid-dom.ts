@@ -169,3 +169,11 @@ export function focusFirst(elementId: string): void {
   );
   (focusable ?? element).focus();
 }
+
+// Moves focus to the element itself, not a descendant — for restoring focus to the grid's
+// own tab stop (e.g. after exiting cell-edit mode unmounts the editor input that briefly held
+// it), where focusFirst would instead land on the first header button/filter input in document
+// order.
+export function focusElement(elementId: string): void {
+  document.getElementById(elementId)?.focus();
+}
