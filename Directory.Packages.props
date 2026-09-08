@@ -63,6 +63,6 @@
     <PackageVersion Include="Microsoft.Playwright" Version="1.62.0" />
     <!-- Lets the E2E tests skip cleanly (not fail) when no demo server is reachable,
          so the normal `dotnet test` stays green without one. -->
-    <PackageVersion Include="Xunit.SkippableFact" Version="1.4.13" />
+    <PackageVersion Include="Xunit.SkippableFact" Version="1.5.85" />
   </ItemGroup>
 </Project>
