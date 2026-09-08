@@ -33,6 +33,17 @@ public sealed class DxTreeGrid<TRow> : TreeGridPrimitive<TRow>
         builder.AddAttribute(4, "aria-rowcount", VisibleRowCount);
         builder.AddAttribute(5, "style", $"height:{ViewportHeight}px;");
 
+        // Single roving tab stop (the WAI-ARIA treegrid pattern), addressed with
+        // aria-activedescendant so the active row is meaningful even while scrolled out of
+        // the rendered window — see TreeGridPrimitive.OnKeyDownAsync for the key handling.
+        builder.AddAttribute(200, "tabindex", "0");
+        if (HasActiveRow)
+        {
+            builder.AddAttribute(201, "aria-activedescendant", ActiveRowId);
+        }
+
+        builder.AddAttribute(202, "onkeydown", EventCallback.Factory.Create<KeyboardEventArgs>(this, OnKeyDownAsync));
+
         BuildHeader(builder, columnTemplate);
         BuildBody(builder, columnTemplate);
 
@@ -72,9 +83,9 @@ public sealed class DxTreeGrid<TRow> : TreeGridPrimitive<TRow>
         builder.AddAttribute(19, "style", $"height:{TopPadding}px;");
         builder.CloseElement();
 
-        foreach (TreeGridRow<TRow> node in VisibleRows())
+        foreach ((int index, TreeGridRow<TRow> node) in VisibleRows())
         {
-            BuildRow(builder, node, columnTemplate);
+            BuildRow(builder, index, node, columnTemplate);
         }
 
         builder.OpenElement(20, "div");
@@ -84,15 +95,20 @@ public sealed class DxTreeGrid<TRow> : TreeGridPrimitive<TRow>
         builder.CloseElement();
     }
 
-    private void BuildRow(RenderTreeBuilder builder, TreeGridRow<TRow> node, string columnTemplate)
+    private void BuildRow(RenderTreeBuilder builder, int index, TreeGridRow<TRow> node, string columnTemplate)
     {
         TRow row = node.Row;
+        bool active = IsActiveRow(index);
 
         builder.OpenElement(22, "div");
         builder.SetKey(row);
-        builder.AddAttribute(23, "class", "dx-grid-row");
+        builder.AddAttribute(23, "class", active ? "dx-grid-row dx-grid-row-active" : "dx-grid-row");
         builder.AddAttribute(24, "role", "row");
-        builder.AddAttribute(25, "tabindex", "0");
+        if (active)
+        {
+            builder.AddAttribute(25, "id", ActiveRowId);   // aria-activedescendant target
+        }
+
         builder.AddAttribute(26, "aria-level", node.Depth + 1);
         if (node.HasChildren)
         {
@@ -100,8 +116,7 @@ public sealed class DxTreeGrid<TRow> : TreeGridPrimitive<TRow>
         }
 
         builder.AddAttribute(28, "style", $"height:{RowHeight}px;{columnTemplate}");
-        builder.AddAttribute(29, "onkeydown",
-            EventCallback.Factory.Create<KeyboardEventArgs>(this, e => OnRowKeyDown(row, e.Key)));
+        builder.AddAttribute(29, "onclick", EventCallback.Factory.Create(this, () => SetActiveRow(index)));
 
         for (int column = 0; column < Columns.Count; column++)
         {

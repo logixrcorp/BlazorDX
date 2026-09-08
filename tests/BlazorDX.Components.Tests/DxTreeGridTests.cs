@@ -98,12 +98,104 @@ public sealed class DxTreeGridTests : TestContext
     }
 
     [Fact]
-    public void Arrow_right_expands_a_focused_parent_row()
+    public void Container_is_the_single_tab_stop_with_a_roving_active_row()
     {
         IRenderedComponent<DxTreeGrid<TreeWidget>> tree = Render();
 
-        tree.FindAll(".dx-grid-row")[0].KeyDown(new KeyboardEventArgs { Key = "ArrowRight" });
+        var container = tree.Find("[role=treegrid]");
+        Assert.Equal("0", container.GetAttribute("tabindex"));
+        Assert.Empty(tree.FindAll(".dx-grid-row[tabindex]"));   // rows aren't independent tab stops
+        Assert.NotNull(container.GetAttribute("aria-activedescendant"));
+
+        // The active row (defaults to the first) carries the id aria-activedescendant points at.
+        var activeRow = tree.FindAll(".dx-grid-row")[0];
+        Assert.Equal(container.GetAttribute("aria-activedescendant"), activeRow.GetAttribute("id"));
+        Assert.Contains("dx-grid-row-active", activeRow.ClassName);
+    }
+
+    [Fact]
+    public void Arrow_right_expands_the_active_parent_row()
+    {
+        IRenderedComponent<DxTreeGrid<TreeWidget>> tree = Render();
+
+        tree.Find("[role=treegrid]").KeyDown(new KeyboardEventArgs { Key = "ArrowRight" });
 
         Assert.Equal(4, tree.FindAll(".dx-grid-row").Count);
+    }
+
+    [Fact]
+    public void Arrow_right_on_an_expanded_row_descends_to_its_first_child()
+    {
+        IRenderedComponent<DxTreeGrid<TreeWidget>> tree = Render(expanded: true);
+        var container = tree.Find("[role=treegrid]");
+
+        container.KeyDown(new KeyboardEventArgs { Key = "ArrowRight" });   // A -> A1
+
+        Assert.Equal("A1", tree.FindAll(".dx-tree-label")[1].TextContent);
+        Assert.Contains("dx-grid-row-active", tree.FindAll(".dx-grid-row")[1].ClassName);
+    }
+
+    [Fact]
+    public void Arrow_down_then_up_moves_the_active_row_across_the_flattened_list()
+    {
+        IRenderedComponent<DxTreeGrid<TreeWidget>> tree = Render(expanded: true);   // A, A1, A2, B
+        var container = tree.Find("[role=treegrid]");
+
+        container.KeyDown(new KeyboardEventArgs { Key = "ArrowDown" });   // A -> A1
+        container.KeyDown(new KeyboardEventArgs { Key = "ArrowDown" });   // A1 -> A2
+        Assert.Contains("dx-grid-row-active", tree.FindAll(".dx-grid-row")[2].ClassName);
+
+        container.KeyDown(new KeyboardEventArgs { Key = "ArrowUp" });     // A2 -> A1
+        Assert.Contains("dx-grid-row-active", tree.FindAll(".dx-grid-row")[1].ClassName);
+    }
+
+    [Fact]
+    public void Arrow_left_on_a_leaf_moves_to_its_parent()
+    {
+        IRenderedComponent<DxTreeGrid<TreeWidget>> tree = Render(expanded: true);   // A, A1, A2, B
+        var container = tree.Find("[role=treegrid]");
+
+        container.KeyDown(new KeyboardEventArgs { Key = "ArrowDown" });   // A -> A1 (a leaf)
+        container.KeyDown(new KeyboardEventArgs { Key = "ArrowLeft" });   // A1 -> A (its parent)
+
+        Assert.Contains("dx-grid-row-active", tree.FindAll(".dx-grid-row")[0].ClassName);
+    }
+
+    [Fact]
+    public void Home_and_end_jump_to_the_first_and_last_row()
+    {
+        IRenderedComponent<DxTreeGrid<TreeWidget>> tree = Render(expanded: true);   // A, A1, A2, B
+        var container = tree.Find("[role=treegrid]");
+
+        container.KeyDown(new KeyboardEventArgs { Key = "End" });
+        Assert.Contains("dx-grid-row-active", tree.FindAll(".dx-grid-row")[3].ClassName);
+
+        container.KeyDown(new KeyboardEventArgs { Key = "Home" });
+        Assert.Contains("dx-grid-row-active", tree.FindAll(".dx-grid-row")[0].ClassName);
+    }
+
+    [Fact]
+    public void Clicking_a_row_makes_it_the_active_row()
+    {
+        IRenderedComponent<DxTreeGrid<TreeWidget>> tree = Render(expanded: true);   // A, A1, A2, B
+
+        tree.FindAll(".dx-grid-row")[2].Click();   // A2
+
+        Assert.Contains("dx-grid-row-active", tree.FindAll(".dx-grid-row")[2].ClassName);
+        Assert.DoesNotContain("dx-grid-row-active", tree.FindAll(".dx-grid-row")[0].ClassName);
+    }
+
+    [Fact]
+    public void Collapsing_the_active_rows_ancestor_re_anchors_the_active_index()
+    {
+        IRenderedComponent<DxTreeGrid<TreeWidget>> tree = Render(expanded: true);   // A, A1, A2, B
+        var container = tree.Find("[role=treegrid]");
+
+        container.KeyDown(new KeyboardEventArgs { Key = "ArrowDown" });   // A -> A1 (active)
+        tree.FindAll(".dx-tree-toggle")[0].Click();                      // collapse "A" away
+
+        // A1 no longer exists in the flattened list; the active index must land on a real row.
+        Assert.Equal(2, tree.FindAll(".dx-grid-row").Count);   // A, B
+        Assert.Single(tree.FindAll(".dx-grid-row-active"));
     }
 }
