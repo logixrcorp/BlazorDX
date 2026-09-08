@@ -6,10 +6,43 @@
 
 type Cleanup = () => void;
 
+type OverlayEntry = {
+  cleanups: Cleanup[];
+  // Present only when this overlay was opened with closeOnEsc. Escape is dispatched to at
+  // most one overlay - see ensureGlobalEscapeListener - so a nested overlay (e.g. a context
+  // menu opened from inside a dialog) doesn't also close everything underneath it.
+  onEscape?: () => void;
+};
+
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-const openOverlays = new Map<string, Cleanup>();
+const openOverlays = new Map<string, OverlayEntry>();
+let globalEscapeListenerAttached = false;
+
+// One shared document-level Escape listener for every overlay, instead of one per overlay.
+// Multiple independent `document.addEventListener("keydown", ...)` calls (the previous
+// design) all fire on the same keypress with nothing to stop propagation between them, so a
+// context menu opened inside a dialog would have both close on the same Escape press. Only
+// the topmost (most-recently-opened, still-open) overlay's onEscape runs; an overlay opened
+// with closeOnEsc:false simply doesn't set onEscape, so if it's topmost, Escape does nothing
+// at all rather than falling through to whatever is open underneath it - it's still modal.
+function ensureGlobalEscapeListener(): void {
+  if (globalEscapeListenerAttached) {
+    return;
+  }
+
+  globalEscapeListenerAttached = true;
+  document.addEventListener("keydown", (event: KeyboardEvent) => {
+    if (event.key !== "Escape") {
+      return;
+    }
+
+    const entries = Array.from(openOverlays.values());
+    const topmost = entries[entries.length - 1];
+    topmost?.onEscape?.();
+  });
+}
 
 function focusableWithin(root: HTMLElement): HTMLElement[] {
   return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
@@ -57,6 +90,7 @@ export function open(
 
   close(elementId); // never double-register
   const cleanups: Cleanup[] = [];
+  let onEscape: (() => void) | undefined;
 
   if (lockScroll) {
     const previous = document.body.style.overflow;
@@ -67,13 +101,8 @@ export function open(
   }
 
   if (closeOnEsc) {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onDismiss();
-      }
-    };
-    document.addEventListener("keydown", onKeyDown);
-    cleanups.push(() => document.removeEventListener("keydown", onKeyDown));
+    onEscape = onDismiss;
+    ensureGlobalEscapeListener();
   }
 
   if (closeOnOutsideClick) {
@@ -103,13 +132,13 @@ export function open(
     focusableWithin(element)[0]?.focus();
   }
 
-  openOverlays.set(elementId, () => cleanups.forEach((cleanup) => cleanup()));
+  openOverlays.set(elementId, { cleanups, onEscape });
 }
 
 export function close(elementId: string): void {
-  const cleanup = openOverlays.get(elementId);
-  if (cleanup !== undefined) {
-    cleanup();
+  const entry = openOverlays.get(elementId);
+  if (entry !== undefined) {
+    entry.cleanups.forEach((cleanup) => cleanup());
     openOverlays.delete(elementId);
   }
 }
