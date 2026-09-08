@@ -42,6 +42,12 @@ All notable changes to BlazorDX are documented here. The format is loosely based
   reach it — only Shift+Tab all the way back past every row, the toolbar, and the breadcrumb
   could. A keyboard-only user heard "choose a destination folder" with no forward path to one.
   Arming a move now sends focus straight to the top of the folder tree. (#73)
+- **Escape closed every open overlay at once instead of just the topmost one.** `DxDialog`,
+  `DxSheet`, `DxCommandPalette`, and `DxContextMenu` each registered their own independent
+  `document`-level Escape listener with no concept of stacking, so a context menu (or combobox
+  dropdown, or command palette) opened from inside a dialog closed *both* on a single Escape
+  press. Replaced the per-overlay listeners with one shared listener that dispatches Escape to
+  only the topmost still-open overlay. (#77)
 - **`DxCarousel` stole arrow keys from interactive slide content.** Its keydown listener lived on
   the carousel root, an ancestor of every slide's content — so a slide holding its own
   arrow-key-driven control (a chart with point selection, a grid, a tree) had its keystrokes
