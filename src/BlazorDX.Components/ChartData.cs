@@ -8,9 +8,10 @@ namespace BlazorDX.Components;
 /// line/area/scatter chart reads <see cref="X"/> + <see cref="Y"/>; a stacked-bar/radar chart also
 /// reads <see cref="Series"/> to group points onto a shared category/axis list; a candlestick
 /// chart reads <see cref="Y"/>..<see cref="Y4"/> as Open/High/Low/Close. A field a given chart
-/// type doesn't use is simply ignored. Plain record struct — no reflection, no per-consumer mapping
-/// step (a <c>[ChartRow]</c> source generator for projecting an existing domain type onto this
-/// shape is planned as a follow-up).
+/// type doesn't use is simply ignored. Plain record struct — no reflection, and no hand-written
+/// mapping step is required either: annotate a domain type with <see cref="ChartRowAttribute"/>
+/// and its properties with <see cref="ChartValueAttribute"/>, and the generated
+/// <c>rows.ToChartPoints()</c> projects it directly.
 /// </summary>
 /// <param name="X">X-axis value (line/area/scatter charts).</param>
 /// <param name="Y">
@@ -25,6 +26,14 @@ namespace BlazorDX.Components;
 /// <param name="Y4">Candlestick Close.</param>
 /// <param name="Series">Series name, for charts with more than one series (stacked bar, radar).</param>
 /// <param name="Color">Optional CSS color override for this point/series; otherwise a palette color is used.</param>
+/// <param name="Tag">
+/// Anything you want back. No chart reads it, draws it, or does anything with it except return it
+/// unchanged in <see cref="ChartPointEventArgs"/> when this point is selected or hovered — a
+/// reference to your own domain object (an order, a row id, a full record), so a handler doesn't
+/// have to re-correlate <see cref="Category"/> or <see cref="X"/>/<see cref="Y"/> back to where the
+/// data came from. Optional and additive: every existing call site that doesn't set it keeps
+/// working unchanged, whether it builds a <see cref="ChartPoint"/> positionally or by name.
+/// </param>
 public readonly record struct ChartPoint(
     double X = 0,
     double Y = 0,
@@ -33,7 +42,8 @@ public readonly record struct ChartPoint(
     double? Y3 = null,
     double? Y4 = null,
     string? Series = null,
-    string? Color = null);
+    string? Color = null,
+    object? Tag = null);
 
 /// <summary>
 /// The point a click, keyboard selection, or hover interaction occurred on, for the discrete-mark
@@ -155,13 +165,18 @@ public sealed class ChartValueAttribute : Attribute
 /// <c>[40, 75]</c> for poor/satisfactory/good). <c>null</c> draws a single plain track.
 /// </param>
 /// <param name="Color">Optional CSS color override for the measure bar; otherwise a palette color is used.</param>
+/// <param name="Tag">
+/// Anything you want back — see <see cref="ChartPoint.Tag"/>, the same idea for the same reason.
+/// Returned unchanged in <see cref="BulletPointEventArgs"/>; nothing else reads it.
+/// </param>
 public readonly record struct BulletPoint(
     string Label,
     double Value,
     double Target,
     double Max = 100,
     IReadOnlyList<double>? Ranges = null,
-    string? Color = null);
+    string? Color = null,
+    object? Tag = null);
 
 /// <summary>The row a click, keyboard selection, or hover interaction occurred on, for <see cref="DxBulletChart"/>.</summary>
 /// <param name="Index">The row's index into the chart's <c>Points</c> list.</param>

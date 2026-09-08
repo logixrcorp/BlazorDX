@@ -72,7 +72,12 @@ public sealed class ChartAccessorGenerator : IIncrementalGenerator
     }
 
     // Only the fields a [ChartValue] property actually maps become constructor arguments; every
-    // other field is simply omitted, falling back to ChartPoint's own default.
+    // other field is simply omitted, falling back to ChartPoint's own default. Tag is the one
+    // exception: it is not a [ChartValue] target — no per-property mapping makes sense for it,
+    // since the whole row is the value — so it is appended unconditionally rather than looked up
+    // in propertyByField. This is what lets a selection/hover handler on a [ChartRow]-projected
+    // chart reach the original row directly (args.Point.Tag), with no extra attribute and no step
+    // beyond what [ChartRow] already required.
     private static string BuildArguments(ChartRowModel model)
     {
         Dictionary<string, string> propertyByField = new(StringComparer.Ordinal);
@@ -95,6 +100,8 @@ public sealed class ChartAccessorGenerator : IIncrementalGenerator
 
             arguments.Add($"{field}: {expression}");
         }
+
+        arguments.Add("Tag: __row");
 
         return string.Join(", ", arguments);
     }
