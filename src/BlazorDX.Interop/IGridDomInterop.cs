@@ -26,6 +26,13 @@ public interface IGridDomInterop : IAsyncDisposable
     /// <summary>Moves focus to the first focusable descendant of the element.</summary>
     ValueTask FocusFirstAsync(string elementId);
 
+    /// <summary>
+    /// Moves focus to the element itself (not a descendant) — used to restore focus to the
+    /// grid's own tab stop after an action removes the element that briefly held it, e.g.
+    /// exiting cell-edit mode unmounts the editor input.
+    /// </summary>
+    ValueTask FocusElementAsync(string elementId);
+
     /// <summary>Triggers a client-side download of text content (e.g. an exported CSV).</summary>
     ValueTask DownloadTextAsync(string filename, string mime, string content);
 

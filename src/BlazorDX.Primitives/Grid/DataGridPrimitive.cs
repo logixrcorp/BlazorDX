@@ -709,11 +709,12 @@ public partial class DataGridPrimitive<TRow> : ComponentBase, IAsyncDisposable
     }
 
     /// <summary>Cancels the in-progress edit without writing back.</summary>
-    protected void CancelEdit()
+    protected async Task CancelEditAsync()
     {
         EditingRow = -1;
         EditingColumn = -1;
         StateHasChanged();
+        await RestoreFocusAfterEditAsync();
     }
 
     /// <summary>Writes the current draft back through the generated accessor and exits edit mode.</summary>
@@ -742,10 +743,24 @@ public partial class DataGridPrimitive<TRow> : ComponentBase, IAsyncDisposable
 
         RebuildSlots();
         StateHasChanged();
+        await RestoreFocusAfterEditAsync();
 
         if (RowEdited.HasDelegate)
         {
             await RowEdited.InvokeAsync(Items[rowIndex]);
+        }
+    }
+
+    // The editor <input> is unmounted the instant edit mode exits, taking real DOM focus with
+    // it (the browser drops it to <body>). Without this, arrow-key cell navigation — which
+    // depends on the grid container itself holding focus — is dead until the user clicks or
+    // Tabs back in. Only meaningful when KeyboardNavigation is on; the container has no
+    // tabindex at all otherwise, so focusing it would be a no-op.
+    private async Task RestoreFocusAfterEditAsync()
+    {
+        if (KeyboardNavigation)
+        {
+            await Dom.FocusElementAsync(ContainerId);
         }
     }
 

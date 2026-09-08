@@ -21,6 +21,8 @@ public sealed class NullGridDomInterop : IGridDomInterop
 
     public ValueTask FocusFirstAsync(string elementId) => ValueTask.CompletedTask;
 
+    public ValueTask FocusElementAsync(string elementId) => ValueTask.CompletedTask;
+
     public ValueTask DownloadTextAsync(string filename, string mime, string content) => ValueTask.CompletedTask;
 
     public ValueTask DownloadBytesAsync(string filename, string mime, byte[] content) => ValueTask.CompletedTask;

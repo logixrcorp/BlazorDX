@@ -768,15 +768,9 @@ public sealed class DxDataGrid<TRow> : DataGridPrimitive<TRow>
     private Task OnEditKeyDownAsync(KeyboardEventArgs args) => args.Key switch
     {
         "Enter" => CommitEditAsync(),
-        "Escape" => Run(CancelEdit),
+        "Escape" => CancelEditAsync(),
         _ => Task.CompletedTask,
     };
-
-    private static Task Run(Action action)
-    {
-        action();
-        return Task.CompletedTask;
-    }
 
     private void BuildGroupHeader(RenderTreeBuilder builder, int groupIndex)
     {

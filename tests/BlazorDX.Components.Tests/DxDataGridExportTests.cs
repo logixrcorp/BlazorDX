@@ -26,6 +26,7 @@ public sealed class DxDataGridExportTests : TestContext
             ValueTask.FromResult<(double, double, double, double)>((0, 0, 0, 0));
         public ValueTask SubscribeScrollAsync(string id, Action onScroll) => ValueTask.CompletedTask;
         public ValueTask FocusFirstAsync(string id) => ValueTask.CompletedTask;
+        public ValueTask FocusElementAsync(string id) => ValueTask.CompletedTask;
         public ValueTask DownloadTextAsync(string filename, string mime, string content)
         {
             File = filename;
