@@ -125,8 +125,45 @@ public sealed class DxStructureTests : TestContext
             .Add(c => c.Index, bound)
             .Add(c => c.IndexChanged, i => bound = i));
 
+        // Keyboard nav lives on the prev/next buttons, not the carousel root (see
+        // Carousel_arrow_key_on_slide_content_does_not_change_the_slide below for why).
         // ArrowLeft from the first slide wraps to the last.
-        car.Find(".dx-carousel").KeyDown(new KeyboardEventArgs { Key = "ArrowLeft" });
+        car.Find("[aria-label='Previous slide']").KeyDown(new KeyboardEventArgs { Key = "ArrowLeft" });
         Assert.Equal(2, bound);
+    }
+
+    [Fact]
+    public void Carousel_arrow_key_on_slide_content_does_not_change_the_slide()
+    {
+        // A slide can hold its own interactive content with its own arrow-key behavior (a
+        // chart's point selection, a grid's cell nav). Before the fix, the carousel root's
+        // own onkeydown was an ancestor of every slide, so an ArrowRight meant for the slide's
+        // own handler would *also* bubble up and advance the carousel. Give the slide content
+        // its own onkeydown (standing in for a chart) and assert only it fires.
+        int bound = 0;
+        bool innerHandlerFired = false;
+        IReadOnlyList<RenderFragment> slides =
+        [
+            b =>
+            {
+                b.OpenElement(0, "div");
+                b.AddAttribute(1, "class", "slide-content");
+                b.AddAttribute(2, "tabindex", "0");
+                b.AddAttribute(3, "onkeydown", EventCallback.Factory.Create<KeyboardEventArgs>(
+                    new object(), _ => innerHandlerFired = true));
+                b.AddContent(4, "One");
+                b.CloseElement();
+            },
+            b => b.AddContent(0, "Two"),
+        ];
+        IRenderedComponent<DxCarousel> car = RenderComponent<DxCarousel>(parameters => parameters
+            .Add(c => c.Slides, slides)
+            .Add(c => c.Index, bound)
+            .Add(c => c.IndexChanged, i => bound = i));
+
+        car.Find(".slide-content").KeyDown(new KeyboardEventArgs { Key = "ArrowRight" });
+
+        Assert.True(innerHandlerFired);
+        Assert.Equal(0, bound);
     }
 }

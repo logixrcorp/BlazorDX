@@ -42,6 +42,12 @@ All notable changes to BlazorDX are documented here. The format is loosely based
   reach it — only Shift+Tab all the way back past every row, the toolbar, and the breadcrumb
   could. A keyboard-only user heard "choose a destination folder" with no forward path to one.
   Arming a move now sends focus straight to the top of the folder tree. (#73)
+- **`DxCarousel` stole arrow keys from interactive slide content.** Its keydown listener lived on
+  the carousel root, an ancestor of every slide's content — so a slide holding its own
+  arrow-key-driven control (a chart with point selection, a grid, a tree) had its keystrokes
+  bubble up and *also* advance the carousel, moving the slide out from under whatever the user
+  was actually navigating. Moved the listener onto the previous/next buttons only, the same
+  sibling-not-ancestor shape `DxTabs`' tablist and `DxSplitter`'s divider already use. (#78)
 
 ## [0.6.0] — 2026-09-05
 

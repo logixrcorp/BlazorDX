@@ -5,10 +5,12 @@ using Microsoft.AspNetCore.Components.Web;
 namespace BlazorDX.Components;
 
 /// <summary>
-/// A slide carousel with previous/next controls, dot indicators, and
-/// Left/Right-arrow keyboard navigation. Slides wrap around. Follows the WAI-ARIA
-/// carousel pattern (group + roledescription). Two-way bind the active slide via
-/// <c>@bind-Index</c>. Styling is token-driven (see dx-structure.css).
+/// A slide carousel with previous/next controls, dot indicators, and Left/Right/Home/End
+/// keyboard navigation scoped to the previous/next buttons — so a slide holding its own
+/// interactive content (a chart, a grid, a tree) keeps its own arrow-key behavior instead of
+/// having it stolen by the carousel. Slides wrap around. Follows the WAI-ARIA carousel pattern
+/// (group + roledescription). Two-way bind the active slide via <c>@bind-Index</c>. Styling is
+/// token-driven (see dx-structure.css).
 /// </summary>
 public sealed class DxCarousel : ComponentBase
 {
@@ -51,8 +53,6 @@ public sealed class DxCarousel : ComponentBase
         builder.AddAttribute(2, "role", "group");
         builder.AddAttribute(3, "aria-roledescription", S["Carousel", "carousel"]);
         builder.AddAttribute(4, "aria-label", AriaLabel ?? S["CarouselLabel", "Carousel"]);
-        builder.AddAttribute(5, "tabindex", "0");
-        builder.AddAttribute(6, "onkeydown", EventCallback.Factory.Create<KeyboardEventArgs>(this, OnKeyDownAsync));
 
         BuildArrow(builder, 10, "‹", "Previous slide", () => GoAsync(Index - 1));
 
@@ -104,6 +104,11 @@ public sealed class DxCarousel : ComponentBase
         builder.CloseElement();
     }
 
+    // Keydown lives on the prev/next buttons, not the carousel root: a slide can hold
+    // arbitrary interactive content (a chart with its own arrow-key point selection, a grid,
+    // a tree), and putting the listener on an ancestor of that content would steal the
+    // keystroke via Blazor's own event bubbling. Same fix shape as DxTabs' tablist-only
+    // listener and DxSplitter's divider-only listener.
     private void BuildArrow(RenderTreeBuilder builder, int seq, string glyph, string label, Func<Task> onClick)
     {
         builder.OpenElement(seq, "button");
@@ -112,7 +117,8 @@ public sealed class DxCarousel : ComponentBase
         builder.AddAttribute(seq + 3, "aria-label", label);
         builder.AddAttribute(seq + 4, "disabled", Count < 2);
         builder.AddAttribute(seq + 5, "onclick", EventCallback.Factory.Create(this, onClick));
-        builder.AddContent(seq + 6, glyph);
+        builder.AddAttribute(seq + 6, "onkeydown", EventCallback.Factory.Create<KeyboardEventArgs>(this, OnKeyDownAsync));
+        builder.AddContent(seq + 7, glyph);
         builder.CloseElement();
     }
 
