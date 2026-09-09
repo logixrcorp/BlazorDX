@@ -1,7 +1,7 @@
 ﻿@inject NavigationManager Nav
 @inject IConfiguration Configuration
 <!DOCTYPE html>
-<html lang="en" dir="@Dir">
+<html lang="en" dir="@Dir" data-dx-theme="@Theme">
 
 <head>
     <meta charset="utf-8" />
@@ -148,4 +148,15 @@
     // cases without any client-side wiring.
     private string Dir =>
         System.Web.HttpUtility.ParseQueryString(new Uri(Nav.Uri).Query)["dir"] == "rtl" ? "rtl" : "ltr";
+
+    // The same idea for the theme: ?theme=dark on any route puts data-dx-theme="dark" on <html>,
+    // which is the attribute dx-theme.css already keys its dark block off. DxThemeProvider does
+    // this for a subtree; doing it at the document root is what lets a whole route be swept.
+    //
+    // This exists because the axe sweep only ever ran in light mode, and that blind spot was not
+    // theoretical: twelve rules sat at 1.93:1 against the dark surfaces indefinitely, and a fix
+    // that broke dark mode passed CI cleanly on its way in. A theme the tests never render is a
+    // theme nothing checks.
+    private string Theme =>
+        System.Web.HttpUtility.ParseQueryString(new Uri(Nav.Uri).Query)["theme"] == "dark" ? "dark" : "light";
 }

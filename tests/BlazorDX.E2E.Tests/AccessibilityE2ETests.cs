@@ -104,6 +104,21 @@ public sealed class AccessibilityE2ETests(PlaywrightFixture fx)
     [InlineData("/controls?dir=rtl")]    // dx-input: DxPassword's affixed reveal button
     [InlineData("/files?dir=rtl")]       // dx-filemanager, plus dx-layout's toast host
     [InlineData("/excel?dir=rtl")]       // dx-spreadsheet: the sticky row-number gutter
+    // ---- The dark theme ----
+    // Every route above renders in light mode, and until now so did the whole sweep. That gap was
+    // not theoretical: twelve rules pointed at a token no stylesheet defined and sat at 1.93:1
+    // against the dark surfaces indefinitely, and a change that fixed light while breaking dark
+    // passed CI on its way in. A theme the tests never render is a theme nothing checks.
+    //
+    // These six are chosen per stylesheet rather than per feature — the sheets whose muted,
+    // border and surface tokens carry the most weight, since a token that fails to theme shows up
+    // as contrast rather than as layout.
+    [InlineData("/?theme=dark")]              // the demo chrome itself: nav, footer, hero
+    [InlineData("/app/records?theme=dark")]   // dx-datagrid: striping, sticky header, toolbar
+    [InlineData("/forms?theme=dark")]         // dx-form: labels, hints, validation text
+    [InlineData("/overlays?theme=dark")]      // dx-overlay: dialog, sheet, popover surfaces
+    [InlineData("/files?theme=dark")]         // dx-filemanager: tree, breadcrumb, empty states
+    [InlineData("/controls?theme=dark")]      // dx-input: placeholders, disabled and affixed controls
     public async Task Page_has_no_serious_axe_violations(string route)
     {
         Skip.IfNot(fx.Ready, fx.SkipReason);

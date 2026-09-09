@@ -115,7 +115,10 @@
     @Body
 </main>
 
-<footer class="dx-footer" style="padding:24px 16px; border-top:1px solid #e2e8f0; margin-top:48px; display:flex; gap:18px; flex-wrap:wrap; align-items:center; font-size:14px; color:#475569">
+@* Styled in app.css rather than inline, because these colours have to follow the theme and an
+   inline style cannot. The links also needed a colour of their own: they had none, so they took
+   the browser's default #0000ee — which passes on a light page and is 1.89:1 on a dark one. *@
+<footer class="dx-footer">
     <span>© 2026 Logixr Corp · BlazorDX (MIT) · Beta</span>
     <a href="/faq">FAQ</a>
     <a href="/support">Support</a>
