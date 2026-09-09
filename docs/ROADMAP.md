@@ -136,8 +136,63 @@ enhancements. None of this should be read as "ready"; it is a beta with work ahe
   them.
 - **Independent senior review** — proof of the differentiating claims; see
   [docs/REVIEW.md](REVIEW.md).
-- **Production track record** — none yet. The deployed showcase is only a demo; the library
-  has no production use, and real-world adoption and hardening would have to be earned over time.
+- **Production track record** — **the first real consumer arrived 2026-09-04.**
+  [HolosThought](../../HolosThought) adopted `BlazorDX.Components` 0.4.4 from NuGet across three
+  forms surfaces and one document view. One consumer is not a track record, and the deployed
+  showcase is still only a demo — but it is the first evidence from outside this repository, and it
+  is worth more than the count suggests because HolosThought is a compliance product whose own
+  architecture record now carries the beta dependency as a written decision rather than an inherited
+  status.
+
+  **Seven things it found. Not one would have been caught by a green build or a passing suite** —
+  every conversion compiled and every test passed while the page changed underneath.
+
+  1. **`BlazorDX.SourceGen` must not be referenced explicitly.** It ships standalone *and* is
+     bundled as an analyzer inside `BlazorDX.Primitives`, which `BlazorDX.Components` depends on.
+     A consumer who wants the generator and adds the generator package loads it twice, emits every
+     descriptor twice, and gets `CS0101` naming **their own type**. The README does say
+     `BlazorDX.Components` "transitively pulls … the source generator", so the *fact* is
+     documented — what is missing is the *consequence*: that adding it explicitly is actively
+     harmful rather than merely redundant, and that the error points at the consumer's code.
+     *Cheapest fix: one sentence in the README, or make the standalone package a no-op when
+     Primitives is present.*
+  2. **`DxForm` cannot express a choice whose option value and visible label differ.**
+     `FormContext`'s `FormFieldKind.Enum` branch writes the same string to an option's `value` and
+     its content. Any select whose options carry explanatory text — "text — merges nothing" for the
+     wire value `text` — has to stay hand-written.
+  3. **A field's `Description` is never rendered.** It feeds the AI tool schema alone; `dx-form.css`
+     styles only `.dx-field` and its label/error/invalid/req variants. A consumer reasonably expects
+     a described field to show that description as help text, and folds it into the label instead.
+  4. **The generated input takes a fixed attribute set** — no `AdditionalAttributes`, no
+     `CaptureUnmatchedValues` — so `spellcheck="false"` cannot be passed to a field holding a
+     repository name or a URL. `InputTemplate` is the supported escape hatch and it works, but it
+     means rendering the input yourself.
+  5. **The rendered field carries no per-field id or class**, so a page styling its fields
+     individually has nothing to select on and needs `LabelTemplate` too. Four and five compound: a
+     surface needing both templates leaves `DxForm` supplying the descriptor, the wrapper, errors
+     and the binding — but none of the presentation. The consumer's third surface grew from six
+     lines of markup to eighteen, and stopped at three conversions partly because of it.
+  6. **A dark-themed host silently gets a light theme, and this is the sharpest of the seven.**
+     Every colour resolves through a `--dx-*` token with a light-theme fallback compiled in:
+     `dx-markdown.css` falls back to `--dx-text` `#0f172a` on `--dx-surface` `#ffffff`. The
+     consumer's surface is `#161b24`, so its prose rendered at **1.03:1 — invisible**, with a green
+     build, passing tests, and no error anywhere. **Linking `dx-theme.css` would not have helped,
+     because its `:root` is also a light theme.** Overriding the tokens fixed it at 14.57:1, which
+     is the documented mechanism working exactly as designed — but nothing tells a dark-themed host
+     that overriding is what they must do, and the failure mode is silent rather than loud.
+     *Cheapest fix: say so in the README beside the "link the styles you use" block, and add a
+     component→stylesheet map — the examples name `dx-theme`, `dx-datagrid` and `dx-overlay`, and
+     this consumer needed `dx-form`, `dx-input` and `dx-markdown`, found by listing the package.*
+  7. **A genuine strength, recorded because it was checked rather than assumed.** The consumer's
+     record view renders markdown ingested from arbitrary repositories — untrusted content turned
+     into HTML. `DxMarkdown` routes through `BlazorDX.Security.HtmlSanitizer`, whose default policy
+     is `WebUtility.HtmlEncode`, with a `DX1001` analyzer error forbidding `MarkupString`
+     construction anywhere else and a deliberate refusal to ship a hand-rolled HTML parser on the
+     grounds that a weak sanitizer is more dangerous than none. That posture held up to being
+     relied on by a product that needed it.
+
+  Six and one are the two worth acting on first: six because it is silent, and one because it
+  presents as the consumer's own bug.
 
 ### Depth & breadth enhancements
 
