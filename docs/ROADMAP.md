@@ -176,13 +176,20 @@ enhancements. None of this should be read as "ready"; it is a beta with work ahe
      Every colour resolves through a `--dx-*` token with a light-theme fallback compiled in:
      `dx-markdown.css` falls back to `--dx-text` `#0f172a` on `--dx-surface` `#ffffff`. The
      consumer's surface is `#161b24`, so its prose rendered at **1.03:1 — invisible**, with a green
-     build, passing tests, and no error anywhere. **Linking `dx-theme.css` would not have helped,
-     because its `:root` is also a light theme.** Overriding the tokens fixed it at 14.57:1, which
-     is the documented mechanism working exactly as designed — but nothing tells a dark-themed host
-     that overriding is what they must do, and the failure mode is silent rather than loud.
-     *Cheapest fix: say so in the README beside the "link the styles you use" block, and add a
-     component→stylesheet map — the examples name `dx-theme`, `dx-datagrid` and `dx-overlay`, and
-     this consumer needed `dx-form`, `dx-input` and `dx-markdown`, found by listing the package.*
+     build, passing tests, and no error anywhere. Overriding the tokens fixed it at 14.57:1, which
+     is the documented mechanism working exactly as designed — but nothing tells a dark-themed
+     host that anything is needed at all, and the failure mode is silent rather than loud.
+
+     **Corrected 2026-09-09, before this was proposed for merge.** This entry read *"linking
+     `dx-theme.css` would not have helped, because its `:root` is also a light theme"*. The
+     `:root` is light — and `dx-theme.css:26` is a `[data-dx-theme="dark"]` block, with
+     `DxThemeProvider` existing for the sole purpose of setting that attribute. **There is a dark
+     theme.** It is simply undocumented: neither the attribute nor the component appears anywhere
+     in `README.md` or `docs/*.md`. So the consumer did not work around a missing feature; it
+     never found the switch, and reached for token overrides instead. That makes the gap
+     documentation rather than design, and the fix smaller.
+     *Fixed in the README: the dark switch, and a component→stylesheet map covering all 19
+     shipped stylesheets — the old examples named three, and this consumer needed three others.*
   7. **A genuine strength, recorded because it was checked rather than assumed.** The consumer's
      record view renders markdown ingested from arbitrary repositories — untrusted content turned
      into HTML. `DxMarkdown` routes through `BlazorDX.Security.HtmlSanitizer`, whose default policy
