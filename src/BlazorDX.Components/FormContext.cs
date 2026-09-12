@@ -125,8 +125,18 @@ internal static class FormFieldRenderer
             return;
         }
 
+        // A description region, when the field has one. Its id joins the error id in
+        // aria-describedby: both describe the field, and aria-describedby takes a list.
+        string? descId = string.IsNullOrWhiteSpace(field.Description)
+            ? null
+            : $"{ctx.IdPrefix}-desc-{field.Name}";
+        string? describedBy = descId is null ? errorId
+            : errorId is null ? descId
+            : $"{descId} {errorId}";
+
         b.OpenElement(0, "div");
-        b.AddAttribute(1, "class", errors.Count > 0 ? "dx-field dx-field-invalid" : "dx-field");
+        b.AddAttribute(1, "class", FieldClass(field, errors.Count > 0));
+        b.AddAttribute(2, "id", $"{ctx.IdPrefix}-field-{field.Name}");
 
         // Label
         if (ctx.LabelTemplate is not null)
@@ -150,6 +160,19 @@ internal static class FormFieldRenderer
             b.CloseElement();
         }
 
+        // Description. [DxField(Description = ...)] fed the AI tool schema and nothing else,
+        // so a consumer who described a field saw the text nowhere and folded it into the label
+        // instead. Rendered before the input, and referenced by aria-describedby, so a screen
+        // reader hears it when focus arrives rather than only on error.
+        if (descId is not null)
+        {
+            b.OpenElement(14, "div");
+            b.AddAttribute(15, "class", "dx-field-help");
+            b.AddAttribute(16, "id", descId);
+            b.AddContent(17, field.Description);
+            b.CloseElement();
+        }
+
         // Input
         if (ctx.InputTemplate is not null)
         {
@@ -160,7 +183,7 @@ internal static class FormFieldRenderer
         }
         else
         {
-            RenderInput(b, ctx.Receiver, field, value, changed, errorId);
+            RenderInput(b, ctx.Receiver, field, value, changed, errorId, describedBy);
         }
 
         // Errors: one alert region carrying the id referenced by aria-describedby,
@@ -249,7 +272,8 @@ internal static class FormFieldRenderer
         IReadOnlyList<string> errors = ctx.ErrorsFor(field.Name);
 
         b.OpenElement(0, "div");
-        b.AddAttribute(1, "class", errors.Count > 0 ? "dx-field dx-field-invalid" : "dx-field");
+        b.AddAttribute(1, "class", FieldClass(field, errors.Count > 0));
+        b.AddAttribute(12, "id", $"{ctx.IdPrefix}-field-{field.Name}");
 
         b.OpenElement(2, "span");
         b.AddAttribute(3, "class", "dx-field-label");
@@ -416,21 +440,41 @@ internal static class FormFieldRenderer
         }
     }
 
-    // Marks an input as invalid and points it at its error region. A no-op when valid.
-    private static void AddValidationState(RenderTreeBuilder b, string? errorId)
+    /// <summary>
+    /// The wrapper's classes: the shared <c>dx-field</c>, the invalid marker, and a per-field
+    /// <c>dx-field-{name}</c>.
+    /// </summary>
+    /// <remarks>
+    /// The per-field class is the smaller half of a real cost. A rendered field carried nothing
+    /// to select on, so a page styling one field differently had to supply
+    /// <c>LabelTemplate</c> <em>and</em> <c>InputTemplate</c> — at which point DxForm supplies
+    /// the descriptor, the wrapper, the errors and the binding, and none of the presentation.
+    /// The first consumer's third surface grew from six lines of markup to eighteen that way.
+    /// </remarks>
+    private static string FieldClass(FormFieldInfo field, bool invalid) =>
+        invalid
+            ? $"dx-field dx-field-invalid dx-field-{field.Name}"
+            : $"dx-field dx-field-{field.Name}";
+
+    // Marks an input as invalid and points it at whatever describes it — the error region, the
+    // description region, or both. aria-describedby takes a space-separated list of ids, so a
+    // described field keeps its help text announced while it is also invalid.
+    private static void AddValidationState(RenderTreeBuilder b, string? errorId, string? describedBy)
     {
-        if (errorId is null)
+        if (errorId is not null)
         {
-            return;
+            b.AddAttribute(80, "aria-invalid", "true");
         }
 
-        b.AddAttribute(80, "aria-invalid", "true");
-        b.AddAttribute(81, "aria-describedby", errorId);
+        if (describedBy is not null)
+        {
+            b.AddAttribute(81, "aria-describedby", describedBy);
+        }
     }
 
     private static void RenderInput(
         RenderTreeBuilder b, object receiver, FormFieldInfo field, string value, EventCallback<string> changed,
-        string? errorId)
+        string? errorId, string? describedBy = null)
     {
         EventCallback<ChangeEventArgs> onText = EventCallback.Factory.Create<ChangeEventArgs>(
             receiver, e => changed.InvokeAsync(e.Value as string ?? string.Empty));
@@ -441,7 +485,7 @@ internal static class FormFieldRenderer
                 b.OpenElement(30, "textarea");
                 b.AddAttribute(31, "class", "dx-input dx-textarea");
                 b.AddAttribute(32, "rows", "3");
-                AddCommon(b, field, errorId);
+                AddCommon(b, field, errorId, describedBy);
                 b.AddAttribute(38, "value", value);
                 b.AddAttribute(39, "oninput", onText);
                 b.CloseElement();
@@ -455,7 +499,7 @@ internal static class FormFieldRenderer
                 b.AddAttribute(33, "checked", value is "true" or "True");
                 b.AddAttribute(34, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(
                     receiver, e => changed.InvokeAsync(e.Value is true ? "true" : "false")));
-                AddValidationState(b, errorId);
+                AddValidationState(b, errorId, describedBy);
                 b.CloseElement();
                 break;
 
@@ -465,7 +509,7 @@ internal static class FormFieldRenderer
                 b.AddAttribute(32, "value", value);
                 b.AddAttribute(33, "onchange", onText);
                 b.AddAttribute(37, "aria-label", field.Label);
-                AddValidationState(b, errorId);
+                AddValidationState(b, errorId, describedBy);
                 if (field.Choices is { } choices)
                 {
                     for (int i = 0; i < choices.Count; i++)
@@ -497,7 +541,7 @@ internal static class FormFieldRenderer
                     b.AddAttribute(35, "max", max);
                 }
 
-                AddCommon(b, field, errorId);
+                AddCommon(b, field, errorId, describedBy);
                 b.AddAttribute(38, "value", value);
                 b.AddAttribute(39, "oninput", onText);
                 b.CloseElement();
@@ -508,7 +552,7 @@ internal static class FormFieldRenderer
                 b.AddAttribute(31, "class", "dx-input");
                 b.AddAttribute(32, "type", "date");
                 b.AddAttribute(40, "aria-label", field.Label);
-                AddValidationState(b, errorId);
+                AddValidationState(b, errorId, describedBy);
                 b.AddAttribute(38, "value", value);
                 b.AddAttribute(39, "oninput", onText);
                 b.CloseElement();
@@ -518,7 +562,7 @@ internal static class FormFieldRenderer
                 b.OpenElement(30, "input");
                 b.AddAttribute(31, "class", "dx-input");
                 b.AddAttribute(32, "type", "text");
-                AddCommon(b, field, errorId);
+                AddCommon(b, field, errorId, describedBy);
                 b.AddAttribute(38, "value", value);
                 b.AddAttribute(39, "oninput", onText);
                 b.CloseElement();
@@ -526,7 +570,8 @@ internal static class FormFieldRenderer
         }
     }
 
-    private static void AddCommon(RenderTreeBuilder b, FormFieldInfo field, string? errorId)
+    private static void AddCommon(
+        RenderTreeBuilder b, FormFieldInfo field, string? errorId, string? describedBy = null)
     {
         // The visible <label> is not associated by id, so give the control its own accessible
         // name. Without this, screen readers (and axe) see an unlabeled input.
@@ -541,6 +586,6 @@ internal static class FormFieldRenderer
             b.AddAttribute(37, "maxlength", maxLength);
         }
 
-        AddValidationState(b, errorId);
+        AddValidationState(b, errorId, describedBy);
     }
 }

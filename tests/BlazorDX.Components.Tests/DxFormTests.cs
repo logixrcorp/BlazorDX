@@ -121,6 +121,10 @@ public sealed class DxFormTests : TestContext
     {
         // WCAG 3.3.1: the input is aria-invalid and points, via aria-describedby, at the
         // text error region — so a screen reader announces it when focus returns.
+        //
+        // `aria-describedby` takes a *list*, and since described fields render their
+        // description into it too, this asserts the error id is among the ids rather than that
+        // it is the only one. Title carries a Description, so on this model it is not.
         IRenderedComponent<DxForm<MeetingRequest>> form = RenderForm(new MeetingRequest());
         form.Find("form").Submit();   // empty model -> required fields fail
 
@@ -130,7 +134,8 @@ public sealed class DxFormTests : TestContext
         string? describedBy = title.GetAttribute("aria-describedby");
         Assert.False(string.IsNullOrEmpty(describedBy));
 
-        var errorRegion = form.Find($"#{describedBy}");
+        string errorId = describedBy!.Split(' ').Single(id => id.Contains("-err-"));
+        var errorRegion = form.Find($"#{errorId}");
         Assert.Equal("alert", errorRegion.GetAttribute("role"));
         Assert.NotEmpty(errorRegion.TextContent.Trim());
     }
@@ -138,13 +143,17 @@ public sealed class DxFormTests : TestContext
     [Fact]
     public void Valid_field_carries_no_invalid_or_describedby_attributes()
     {
+        // A valid field is not marked invalid and is not linked to an error. It may still be
+        // linked to its *description* — Title carries one — which is what aria-describedby is
+        // for, so the assertion is about error linkage rather than about the attribute existing.
         MeetingRequest model = new() { Title = "Sync", Email = "a@b.co", Attendees = 3 };
         IRenderedComponent<DxForm<MeetingRequest>> form = RenderForm(model);
         form.Find("form").Submit();
 
         var title = form.FindAll("input[type=text]")[0];
         Assert.False(title.HasAttribute("aria-invalid"));
-        Assert.False(title.HasAttribute("aria-describedby"));
+        Assert.DoesNotContain("-err-", title.GetAttribute("aria-describedby") ?? string.Empty);
+        Assert.Empty(form.FindAll(".dx-field-error"));
     }
 
     [Fact]

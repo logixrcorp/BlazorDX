@@ -1,3 +1,5 @@
+using Bunit;
+using AngleSharp.Dom;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -48,7 +50,10 @@ public sealed class RoomBooking : IValidatableObject
 }
 
 /// <summary>The generated descriptor for a pure-DataAnnotations model.</summary>
-public sealed class DataAnnotationsFormTests
+// Rendering tests were added here rather than in DxFormTests because RoomBooking -- the
+// only model in the suite with a described field -- lives in this file. That needs bUnit's
+// TestContext, which this class did not extend when it was descriptor-only.
+public sealed class DataAnnotationsFormTests : TestContext
 {
     private static readonly RoomBookingFormModel Model = new();
 
@@ -84,6 +89,79 @@ public sealed class DataAnnotationsFormTests
         Assert.Equal(new[] { "Room", "Seats", "Email", "StartHour", "EndHour" },
             Model.Fields.Select(f => f.Name).ToArray());
     }
+
+    /// <summary>
+    /// A described field shows its description. It used to feed the AI tool schema and nothing
+    /// else, so a consumer who wrote one saw the text nowhere and folded it into the label
+    /// instead — reported by the first real consumer (BlazorDX ROADMAP, production track record,
+    /// finding 3).
+    /// </summary>
+    [Fact]
+    public void A_described_field_renders_its_description_as_help_text()
+    {
+        IRenderedComponent<DxForm<RoomBooking>> form = RenderBooking();
+
+        IElement help = form.Find(".dx-field-help");
+
+        Assert.Equal("Which room to reserve.", help.TextContent.Trim());
+    }
+
+    /// <summary>
+    /// And the description is announced, not merely shown: it is referenced by the input's
+    /// <c>aria-describedby</c>, so a screen reader hears it when focus arrives rather than only
+    /// once the field is in error.
+    /// </summary>
+    [Fact]
+    public void The_description_is_referenced_by_aria_describedby()
+    {
+        IRenderedComponent<DxForm<RoomBooking>> form = RenderBooking();
+
+        string helpId = form.Find(".dx-field-help").Id!;
+        IElement input = form.Find($"[aria-describedby~='{helpId}']");
+
+        Assert.NotNull(input);
+        Assert.Equal("Room name", input.GetAttribute("aria-label"));
+    }
+
+    /// <summary>
+    /// An undescribed field renders no help region at all, rather than an empty one — an empty
+    /// element is a gap in the layout and a stop for a screen reader.
+    /// </summary>
+    [Fact]
+    public void An_undescribed_field_renders_no_help_region()
+    {
+        IRenderedComponent<DxForm<RoomBooking>> form = RenderBooking();
+
+        // Room is the only described field on this model.
+        Assert.Single(form.FindAll(".dx-field-help"));
+        Assert.True(form.FindAll(".dx-field").Count > 1);
+    }
+
+    /// <summary>
+    /// Every field carries a per-field class and id, so a page can style or target one field
+    /// without supplying <c>LabelTemplate</c> and <c>InputTemplate</c> and thereby taking over
+    /// all of the presentation — the first consumer's third surface grew from six lines of
+    /// markup to eighteen that way (finding 5).
+    /// </summary>
+    [Fact]
+    public void Every_field_carries_a_per_field_class_and_id()
+    {
+        IRenderedComponent<DxForm<RoomBooking>> form = RenderBooking();
+
+        IElement room = form.Find(".dx-field-Room");
+
+        Assert.Contains("dx-field", room.ClassList);
+        Assert.EndsWith("-field-Room", room.Id);
+        // The generic handle still works, so nothing that selected on it breaks.
+        Assert.True(form.FindAll(".dx-field").Count >= 5);
+    }
+
+    private IRenderedComponent<DxForm<RoomBooking>> RenderBooking() =>
+        RenderComponent<DxForm<RoomBooking>>(p =>
+        {
+            p.Add(f => f.Model, new RoomBooking());
+            p.Add(f => f.Descriptor, new RoomBookingFormModel());
+        });
 
     [Fact]
     public void Validates_dataannotations_constraints()
