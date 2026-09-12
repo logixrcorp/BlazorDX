@@ -51,6 +51,12 @@ the source generator:
 dotnet add package BlazorDX.Components
 ```
 
+> **Do not also add `BlazorDX.SourceGen`.** It is published standalone *and* bundled as an
+> analyzer inside `BlazorDX.Primitives`, which `BlazorDX.Components` depends on. Referencing it
+> explicitly loads it twice and emits every descriptor twice. The first consumer to do it hit
+> `CS0101` **naming a type in their own code**, which is a long way from the cause. The line
+> above is the whole install; the generator arrives with it.
+
 Wire up the services (in **both** the WASM client *and* the server host `Program.cs`, so
 prerendering works):
 
@@ -70,6 +76,60 @@ feature — the full set lives under `_content/BlazorDX.Components/`):
 
 The Rust `dx_grid.wasm` and the JS bridges ship inside the package as static web assets and
 load automatically — no extra build tooling on the consumer side.
+
+### Theming, and one way it fails quietly
+
+`dx-theme.css` defines the `--dx-*` tokens every component reads. **Its `:root` is a light
+theme**, and every component stylesheet compiles a light fallback into each `var()` — so a
+component whose stylesheet you did not link, or a dark host that has not switched the theme,
+still renders: in light colours, on your dark surface, with a green build and no error anywhere.
+The first consumer's prose rendered at **1.03:1 — invisible** that way.
+
+**There is a dark theme and it is opt-in.** Wrap the app (or any subtree) in `DxThemeProvider`,
+or set the attribute yourself:
+
+```razor
+<DxThemeProvider Theme="dark">
+    <Router AppAssembly="@typeof(App).Assembly" />
+</DxThemeProvider>
+```
+
+```html
+<body data-dx-theme="dark">
+```
+
+`DxThemeProvider` also takes `Accent` (one token, inline) and `Direction` (`"ltr"`/`"rtl"`), so
+the same wrapper covers accent colour and RTL. Overriding tokens directly works and is fully
+supported — but reach for it to *restyle*, not to get dark, because the switch above exists.
+
+### Which stylesheet a component needs
+
+One file per family, and a component whose file is missing is unstyled rather than broken, which
+is why it is easy to miss. Link `dx-theme.css` plus the families you use:
+
+| Stylesheet | Covers |
+|---|---|
+| `dx-theme` | the `--dx-*` tokens and the dark block — **link this one always** |
+| `dx-input` | `DxTextBox` and the input family (`.dx-input`, `.dx-field`) |
+| `dx-form` | `DxForm` fields, labels, validation (`.dx-field-*`, `.dx-checkbox`) |
+| `dx-datagrid` | `DxDataGrid`, `DxTreeGrid` (`.dx-grid-*`) |
+| `dx-layout` | accordion, alert, tabs, and the layout family |
+| `dx-structure` | breadcrumbs, carousel, and the navigation family |
+| `dx-display` | avatar, badge, and the display family |
+| `dx-overlay` | dialog, drawer, command palette (`.dx-cmdk-*`) |
+| `dx-markdown` | `DxMarkdown` prose and the editor (`.dx-md-*`) |
+| `dx-richtext` | `DxRichTextEditor` (`.dx-rte-*`) |
+| `dx-chart` | every chart kind |
+| `dx-calendar` | `DxCalendar` (`.dx-cal-*`) |
+| `dx-scheduler` | scheduler and Gantt (`.dx-gantt-*`) |
+| `dx-filemanager` | `DxFileManager` (`.dx-fm-*`) |
+| `dx-querybuilder` | `DxQueryBuilder` (`.dx-qb-*`) |
+| `dx-chat` | `DxChat` (`.dx-chat-*`) |
+| `dx-barcode` | barcode and QR |
+| `dx-editorial`, `dx-editorial-extras` | the editorial/long-form set |
+
+Not sure which you need? Link them all — they are small and independent — or list the package's
+`staticwebassets` and match the `.dx-*` classes in your rendered output against the table above.
 
 > **Packages:** `BlazorDX.Components` (styled, start here) · `BlazorDX.Primitives` (headless +
 > the source generator) · `BlazorDX.Interop` · `BlazorDX.Compute` · `BlazorDX.Security` ·
@@ -120,6 +180,10 @@ BLAZORDX_BASEURL=http://localhost:5296 dotnet test tests/BlazorDX.E2E.Tests
 
 The CI workflow (`.github/workflows/ci.yml`) defines the unit suites and the E2E suite
 across Chromium, Firefox, and WebKit (GitHub Actions format; adapt for your CI host).
+
+Changing the library rather than using it? [`.github/CONTRIBUTING.md`](.github/CONTRIBUTING.md)
+carries the rules the build enforces — the 1000-line-per-file cap, the analyzer-enforced
+security rules, and where each language tier's boundary sits.
 
 Then open the printed URL. The **DataGrid** page shows 100,000 rows, virtualized to
 the viewport, sorted/filtered/aggregated by the Rust WASM module, with row
