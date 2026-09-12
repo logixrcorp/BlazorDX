@@ -181,6 +181,10 @@ BLAZORDX_BASEURL=http://localhost:5296 dotnet test tests/BlazorDX.E2E.Tests
 The CI workflow (`.github/workflows/ci.yml`) defines the unit suites and the E2E suite
 across Chromium, Firefox, and WebKit (GitHub Actions format; adapt for your CI host).
 
+Changing the library rather than using it? [`.github/CONTRIBUTING.md`](.github/CONTRIBUTING.md)
+carries the rules the build enforces — the 1000-line-per-file cap, the analyzer-enforced
+security rules, and where each language tier's boundary sits.
+
 Then open the printed URL. The **DataGrid** page shows 100,000 rows, virtualized to
 the viewport, sorted/filtered/aggregated by the Rust WASM module, with row
 selection, inline edit, column reorder/resize, and pinned columns. The nav links to
