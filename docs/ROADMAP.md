@@ -164,6 +164,17 @@ enhancements. None of this should be read as "ready"; it is a beta with work ahe
   (`[DxField]` on a `List<T>` or a `[DxFormModel]`-typed property — recursive rendering,
   validation, and JSON-Schema/`ApplyArguments`, via a new non-generic `IFormModelUntyped`
   face on the generated descriptor — [ADR 0019](adr/0019-array-and-nested-form-fields.md)).
+
+  **"Shipped in full" was true of the features and not of the surface.** The first real consumer
+  hit four gaps in the same forms it was converting, none of which a green build or a passing
+  suite would have caught — a `Description` that fed the AI schema and rendered nowhere, an enum
+  option whose value and visible label could not differ, a generated input that took no extra
+  attributes, and a rendered field with no per-field handle to select on. The last two compounded:
+  a surface needing both templates left `DxForm` supplying the descriptor, the wrapper, the errors
+  and the binding, and none of the presentation, and one conversion grew from six lines of markup
+  to eighteen. All four are closed (see **Production track record** below for the findings as
+  reported). Worth keeping on the record rather than folding into "shipped": a feature list is
+  not a usability report, and only a consumer outside this repository produced the second.
 - **Breadth tail** — a handful of leaves still worth adding (FAB/SpeedDial, Mention,
   standalone AutoComplete). The chart-family tail (heatmap, treemap, sankey, and beyond) and
   the month-view Calendar have both shipped since this was written.
