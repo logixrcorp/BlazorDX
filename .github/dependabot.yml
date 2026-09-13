@@ -15,6 +15,21 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    ignore:
+      # The analyzer's compiler reference is a COMPATIBILITY FLOOR, not a dependency to
+      # keep current: it should be the oldest Roslyn the generator needs. Raising it
+      # raises the minimum .NET SDK for every consumer of BlazorDX, and does so silently
+      # -- a consumer without TreatWarningsAsErrors sees CS9057 as a warning, the
+      # generator is skipped, and the build fails somewhere else entirely on missing
+      # generated types.
+      #
+      # That is not hypothetical. f984197 (2026-08-31) was a Dependabot semver-major bump
+      # of exactly these two to 5.9.0, built from branch=release/insiders while this
+      # repo's global.json sets allowPrerelease: false. It shipped in 0.5.0 and 0.6.0 and
+      # made both uninstallable for consumers on any stable SDK. Reverted 2026-09-08
+      # (DX-1); this ignore is what stops it recurring on the next major.
+      - dependency-name: "Microsoft.CodeAnalysis.CSharp"
+      - dependency-name: "Microsoft.CodeAnalysis.Analyzers"
 
   # Keep the CI/release/docs workflow actions themselves current.
   - package-ecosystem: "github-actions"

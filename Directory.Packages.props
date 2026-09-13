@@ -11,8 +11,27 @@
   </PropertyGroup>
   <ItemGroup Label="Roslyn (analyzers + source generators)">
     <PackageVersion Include="Deque.AxeCore.Playwright" Version="4.13.0" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="5.9.0-1.26328.17" />
+    <!-- A COMPATIBILITY FLOOR, NOT A DEPENDENCY TO KEEP CURRENT.
+         An analyzer runs only on a compiler at least as new as the one it references, so
+         this number is the oldest Roslyn the source generator needs. Raising it raises the
+         minimum SDK for every CONSUMER of BlazorDX, silently.
+
+         Reverted from 5.9.0 to 4.8.0 on 2026-09-08 (DX-1). 5.9.0 arrived by Dependabot in
+         f984197 as a semver-major bump. It is built from branch=release/insiders with a
+         prerelease sibling, while this repo's global.json sets allowPrerelease: false, so it
+         required a compiler no stable SDK ships and this repo would refuse anyway.
+
+         Nothing used the newer APIs: at 4.8.0 the whole solution builds clean and the suite
+         passes. The bump bought nothing and cost consumers an SDK they could not install.
+         HolosThought hit it as three CS0246 errors on generated types, with the CS9057 that
+         explains them demoted to a warning.
+
+         See .github/dependabot.yml, which now ignores this package for that reason. -->
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
+    <!-- Back off prerelease, same date and same reason. This one does not set the
+         consumer floor, being a build-time analyzer-authoring package, but a prerelease
+         dependency in a repo with allowPrerelease: false is the same inconsistency. -->
+    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" />
   </ItemGroup>
   <ItemGroup Label="Runtime">
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.11" />
