@@ -535,8 +535,11 @@ internal static class FormFieldRenderer
                     {
                         b.OpenElement(34, "option");
                         b.SetKey(choices[i]);
+                        // The value is the wire value; the text may differ. A select whose
+                        // options carry explanatory text had to be hand-written before, because
+                        // both came from the same string (DX-C1 finding 2).
                         b.AddAttribute(35, "value", choices[i]);
-                        b.AddContent(36, choices[i]);
+                        b.AddContent(36, OptionText(field, choices, i));
                         b.CloseElement();
                     }
                 }
@@ -591,6 +594,12 @@ internal static class FormFieldRenderer
                 break;
         }
     }
+
+    // An option's visible text: its label when the enum declares one, else the value itself.
+    // Length-checked rather than trusted -- the generator emits the two arrays together, but a
+    // hand-written descriptor is a supported thing to have and must not throw here.
+    private static string OptionText(FormFieldInfo field, IReadOnlyList<string> choices, int i) =>
+        field.ChoiceLabels is { } labels && labels.Count == choices.Count ? labels[i] : choices[i];
 
     // Splatted first on purpose: see FormContext.InputAttributes' own remarks.
     private static void AddExtra(

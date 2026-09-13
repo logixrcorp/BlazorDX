@@ -296,3 +296,99 @@ public sealed class DataAnnotationsFormTests : TestContext
         Assert.Contains(errors, e => e.Field == "EndHour");
     }
 }
+
+/// <summary>
+/// An enum whose options carry explanatory text. The wire value stays the member name; the
+/// visible label comes from <c>[Display(Name = ...)]</c> — DX-C1 finding 2, reported by the first
+/// real consumer, whose own case was "text — merges nothing" for the value <c>text</c>.
+/// </summary>
+public enum MergeStrategy
+{
+    [Display(Name = "text — merges nothing")]
+    Text,
+
+    [Display(Name = "three-way — merges hunks")]
+    ThreeWay,
+
+    // Deliberately undecorated: it must fall back to its own identifier rather than to blank,
+    // so the labels array stays the same length as Choices.
+    Manual,
+}
+
+/// <summary>An enum with no [Display] anywhere — every option shows its own value.</summary>
+public enum Visibility
+{
+    Public,
+    Private,
+}
+
+[DxFormModel(Name = "set_merge", Description = "Choose how a branch merges.")]
+public sealed class MergeSettings
+{
+    [Display(Name = "Strategy")]
+    public MergeStrategy Strategy { get; set; }
+
+    [Display(Name = "Who can see it")]
+    public Visibility Visibility { get; set; }
+}
+
+/// <summary>An enum option's value and its visible text (DX-C1 finding 2).</summary>
+public sealed class EnumChoiceLabelTests : TestContext
+{
+    private IRenderedComponent<DxForm<MergeSettings>> Render() =>
+        RenderComponent<DxForm<MergeSettings>>(p =>
+        {
+            p.Add(f => f.Model, new MergeSettings());
+            p.Add(f => f.Descriptor, new MergeSettingsFormModel());
+        });
+
+    [Fact]
+    public void An_option_keeps_its_value_and_shows_its_label()
+    {
+        IRenderedComponent<DxForm<MergeSettings>> form = Render();
+
+        IElement select = form.Find(".dx-field-Strategy select");
+        var options = select.QuerySelectorAll("option").ToList();
+
+        Assert.Equal("Text", options[0].GetAttribute("value"));
+        Assert.Equal("text — merges nothing", options[0].TextContent);
+        Assert.Equal("ThreeWay", options[1].GetAttribute("value"));
+        Assert.Equal("three-way — merges hunks", options[1].TextContent);
+    }
+
+    [Fact]
+    public void An_undecorated_member_falls_back_to_its_own_identifier()
+    {
+        // Not to blank, and not dropped: the labels array has to stay the same length as
+        // Choices or the renderer cannot index one against the other.
+        IRenderedComponent<DxForm<MergeSettings>> form = Render();
+
+        IElement manual = form.Find(".dx-field-Strategy select").QuerySelectorAll("option")[2];
+
+        Assert.Equal("Manual", manual.GetAttribute("value"));
+        Assert.Equal("Manual", manual.TextContent);
+    }
+
+    [Fact]
+    public void An_enum_with_no_display_names_carries_no_labels_at_all()
+    {
+        // The common case stays exactly as it was: null ChoiceLabels, value used as the text.
+        FormFieldInfo visibility = new MergeSettingsFormModel().Fields.Single(f => f.Name == "Visibility");
+
+        Assert.Null(visibility.ChoiceLabels);
+
+        IElement select = Render().Find(".dx-field-Visibility select");
+        Assert.Equal("Public", select.QuerySelectorAll("option")[0].TextContent);
+    }
+
+    [Fact]
+    public void The_ai_tool_schema_enumerates_values_rather_than_labels()
+    {
+        // The sharp end of the decision. An agent must set "Text", not "text — merges nothing";
+        // a label is for a human reading a select. Choices is the wire value and stays so.
+        FormFieldInfo strategy = new MergeSettingsFormModel().Fields.Single(f => f.Name == "Strategy");
+
+        Assert.Equal(new[] { "Text", "ThreeWay", "Manual" }, strategy.Choices);
+        Assert.DoesNotContain("merges nothing", string.Join("|", strategy.Choices!));
+    }
+}
