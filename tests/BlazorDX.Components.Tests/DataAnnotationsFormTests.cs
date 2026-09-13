@@ -1,3 +1,4 @@
+using System;
 using Bunit;
 using AngleSharp.Dom;
 using System.Collections.Generic;
@@ -156,11 +157,73 @@ public sealed class DataAnnotationsFormTests : TestContext
         Assert.True(form.FindAll(".dx-field").Count >= 5);
     }
 
-    private IRenderedComponent<DxForm<RoomBooking>> RenderBooking() =>
+    /// <summary>
+    /// A field can take extra attributes without giving up the generated input. Reported by the
+    /// first real consumer (finding 4): <c>spellcheck="false"</c> on a field holding a repository
+    /// name meant rendering the input yourself through <c>InputTemplate</c>, which hands back the
+    /// presentation of a control whose descriptor, wrapper, errors and binding DxForm still
+    /// supplies.
+    /// </summary>
+    [Fact]
+    public void A_field_can_take_extra_attributes_without_replacing_the_input()
+    {
+        IRenderedComponent<DxForm<RoomBooking>> form = RenderBooking(
+            f => f.Name == "Room"
+                ? new Dictionary<string, object> { ["spellcheck"] = "false", ["data-probe"] = "x" }
+                : null);
+
+        IElement room = form.Find(".dx-field-Room input");
+
+        Assert.Equal("false", room.GetAttribute("spellcheck"));
+        Assert.Equal("x", room.GetAttribute("data-probe"));
+    }
+
+    /// <summary>Fields the callback returns null for are untouched.</summary>
+    [Fact]
+    public void Fields_the_callback_declines_get_no_extra_attributes()
+    {
+        IRenderedComponent<DxForm<RoomBooking>> form = RenderBooking(
+            f => f.Name == "Room" ? new Dictionary<string, object> { ["spellcheck"] = "false" } : null);
+
+        IElement seats = form.Find(".dx-field-Seats input");
+
+        Assert.False(seats.HasAttribute("spellcheck"));
+    }
+
+    /// <summary>
+    /// The control's own attributes win. Splatting is done first on purpose: an accessible name
+    /// and a change binding are not a consumer's to remove by accident, and a supplied
+    /// <c>aria-label</c> that silently replaced the field's would be an accessibility regression
+    /// with no error anywhere. Replacing them on purpose is what <c>InputTemplate</c> is for.
+    /// </summary>
+    [Fact]
+    public void Extra_attributes_cannot_clobber_the_accessible_name_or_the_type()
+    {
+        IRenderedComponent<DxForm<RoomBooking>> form = RenderBooking(
+            f => new Dictionary<string, object>
+            {
+                ["aria-label"] = "hijacked",
+                ["type"] = "hidden",
+            });
+
+        IElement room = form.Find(".dx-field-Room input");
+
+        Assert.Equal("Room name", room.GetAttribute("aria-label"));
+        Assert.NotEqual("hidden", room.GetAttribute("type"));
+    }
+
+    private IRenderedComponent<DxForm<RoomBooking>> RenderBooking() => RenderBooking(null);
+
+    private IRenderedComponent<DxForm<RoomBooking>> RenderBooking(
+        Func<FormFieldInfo, IReadOnlyDictionary<string, object>?>? inputAttributes) =>
         RenderComponent<DxForm<RoomBooking>>(p =>
         {
             p.Add(f => f.Model, new RoomBooking());
             p.Add(f => f.Descriptor, new RoomBookingFormModel());
+            if (inputAttributes is not null)
+            {
+                p.Add(f => f.InputAttributes, inputAttributes);
+            }
         });
 
     [Fact]

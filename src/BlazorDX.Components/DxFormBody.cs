@@ -53,6 +53,10 @@ internal sealed class DxFormBody : ComponentBase
 
     [Parameter] public RenderFragment<FormFieldInfo>? LabelTemplate { get; set; }
 
+    /// <summary>Per-field extra attributes for the generated input.</summary>
+    [Parameter]
+    public Func<FormFieldInfo, IReadOnlyDictionary<string, object>?>? InputAttributes { get; set; }
+
     [Parameter] public bool ValidateOnChange { get; set; }
 
     [Parameter] public bool ShowSubmit { get; set; } = true;
@@ -85,6 +89,7 @@ internal sealed class DxFormBody : ComponentBase
             FieldTemplate = FieldTemplate,
             InputTemplate = InputTemplate,
             LabelTemplate = LabelTemplate,
+            InputAttributes = InputAttributes,
         };
     }
 

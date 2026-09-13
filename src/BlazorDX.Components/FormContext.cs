@@ -64,6 +64,19 @@ public sealed class FormContext
     public RenderFragment<FormFieldRenderContext>? InputTemplate { get; init; }
     public RenderFragment<FormFieldInfo>? LabelTemplate { get; init; }
 
+    /// <summary>
+    /// Extra attributes to splat onto one field's generated input — <c>spellcheck</c>,
+    /// <c>autocomplete</c>, <c>inputmode</c>, a <c>data-*</c> hook. Null, or a null return, for
+    /// the common case.
+    /// </summary>
+    /// <remarks>
+    /// These are written <em>before</em> the control's own attributes, so a supplied
+    /// <c>aria-label</c>, <c>value</c> or change handler cannot clobber the library's — the
+    /// accessible name and the binding are not a consumer's to remove by accident. Overriding
+    /// those on purpose is what <c>InputTemplate</c> is for.
+    /// </remarks>
+    public Func<FormFieldInfo, IReadOnlyDictionary<string, object>?>? InputAttributes { get; init; }
+
     /// <summary>Raised when any field value or the validation state changes, so manually
     /// laid-out <see cref="DxFormField"/>s re-render even when the model is mutated elsewhere
     /// (e.g. an AI tool call).</summary>
@@ -183,7 +196,8 @@ internal static class FormFieldRenderer
         }
         else
         {
-            RenderInput(b, ctx.Receiver, field, value, changed, errorId, describedBy);
+            RenderInput(b, ctx.Receiver, field, value, changed, errorId, describedBy,
+                ctx.InputAttributes);
         }
 
         // Errors: one alert region carrying the id referenced by aria-describedby,
@@ -474,15 +488,18 @@ internal static class FormFieldRenderer
 
     private static void RenderInput(
         RenderTreeBuilder b, object receiver, FormFieldInfo field, string value, EventCallback<string> changed,
-        string? errorId, string? describedBy = null)
+        string? errorId, string? describedBy = null,
+        Func<FormFieldInfo, IReadOnlyDictionary<string, object>?>? inputAttributes = null)
     {
         EventCallback<ChangeEventArgs> onText = EventCallback.Factory.Create<ChangeEventArgs>(
             receiver, e => changed.InvokeAsync(e.Value as string ?? string.Empty));
+        void Extra() => AddExtra(b, inputAttributes, field);
 
         switch (field.Kind)
         {
             case FormFieldKind.Multiline:
                 b.OpenElement(30, "textarea");
+                Extra();
                 b.AddAttribute(31, "class", "dx-input dx-textarea");
                 b.AddAttribute(32, "rows", "3");
                 AddCommon(b, field, errorId, describedBy);
@@ -493,6 +510,7 @@ internal static class FormFieldRenderer
 
             case FormFieldKind.Bool:
                 b.OpenElement(30, "input");
+                Extra();
                 b.AddAttribute(31, "class", "dx-checkbox");
                 b.AddAttribute(32, "type", "checkbox");
                 b.AddAttribute(40, "aria-label", field.Label);
@@ -505,6 +523,7 @@ internal static class FormFieldRenderer
 
             case FormFieldKind.Enum:
                 b.OpenElement(30, "select");
+                Extra();
                 b.AddAttribute(31, "class", "dx-input dx-select-native");
                 b.AddAttribute(32, "value", value);
                 b.AddAttribute(33, "onchange", onText);
@@ -528,6 +547,7 @@ internal static class FormFieldRenderer
             case FormFieldKind.Integer:
             case FormFieldKind.Number:
                 b.OpenElement(30, "input");
+                Extra();
                 b.AddAttribute(31, "class", "dx-input");
                 b.AddAttribute(32, "type", "number");
                 b.AddAttribute(33, "step", field.Kind == FormFieldKind.Integer ? "1" : "any");
@@ -549,6 +569,7 @@ internal static class FormFieldRenderer
 
             case FormFieldKind.Date:
                 b.OpenElement(30, "input");
+                Extra();
                 b.AddAttribute(31, "class", "dx-input");
                 b.AddAttribute(32, "type", "date");
                 b.AddAttribute(40, "aria-label", field.Label);
@@ -560,6 +581,7 @@ internal static class FormFieldRenderer
 
             default:
                 b.OpenElement(30, "input");
+                Extra();
                 b.AddAttribute(31, "class", "dx-input");
                 b.AddAttribute(32, "type", "text");
                 AddCommon(b, field, errorId, describedBy);
@@ -567,6 +589,18 @@ internal static class FormFieldRenderer
                 b.AddAttribute(39, "oninput", onText);
                 b.CloseElement();
                 break;
+        }
+    }
+
+    // Splatted first on purpose: see FormContext.InputAttributes' own remarks.
+    private static void AddExtra(
+        RenderTreeBuilder b, Func<FormFieldInfo, IReadOnlyDictionary<string, object>?>? source,
+        FormFieldInfo field)
+    {
+        IReadOnlyDictionary<string, object>? extra = source?.Invoke(field);
+        if (extra is { Count: > 0 })
+        {
+            b.AddMultipleAttributes(85, extra);
         }
     }
 
