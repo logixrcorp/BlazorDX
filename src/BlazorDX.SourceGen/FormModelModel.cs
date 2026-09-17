@@ -35,7 +35,10 @@ internal sealed record FormFieldDef(
     string? ArrayElementKind = null,
     // The FQN of the nested/element type's OWN generated "{Type}FormModel" descriptor
     // class (e.g. "global::Ns.AddressFormModel") -- set whenever NestedTypeFqn is.
-    string? NestedDescriptorFqn = null);
+    string? NestedDescriptorFqn = null,
+    // Enum only: per-choice visible text from [Display(Name = ...)] on the members. Default
+    // (empty) when no member declares one, which is the common case.
+    ImmutableArray<string> ChoiceLabels = default);
 
 /// <summary>Everything the form emitter needs about a <c>[DxFormModel]</c> type.</summary>
 internal sealed record FormModelDef(
@@ -257,6 +260,7 @@ internal static class FormModelAnalysis
             ImmutableArray<string> choices = underlying.TypeKind == TypeKind.Enum
                 ? underlying.GetMembers().OfType<IFieldSymbol>().Where(f => f.IsConst).Select(f => f.Name).ToImmutableArray()
                 : ImmutableArray<string>.Empty;
+            ImmutableArray<string> choiceLabels = EnumChoiceLabels(underlying);
 
             builder.Add(new FormFieldDef(
                 property.Name,
@@ -277,7 +281,8 @@ internal static class FormModelAnalysis
                 sensitive,
                 dependsOn,
                 dependsOnValue,
-                dependsOnOperator));
+                dependsOnOperator,
+                ChoiceLabels: choiceLabels));
         }
 
         builder.Sort(static (a, b) => a.Order.CompareTo(b.Order));
@@ -546,6 +551,48 @@ internal static class FormModelAnalysis
     // false instead of defaulting to "Text" for anything unrecognized, since a List<T>
     // element with no clear scalar shape and no [DxFormModel] tag is a real error
     // (DX2005), not something to render as plain text.
+    /// <summary>
+    /// An enum's per-member visible text, from <c>[Display(Name = ...)]</c>, positionally
+    /// aligned with its Choices. Empty when no member declares one.
+    /// </summary>
+    /// <remarks>
+    /// All-or-nothing on purpose: if any member carries a Name, every member contributes its
+    /// label or falls back to its own identifier, so the two arrays stay the same length and the
+    /// renderer can index one against the other without a length check at every option.
+    /// </remarks>
+    private static ImmutableArray<string> EnumChoiceLabels(ITypeSymbol underlying)
+    {
+        if (underlying.TypeKind != TypeKind.Enum)
+        {
+            return ImmutableArray<string>.Empty;
+        }
+
+        var members = underlying.GetMembers().OfType<IFieldSymbol>().Where(f => f.IsConst).ToList();
+        var labels = members.Select(m => DisplayName(m) ?? m.Name).ToImmutableArray();
+        return labels.SequenceEqual(members.Select(m => m.Name)) ? ImmutableArray<string>.Empty : labels;
+    }
+
+    private static string? DisplayName(ISymbol member)
+    {
+        foreach (AttributeData a in member.GetAttributes())
+        {
+            if (a.AttributeClass?.Name is not ("DisplayAttribute" or "Display"))
+            {
+                continue;
+            }
+
+            foreach (KeyValuePair<string, TypedConstant> arg in a.NamedArguments)
+            {
+                if (arg.Key == "Name" && arg.Value.Value is string s && s.Length > 0)
+                {
+                    return s;
+                }
+            }
+        }
+
+        return null;
+    }
+
     private static bool TryScalarKind(ITypeSymbol type, out string kind, out ImmutableArray<string> choices)
     {
         ITypeSymbol underlying = Underlying(type, out _);

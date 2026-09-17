@@ -16,6 +16,10 @@
 .dx-select-native { appearance: auto; }
 .dx-checkbox { width: 18px; height: 18px; accent-color: var(--dx-accent, #2563eb); align-self: flex-start; }
 
+/* A field's Description, rendered between the label and the input. Muted rather than
+   small-and-grey: it has to stay legible, and it is referenced by aria-describedby. */
+.dx-field-help { font-size: 12px; color: var(--dx-text-muted, #475569); }
+
 .dx-field-error { font-size: 12px; color: var(--dx-danger, #dc2626); }
 .dx-field-invalid .dx-input,
 .dx-field-invalid .dx-textarea,

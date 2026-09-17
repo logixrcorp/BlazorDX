@@ -1,3 +1,6 @@
+using System;
+using Bunit;
+using AngleSharp.Dom;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -48,7 +51,10 @@ public sealed class RoomBooking : IValidatableObject
 }
 
 /// <summary>The generated descriptor for a pure-DataAnnotations model.</summary>
-public sealed class DataAnnotationsFormTests
+// Rendering tests were added here rather than in DxFormTests because RoomBooking -- the
+// only model in the suite with a described field -- lives in this file. That needs bUnit's
+// TestContext, which this class did not extend when it was descriptor-only.
+public sealed class DataAnnotationsFormTests : TestContext
 {
     private static readonly RoomBookingFormModel Model = new();
 
@@ -84,6 +90,141 @@ public sealed class DataAnnotationsFormTests
         Assert.Equal(new[] { "Room", "Seats", "Email", "StartHour", "EndHour" },
             Model.Fields.Select(f => f.Name).ToArray());
     }
+
+    /// <summary>
+    /// A described field shows its description. It used to feed the AI tool schema and nothing
+    /// else, so a consumer who wrote one saw the text nowhere and folded it into the label
+    /// instead — reported by the first real consumer (BlazorDX ROADMAP, production track record,
+    /// finding 3).
+    /// </summary>
+    [Fact]
+    public void A_described_field_renders_its_description_as_help_text()
+    {
+        IRenderedComponent<DxForm<RoomBooking>> form = RenderBooking();
+
+        IElement help = form.Find(".dx-field-help");
+
+        Assert.Equal("Which room to reserve.", help.TextContent.Trim());
+    }
+
+    /// <summary>
+    /// And the description is announced, not merely shown: it is referenced by the input's
+    /// <c>aria-describedby</c>, so a screen reader hears it when focus arrives rather than only
+    /// once the field is in error.
+    /// </summary>
+    [Fact]
+    public void The_description_is_referenced_by_aria_describedby()
+    {
+        IRenderedComponent<DxForm<RoomBooking>> form = RenderBooking();
+
+        string helpId = form.Find(".dx-field-help").Id!;
+        IElement input = form.Find($"[aria-describedby~='{helpId}']");
+
+        Assert.NotNull(input);
+        Assert.Equal("Room name", input.GetAttribute("aria-label"));
+    }
+
+    /// <summary>
+    /// An undescribed field renders no help region at all, rather than an empty one — an empty
+    /// element is a gap in the layout and a stop for a screen reader.
+    /// </summary>
+    [Fact]
+    public void An_undescribed_field_renders_no_help_region()
+    {
+        IRenderedComponent<DxForm<RoomBooking>> form = RenderBooking();
+
+        // Room is the only described field on this model.
+        Assert.Single(form.FindAll(".dx-field-help"));
+        Assert.True(form.FindAll(".dx-field").Count > 1);
+    }
+
+    /// <summary>
+    /// Every field carries a per-field class and id, so a page can style or target one field
+    /// without supplying <c>LabelTemplate</c> and <c>InputTemplate</c> and thereby taking over
+    /// all of the presentation — the first consumer's third surface grew from six lines of
+    /// markup to eighteen that way (finding 5).
+    /// </summary>
+    [Fact]
+    public void Every_field_carries_a_per_field_class_and_id()
+    {
+        IRenderedComponent<DxForm<RoomBooking>> form = RenderBooking();
+
+        IElement room = form.Find(".dx-field-Room");
+
+        Assert.Contains("dx-field", room.ClassList);
+        Assert.EndsWith("-field-Room", room.Id);
+        // The generic handle still works, so nothing that selected on it breaks.
+        Assert.True(form.FindAll(".dx-field").Count >= 5);
+    }
+
+    /// <summary>
+    /// A field can take extra attributes without giving up the generated input. Reported by the
+    /// first real consumer (finding 4): <c>spellcheck="false"</c> on a field holding a repository
+    /// name meant rendering the input yourself through <c>InputTemplate</c>, which hands back the
+    /// presentation of a control whose descriptor, wrapper, errors and binding DxForm still
+    /// supplies.
+    /// </summary>
+    [Fact]
+    public void A_field_can_take_extra_attributes_without_replacing_the_input()
+    {
+        IRenderedComponent<DxForm<RoomBooking>> form = RenderBooking(
+            f => f.Name == "Room"
+                ? new Dictionary<string, object> { ["spellcheck"] = "false", ["data-probe"] = "x" }
+                : null);
+
+        IElement room = form.Find(".dx-field-Room input");
+
+        Assert.Equal("false", room.GetAttribute("spellcheck"));
+        Assert.Equal("x", room.GetAttribute("data-probe"));
+    }
+
+    /// <summary>Fields the callback returns null for are untouched.</summary>
+    [Fact]
+    public void Fields_the_callback_declines_get_no_extra_attributes()
+    {
+        IRenderedComponent<DxForm<RoomBooking>> form = RenderBooking(
+            f => f.Name == "Room" ? new Dictionary<string, object> { ["spellcheck"] = "false" } : null);
+
+        IElement seats = form.Find(".dx-field-Seats input");
+
+        Assert.False(seats.HasAttribute("spellcheck"));
+    }
+
+    /// <summary>
+    /// The control's own attributes win. Splatting is done first on purpose: an accessible name
+    /// and a change binding are not a consumer's to remove by accident, and a supplied
+    /// <c>aria-label</c> that silently replaced the field's would be an accessibility regression
+    /// with no error anywhere. Replacing them on purpose is what <c>InputTemplate</c> is for.
+    /// </summary>
+    [Fact]
+    public void Extra_attributes_cannot_clobber_the_accessible_name_or_the_type()
+    {
+        IRenderedComponent<DxForm<RoomBooking>> form = RenderBooking(
+            f => new Dictionary<string, object>
+            {
+                ["aria-label"] = "hijacked",
+                ["type"] = "hidden",
+            });
+
+        IElement room = form.Find(".dx-field-Room input");
+
+        Assert.Equal("Room name", room.GetAttribute("aria-label"));
+        Assert.NotEqual("hidden", room.GetAttribute("type"));
+    }
+
+    private IRenderedComponent<DxForm<RoomBooking>> RenderBooking() => RenderBooking(null);
+
+    private IRenderedComponent<DxForm<RoomBooking>> RenderBooking(
+        Func<FormFieldInfo, IReadOnlyDictionary<string, object>?>? inputAttributes) =>
+        RenderComponent<DxForm<RoomBooking>>(p =>
+        {
+            p.Add(f => f.Model, new RoomBooking());
+            p.Add(f => f.Descriptor, new RoomBookingFormModel());
+            if (inputAttributes is not null)
+            {
+                p.Add(f => f.InputAttributes, inputAttributes);
+            }
+        });
 
     [Fact]
     public void Validates_dataannotations_constraints()
@@ -153,5 +294,101 @@ public sealed class DataAnnotationsFormTests
         Assert.Equal(6, target.Seats);
         // The AI supplied an inconsistent range; the cross-field rule rejects it so the model can self-correct.
         Assert.Contains(errors, e => e.Field == "EndHour");
+    }
+}
+
+/// <summary>
+/// An enum whose options carry explanatory text. The wire value stays the member name; the
+/// visible label comes from <c>[Display(Name = ...)]</c> — DX-C1 finding 2, reported by the first
+/// real consumer, whose own case was "text — merges nothing" for the value <c>text</c>.
+/// </summary>
+public enum MergeStrategy
+{
+    [Display(Name = "text — merges nothing")]
+    Text,
+
+    [Display(Name = "three-way — merges hunks")]
+    ThreeWay,
+
+    // Deliberately undecorated: it must fall back to its own identifier rather than to blank,
+    // so the labels array stays the same length as Choices.
+    Manual,
+}
+
+/// <summary>An enum with no [Display] anywhere — every option shows its own value.</summary>
+public enum Visibility
+{
+    Public,
+    Private,
+}
+
+[DxFormModel(Name = "set_merge", Description = "Choose how a branch merges.")]
+public sealed class MergeSettings
+{
+    [Display(Name = "Strategy")]
+    public MergeStrategy Strategy { get; set; }
+
+    [Display(Name = "Who can see it")]
+    public Visibility Visibility { get; set; }
+}
+
+/// <summary>An enum option's value and its visible text (DX-C1 finding 2).</summary>
+public sealed class EnumChoiceLabelTests : TestContext
+{
+    private IRenderedComponent<DxForm<MergeSettings>> Render() =>
+        RenderComponent<DxForm<MergeSettings>>(p =>
+        {
+            p.Add(f => f.Model, new MergeSettings());
+            p.Add(f => f.Descriptor, new MergeSettingsFormModel());
+        });
+
+    [Fact]
+    public void An_option_keeps_its_value_and_shows_its_label()
+    {
+        IRenderedComponent<DxForm<MergeSettings>> form = Render();
+
+        IElement select = form.Find(".dx-field-Strategy select");
+        var options = select.QuerySelectorAll("option").ToList();
+
+        Assert.Equal("Text", options[0].GetAttribute("value"));
+        Assert.Equal("text — merges nothing", options[0].TextContent);
+        Assert.Equal("ThreeWay", options[1].GetAttribute("value"));
+        Assert.Equal("three-way — merges hunks", options[1].TextContent);
+    }
+
+    [Fact]
+    public void An_undecorated_member_falls_back_to_its_own_identifier()
+    {
+        // Not to blank, and not dropped: the labels array has to stay the same length as
+        // Choices or the renderer cannot index one against the other.
+        IRenderedComponent<DxForm<MergeSettings>> form = Render();
+
+        IElement manual = form.Find(".dx-field-Strategy select").QuerySelectorAll("option")[2];
+
+        Assert.Equal("Manual", manual.GetAttribute("value"));
+        Assert.Equal("Manual", manual.TextContent);
+    }
+
+    [Fact]
+    public void An_enum_with_no_display_names_carries_no_labels_at_all()
+    {
+        // The common case stays exactly as it was: null ChoiceLabels, value used as the text.
+        FormFieldInfo visibility = new MergeSettingsFormModel().Fields.Single(f => f.Name == "Visibility");
+
+        Assert.Null(visibility.ChoiceLabels);
+
+        IElement select = Render().Find(".dx-field-Visibility select");
+        Assert.Equal("Public", select.QuerySelectorAll("option")[0].TextContent);
+    }
+
+    [Fact]
+    public void The_ai_tool_schema_enumerates_values_rather_than_labels()
+    {
+        // The sharp end of the decision. An agent must set "Text", not "text — merges nothing";
+        // a label is for a human reading a select. Choices is the wire value and stays so.
+        FormFieldInfo strategy = new MergeSettingsFormModel().Fields.Single(f => f.Name == "Strategy");
+
+        Assert.Equal(new[] { "Text", "ThreeWay", "Manual" }, strategy.Choices);
+        Assert.DoesNotContain("merges nothing", string.Join("|", strategy.Choices!));
     }
 }

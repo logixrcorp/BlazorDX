@@ -79,7 +79,15 @@ public sealed record FormFieldInfo(
     Type? NestedType = null,
     // Array-of-scalar only: the element's own scalar Kind. Null otherwise. Choices is
     // reused (not duplicated) for an array-of-enum's element choices.
-    FormFieldKind? ArrayElementKind = null);
+    FormFieldKind? ArrayElementKind = null,
+    // Enum only: the visible text for each entry in Choices, positionally. Null when every
+    // option shows its own value, which is the common case.
+    //
+    // Choices stays the wire value and is what the AI tool schema enumerates and what
+    // ApplyArguments accepts -- a label is for a human reading a select, and an agent setting
+    // "text - merges nothing" instead of "text" would be a regression dressed as a feature.
+    // Populated from [Display(Name = ...)] on the enum's members (DX-C1 finding 2).
+    IReadOnlyList<string>? ChoiceLabels = null);
 
 /// <summary>A single validation failure: which field, and why.</summary>
 public sealed record FormValidationError(string Field, string Message);

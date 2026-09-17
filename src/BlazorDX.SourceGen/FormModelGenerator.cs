@@ -109,12 +109,15 @@ public sealed class FormModelGenerator : IIncrementalGenerator
             string choices = f.Choices.IsDefaultOrEmpty
                 ? "null"
                 : "new string[] { " + string.Join(", ", f.Choices.Select(Literal)) + " }";
+            string choiceLabels = f.ChoiceLabels.IsDefaultOrEmpty
+                ? "null"
+                : "new string[] { " + string.Join(", ", f.ChoiceLabels.Select(Literal)) + " }";
             s.AppendLine(
                 $"        new {Ns}.FormFieldInfo({Literal(f.PropertyName)}, {Literal(f.Label)}, {Literal(f.Description)}, " +
                 $"{Ns}.FormFieldKind.{f.Kind}, {Bool(f.Required)}, {NDouble(f.Min)}, {NDouble(f.Max)}, " +
                 $"{NInt(f.MaxLength)}, {Literal(f.Pattern)}, {Literal(f.Placeholder)}, {choices}, {Bool(f.Sensitive)}, " +
                 $"{Literal(f.DependsOn)}, {Literal(f.DependsOnValue)}, {Ns}.FormFieldDependsOnOperator.{f.DependsOnOperator}, " +
-                $"{NType(f.NestedTypeFqn)}, {NKind(f.ArrayElementKind)}),");
+                $"{NType(f.NestedTypeFqn)}, {NKind(f.ArrayElementKind)}, {choiceLabels}),");
         }
 
         s.AppendLine("    };");

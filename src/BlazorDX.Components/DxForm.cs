@@ -53,6 +53,28 @@ public sealed class DxForm<TModel> : ComponentBase
     /// <summary>Overrides the label for every field.</summary>
     [Parameter] public RenderFragment<FormFieldInfo>? LabelTemplate { get; set; }
 
+    /// <summary>
+    /// Extra attributes for one field's generated input, keyed by attribute name — return null
+    /// for fields that need none.
+    /// </summary>
+    /// <remarks>
+    /// The gap this closes, reported by the first real consumer: the generated input took a
+    /// fixed attribute set, so <c>spellcheck="false"</c> on a field holding a repository name or
+    /// a URL meant rendering the whole input yourself through <c>InputTemplate</c> — which hands
+    /// back the presentation of a control whose descriptor, wrapper, errors and binding
+    /// <c>DxForm</c> is still supplying.
+    /// <code>
+    /// InputAttributes="@(f => f.Name == "Repository"
+    ///     ? new Dictionary&lt;string, object&gt; { ["spellcheck"] = "false" }
+    ///     : null)"
+    /// </code>
+    /// These are written before the control's own attributes, so they cannot clobber its
+    /// accessible name, value or change handler. Replacing those is what <c>InputTemplate</c>
+    /// is for.
+    /// </remarks>
+    [Parameter]
+    public Func<FormFieldInfo, IReadOnlyDictionary<string, object>?>? InputAttributes { get; set; }
+
     /// <summary>Re-validate after every field change (default: validate on submit only).</summary>
     [Parameter] public bool ValidateOnChange { get; set; }
 
@@ -90,6 +112,7 @@ public sealed class DxForm<TModel> : ComponentBase
         builder.AddComponentParameter(10, "FieldTemplate", FieldTemplate);
         builder.AddComponentParameter(11, "InputTemplate", InputTemplate);
         builder.AddComponentParameter(12, "LabelTemplate", LabelTemplate);
+        builder.AddComponentParameter(17, "InputAttributes", InputAttributes);
         builder.AddComponentParameter(13, "ValidateOnChange", ValidateOnChange);
         builder.AddComponentParameter(14, "ShowSubmit", ShowSubmit);
         builder.AddComponentParameter(15, "SubmitText", SubmitText);
